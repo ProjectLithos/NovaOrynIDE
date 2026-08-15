@@ -1,0 +1,55 @@
+{
+  "name": "@novaoryn/ide-electron",
+  "private": true,
+  "productName": "NovaOryn IDE",
+  "version": "0.0.10",
+  "main": "lib/backend/electron-main.js",
+  "theia": {
+    "target": "electron",
+    "frontend": {
+      "config": {
+        "applicationName": "NovaOryn IDE",
+        "reloadOnReconnect": true,
+        "electron": {
+          "appUserModelId": "NovaOryn.IDE"
+        }
+      }
+    },
+    "backend": {
+      "config": {
+        "frontendConnectionTimeout": -1,
+        "configureProxyFromPreferences": true
+      }
+    }
+  },
+  "dependencies": {
+    "@novaoryn/ide-extension": "0.0.10",
+    "@vscode/windows-ca-certs": "0.3.4",
+    "@theia/core": "1.73.0",
+    "@theia/editor": "1.73.0",
+    "@theia/electron": "1.73.0",
+    "@theia/filesystem": "1.73.0",
+    "@theia/monaco": "1.73.0",
+    "@theia/navigator": "1.73.0",
+    "@theia/output": "1.73.0",
+    "@theia/plugin-ext": "1.73.0",
+    "@theia/plugin-ext-vscode": "1.73.0",
+    "@theia/preferences": "1.73.0",
+    "@theia/process": "1.73.0",
+    "@theia/search-in-workspace": "1.73.0",
+    "@theia/task": "1.73.0",
+    "@theia/terminal": "1.73.0",
+    "@theia/vsx-registry": "1.73.0",
+    "@theia/workspace": "1.73.0"
+  },
+  "devDependencies": {
+    "@theia/cli": "1.73.0",
+    "electron": "39.8.7"
+  },
+  "scripts": {
+    "build": "npm run rebuild && theia build --mode development",
+    "clean": "theia clean",
+    "rebuild": "theia rebuild:electron --cacheRoot ../..",
+    "start": "theia start"
+  }
+}

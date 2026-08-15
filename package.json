@@ -1,0 +1,17 @@
+{
+  "name": "novaoryn-ide",
+  "private": true,
+  "version": "0.0.10",
+  "workspaces": [
+    "applications/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @novaoryn/ide-extension && npm run build --workspace @novaoryn/ide-electron",
+    "clean": "npm run clean --workspace @novaoryn/ide-extension && npm run clean --workspace @novaoryn/ide-electron",
+    "start": "npm run start --workspace @novaoryn/ide-electron"
+  },
+  "engines": {
+    "node": ">=20 <23"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "node": {
+    "version": "22.22.0",
+    "windowsX64Archive": "https://nodejs.org/dist/v22.22.0/node-v22.22.0-win-x64.zip",
+    "sha256Manifest": "https://nodejs.org/dist/v22.22.0/SHASUMS256.txt"
+  },
+  "python": {
+    "version": "3.13.15",
+    "windowsX64Installer": "https://www.python.org/ftp/python/3.13.15/python-3.13.15-amd64.exe"
+  },
+  "visualStudio": {
+    "majorVersion": "18",
+    "bootstrapper": "https://aka.ms/vs/18/release/vs_BuildTools.exe",
+    "requiredWorkload": "Microsoft.VisualStudio.Workload.VCTools",
+    "requiredComponent": "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+    "requiredSpectreComponent": "Microsoft.VisualStudio.Component.VC.Runtimes.x86.x64.Spectre"
+  }
+}

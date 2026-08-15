@@ -1,0 +1,35 @@
+.novaoryn-page {
+    box-sizing: border-box;
+    min-height: 100%;
+    padding: 36px;
+    overflow: auto;
+    background: var(--theia-editor-background);
+    color: var(--theia-editor-foreground);
+}
+.novaoryn-card {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px;
+    border: 1px solid var(--theia-widget-border);
+    border-radius: 10px;
+    background: var(--theia-sideBar-background);
+}
+.novaoryn-brand {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .28em;
+    opacity: .72;
+}
+.novaoryn-card h1 { margin: 8px 0 0; font-size: 34px; }
+.novaoryn-version { margin-top: 2px; opacity: .65; }
+.novaoryn-card label { display: block; margin: 18px 0 6px; font-weight: 600; }
+.novaoryn-card input, .novaoryn-card select { width: 100%; box-sizing: border-box; }
+.novaoryn-actions { margin-top: 26px; }
+.novaoryn-actions button { min-width: 220px; }
+.novaoryn-note {
+    margin-top: 24px;
+    padding: 14px;
+    border-left: 3px solid var(--theia-focusBorder);
+    background: var(--theia-editor-background);
+    line-height: 1.5;
+}
