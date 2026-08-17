@@ -8,7 +8,7 @@ if not exist "%BOOTSTRAP%" (
   exit /b 1
 )
 
-echo [INFO] Verifying NovaOryn IDE 0.1.34 audit toolchain...
+echo [INFO] Verifying NovaOryn IDE 0.1.35 audit toolchain...
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%BOOTSTRAP%"
 if errorlevel 1 exit /b %errorlevel%
 
