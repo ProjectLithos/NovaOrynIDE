@@ -65,6 +65,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     protected readonly toolbarWidget!: NovaOrynToolbarWidget;
 
     protected toolbarInstalled = false;
+    protected titleLogoInstalled = false;
 
     constructor() {
         super({
@@ -161,6 +162,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     }
 
     async onStart(): Promise<void> {
+        this.installTitleLogo();
         this.installToolbarBelowMenu();
         await this.workspaceService.ready;
         this.toolbarWidget.refresh();
@@ -180,6 +182,18 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     }
 
 
+
+    protected installTitleLogo(): void {
+        if (this.titleLogoInstalled || document.getElementById('novaoryn-title-logo')) { return; }
+        const logo = document.createElement('div');
+        logo.id = 'novaoryn-title-logo';
+        logo.setAttribute('role', 'img');
+        logo.setAttribute('aria-label', 'NovaOryn IDE');
+        logo.title = 'NovaOryn IDE';
+        document.body.appendChild(logo);
+        document.body.classList.add('novaoryn-has-title-logo');
+        this.titleLogoInstalled = true;
+    }
 
     protected async toggleCurrentBreakpoint(): Promise<void> {
         const context = this.breakpointManager.consumeContextLocation();

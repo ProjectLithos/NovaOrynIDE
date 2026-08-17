@@ -253,7 +253,7 @@
 .novaoryn-debug-row.clickable { cursor: pointer; }
 .novaoryn-debug-row.clickable:hover { background: var(--theia-list-hoverBackground); }
 
-/* 0.1.41 conditional/hit-count breakpoint and Watch UI. */
+/* 0.1.42 conditional/hit-count breakpoint and Watch UI. */
 .novaoryn-watch-entry {
     display: grid;
     grid-template-columns: minmax(120px, 1fr) auto auto;
@@ -277,3 +277,61 @@
 .novaoryn-debug-small-button:disabled { opacity: .38; cursor: default; }
 .novaoryn-watch-row { grid-template-columns: minmax(90px, 35%) minmax(130px, 1fr) 24px; }
 .novaoryn-debug-value.error { color: var(--theia-errorForeground, #f48771); }
+
+/* 0.1.42 branded title-bar logo. It occupies the far-left of the custom Electron
+   title/menu row without replacing Theia's standard ApplicationShell. */
+#novaoryn-title-logo {
+    position: fixed;
+    top: 3px;
+    left: 5px;
+    width: 28px;
+    height: 28px;
+    z-index: 10000;
+    pointer-events: none;
+    background: url('./novaoryn-logo.png') center/contain no-repeat;
+}
+body.novaoryn-has-title-logo .p-MenuBar,
+body.novaoryn-has-title-logo .lm-MenuBar {
+    padding-left: 36px !important;
+}
+
+/* 0.1.42 mixed source/disassembly and exception-breakpoint inspector. */
+.novaoryn-exception-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    gap: 5px 10px;
+    margin-bottom: 8px;
+}
+.novaoryn-debug-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.novaoryn-debug-check input { margin: 0; }
+.novaoryn-exception-hit {
+    margin-top: 7px;
+    padding: 6px 8px;
+    border-left: 3px solid var(--theia-debugIcon-breakpointForeground, #e5b454);
+    background: var(--theia-editor-background);
+}
+.novaoryn-disassembly {
+    border-top: 1px solid var(--theia-widget-border);
+    font-family: var(--theia-code-font-family);
+}
+.novaoryn-disassembly-row {
+    display: grid;
+    grid-template-columns: minmax(128px, auto) minmax(180px, 1fr) minmax(90px, auto);
+    gap: 10px;
+    padding: 3px 5px;
+    border-bottom: 1px solid var(--theia-widget-border);
+    align-items: baseline;
+}
+.novaoryn-disassembly-row.current {
+    font-weight: 700;
+    background: color-mix(in srgb, var(--theia-debugIcon-breakpointForeground, #e5b454) 14%, transparent);
+    border-left: 3px solid var(--theia-debugIcon-breakpointForeground, #e5b454);
+}
+.novaoryn-disassembly-address { opacity: .72; }
+.novaoryn-disassembly-instruction { white-space: pre-wrap; overflow-wrap: anywhere; }
+.novaoryn-disassembly-source { opacity: .68; text-align: right; white-space: nowrap; }

@@ -7,6 +7,7 @@ const service = fs.readFileSync(path.join(root, 'packages/novaoryn-ide/src/node/
 const toolbar = fs.readFileSync(path.join(root, 'packages/novaoryn-ide/src/browser/novaoryn-toolbar-widget.tsx'), 'utf8');
 const inspector = fs.readFileSync(path.join(root, 'packages/novaoryn-ide/src/browser/novaoryn-debug-inspector-widget.tsx'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'packages/novaoryn-ide/src/browser/style/novaoryn.css'), 'utf8');
+const interruptsAsm = fs.readFileSync(path.join(root, 'SDK/native/x64/Interrupts.asm'), 'utf8');
 
 function requireText(text, needle, message) {
   if (!text.includes(needle)) throw new Error(message);
@@ -38,4 +39,14 @@ requireText(inspector, 'Locals / Native Frame', 'Debug inspector must show local
 requireText(inspector, 'Registers', 'Debug inspector must show registers.');
 requireText(css, '.novaoryn-current-statement-glyph', 'Paused-line arrow styling is missing.');
 
-console.log('[ OK ] NovaOryn source stepping, stop indicator and native debug-inspection contract verified.');
+requireText(protocol, 'disassembly?: NovaOrynDisassemblyInstruction[];', 'Debug state must expose mixed source/native disassembly.');
+requireText(protocol, 'NovaOrynExceptionBreakpointSettings', 'Exception/panic breakpoint settings contract is missing.');
+requireText(service, 'buildDisassembly', 'Paused debug state must build NativeAOT x64 disassembly.');
+requireText(service, 'NovaOrynX64InterruptCommon', 'CPU exception breakpoint gate is missing.');
+requireText(interruptsAsm, 'global NovaOrynX64InterruptCommon', 'CPU exception common entry must be exported into the linker map for debugger breakpoints.');
+requireText(service, 'NovaOrynX64StopProcessor', 'Fatal/panic breakpoint gate is missing.');
+requireText(inspector, 'Mixed C# / x64 Disassembly', 'Debug inspector must show mixed C#/x64 disassembly.');
+requireText(inspector, 'Exception / Panic Breakpoints', 'Debug inspector must expose exception/panic breakpoint controls.');
+requireText(css, '#novaoryn-title-logo', 'NovaOryn title-bar logo styling is missing.');
+
+console.log('[ OK ] NovaOryn source stepping, mixed disassembly, exception/panic breakpoints, title logo and native debug-inspection contract verified.');

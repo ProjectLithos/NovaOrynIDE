@@ -1558,8 +1558,8 @@
     },
     {
       "path": "native/x64/Interrupts.asm",
-      "size": 48151,
-      "sha256": "b289332d658eab6a65b332cb90fde2cfada836add77b8a886b129f38795912ab"
+      "size": 48185,
+      "sha256": "49cee566d19de63cced6f1cbbd890e80cb590f001c6ba6241139c890a97c374e"
     },
     {
       "path": "native/x64/Paging.asm",

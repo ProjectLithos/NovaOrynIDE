@@ -1,4 +1,4 @@
-NovaOryn IDE 0.1.41 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
+NovaOryn IDE 0.1.42 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
 
 # NovaOryn IDE
 
@@ -15,85 +15,17 @@ The Run/Debug toolbar fixes from 0.1.12 remain in place: the toolbar stays below
 
 NovaOryn IDE is the desktop development environment for the NovaOryn Operating System SDK. It is a custom Eclipse Theia desktop application with NovaOryn-specific project configuration and generation.
 
-## Current release: 0.1.41
+## Current release: 0.1.42
 
-### 0.1.41 Conditional breakpoints and Watch expressions
+### 0.1.42 Mixed disassembly, exception/panic breakpoints and IDE title logo
 
-NovaOryn IDE 0.1.41 adds conditional source breakpoints, hit-count breakpoints and a persistent Watch window. Right-click a C# source line and choose **Debug -> Edit Breakpoint Condition…** or **Edit Breakpoint Hit Count…**. Conditions support x64 registers, integer arithmetic/bitwise/comparison expressions and 64-bit guest-memory reads using `[address]`. Hit rules support exact hits, relational thresholds and `%N` every-Nth-hit rules.
+NovaOryn IDE 0.1.42 adds a mixed **C# / x64 Disassembly** view to the NovaOryn Debug inspector. Every paused stop can show the NativeAOT x64 instructions at the relocated runtime address while correlating each instruction with the nearest C# sequence point. The current instruction is highlighted and both runtime and linked-image addressing remain visible to make EFI relocation explicit.
 
-The NovaOryn Debug inspector now evaluates persistent Watch expressions whenever QEMU is paused and displays both hexadecimal and decimal values. Watch evaluation is deliberately serialized over GDB RSP. Named C# locals remain pending SDK debug-location metadata; registers and native frame/memory expressions are fully supported now.
+The debugger also arms **CPU exception breakpoints before KMain** for divide error, NMI, invalid opcode, double fault, stack fault, general-protection fault, page fault and machine check. A separate **fatal/panic halt** breakpoint stops before NovaOryn enters the terminal processor halt path. Exception selections are remembered between IDE runs and can be changed while the kernel is paused.
 
-### 0.1.40 Source stepping and debug inspection
+The supplied NovaOryn cat logo is now displayed at the **top-left of the IDE title/menu bar**, using the same transparent branding asset already used by the startup screen.
 
-NovaOryn IDE 0.1.40 turns the previously machine-step-only controls into source-oriented Debug operations. **Step Into** machine-steps until the NativeAOT source line changes. **Step Over** recognizes x64 CALL instructions and runs to a temporary return-site breakpoint so ordinary calls are skipped while user breakpoints remain authoritative. **Step Out** uses the current x64 frame return address and continues to the caller. Continue, Pause, Restart and Stop remain connected directly to the QEMU GDB stub.
-
-When execution is paused, the IDE now paints a current-statement arrow and whole-line highlight, automatically reveals the stopped C# line, and opens a **NovaOryn Debug** inspector containing the call stack, native frame/stack values and x64 integer registers. Call-stack rows with source information can be clicked to open that frame. Because the current SDK source-map JSON does not yet export named NativeAOT C# local-variable records, the Locals view deliberately exposes native frame/argument slots rather than inventing C# variable names.
-
-### 0.1.39 breakpoint fixes retained
-
-The 0.1.39 debug-map schema compatibility and verified source-breakpoint binding fixes remain in 0.1.40. The IDE accepts both PascalCase and camelCase source-map entries, binds non-executable C# lines to nearby executable sequence points, and holds the kernel before KMain if a requested source breakpoint cannot be verified.
-
-
-
-### 0.1.32 Bundled SDK toolchain mode
-
-NovaOryn IDE 0.1.36 bundles NovaOryn SDK 0.37.3 under `SDK\` and verifies its toolchain in embedded mode. The embedded SDK no longer has to be a separate Git repository or clean standalone checkout. Standalone SDK installation still keeps the normal Git repository/clean-tree safety gate.
-
-### 0.1.30 Debug build failure propagation
-
-NovaOryn IDE 0.1.30 fixes generated `Run.bat` Debug error propagation. The batch file now uses delayed expansion for `ERRORLEVEL`, so an SDK Debug build failure is returned to the IDE immediately instead of being mistaken for success and followed by misleading missing `NovaOryn.DebugSymbols.json` errors. It is paired with NovaOryn SDK 0.36.9 for the corrected EFI debug-anchor link calculation.
-
-### 0.1.30 Theia-native breakpoint UI
-
-NovaOryn no longer reimplements Monaco breakpoint gutter handling or breakpoint decorations. The Electron application now ships Eclipse Theia's native `@theia/debug` package, whose `DebugEditorModel` owns the glyph-margin click handler, persistent source breakpoints, F9, hover hints and breakpoint glyph rendering. This is the same editor/debug integration used by Theia itself.
-
-NovaOryn's **Debug -> Toggle Breakpoint** source-editor context command is retained and is bridged to the same Theia `BreakpointManager`, so the gutter, F9, toolbar and NovaOryn context menu all operate on one authoritative source-breakpoint collection. Native Theia breakpoint changes are mirrored into the NovaOryn/QEMU GDB session, and all stored Theia breakpoints are armed when Debug starts.
-
-At frontend startup the NovaOryn Build output records `Breakpoint UI ready` and explicitly identifies Theia's native breakpoint subsystem.
-
-### Exact C# source breakpoints (from 0.1.23)
-
-Debug mode consumes the NovaOryn SDK 0.36.9 native source-debug manifest rather than guessing a C# breakpoint from the containing method name in the linker map. QEMU is internally held only long enough for the debugger to attach and arm early source breakpoints, then execution immediately continues until a requested breakpoint is reached or Pause is pressed.
-
-
-### 0.1.1 workspace startup
-
-NovaOryn IDE now treats `C:\NovaOrynOSes\` as the authoritative operating-system root. At startup the main NovaOryn page displays the branded artwork, scans immediate subfolders for `NovaOryn.json`, and offers each existing OS for opening. `Create New OS` opens the authoritative configuration pages; generated systems are always created as `C:\NovaOrynOSes\<OS name>` regardless of stale location metadata.
-
-
-0.1.1 makes the NovaOryn operating-system configuration authoritative. The configurator now covers the kernel model, CPU and boot architecture, memory, scheduling, processes, system calls, SMP, interrupts, timers, drivers, storage, filesystems, networking, input, graphics, audio, userland, shell, GUI, diagnostics, tests, virtualisation and RTOS/safety policy.
-
-### Authoritative project generation
-
-- `NovaOryn.json` uses schema version 2 and records every generation selection.
-- `NovaOryn.ProjectGraph.json` records the concrete generated component graph.
-- Monolithic, microkernel and hybrid selections now change where projects are generated rather than merely changing metadata.
-- Disabled subsystems are omitted from the generated source tree.
-- Selected drivers, storage controllers, timers, network adapters, graphics, input, debugging and test programs each generate their own component project and starter source.
-- Microkernel generation places drivers outside the kernel and service-oriented facilities under `Services`.
-- Monolithic generation places kernel-facing facilities under `Kernel`.
-- Hybrid generation keeps drivers/kernel mechanisms in the kernel while process/filesystem/network facilities are generated as services.
-- A generated `NovaOryn.slnx` and per-component `.csproj` files expose the configured project graph to the IDE/tooling.
-- `Configuration/GeneratedConfiguration.cs` makes the selected configuration available to generated C# source.
-- Build and run entry points remain connected to the NovaOryn SDK at `C:\NovaOryn`.
-
-### Startup splash screen
-
-The animated branded splash screen from 0.0.21 remains unchanged in 0.1.1.
-
-### Security changes
-
-- All Eclipse Theia packages are pinned coherently to 1.74.0.
-- Electron is pinned to 42.3.0, the exact peer required by `@theia/electron` 1.74.0.
-- VS Code/Open VSX runtime plugin loading is temporarily removed from the shipped application. This keeps the known critical `decompress` archive-extraction dependency out of the production dependency tree. It can be restored when the upstream chain has a safe compatible resolution.
-- `Audit-NovaOrynIDE.bat` generates both a full dependency audit and a production-only audit.
-- The normal build runs the production security gate after dependency installation.
-- Any production critical vulnerability fails the build.
-- Any production high vulnerability fails the build unless it appears in `Security-Baseline.json` with an explicit temporary upstream exception and review date.
-- The full development dependency audit is still retained because build-only vulnerabilities matter, but build-time findings are not confused with vulnerabilities shipped in the desktop runtime.
-- NovaOryn never runs `npm audit fix --force` automatically.
-
-The temporary production-high exceptions in 0.0.18 are limited to Electron and its directly inherited packaging chain because Theia 1.74.0 requires Electron 42.3.0 exactly. They are recorded in `Security-Baseline.json` and must be reviewed after 2026-08-31 rather than silently accepted forever.
+Conditional/hit-count breakpoints and persistent Watch expressions from 0.1.41 remain available.
 
 ## Security audit
 

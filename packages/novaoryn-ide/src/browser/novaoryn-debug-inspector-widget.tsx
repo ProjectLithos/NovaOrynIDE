@@ -3,9 +3,11 @@ import { inject, injectable, postConstruct } from 'inversify';
 import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
 import { FileUri } from '@theia/core/lib/common/file-uri';
 import { EditorManager } from '@theia/editor/lib/browser';
-import { NovaOrynDebugState, NovaOrynExpressionResult, NovaOrynProjectService } from '../common/novaoryn-protocol';
+import { NovaOrynDebugState, NovaOrynExceptionBreakpointSettings, NovaOrynExpressionResult, NovaOrynProjectService } from '../common/novaoryn-protocol';
 
 const WATCH_STORAGE_KEY = 'novaoryn.ide.watchExpressions';
+const EXCEPTION_STORAGE_KEY = 'novaoryn.ide.exceptionBreakpoints';
+const DEFAULT_EXCEPTION_VECTORS = [0, 2, 6, 8, 12, 13, 14, 18];
 
 @injectable()
 export class NovaOrynDebugInspectorWidget extends ReactWidget {
@@ -25,6 +27,8 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
     protected readonly watchResults = new Map<string, NovaOrynExpressionResult>();
     protected lastPauseKey = '';
     protected refreshGeneration = 0;
+    protected exceptionSettings: NovaOrynExceptionBreakpointSettings = { vectors: [...DEFAULT_EXCEPTION_VECTORS], breakOnPanic: true };
+
 
     @postConstruct()
     protected init(): void {
@@ -34,6 +38,7 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
         this.title.closable = true;
         this.addClass('novaoryn-debug-inspector-widget');
         this.loadWatches();
+        this.loadExceptionSettings();
         this.update();
     }
 
@@ -81,6 +86,48 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
         try { window.localStorage.setItem(WATCH_STORAGE_KEY, JSON.stringify(this.watches)); } catch { }
     }
 
+    protected loadExceptionSettings(): void {
+        try {
+            const raw = window.localStorage.getItem(EXCEPTION_STORAGE_KEY);
+            if (!raw) { return; }
+            const parsed = JSON.parse(raw) as Partial<NovaOrynExceptionBreakpointSettings>;
+            const vectors = Array.isArray(parsed.vectors) ? parsed.vectors.filter(value => Number.isInteger(value) && value >= 0 && value < 32) : DEFAULT_EXCEPTION_VECTORS;
+            this.exceptionSettings = { vectors: Array.from(new Set(vectors)), breakOnPanic: parsed.breakOnPanic !== false };
+        } catch { }
+    }
+
+    protected saveExceptionSettings(): void {
+        try { window.localStorage.setItem(EXCEPTION_STORAGE_KEY, JSON.stringify(this.exceptionSettings)); } catch { }
+    }
+
+    getExceptionBreakpoints(): NovaOrynExceptionBreakpointSettings {
+        return { vectors: [...this.exceptionSettings.vectors], breakOnPanic: this.exceptionSettings.breakOnPanic };
+    }
+
+    protected async toggleExceptionVector(vector: number): Promise<void> {
+        const enabled = this.exceptionSettings.vectors.includes(vector);
+        this.exceptionSettings = {
+            ...this.exceptionSettings,
+            vectors: enabled ? this.exceptionSettings.vectors.filter(value => value !== vector) : [...this.exceptionSettings.vectors, vector].sort((a, b) => a - b)
+        };
+        this.saveExceptionSettings();
+        await this.applyExceptionSettings();
+    }
+
+    protected async togglePanic(): Promise<void> {
+        this.exceptionSettings = { ...this.exceptionSettings, breakOnPanic: !this.exceptionSettings.breakOnPanic };
+        this.saveExceptionSettings();
+        await this.applyExceptionSettings();
+    }
+
+    protected async applyExceptionSettings(): Promise<void> {
+        this.update();
+        if (!this.sessionId || !this.state.paused) { return; }
+        this.state = await this.projectService.configureExceptionBreakpoints(this.sessionId, this.getExceptionBreakpoints());
+        this.update();
+    }
+
+
     protected addWatch(): void {
         const expression = this.watchDraft.trim();
         if (!expression) { return; }
@@ -111,6 +158,28 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
         if (generation !== this.refreshGeneration) { return; }
         for (const result of results) { this.watchResults.set(result.expression, result); }
         this.update();
+    }
+
+    protected renderExceptionSection(): React.ReactNode {
+        const items = [
+            [0, 'Divide by zero'], [2, 'NMI'], [6, 'Invalid opcode'], [8, 'Double fault'],
+            [12, 'Stack fault'], [13, 'General protection'], [14, 'Page fault'], [18, 'Machine check']
+        ] as const;
+        return <section>
+            <h3>Exception / Panic Breakpoints</h3>
+            <p className='novaoryn-debug-note'>Enabled breakpoints are armed before KMain. While a session is active, pause the kernel before changing them.</p>
+            <div className='novaoryn-exception-grid'>
+                {items.map(([vector, label]) => <label className='novaoryn-debug-check' key={vector}>
+                    <input type='checkbox' checked={this.exceptionSettings.vectors.includes(vector)} disabled={!!this.sessionId && !this.state.paused} onChange={() => { void this.toggleExceptionVector(vector); }} />
+                    <span>{label} <code>#{vector}</code></span>
+                </label>)}
+                <label className='novaoryn-debug-check'>
+                    <input type='checkbox' checked={this.exceptionSettings.breakOnPanic} disabled={!!this.sessionId && !this.state.paused} onChange={() => { void this.togglePanic(); }} />
+                    <span>Fatal / panic halt</span>
+                </label>
+            </div>
+            {this.state.exceptionName && <div className='novaoryn-exception-hit'><strong>Stopped:</strong> {this.state.exceptionName}{this.state.exceptionVector !== undefined ? ` (vector ${this.state.exceptionVector})` : ''}</div>}
+        </section>;
     }
 
     protected renderWatchSection(): React.ReactNode {
@@ -154,17 +223,31 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
 
     protected render(): React.ReactNode {
         if (!this.state.active) {
-            return <div className='novaoryn-debug-inspector-empty'>Start a NovaOryn Debug session to inspect the kernel.</div>;
+            return <div className='novaoryn-debug-inspector'><div className='novaoryn-debug-inspector-empty'>Start a NovaOryn Debug session to inspect the kernel.</div>{this.renderExceptionSection()}</div>;
         }
         if (!this.state.paused) {
             return <div className='novaoryn-debug-inspector'>
                 <div className='novaoryn-debug-inspector-empty'>Kernel running. Pause or stop at a breakpoint to inspect state.</div>
+                {this.renderExceptionSection()}
                 {this.renderWatchSection()}
             </div>;
         }
 
         return <div className='novaoryn-debug-inspector'>
+            {this.renderExceptionSection()}
             {this.renderWatchSection()}
+            <section>
+                <h3>Mixed C# / x64 Disassembly</h3>
+                <p className='novaoryn-debug-note'>Runtime addresses include the EFI relocation. Source labels come from the exact NativeAOT sequence-point map.</p>
+                <div className='novaoryn-disassembly'>
+                    {(this.state.disassembly ?? []).map((instruction, index) => <div className={`novaoryn-disassembly-row ${instruction.current ? 'current' : ''}`} key={`${instruction.runtimeAddress}:${index}`}>
+                        <code className='novaoryn-disassembly-address'>{instruction.runtimeAddress}</code>
+                        <code className='novaoryn-disassembly-instruction'>{instruction.instruction}</code>
+                        <span className='novaoryn-disassembly-source'>{instruction.sourcePath && instruction.line ? `${instruction.sourcePath.split(/[\\/]/).pop()}:${instruction.line}` : ''}</span>
+                    </div>)}
+                    {(this.state.disassembly ?? []).length === 0 && <div className='novaoryn-debug-note'>Disassembly is unavailable for this stop.</div>}
+                </div>
+            </section>
             <section>
                 <h3>Call Stack</h3>
                 <div className='novaoryn-debug-table'>

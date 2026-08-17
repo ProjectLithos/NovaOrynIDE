@@ -19,6 +19,7 @@ global NovaOrynX64SetInterruptDispatcher
 global NovaOrynX64GetInterruptStub
 global NovaOrynX64SetInterruptStackSwitch
 global NovaOrynX64StopProcessor
+global NovaOrynX64InterruptCommon
 global NovaOrynX64InterruptStubTable
 
 NovaOrynX64LoadInterruptDescriptorTable:

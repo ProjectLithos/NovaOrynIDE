@@ -78,6 +78,20 @@ export interface NovaOrynDebugVariable {
     kind: 'local' | 'argument' | 'stack';
 }
 
+export interface NovaOrynDisassemblyInstruction {
+    runtimeAddress: string;
+    linkedAddress: string;
+    instruction: string;
+    sourcePath?: string;
+    line?: number;
+    current?: boolean;
+}
+
+export interface NovaOrynExceptionBreakpointSettings {
+    vectors: number[];
+    breakOnPanic: boolean;
+}
+
 export interface NovaOrynBreakpointRequest {
     sourcePath: string;
     line: number;
@@ -112,7 +126,11 @@ export interface NovaOrynDebugState {
     callStack?: NovaOrynDebugFrame[];
     locals?: NovaOrynDebugVariable[];
     localsMessage?: string;
+    disassembly?: NovaOrynDisassemblyInstruction[];
+    exceptionVector?: number;
+    exceptionName?: string;
 }
+
 
 export interface NovaOrynBreakpointResult {
     success: boolean;
@@ -155,11 +173,12 @@ export interface NovaOrynProjectService {
     createProject(configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
     readProjectConfiguration(projectPath: string): Promise<NovaOrynConfigurationResult>;
     reconfigureProject(projectPath: string, configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
-    runOperatingSystem(projectPath: string, mode: NovaOrynRunMode, breakpoints?: NovaOrynBreakpointRequest[]): Promise<NovaOrynRunResult>;
+    runOperatingSystem(projectPath: string, mode: NovaOrynRunMode, breakpoints?: NovaOrynBreakpointRequest[], exceptionBreakpoints?: NovaOrynExceptionBreakpointSettings): Promise<NovaOrynRunResult>;
     readRunOutput(sessionId: string, offset: number): Promise<NovaOrynRunOutput>;
     debugState(sessionId: string): Promise<NovaOrynDebugState>;
     debugCommand(sessionId: string, command: NovaOrynDebugCommand): Promise<NovaOrynDebugState>;
     toggleBreakpoint(sessionId: string, sourcePath: string, line: number, condition?: string, hitCondition?: string): Promise<NovaOrynBreakpointResult>;
     updateBreakpoint(sessionId: string, breakpoint: NovaOrynBreakpointRequest): Promise<NovaOrynBreakpointResult>;
     evaluateExpression(sessionId: string, expression: string): Promise<NovaOrynExpressionResult>;
+    configureExceptionBreakpoints(sessionId: string, settings: NovaOrynExceptionBreakpointSettings): Promise<NovaOrynDebugState>;
 }

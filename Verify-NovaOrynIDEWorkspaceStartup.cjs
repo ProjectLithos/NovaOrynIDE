@@ -36,7 +36,7 @@ const checks = [
   [toolbar, "<option value='run'>No Debug</option>", 'No Debug mode'],
   [toolbar, "<option value='debug'>Debug</option>", 'Debug mode'],
   [toolbar, 'await this.shell.saveAll()', 'save-all before build/run'],
-  [toolbar, 'runOperatingSystem(projectPath, this.runMode, requestedBreakpoints)', 'toolbar run dispatch'],
+  [toolbar, 'runOperatingSystem(projectPath, this.runMode, requestedBreakpoints, exceptionBreakpoints)', 'toolbar run dispatch'],
   [toolbar, "getChannel(OUTPUT_CHANNEL_NAME)", 'in-IDE build output channel'],
   [service, "windowsHide: true", 'hidden build process'],
   [service, "stdio: ['ignore', 'pipe', 'pipe']", 'captured build stdout/stderr']
@@ -47,7 +47,7 @@ if (widget.includes('ReactWidget')) missing.push('ReactWidget must not be used b
 if (frontendModule.includes('rebind(ApplicationShell)') || frontendModule.includes('NovaOrynApplicationShell')) missing.push('ApplicationShell must not be rebound (prevents toolbar/shell DI recursion)');
 if (contribution.includes('@inject(WidgetManager)') || contribution.includes('protected readonly widgetManager')) missing.push('NovaOrynContribution must use inherited AbstractViewContribution.widgetManager');
 const saveIndex = toolbar.indexOf('await this.shell.saveAll()');
-const runIndex = toolbar.indexOf('runOperatingSystem(projectPath, this.runMode, requestedBreakpoints)');
+const runIndex = toolbar.indexOf('runOperatingSystem(projectPath, this.runMode, requestedBreakpoints, exceptionBreakpoints)');
 if (saveIndex < 0 || runIndex < 0 || saveIndex > runIndex) missing.push('save-all must complete before build/run dispatch');
 if (missing.length) fail(missing.join(', '));
-console.log('[ OK ] NovaOryn IDE 0.1.41 native workspace/startup policy verified.');
+console.log('[ OK ] NovaOryn IDE 0.1.42 native workspace/startup policy verified.');

@@ -17,6 +17,8 @@ import {
     NovaOrynDebugFrame,
     NovaOrynDebugRegister,
     NovaOrynDebugVariable,
+    NovaOrynDisassemblyInstruction,
+    NovaOrynExceptionBreakpointSettings,
     NovaOrynBreakpointRequest,
     NovaOrynExpressionResult,
     NovaOrynBreakpointResult,
@@ -29,7 +31,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.41';
+const NOVAORYN_IDE_VERSION = '0.1.42';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -337,6 +339,8 @@ interface NativeSourceLine {
 }
 
 interface NativeDebugMap {
+    image?: string;
+    pdb?: string;
     anchor: { symbol: string; linkedAddress: string; resumeSymbol?: string; resumeLinkedAddress?: string; transport?: string };
     entries: NativeSourceLine[];
 }
@@ -369,7 +373,11 @@ interface RunSession {
     internalPause?: boolean;
     lastBreakpoint?: SourceBreakpoint;
     stepPlan?: StepPlan;
+    exceptionBreakpoints: NovaOrynExceptionBreakpointSettings;
+    exceptionBreakpointAddress?: bigint;
+    panicBreakpointAddress?: bigint;
 }
+
 
 interface GeneratedProject {
     id: string;
@@ -403,7 +411,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     }
 
 
-    async runOperatingSystem(projectPath: string, mode: NovaOrynRunMode, breakpoints: NovaOrynBreakpointRequest[] = []): Promise<NovaOrynRunResult> {
+    async runOperatingSystem(projectPath: string, mode: NovaOrynRunMode, breakpoints: NovaOrynBreakpointRequest[] = [], exceptionBreakpoints: NovaOrynExceptionBreakpointSettings = { vectors: [0, 2, 6, 8, 12, 13, 14, 18], breakOnPanic: true }): Promise<NovaOrynRunResult> {
         try {
             const projectRoot = path.resolve(projectPath);
             const osRoot = path.resolve(NOVAORYN_OS_ROOT);
@@ -425,6 +433,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 breakpoints: new Map<string, SourceBreakpoint>(),
                 requestedBreakpoints: breakpoints.map(item => ({ sourcePath: path.resolve(item.sourcePath), line: item.line, condition: item.condition?.trim() || undefined, hitCondition: item.hitCondition?.trim() || undefined })),
                 breakpointResults: [],
+                exceptionBreakpoints: { vectors: Array.from(new Set((exceptionBreakpoints.vectors ?? []).filter(vector => Number.isInteger(vector) && vector >= 0 && vector < 32))), breakOnPanic: !!exceptionBreakpoints.breakOnPanic },
                 debug: mode === 'debug' ? { active: false, paused: false, sourceSymbols: false, message: 'Building Debug kernel…' } : undefined
             };
             this.runSessions.set(sessionId, session);
@@ -677,6 +686,32 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         return result;
     }
 
+    async configureExceptionBreakpoints(sessionId: string, settings: NovaOrynExceptionBreakpointSettings): Promise<NovaOrynDebugState> {
+        const session = this.runSessions.get(sessionId);
+        if (!session || session.mode !== 'debug' || !session.gdb || !session.debug?.active) {
+            return { active: false, paused: false, sourceSymbols: false, message: 'No active NovaOryn debug session.' };
+        }
+        if (!session.debug.paused) {
+            return { ...session.debug, message: 'Pause the kernel before changing CPU exception/panic breakpoints.' };
+        }
+        const vectors = Array.from(new Set((settings.vectors ?? []).filter(vector => Number.isInteger(vector) && vector >= 0 && vector < 32)));
+        if (session.exceptionBreakpointAddress) {
+            try { await session.gdb.command(`z0,${session.exceptionBreakpointAddress.toString(16)},1`); } catch { }
+            session.exceptionBreakpointAddress = undefined;
+        }
+        if (session.panicBreakpointAddress) {
+            try { await session.gdb.command(`z0,${session.panicBreakpointAddress.toString(16)},1`); } catch { }
+            session.panicBreakpointAddress = undefined;
+        }
+        session.exceptionBreakpoints = { vectors, breakOnPanic: !!settings.breakOnPanic };
+        await this.armExceptionBreakpoints(session, path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel'));
+        session.debug = {
+            ...session.debug,
+            message: `Exception breakpoints updated: ${vectors.length} CPU vector(s)${settings.breakOnPanic ? ' + fatal/panic stop' : ''}.`
+        };
+        return session.debug;
+    }
+
     async evaluateExpression(sessionId: string, expression: string): Promise<NovaOrynExpressionResult> {
         const session = this.runSessions.get(sessionId);
         const trimmed = expression.trim();
@@ -710,7 +745,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         const ovmfVars = 'C:\\Program Files\\qemu\\share\\edk2-i386-vars.fd';
         await Promise.all([fs.access(imagePath), fs.access(debugMapPath), fs.access(qemuPath), fs.access(ovmfCode), fs.access(ovmfVars)]);
 
-        const rawDebugMap = JSON.parse(await fs.readFile(debugMapPath, 'utf8')) as { anchor?: NativeDebugMap['anchor']; entries?: Array<Record<string, unknown>> };
+        const rawDebugMap = JSON.parse(await fs.readFile(debugMapPath, 'utf8')) as { image?: string; pdb?: string; anchor?: NativeDebugMap['anchor']; entries?: Array<Record<string, unknown>> };
         const normalizedEntries: NativeSourceLine[] = Array.isArray(rawDebugMap.entries)
             ? rawDebugMap.entries.flatMap(entry => {
                 // System.Text.Json serializes the SDK's SourceLineEntry record using
@@ -727,7 +762,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                     : [];
             })
             : [];
-        session.nativeDebugMap = { anchor: rawDebugMap.anchor!, entries: normalizedEntries };
+        session.nativeDebugMap = { image: rawDebugMap.image, pdb: rawDebugMap.pdb, anchor: rawDebugMap.anchor!, entries: normalizedEntries };
         if (session.nativeDebugMap.anchor?.symbol !== 'NovaOrynDebugImageAnchor' || !session.nativeDebugMap.anchor.linkedAddress || !session.nativeDebugMap.anchor.resumeLinkedAddress || session.nativeDebugMap.anchor.transport !== 'qemu-debugcon-0xe9-binary-v1' || session.nativeDebugMap.entries.length === 0) {
             throw new Error('NovaOryn.DebugSymbols.json is incomplete or does not contain the NovaOryn 0.37.4 debug rendezvous metadata. Rebuild the SDK/kernel in Debug mode.');
         }
@@ -796,6 +831,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             session.breakpointResults.push(result);
             session.output += `[DEBUG] ${result.sourcePath}:${result.line}: ${result.message}\r\n`;
         }
+        await this.armExceptionBreakpoints(session, artifactRoot);
 
         const linkedResume = this.parseAddress(session.nativeDebugMap.anchor.resumeLinkedAddress!);
         const runtimeResume = linkedResume + session.relocationDelta;
@@ -865,6 +901,110 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         };
     }
 
+    protected async armExceptionBreakpoints(session: RunSession, artifactRoot: string): Promise<void> {
+        if (!session.gdb || session.relocationDelta === undefined) { return; }
+        const mapPath = path.join(artifactRoot, 'MinimalKernel.map');
+        try {
+            const mapText = await fs.readFile(mapPath, 'utf8');
+            if (session.exceptionBreakpoints.vectors.length > 0) {
+                const linked = this.findLinkedSymbolAddress(mapText, 'NovaOrynX64InterruptCommon');
+                if (linked !== undefined) {
+                    const runtime = linked + session.relocationDelta;
+                    const reply = await session.gdb.command(`Z0,${runtime.toString(16)},1`);
+                    if (reply === 'OK') {
+                        session.exceptionBreakpointAddress = runtime;
+                        session.output += `[ OK ] CPU exception breakpoint gate armed for vectors ${session.exceptionBreakpoints.vectors.join(', ')}.\r\n`;
+                    } else {
+                        session.output += `[WARN] QEMU rejected the CPU exception breakpoint gate: ${reply}.\r\n`;
+                    }
+                } else {
+                    session.output += '[WARN] CPU exception breakpoint gate symbol was not found in MinimalKernel.map.\r\n';
+                }
+            }
+            if (session.exceptionBreakpoints.breakOnPanic) {
+                const linked = this.findLinkedSymbolAddress(mapText, 'NovaOrynX64StopProcessor');
+                if (linked !== undefined) {
+                    const runtime = linked + session.relocationDelta;
+                    const reply = await session.gdb.command(`Z0,${runtime.toString(16)},1`);
+                    if (reply === 'OK') {
+                        session.panicBreakpointAddress = runtime;
+                        session.output += '[ OK ] Fatal/panic stop breakpoint armed.\r\n';
+                    } else {
+                        session.output += `[WARN] QEMU rejected the fatal/panic stop breakpoint: ${reply}.\r\n`;
+                    }
+                } else {
+                    session.output += '[WARN] Fatal/panic stop symbol was not found in MinimalKernel.map.\r\n';
+                }
+            }
+        } catch (error) {
+            session.output += `[WARN] Exception/panic breakpoints could not be armed: ${error instanceof Error ? error.message : String(error)}.\r\n`;
+        }
+    }
+
+    protected findLinkedSymbolAddress(mapText: string, symbol: string): bigint | undefined {
+        for (const line of mapText.split(/\r?\n/)) {
+            if (!line.includes(symbol)) { continue; }
+            const values = Array.from(line.matchAll(/(?:0x)?([0-9a-fA-F]{8,16})/g))
+                .map(match => BigInt(`0x${match[1]}`));
+            const va = values.filter(value => value >= 0x100000000n).sort((a, b) => a < b ? -1 : a > b ? 1 : 0)[0];
+            if (va !== undefined) { return va; }
+        }
+        return undefined;
+    }
+
+    protected exceptionName(vector: number): string {
+        const names: Record<number, string> = {
+            0: 'Divide error', 1: 'Debug', 2: 'Non-maskable interrupt', 3: 'Breakpoint', 4: 'Overflow',
+            5: 'BOUND range exceeded', 6: 'Invalid opcode', 7: 'Device not available', 8: 'Double fault',
+            10: 'Invalid TSS', 11: 'Segment not present', 12: 'Stack-segment fault', 13: 'General protection fault',
+            14: 'Page fault', 16: 'x87 floating-point exception', 17: 'Alignment check', 18: 'Machine check',
+            19: 'SIMD floating-point exception', 20: 'Virtualization exception', 21: 'Control protection exception'
+        };
+        return names[vector] ?? `CPU exception ${vector}`;
+    }
+
+    protected async buildDisassembly(session: RunSession, rip: bigint): Promise<NovaOrynDisassemblyInstruction[]> {
+        if (session.relocationDelta === undefined || !session.nativeDebugMap?.image) { return []; }
+        const linkedRip = rip - session.relocationDelta;
+        const tool = path.join(NOVAORYN_SDK_ROOT, '.toolchain', 'LLVM', 'bin', 'llvm-objdump.exe');
+        if (!(await this.exists(tool)) || !(await this.exists(session.nativeDebugMap.image))) { return []; }
+        const stop = linkedRip + 192n;
+        const output = await this.captureTool(tool, [
+            '-d', '--no-show-raw-insn', `--start-address=0x${linkedRip.toString(16)}`,
+            `--stop-address=0x${stop.toString(16)}`, session.nativeDebugMap.image
+        ]);
+        if (output.exitCode !== 0) { return []; }
+        const instructions: NovaOrynDisassemblyInstruction[] = [];
+        for (const line of output.text.split(/\r?\n/)) {
+            const match = line.match(/^\s*([0-9a-fA-F]+):\s*(.+?)\s*$/);
+            if (!match) { continue; }
+            const linked = BigInt(`0x${match[1]}`);
+            const runtime = linked + session.relocationDelta;
+            const location = this.resolveSourceLocation(session.nativeDebugMap, linked);
+            instructions.push({
+                runtimeAddress: `0x${runtime.toString(16)}`,
+                linkedAddress: `0x${linked.toString(16)}`,
+                instruction: match[2],
+                sourcePath: location?.sourcePath,
+                line: location?.line,
+                current: linked === linkedRip
+            });
+            if (instructions.length >= 32) { break; }
+        }
+        return instructions;
+    }
+
+    protected async captureTool(command: string, args: string[]): Promise<{ exitCode: number; text: string }> {
+        return new Promise(resolve => {
+            const child = spawn(command, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+            let text = '';
+            child.stdout?.on('data', data => { text += data.toString(); });
+            child.stderr?.on('data', data => { text += data.toString(); });
+            child.once('error', error => resolve({ exitCode: 1, text: error.message }));
+            child.once('close', code => resolve({ exitCode: code ?? 1, text }));
+        });
+    }
+
     protected resolveLinkedSourceAddress(debugMap: NativeDebugMap, sourcePath: string, line: number): ResolvedSourceAddress | undefined {
         const normalize = (value: string | undefined) => value ? path.resolve(value).replace(/\//g, '\\').toLowerCase() : '';
         const normalized = normalize(sourcePath);
@@ -926,6 +1066,34 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
 
             const rip = await this.readRip(session.gdb);
             const candidates = [rip, rip > 0n ? rip - 1n : rip];
+
+            if (session.exceptionBreakpointAddress && candidates.some(candidate => candidate === session.exceptionBreakpointAddress)) {
+                const rsp = await this.readRegister(session.gdb, 7);
+                const vector = Number((await this.readU64(session.gdb, rsp)) & 0xffn);
+                if (session.exceptionBreakpoints.vectors.includes(vector)) {
+                    const faultRip = await this.readU64(session.gdb, rsp + 16n);
+                    const name = this.exceptionName(vector);
+                    const linkedFault = faultRip - session.relocationDelta;
+                    const location = this.resolveSourceLocation(session.nativeDebugMap, linkedFault);
+                    session.debug = {
+                        ...session.debug, paused: true, sourcePath: location?.sourcePath, line: location?.line,
+                        exceptionVector: vector, exceptionName: name,
+                        message: `CPU exception breakpoint: ${name} (vector ${vector})${location ? ` at ${path.basename(location.sourcePath)}:${location.line}` : ` at RIP 0x${faultRip.toString(16)}`}.`
+                    };
+                    await this.populatePausedDebugData(session, faultRip);
+                    return;
+                }
+                session.gdb.run('c');
+                session.debug = this.runningDebugState(session, `Kernel running. Ignored CPU exception vector ${vector}.`);
+                return;
+            }
+
+            if (session.panicBreakpointAddress && candidates.some(candidate => candidate === session.panicBreakpointAddress)) {
+                session.debug = { ...session.debug, paused: true, exceptionName: 'Kernel fatal/panic stop', message: 'Kernel fatal/panic breakpoint reached before the processor halt loop.' };
+                await this.populatePausedDebugData(session, rip);
+                return;
+            }
+
             const hit = Array.from(session.breakpoints.values()).find(bp =>
                 candidates.some(candidate => candidate === this.parseAddress(bp.address)));
 
@@ -1088,6 +1256,9 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             callStack: undefined,
             locals: undefined,
             localsMessage: undefined,
+            disassembly: undefined,
+            exceptionVector: undefined,
+            exceptionName: undefined,
             message
         };
     }
@@ -1182,11 +1353,13 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         const rsp = registerMap.get('rsp') ?? 0n;
         const callStack = await this.readCallStack(session, rip, rbp, rsp);
         const locals = await this.readFrameSlots(session.gdb, rbp, rsp);
+        const disassembly = await this.buildDisassembly(session, rip);
         session.debug = {
             ...session.debug,
             registers,
             callStack,
             locals,
+            disassembly,
             localsMessage: 'NativeAOT C# local-variable names are not exported by the current NovaOryn source map yet; Locals shows the current native frame/stack slots while Registers shows the complete x64 integer register set.'
         };
     }
