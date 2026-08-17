@@ -252,3 +252,28 @@
 }
 .novaoryn-debug-row.clickable { cursor: pointer; }
 .novaoryn-debug-row.clickable:hover { background: var(--theia-list-hoverBackground); }
+
+/* 0.1.41 conditional/hit-count breakpoint and Watch UI. */
+.novaoryn-watch-entry {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) auto auto;
+    gap: 5px;
+    align-items: center;
+    margin-bottom: 7px;
+}
+.novaoryn-watch-entry input { min-width: 0; }
+.novaoryn-watch-entry .theia-button { min-width: 48px; height: 26px; padding: 2px 8px; }
+.novaoryn-debug-small-button {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--theia-foreground);
+    cursor: pointer;
+}
+.novaoryn-debug-small-button:hover:not(:disabled) { background: var(--theia-list-hoverBackground); }
+.novaoryn-debug-small-button:disabled { opacity: .38; cursor: default; }
+.novaoryn-watch-row { grid-template-columns: minmax(90px, 35%) minmax(130px, 1fr) 24px; }
+.novaoryn-debug-value.error { color: var(--theia-errorForeground, #f48771); }

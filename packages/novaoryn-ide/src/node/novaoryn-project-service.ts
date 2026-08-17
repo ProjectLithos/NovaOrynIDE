@@ -17,6 +17,8 @@ import {
     NovaOrynDebugFrame,
     NovaOrynDebugRegister,
     NovaOrynDebugVariable,
+    NovaOrynBreakpointRequest,
+    NovaOrynExpressionResult,
     NovaOrynBreakpointResult,
     NovaOrynRunOutput,
     NovaOrynRunResult,
@@ -27,7 +29,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.40';
+const NOVAORYN_IDE_VERSION = '0.1.41';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -153,11 +155,173 @@ class GdbRspClient {
     }
 }
 
+
+class NovaOrynExpressionParser {
+    protected readonly tokens: string[];
+    protected index = 0;
+
+    constructor(
+        expression: string,
+        protected readonly resolveIdentifier: (name: string) => Promise<bigint | undefined>,
+        protected readonly readPointer: (address: bigint) => Promise<bigint>
+    ) {
+        this.tokens = this.tokenize(expression);
+    }
+
+    async evaluate(): Promise<bigint> {
+        if (this.tokens.length === 0) { throw new Error('Expression is empty.'); }
+        const value = await this.parseLogicalOr();
+        if (this.index !== this.tokens.length) {
+            throw new Error(`Unexpected token "${this.tokens[this.index]}".`);
+        }
+        return value;
+    }
+
+    protected tokenize(expression: string): string[] {
+        const tokens: string[] = [];
+        let i = 0;
+        while (i < expression.length) {
+            const ch = expression[i];
+            if (/\s/.test(ch)) { i++; continue; }
+            const two = expression.slice(i, i + 2);
+            if (['||','&&','==','!=','<=','>=','<<','>>'].includes(two)) { tokens.push(two); i += 2; continue; }
+            if ('()+-*/%~!<>&|^[]'.includes(ch)) { tokens.push(ch); i++; continue; }
+            if (/[0-9]/.test(ch)) {
+                let j = i + 1;
+                if (ch === '0' && /[xX]/.test(expression[j] ?? '')) {
+                    j++;
+                    while (/[0-9a-fA-F]/.test(expression[j] ?? '')) { j++; }
+                } else {
+                    while (/[0-9]/.test(expression[j] ?? '')) { j++; }
+                }
+                tokens.push(expression.slice(i, j)); i = j; continue;
+            }
+            if (/[A-Za-z_$]/.test(ch)) {
+                let j = i + 1;
+                while (/[A-Za-z0-9_.$]/.test(expression[j] ?? '')) { j++; }
+                tokens.push(expression.slice(i, j)); i = j; continue;
+            }
+            throw new Error(`Unsupported character "${ch}" in expression.`);
+        }
+        return tokens;
+    }
+
+    protected peek(value?: string): boolean {
+        const token = this.tokens[this.index];
+        return value === undefined ? token !== undefined : token === value;
+    }
+
+    protected take(): string {
+        const token = this.tokens[this.index++];
+        if (token === undefined) { throw new Error('Unexpected end of expression.'); }
+        return token;
+    }
+
+    protected async parseLogicalOr(): Promise<bigint> {
+        let value = await this.parseLogicalAnd();
+        while (this.peek('||')) { this.take(); const rhs = await this.parseLogicalAnd(); value = value !== 0n || rhs !== 0n ? 1n : 0n; }
+        return value;
+    }
+    protected async parseLogicalAnd(): Promise<bigint> {
+        let value = await this.parseBitwiseOr();
+        while (this.peek('&&')) { this.take(); const rhs = await this.parseBitwiseOr(); value = value !== 0n && rhs !== 0n ? 1n : 0n; }
+        return value;
+    }
+    protected async parseBitwiseOr(): Promise<bigint> {
+        let value = await this.parseBitwiseXor();
+        while (this.peek('|')) { this.take(); value |= await this.parseBitwiseXor(); }
+        return value;
+    }
+    protected async parseBitwiseXor(): Promise<bigint> {
+        let value = await this.parseBitwiseAnd();
+        while (this.peek('^')) { this.take(); value ^= await this.parseBitwiseAnd(); }
+        return value;
+    }
+    protected async parseBitwiseAnd(): Promise<bigint> {
+        let value = await this.parseEquality();
+        while (this.peek('&')) { this.take(); value &= await this.parseEquality(); }
+        return value;
+    }
+    protected async parseEquality(): Promise<bigint> {
+        let value = await this.parseRelational();
+        while (this.peek('==') || this.peek('!=')) {
+            const op = this.take(); const rhs = await this.parseRelational();
+            value = op === '==' ? (value === rhs ? 1n : 0n) : (value !== rhs ? 1n : 0n);
+        }
+        return value;
+    }
+    protected async parseRelational(): Promise<bigint> {
+        let value = await this.parseShift();
+        while (['<','<=','>','>='].includes(this.tokens[this.index] ?? '')) {
+            const op = this.take(); const rhs = await this.parseShift();
+            value = op === '<' ? (value < rhs ? 1n : 0n)
+                : op === '<=' ? (value <= rhs ? 1n : 0n)
+                : op === '>' ? (value > rhs ? 1n : 0n)
+                : (value >= rhs ? 1n : 0n);
+        }
+        return value;
+    }
+    protected async parseShift(): Promise<bigint> {
+        let value = await this.parseAdditive();
+        while (this.peek('<<') || this.peek('>>')) {
+            const op = this.take(); const rhs = await this.parseAdditive();
+            const shift = BigInt.asUintN(64, rhs);
+            if (shift > 63n) { throw new Error('Shift count must be between 0 and 63.'); }
+            value = op === '<<' ? value << shift : value >> shift;
+        }
+        return value;
+    }
+    protected async parseAdditive(): Promise<bigint> {
+        let value = await this.parseMultiplicative();
+        while (this.peek('+') || this.peek('-')) { const op = this.take(); const rhs = await this.parseMultiplicative(); value = op === '+' ? value + rhs : value - rhs; }
+        return value;
+    }
+    protected async parseMultiplicative(): Promise<bigint> {
+        let value = await this.parseUnary();
+        while (this.peek('*') || this.peek('/') || this.peek('%')) {
+            const op = this.take(); const rhs = await this.parseUnary();
+            if ((op === '/' || op === '%') && rhs === 0n) { throw new Error('Division by zero.'); }
+            value = op === '*' ? value * rhs : op === '/' ? value / rhs : value % rhs;
+        }
+        return value;
+    }
+    protected async parseUnary(): Promise<bigint> {
+        if (this.peek('!')) { this.take(); return (await this.parseUnary()) === 0n ? 1n : 0n; }
+        if (this.peek('~')) { this.take(); return ~(await this.parseUnary()); }
+        if (this.peek('-')) { this.take(); return -(await this.parseUnary()); }
+        if (this.peek('+')) { this.take(); return await this.parseUnary(); }
+        return this.parsePrimary();
+    }
+    protected async parsePrimary(): Promise<bigint> {
+        if (this.peek('(')) {
+            this.take(); const value = await this.parseLogicalOr();
+            if (!this.peek(')')) { throw new Error('Missing closing parenthesis.'); }
+            this.take(); return value;
+        }
+        if (this.peek('[')) {
+            this.take(); const address = await this.parseLogicalOr();
+            if (!this.peek(']')) { throw new Error('Missing closing bracket in memory expression.'); }
+            this.take(); return this.readPointer(BigInt.asUintN(64, address));
+        }
+        const token = this.take();
+        if (/^0x[0-9a-f]+$/i.test(token)) { return BigInt(token); }
+        if (/^[0-9]+$/.test(token)) { return BigInt(token); }
+        if (token.toLowerCase() === 'true') { return 1n; }
+        if (token.toLowerCase() === 'false') { return 0n; }
+        const resolved = await this.resolveIdentifier(token.replace(/^\$/, '').toLowerCase());
+        if (resolved === undefined) { throw new Error(`Unknown identifier "${token}". Current expressions support x64 registers, integer literals, operators and [address] 64-bit memory reads.`); }
+        return resolved;
+    }
+}
+
 interface SourceBreakpoint {
     sourcePath: string;
     line: number;
     resolvedLine: number;
     address: string;
+    condition?: string;
+    hitCondition?: string;
+    hitCount: number;
 }
 
 interface ResolvedSourceAddress {
@@ -196,7 +360,7 @@ interface RunSession {
     gdb?: GdbRspClient;
     debug?: NovaOrynDebugState;
     breakpoints: Map<string, SourceBreakpoint>;
-    requestedBreakpoints: Array<{ sourcePath: string; line: number }>;
+    requestedBreakpoints: NovaOrynBreakpointRequest[];
     breakpointResults: NovaOrynBreakpointResult[];
     nativeDebugMap?: NativeDebugMap;
     relocationDelta?: bigint;
@@ -239,7 +403,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     }
 
 
-    async runOperatingSystem(projectPath: string, mode: NovaOrynRunMode, breakpoints: Array<{ sourcePath: string; line: number }> = []): Promise<NovaOrynRunResult> {
+    async runOperatingSystem(projectPath: string, mode: NovaOrynRunMode, breakpoints: NovaOrynBreakpointRequest[] = []): Promise<NovaOrynRunResult> {
         try {
             const projectRoot = path.resolve(projectPath);
             const osRoot = path.resolve(NOVAORYN_OS_ROOT);
@@ -259,7 +423,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             const session: RunSession = {
                 output: '', complete: false, mode, projectRoot,
                 breakpoints: new Map<string, SourceBreakpoint>(),
-                requestedBreakpoints: breakpoints.map(item => ({ sourcePath: path.resolve(item.sourcePath), line: item.line })),
+                requestedBreakpoints: breakpoints.map(item => ({ sourcePath: path.resolve(item.sourcePath), line: item.line, condition: item.condition?.trim() || undefined, hitCondition: item.hitCondition?.trim() || undefined })),
                 breakpointResults: [],
                 debug: mode === 'debug' ? { active: false, paused: false, sourceSymbols: false, message: 'Building Debug kernel…' } : undefined
             };
@@ -410,7 +574,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         return session.debug!;
     }
 
-    async toggleBreakpoint(sessionId: string, sourcePath: string, line: number): Promise<NovaOrynBreakpointResult> {
+    async toggleBreakpoint(sessionId: string, sourcePath: string, line: number, condition?: string, hitCondition?: string): Promise<NovaOrynBreakpointResult> {
         const session = this.runSessions.get(sessionId);
         if (!session || session.mode !== 'debug' || !session.gdb || !session.debug?.active) {
             return { success: false, verified: false, sourcePath, line, message: 'The debugger is still preparing the kernel image. Try again when the toolbar shows Running.' };
@@ -454,7 +618,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 return { success: reply === 'OK', verified: false, sourcePath, line, address: existing.address, message: 'Breakpoint removed.' };
             }
 
-            const result = await this.armSourceBreakpoint(session, normalizedSource, line);
+            const result = await this.armSourceBreakpoint(session, { sourcePath: normalizedSource, line, condition: condition?.trim() || undefined, hitCondition: hitCondition?.trim() || undefined });
             session.breakpointResults = session.breakpointResults.filter(item =>
                 !(path.resolve(item.sourcePath).toLowerCase() === normalizedSource.toLowerCase() && item.line === line));
             session.breakpointResults.push(result);
@@ -470,6 +634,70 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             return { success: false, verified: false, sourcePath, line, message: error instanceof Error ? error.message : String(error) };
         } finally {
             session.internalPause = false;
+        }
+    }
+
+
+    async updateBreakpoint(sessionId: string, request: NovaOrynBreakpointRequest): Promise<NovaOrynBreakpointResult> {
+        const session = this.runSessions.get(sessionId);
+        const sourcePath = path.resolve(request.sourcePath);
+        const line = request.line;
+        const condition = request.condition?.trim() || undefined;
+        const hitCondition = request.hitCondition?.trim() || undefined;
+        if (!session || session.mode !== 'debug' || !session.gdb || !session.debug?.active) {
+            return { success: false, verified: false, sourcePath, line, condition, hitCondition, message: 'No active NovaOryn debug session.' };
+        }
+        if (hitCondition && !this.isValidHitCondition(hitCondition)) {
+            return { success: false, verified: false, sourcePath, line, condition, hitCondition, message: `Invalid hit-count expression "${hitCondition}". Use N, =N, >=N, >N, <=N, <N, or %N.` };
+        }
+        const key = `${sourcePath.toLowerCase()}:${line}`;
+        const existing = session.breakpoints.get(key);
+        if (!existing) {
+            const result = await this.armSourceBreakpoint(session, { sourcePath, line, condition, hitCondition });
+            session.breakpointResults = session.breakpointResults.filter(item => !(path.resolve(item.sourcePath).toLowerCase() === sourcePath.toLowerCase() && item.line === line));
+            session.breakpointResults.push(result);
+            return result;
+        }
+        existing.condition = condition;
+        existing.hitCondition = hitCondition;
+        existing.hitCount = 0;
+        const result: NovaOrynBreakpointResult = {
+            success: true,
+            verified: true,
+            sourcePath,
+            line,
+            resolvedLine: existing.resolvedLine,
+            address: existing.address,
+            condition,
+            hitCondition,
+            hitCount: 0,
+            message: `Breakpoint options updated${condition ? `; condition: ${condition}` : ''}${hitCondition ? `; hit count: ${hitCondition}` : ''}. Hit counter reset.`
+        };
+        this.replaceBreakpointResult(session, result);
+        return result;
+    }
+
+    async evaluateExpression(sessionId: string, expression: string): Promise<NovaOrynExpressionResult> {
+        const session = this.runSessions.get(sessionId);
+        const trimmed = expression.trim();
+        if (!trimmed) { return { success: false, expression, error: 'Expression is empty.' }; }
+        if (!session || session.mode !== 'debug' || !session.gdb || !session.debug?.active) {
+            return { success: false, expression: trimmed, error: 'No active NovaOryn debug session.' };
+        }
+        if (!session.debug.paused) {
+            return { success: false, expression: trimmed, error: 'Watch expressions can be evaluated only while the kernel is paused.' };
+        }
+        try {
+            const value = await this.evaluateExpressionValue(session, trimmed);
+            const unsigned = BigInt.asUintN(64, value);
+            return {
+                success: true,
+                expression: trimmed,
+                value: value.toString(10),
+                hexValue: `0x${unsigned.toString(16).padStart(16, '0')}`
+            };
+        } catch (error) {
+            return { success: false, expression: trimmed, error: error instanceof Error ? error.message : String(error) };
         }
     }
 
@@ -564,7 +792,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
 
         session.breakpointResults = [];
         for (const requested of session.requestedBreakpoints) {
-            const result = await this.armSourceBreakpoint(session, requested.sourcePath, requested.line);
+            const result = await this.armSourceBreakpoint(session, requested);
             session.breakpointResults.push(result);
             session.output += `[DEBUG] ${result.sourcePath}:${result.line}: ${result.message}\r\n`;
         }
@@ -596,18 +824,25 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         session.output += '[INFO] Kernel released. It will stop only at a verified breakpoint, Pause, exception or panic.\r\n';
     }
 
-    protected async armSourceBreakpoint(session: RunSession, sourcePath: string, line: number): Promise<NovaOrynBreakpointResult> {
+    protected async armSourceBreakpoint(session: RunSession, request: NovaOrynBreakpointRequest): Promise<NovaOrynBreakpointResult> {
+        const sourcePath = request.sourcePath;
+        const line = request.line;
+        const condition = request.condition?.trim() || undefined;
+        const hitCondition = request.hitCondition?.trim() || undefined;
         if (!session.gdb || session.relocationDelta === undefined || !session.nativeDebugMap) {
-            return { success: false, verified: false, sourcePath, line, message: 'The native source map or EFI relocation is not ready.' };
+            return { success: false, verified: false, sourcePath, line, condition, hitCondition, hitCount: 0, message: 'The native source map or EFI relocation is not ready.' };
+        }
+        if (hitCondition && !this.isValidHitCondition(hitCondition)) {
+            return { success: false, verified: false, sourcePath, line, condition, hitCondition, hitCount: 0, message: `Invalid hit-count expression "${hitCondition}". Use N, =N, >=N, >N, <=N, <N, or %N.` };
         }
         const resolved = this.resolveLinkedSourceAddress(session.nativeDebugMap, sourcePath, line);
         if (resolved === undefined) {
-            return { success: false, verified: false, sourcePath, line, message: 'No executable NativeAOT sequence point exists on this C# line or a nearby executable line in the same source file.' };
+            return { success: false, verified: false, sourcePath, line, condition, hitCondition, hitCount: 0, message: 'No executable NativeAOT sequence point exists on this C# line or a nearby executable line in the same source file.' };
         }
         const runtimeAddress = resolved.linkedAddress + session.relocationDelta;
         const address = runtimeAddress.toString(16);
         const reply = await session.gdb.command(`Z0,${address},1`);
-        const breakpoint = { sourcePath: path.resolve(sourcePath), line, resolvedLine: resolved.resolvedLine, address };
+        const breakpoint: SourceBreakpoint = { sourcePath: path.resolve(sourcePath), line, resolvedLine: resolved.resolvedLine, address, condition, hitCondition, hitCount: 0 };
         if (reply === 'OK') {
             session.breakpoints.set(`${path.resolve(sourcePath).toLowerCase()}:${line}`, breakpoint);
         }
@@ -621,6 +856,9 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             line,
             resolvedLine: resolved.resolvedLine,
             address,
+            condition,
+            hitCondition,
+            hitCount: 0,
             message: reply === 'OK'
                 ? `Breakpoint verified (${binding}) at runtime address 0x${address}.`
                 : `QEMU rejected the source breakpoint (${binding}): ${reply}`
@@ -694,15 +932,51 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             if (hit) {
                 await this.clearTemporaryStepBreakpoint(session);
                 session.stepPlan = undefined;
+                hit.hitCount++;
+                const result: NovaOrynBreakpointResult = {
+                    success: true, verified: true, sourcePath: hit.sourcePath, line: hit.line,
+                    resolvedLine: hit.resolvedLine, address: hit.address, condition: hit.condition,
+                    hitCondition: hit.hitCondition, hitCount: hit.hitCount,
+                    message: `Breakpoint armed; hit count ${hit.hitCount}.`
+                };
+                this.replaceBreakpointResult(session, result);
+
+                const hitCountMatches = this.hitConditionMatches(hit.hitCondition, hit.hitCount);
+                let conditionMatches = true;
+                if (hit.condition && hitCountMatches) {
+                    try {
+                        conditionMatches = (await this.evaluateExpressionValue(session, hit.condition)) !== 0n;
+                    } catch (error) {
+                        session.lastBreakpoint = hit;
+                        session.debug = {
+                            ...session.debug, paused: true, sourcePath: hit.sourcePath, line: hit.resolvedLine,
+                            message: `Breakpoint condition error at ${path.basename(hit.sourcePath)}:${hit.resolvedLine}: ${error instanceof Error ? error.message : String(error)}`
+                        };
+                        await this.populatePausedDebugData(session, rip);
+                        return;
+                    }
+                }
+
+                if (!hitCountMatches || !conditionMatches) {
+                    const reason = !hitCountMatches
+                        ? `hit ${hit.hitCount} does not match ${hit.hitCondition}`
+                        : `condition "${hit.condition}" evaluated false`;
+                    session.output += `[DEBUG] Breakpoint skipped at ${hit.sourcePath}:${hit.line}: ${reason}.\r\n`;
+                    session.gdb.run('c');
+                    session.debug = this.runningDebugState(session, `Kernel running. Breakpoint skipped (${reason}).`);
+                    return;
+                }
+
                 session.lastBreakpoint = hit;
+                const qualifiers = [hit.condition ? `condition: ${hit.condition}` : '', hit.hitCondition ? `hit rule: ${hit.hitCondition}, hit ${hit.hitCount}` : ''].filter(Boolean).join('; ');
                 session.debug = {
                     ...session.debug,
                     paused: true,
                     sourcePath: hit.sourcePath,
                     line: hit.resolvedLine,
-                    message: hit.resolvedLine === hit.line
+                    message: (hit.resolvedLine === hit.line
                         ? `Breakpoint reached at ${path.basename(hit.sourcePath)}:${hit.line}.`
-                        : `Breakpoint reached at ${path.basename(hit.sourcePath)}:${hit.resolvedLine} (requested line ${hit.line}).`
+                        : `Breakpoint reached at ${path.basename(hit.sourcePath)}:${hit.resolvedLine} (requested line ${hit.line}).`) + (qualifiers ? ` ${qualifiers}.` : '')
                 };
                 await this.populatePausedDebugData(session, rip);
                 return;
@@ -822,6 +1096,53 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         if (kind === 'step-into') { return 'Step Into'; }
         if (kind === 'step-over') { return 'Step Over'; }
         return 'Step Out';
+    }
+
+
+    protected replaceBreakpointResult(session: RunSession, result: NovaOrynBreakpointResult): void {
+        const normalized = path.resolve(result.sourcePath).toLowerCase();
+        session.breakpointResults = session.breakpointResults.filter(item => !(path.resolve(item.sourcePath).toLowerCase() === normalized && item.line === result.line));
+        session.breakpointResults.push(result);
+    }
+
+    protected isValidHitCondition(value: string): boolean {
+        const match = value.trim().match(/^(?:=|==|>=|<=|>|<|%)?\s*([1-9][0-9]*)$/);
+        return !!match;
+    }
+
+    protected hitConditionMatches(value: string | undefined, hitCount: number): boolean {
+        if (!value) { return true; }
+        const match = value.trim().match(/^(=|==|>=|<=|>|<|%)?\s*([1-9][0-9]*)$/);
+        if (!match) { return false; }
+        const op = match[1] || '=';
+        const target = Number(match[2]);
+        if (op === '%') { return hitCount % target === 0; }
+        if (op === '>') { return hitCount > target; }
+        if (op === '>=') { return hitCount >= target; }
+        if (op === '<') { return hitCount < target; }
+        if (op === '<=') { return hitCount <= target; }
+        return hitCount === target;
+    }
+
+    protected async evaluateExpressionValue(session: RunSession, expression: string): Promise<bigint> {
+        if (!session.gdb) { throw new Error('QEMU debugger is not attached.'); }
+        const registerNames = ['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15','rip','rflags'];
+        const registerIndexes = new Map(registerNames.map((name, index) => [name, index]));
+        const cache = new Map<string, bigint>();
+        const parser = new NovaOrynExpressionParser(
+            expression,
+            async name => {
+                const index = registerIndexes.get(name);
+                if (index === undefined) { return undefined; }
+                const cached = cache.get(name);
+                if (cached !== undefined) { return cached; }
+                const value = await this.readRegister(session.gdb!, index);
+                cache.set(name, value);
+                return value;
+            },
+            async address => this.readU64(session.gdb!, address)
+        );
+        return parser.evaluate();
     }
 
     protected normalizeSourcePath(sourcePath: string): string {

@@ -13,7 +13,7 @@ function requireText(text, needle, message) {
 }
 
 requireText(protocol, 'breakpoints?: NovaOrynBreakpointResult[];', 'Debug state must report runtime breakpoint verification.');
-requireText(protocol, 'breakpoints?: Array<{ sourcePath: string; line: number }>', 'Run request must carry pre-launch source breakpoints.');
+requireText(protocol, 'breakpoints?: NovaOrynBreakpointRequest[]', 'Run request must carry pre-launch source breakpoints.');
 requireText(protocol, 'callStack?: NovaOrynDebugFrame[];', 'Debug state must expose a call stack.');
 requireText(protocol, 'registers?: NovaOrynDebugRegister[];', 'Debug state must expose registers.');
 requireText(protocol, 'locals?: NovaOrynDebugVariable[];', 'Debug state must expose local/native-frame values.');

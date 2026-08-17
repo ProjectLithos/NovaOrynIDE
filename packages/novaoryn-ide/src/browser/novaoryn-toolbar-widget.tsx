@@ -101,7 +101,7 @@ export class NovaOrynToolbarWidget extends ReactWidget {
                     <span className='codicon codicon-debug-breakpoint' aria-hidden='true'></span>
                 </button>
                 <span className='novaoryn-debug-separator'></span>
-                <button className='novaoryn-debug-button' disabled={!active} title='Show Call Stack, Locals and Registers' onClick={() => this.showDebugInspector()}>
+                <button className='novaoryn-debug-button' disabled={!active} title='Show Watch, Call Stack, Locals and Registers' onClick={() => this.showDebugInspector()}>
                     <span className='codicon codicon-debug-alt' aria-hidden='true'></span>
                 </button>
                 <span className='novaoryn-debug-separator'></span>
@@ -277,7 +277,7 @@ export class NovaOrynToolbarWidget extends ReactWidget {
             channel.appendLine('');
 
             const requestedBreakpoints = this.runMode === 'debug'
-                ? this.breakpointManager.all().map(({ sourcePath, line }) => ({ sourcePath, line }))
+                ? this.breakpointManager.all().map(({ sourcePath, line, condition, hitCondition }) => ({ sourcePath, line, condition, hitCondition }))
                 : undefined;
             const result = await this.projectService.runOperatingSystem(projectPath, this.runMode, requestedBreakpoints);
             if (!result.success || !result.sessionId) {
@@ -288,6 +288,7 @@ export class NovaOrynToolbarWidget extends ReactWidget {
             }
 
             this.sessionId = result.sessionId;
+            this.debugInspector.setSession(result.sessionId);
             this.launching = false;
             this.update();
 
@@ -335,6 +336,7 @@ export class NovaOrynToolbarWidget extends ReactWidget {
         } finally {
             this.launching = false;
             this.sessionId = undefined;
+            this.debugInspector.setSession(undefined);
             this.breakpointManager.setSession(undefined);
             this.debugState = { active: false, paused: false, sourceSymbols: false };
             this.debugInspector.setState(this.debugState);

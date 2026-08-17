@@ -3,14 +3,14 @@ import { Emitter, Event, MessageService, URI } from '@theia/core/lib/common';
 import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
 import { BreakpointManager as TheiaBreakpointManager } from '@theia/debug/lib/browser/breakpoint/breakpoint-manager';
 import { SourceBreakpoint } from '@theia/debug/lib/browser/breakpoint/breakpoint-marker';
-import { NovaOrynBreakpointResult, NovaOrynProjectService } from '../common/novaoryn-protocol';
+import { NovaOrynBreakpointRequest, NovaOrynBreakpointResult, NovaOrynProjectService } from '../common/novaoryn-protocol';
 
 const OUTPUT_CHANNEL_NAME = 'NovaOryn Build';
+const BREAKPOINT_OPTIONS_STORAGE_KEY = 'novaoryn.ide.breakpointOptions';
 
-export interface NovaOrynSourceBreakpoint {
-    sourcePath: string;
-    line: number;
+export interface NovaOrynSourceBreakpoint extends NovaOrynBreakpointRequest {
     verified: boolean;
+    hitCount?: number;
 }
 
 /**
@@ -33,6 +33,8 @@ export class NovaOrynBreakpointManager {
     protected readonly theiaBreakpoints!: TheiaBreakpointManager;
 
     protected readonly verification = new Map<string, boolean>();
+    protected readonly hitCounts = new Map<string, number>();
+    protected readonly options = new Map<string, { condition?: string; hitCondition?: string }>();
     protected readonly changeEmitter = new Emitter<void>();
     readonly onDidChange: Event<void> = this.changeEmitter.event;
     protected sessionId: string | undefined;
@@ -41,6 +43,7 @@ export class NovaOrynBreakpointManager {
 
     @postConstruct()
     protected init(): void {
+        this.loadOptions();
         this.theiaBreakpoints.onDidChangeBreakpoints(event => {
             this.changeEmitter.fire(undefined);
             if (!this.sessionId || this.suppressNativeMirror) {
@@ -52,7 +55,13 @@ export class NovaOrynBreakpointManager {
                 void this.armRuntimeBreakpoint(breakpoint.uri.path.fsPath(), breakpoint.line);
             }
             for (const breakpoint of event.removed) {
-                void this.armRuntimeBreakpoint(breakpoint.uri.path.fsPath(), breakpoint.line);
+                const sourcePath = breakpoint.uri.path.fsPath();
+                const key = this.key(sourcePath, breakpoint.line);
+                this.options.delete(key);
+                this.verification.delete(key);
+                this.hitCounts.delete(key);
+                this.saveOptions();
+                void this.armRuntimeBreakpoint(sourcePath, breakpoint.line);
             }
         });
     }
@@ -61,6 +70,7 @@ export class NovaOrynBreakpointManager {
         this.sessionId = sessionId;
         if (!sessionId) {
             this.verification.clear();
+            this.hitCounts.clear();
             this.changeEmitter.fire(undefined);
         }
     }
@@ -82,11 +92,19 @@ export class NovaOrynBreakpointManager {
     }
 
     all(): NovaOrynSourceBreakpoint[] {
-        return this.theiaBreakpoints.getBreakpoints().map(breakpoint => ({
-            sourcePath: breakpoint.uri.path.fsPath(),
-            line: breakpoint.line,
-            verified: this.verification.get(this.key(breakpoint.uri.path.fsPath(), breakpoint.line)) ?? false
-        }));
+        return this.theiaBreakpoints.getBreakpoints().map(breakpoint => {
+            const sourcePath = breakpoint.uri.path.fsPath();
+            const key = this.key(sourcePath, breakpoint.line);
+            const option = this.options.get(key);
+            return {
+                sourcePath,
+                line: breakpoint.line,
+                condition: option?.condition,
+                hitCondition: option?.hitCondition,
+                hitCount: this.hitCounts.get(key),
+                verified: this.verification.get(key) ?? false
+            };
+        });
     }
 
     has(sourcePath: string, line: number): boolean {
@@ -112,7 +130,11 @@ export class NovaOrynBreakpointManager {
             } finally {
                 this.suppressNativeMirror = false;
             }
-            this.verification.delete(this.key(sourcePath, line));
+            const removedKey = this.key(sourcePath, line);
+            this.verification.delete(removedKey);
+            this.hitCounts.delete(removedKey);
+            this.options.delete(removedKey);
+            this.saveOptions();
             if (!this.sessionId) {
                 return { success: true, verified: false, sourcePath, line, message: 'Breakpoint removed.' };
             }
@@ -136,7 +158,9 @@ export class NovaOrynBreakpointManager {
             return;
         }
         for (const result of results) {
-            this.verification.set(this.key(result.sourcePath, result.line), result.verified);
+            const key = this.key(result.sourcePath, result.line);
+            this.verification.set(key, result.verified);
+            if (typeof result.hitCount === 'number') { this.hitCounts.set(key, result.hitCount); }
         }
         this.changeEmitter.fire(undefined);
     }
@@ -158,11 +182,77 @@ export class NovaOrynBreakpointManager {
         if (!this.sessionId) {
             return { success: true, verified: false, sourcePath, line, message: 'Breakpoint stored.' };
         }
-        const result = await this.projectService.toggleBreakpoint(this.sessionId, sourcePath, line);
-        this.verification.set(this.key(sourcePath, line), result.verified);
+        const option = this.options.get(this.key(sourcePath, line));
+        const result = await this.projectService.toggleBreakpoint(this.sessionId, sourcePath, line, option?.condition, option?.hitCondition);
+        const resultKey = this.key(sourcePath, line);
+        this.verification.set(resultKey, result.verified);
+        if (typeof result.hitCount === 'number') { this.hitCounts.set(resultKey, result.hitCount); }
         this.log(result);
         this.changeEmitter.fire(undefined);
         return result;
+    }
+
+
+    getOptions(sourcePath: string, line: number): { condition?: string; hitCondition?: string } {
+        return { ...(this.options.get(this.key(sourcePath, line)) ?? {}) };
+    }
+
+    async setCondition(sourcePath: string, line: number, condition: string | undefined): Promise<NovaOrynBreakpointResult | undefined> {
+        return this.updateOptions(sourcePath, line, { condition: this.clean(condition) });
+    }
+
+    async setHitCondition(sourcePath: string, line: number, hitCondition: string | undefined): Promise<NovaOrynBreakpointResult | undefined> {
+        return this.updateOptions(sourcePath, line, { hitCondition: this.clean(hitCondition) });
+    }
+
+    protected async updateOptions(sourcePath: string, line: number, patch: { condition?: string; hitCondition?: string }): Promise<NovaOrynBreakpointResult | undefined> {
+        if (!this.has(sourcePath, line)) {
+            await this.toggle(sourcePath, line);
+        }
+        const key = this.key(sourcePath, line);
+        const current = this.options.get(key) ?? {};
+        const next = { ...current, ...patch };
+        if (!next.condition && !next.hitCondition) { this.options.delete(key); }
+        else { this.options.set(key, next); }
+        this.saveOptions();
+        this.changeEmitter.fire(undefined);
+        if (!this.sessionId) { return undefined; }
+        const result = await this.projectService.updateBreakpoint(this.sessionId, {
+            sourcePath,
+            line,
+            condition: next.condition,
+            hitCondition: next.hitCondition
+        });
+        this.verification.set(key, result.verified);
+        if (typeof result.hitCount === 'number') { this.hitCounts.set(key, result.hitCount); }
+        this.log(result);
+        this.changeEmitter.fire(undefined);
+        return result;
+    }
+
+    protected clean(value: string | undefined): string | undefined {
+        const trimmed = value?.trim();
+        return trimmed ? trimmed : undefined;
+    }
+
+    protected loadOptions(): void {
+        try {
+            const raw = window.localStorage.getItem(BREAKPOINT_OPTIONS_STORAGE_KEY);
+            if (!raw) { return; }
+            const parsed = JSON.parse(raw) as Record<string, { condition?: string; hitCondition?: string }>;
+            for (const [key, value] of Object.entries(parsed)) {
+                if (!value || typeof value !== 'object') { continue; }
+                const condition = this.clean(value.condition);
+                const hitCondition = this.clean(value.hitCondition);
+                if (condition || hitCondition) { this.options.set(key, { condition, hitCondition }); }
+            }
+        } catch { }
+    }
+
+    protected saveOptions(): void {
+        try {
+            window.localStorage.setItem(BREAKPOINT_OPTIONS_STORAGE_KEY, JSON.stringify(Object.fromEntries(this.options.entries())));
+        } catch { }
     }
 
     protected log(result: NovaOrynBreakpointResult): void {

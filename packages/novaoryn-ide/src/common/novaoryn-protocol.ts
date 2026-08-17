@@ -78,6 +78,21 @@ export interface NovaOrynDebugVariable {
     kind: 'local' | 'argument' | 'stack';
 }
 
+export interface NovaOrynBreakpointRequest {
+    sourcePath: string;
+    line: number;
+    condition?: string;
+    hitCondition?: string;
+}
+
+export interface NovaOrynExpressionResult {
+    success: boolean;
+    expression: string;
+    value?: string;
+    hexValue?: string;
+    error?: string;
+}
+
 export interface NovaOrynRunResult {
     success: boolean;
     sessionId?: string;
@@ -106,6 +121,9 @@ export interface NovaOrynBreakpointResult {
     line: number;
     resolvedLine?: number;
     address?: string;
+    condition?: string;
+    hitCondition?: string;
+    hitCount?: number;
     message?: string;
 }
 
@@ -137,9 +155,11 @@ export interface NovaOrynProjectService {
     createProject(configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
     readProjectConfiguration(projectPath: string): Promise<NovaOrynConfigurationResult>;
     reconfigureProject(projectPath: string, configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
-    runOperatingSystem(projectPath: string, mode: NovaOrynRunMode, breakpoints?: Array<{ sourcePath: string; line: number }>): Promise<NovaOrynRunResult>;
+    runOperatingSystem(projectPath: string, mode: NovaOrynRunMode, breakpoints?: NovaOrynBreakpointRequest[]): Promise<NovaOrynRunResult>;
     readRunOutput(sessionId: string, offset: number): Promise<NovaOrynRunOutput>;
     debugState(sessionId: string): Promise<NovaOrynDebugState>;
     debugCommand(sessionId: string, command: NovaOrynDebugCommand): Promise<NovaOrynDebugState>;
-    toggleBreakpoint(sessionId: string, sourcePath: string, line: number): Promise<NovaOrynBreakpointResult>;
+    toggleBreakpoint(sessionId: string, sourcePath: string, line: number, condition?: string, hitCondition?: string): Promise<NovaOrynBreakpointResult>;
+    updateBreakpoint(sessionId: string, breakpoint: NovaOrynBreakpointRequest): Promise<NovaOrynBreakpointResult>;
+    evaluateExpression(sessionId: string, expression: string): Promise<NovaOrynExpressionResult>;
 }

@@ -30,6 +30,16 @@ export namespace NovaOrynCommands {
         id: 'novaoryn.debug.toggleBreakpoint',
         label: 'Toggle Breakpoint'
     };
+
+    export const BREAKPOINT_CONDITION: Command = {
+        id: 'novaoryn.debug.breakpointCondition',
+        label: 'Edit Breakpoint Condition…'
+    };
+
+    export const BREAKPOINT_HIT_COUNT: Command = {
+        id: 'novaoryn.debug.breakpointHitCount',
+        label: 'Edit Breakpoint Hit Count…'
+    };
 }
 
 @injectable()
@@ -89,6 +99,18 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
             isEnabled: () => true,
             isVisible: () => true
         });
+
+        commands.registerCommand(NovaOrynCommands.BREAKPOINT_CONDITION, {
+            execute: () => this.editCurrentBreakpointCondition(),
+            isEnabled: () => true,
+            isVisible: () => true
+        });
+
+        commands.registerCommand(NovaOrynCommands.BREAKPOINT_HIT_COUNT, {
+            execute: () => this.editCurrentBreakpointHitCount(),
+            isEnabled: () => true,
+            isVisible: () => true
+        });
     }
 
 
@@ -117,6 +139,16 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
             commandId: NovaOrynCommands.TOGGLE_BREAKPOINT.id,
             label: 'Toggle Breakpoint',
             order: '0'
+        });
+        menus.registerMenuAction([...editorDebugMenu, '1_breakpoints'], {
+            commandId: NovaOrynCommands.BREAKPOINT_CONDITION.id,
+            label: 'Edit Breakpoint Condition…',
+            order: '1'
+        });
+        menus.registerMenuAction([...editorDebugMenu, '1_breakpoints'], {
+            commandId: NovaOrynCommands.BREAKPOINT_HIT_COUNT.id,
+            label: 'Edit Breakpoint Hit Count…',
+            order: '2'
         });
 
         // Theia uses a distinct menu for right-clicks on the line-number/glyph
@@ -172,6 +204,54 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
             return;
         }
         await this.breakpointManager.toggle(sourcePath, line);
+    }
+
+
+    protected currentSourceLocation(): { sourcePath: string; line: number } | undefined {
+        const context = this.breakpointManager.consumeContextLocation();
+        if (context && context.sourcePath.toLowerCase().endsWith('.cs')) { return context; }
+        const widget = this.editorManager.currentEditor ?? this.editorManager.activeEditor;
+        if (!widget) { return undefined; }
+        const sourcePath = widget.editor.uri.path.fsPath();
+        if (!sourcePath.toLowerCase().endsWith('.cs')) { return undefined; }
+        return { sourcePath, line: widget.editor.cursor.line + 1 };
+    }
+
+    protected async editCurrentBreakpointCondition(): Promise<void> {
+        const location = this.currentSourceLocation();
+        if (!location) {
+            await this.messageService.warn('Open a C# source file and select the breakpoint line first.');
+            return;
+        }
+        const current = this.breakpointManager.getOptions(location.sourcePath, location.line).condition ?? '';
+        const value = window.prompt(
+            'Breakpoint condition. Use x64 registers and integer expressions, for example: rax == 0x10, (rflags & 1) != 0, or [rsp+8] == 0. Leave blank to remove the condition.',
+            current
+        );
+        if (value === null) { return; }
+        const result = await this.breakpointManager.setCondition(location.sourcePath, location.line, value);
+        if (result && !result.success) { await this.messageService.warn(result.message ?? 'Could not update breakpoint condition.'); }
+    }
+
+    protected async editCurrentBreakpointHitCount(): Promise<void> {
+        const location = this.currentSourceLocation();
+        if (!location) {
+            await this.messageService.warn('Open a C# source file and select the breakpoint line first.');
+            return;
+        }
+        const current = this.breakpointManager.getOptions(location.sourcePath, location.line).hitCondition ?? '';
+        const value = window.prompt(
+            'Breakpoint hit count. Examples: 5 (break on 5th hit), >=10, >20, <=3, <3, or %100 (every 100th hit). Leave blank to remove the hit-count rule.',
+            current
+        );
+        if (value === null) { return; }
+        const trimmed = value.trim();
+        if (trimmed && !/^(?:=|==|>=|<=|>|<|%)?\s*[1-9][0-9]*$/.test(trimmed)) {
+            await this.messageService.warn('Invalid hit-count rule. Use N, =N, >=N, >N, <=N, <N, or %N.');
+            return;
+        }
+        const result = await this.breakpointManager.setHitCondition(location.sourcePath, location.line, trimmed);
+        if (result && !result.success) { await this.messageService.warn(result.message ?? 'Could not update breakpoint hit count.'); }
     }
 
     protected currentOperatingSystemPath(): string | undefined {
