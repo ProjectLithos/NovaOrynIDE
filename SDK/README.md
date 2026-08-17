@@ -1,4 +1,10 @@
-# Nova Oryn OS SDK 0.37.0
+NovaOryn SDK 0.37.4 uses a QEMU debugcon relocation rendezvous for Debug builds and fixes cached optional-font status output.
+
+# Nova Oryn OS SDK 0.37.4
+
+## Release 0.37.4
+
+0.37.4 replaces the Debug startup INT3 relocation anchor with a QEMU debug-console rendezvous that publishes the actual relocated EFI address and waits until the IDE arms breakpoints.
 
 ## Release 0.37.0
 

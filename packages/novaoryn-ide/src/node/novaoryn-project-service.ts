@@ -24,7 +24,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.36';
+const NOVAORYN_IDE_VERSION = '0.1.37';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -163,7 +163,7 @@ interface NativeSourceLine {
 }
 
 interface NativeDebugMap {
-    anchor: { symbol: string; linkedAddress: string };
+    anchor: { symbol: string; linkedAddress: string; resumeSymbol?: string; resumeLinkedAddress?: string; transport?: string };
     entries: NativeSourceLine[];
 }
 
@@ -425,8 +425,8 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         await Promise.all([fs.access(imagePath), fs.access(debugMapPath), fs.access(qemuPath), fs.access(ovmfCode), fs.access(ovmfVars)]);
 
         session.nativeDebugMap = JSON.parse(await fs.readFile(debugMapPath, 'utf8')) as NativeDebugMap;
-        if (session.nativeDebugMap.anchor?.symbol !== 'NovaOrynDebugImageAnchor' || !session.nativeDebugMap.anchor.linkedAddress || !Array.isArray(session.nativeDebugMap.entries) || session.nativeDebugMap.entries.length === 0) {
-            throw new Error('NovaOryn.DebugSymbols.json is incomplete or does not contain NovaOrynDebugImageAnchor. Rebuild the SDK/kernel in Debug mode with the bundled NovaOryn SDK 0.37.3 or later.');
+        if (session.nativeDebugMap.anchor?.symbol !== 'NovaOrynDebugImageAnchor' || !session.nativeDebugMap.anchor.linkedAddress || !session.nativeDebugMap.anchor.resumeLinkedAddress || session.nativeDebugMap.anchor.transport !== 'qemu-debugcon-0xe9-binary-v1' || !Array.isArray(session.nativeDebugMap.entries) || session.nativeDebugMap.entries.length === 0) {
+            throw new Error('NovaOryn.DebugSymbols.json is incomplete or does not contain the NovaOryn 0.37.4 debug rendezvous metadata. Rebuild the SDK/kernel in Debug mode.');
         }
 
         const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 17);
@@ -434,6 +434,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         await fs.mkdir(runDirectory, { recursive: true });
         const varsCopy = path.join(runDirectory, 'OVMF_VARS.fd');
         const serialLog = path.join(runDirectory, 'serial.log');
+        const debugConLog = path.join(runDirectory, 'debugcon.bin');
         await fs.copyFile(ovmfVars, varsCopy);
         const gdbPort = await this.findFreePort(1234, 1299);
         const qemuCpus = Math.max(1, Math.ceil(os.cpus().length / 2));
@@ -444,13 +445,15 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             '-drive', `if=pflash,format=raw,unit=1,file=${varsCopy}`,
             '-drive', `if=none,format=raw,readonly=on,file=${imagePath},id=boot`,
             '-device', 'virtio-blk-pci,drive=boot,bootindex=0', '-device', 'virtio-gpu-pci',
-            '-boot', 'menu=off,strict=on', '-serial', `file:${serialLog}`, '-monitor', 'none', '-no-reboot', '-no-shutdown',
+            '-boot', 'menu=off,strict=on', '-serial', `file:${serialLog}`,
+            '-debugcon', `file:${debugConLog}`, '-global', 'isa-debugcon.iobase=0xe9',
+            '-monitor', 'none', '-no-reboot', '-no-shutdown',
             '-gdb', `tcp:127.0.0.1:${gdbPort}`,
             '-S'
         ];
         session.output += `\r\n[INFO] Debug launch: QEMU GDB endpoint 127.0.0.1:${gdbPort}.\r\n`;
-        session.output += '[INFO] QEMU is held only while the IDE attaches; firmware then runs to the internal NovaOryn image anchor.\r\n';
-        session.output += '[INFO] The image-anchor stop is hidden from the user. User debugging becomes visible only at a requested breakpoint or Pause.\r\n';
+        session.output += '[INFO] QEMU is held only while the IDE attaches; firmware then runs to the internal NovaOryn debug rendezvous.\r\n';
+        session.output += '[INFO] The rendezvous publishes the relocated EFI address through QEMU debugcon; it is never shown as a user breakpoint.\r\n';
         session.qemu = spawn(qemuPath, args, { cwd: session.projectRoot, detached: false, windowsHide: false, stdio: 'ignore' });
         session.qemu.on('error', error => {
             session.error = error.message;
@@ -472,26 +475,14 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         session.output += `[ OK ] NovaOryn debugger attached to QEMU on port ${gdbPort}.\r\n`;
         session.output += `[ OK ] Exact source-line map loaded: ${session.nativeDebugMap.entries.length} line mapping(s).\r\n`;
 
-        session.preparingAnchor = true;
-        let timeout: NodeJS.Timeout | undefined;
-        const anchorStop = new Promise<void>((resolve, reject) => {
-            session.anchorStopResolve = resolve;
-            timeout = setTimeout(() => reject(new Error('NovaOryn debug image anchor was not reached within 30 seconds.')), 30000);
-        });
-
         gdb.run('c');
-        try {
-            await anchorStop;
-        } finally {
-            if (timeout) {
-                clearTimeout(timeout);
-            }
-        }
-        session.preparingAnchor = false;
-        session.anchorStopResolve = undefined;
+        const runtimeAnchor = await this.waitForDebugRendezvous(debugConLog, 30000);
+        session.output += `[ OK ] NovaOryn debug rendezvous reached at runtime address 0x${runtimeAnchor.toString(16)}.\r\n`;
 
-        const rip = await this.readRip(gdb);
-        const runtimeAnchor = rip > 0n ? rip - 1n : rip;
+        session.internalPause = true;
+        gdb.interrupt();
+        await this.waitForPause(session, 3000);
+
         const linkedAnchor = this.parseAddress(session.nativeDebugMap.anchor.linkedAddress);
         session.relocationDelta = runtimeAnchor - linkedAnchor;
         session.output += `[ OK ] EFI runtime relocation resolved: linked anchor ${session.nativeDebugMap.anchor.linkedAddress}, runtime anchor 0x${runtimeAnchor.toString(16)}, delta ${this.formatSignedHex(session.relocationDelta)}.\r\n`;
@@ -503,11 +494,12 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             session.output += `[DEBUG] ${result.sourcePath}:${result.line}: ${result.message}\r\n`;
         }
 
+        const linkedResume = this.parseAddress(session.nativeDebugMap.anchor.resumeLinkedAddress!);
+        const runtimeResume = linkedResume + session.relocationDelta;
+        await this.writeRip(gdb, runtimeResume);
+        session.internalPause = false;
         session.debug = {
-            active: true,
-            paused: false,
-            sourceSymbols: true,
-            gdbPort,
+            active: true, paused: false, sourceSymbols: true, gdbPort,
             breakpoints: session.breakpointResults.map(item => ({ ...item })),
             message: 'Kernel running. Waiting for breakpoint.'
         };
@@ -558,14 +550,15 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             session.anchorStopResolve?.();
             return;
         }
+        if (session.internalPause) {
+            session.debug = { ...(session.debug ?? { active: false, sourceSymbols: true }), active: false, paused: true, sourceSymbols: true, message: 'Debugger preparation pause.' };
+            return;
+        }
         if (!session.debug?.active) {
             return;
         }
 
         session.debug = { ...session.debug, paused: true, message: packet.startsWith('T05') || packet.startsWith('S05') ? 'Kernel stopped.' : `Kernel stopped: ${packet}` };
-        if (session.internalPause) {
-            return;
-        }
 
         try {
             if (!session.gdb || session.relocationDelta === undefined || !session.nativeDebugMap) {
@@ -612,6 +605,33 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             }
         }
         return nearest;
+    }
+
+    protected async waitForDebugRendezvous(debugConLog: string, timeoutMs: number): Promise<bigint> {
+        const magic = Buffer.from('NODBG64!', 'ascii');
+        const until = Date.now() + timeoutMs;
+        while (Date.now() < until) {
+            try {
+                const data = await fs.readFile(debugConLog);
+                const index = data.indexOf(magic);
+                if (index >= 0 && data.length >= index + magic.length + 8) {
+                    const bytes = data.subarray(index + magic.length, index + magic.length + 8);
+                    let address = 0n;
+                    for (let i = 7; i >= 0; i--) { address = (address << 8n) | BigInt(bytes[i]); }
+                    if (address !== 0n) { return address; }
+                }
+            } catch { }
+            await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        throw new Error('NovaOryn debug rendezvous was not published within 30 seconds.');
+    }
+
+    protected async writeRip(gdb: GdbRspClient, value: bigint): Promise<void> {
+        let hex = value.toString(16).padStart(16, '0');
+        const bytes = hex.match(/../g) ?? [];
+        hex = bytes.reverse().join('');
+        const reply = await gdb.command(`P10=${hex}`);
+        if (reply !== 'OK') { throw new Error(`QEMU rejected the debugger resume RIP: ${reply}`); }
     }
 
     protected async readRip(gdb: GdbRspClient): Promise<bigint> {

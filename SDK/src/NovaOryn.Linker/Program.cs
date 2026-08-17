@@ -139,10 +139,11 @@ static int MainEntry(string[] args)
 
         string entryObject = Path.Combine(nativeRoot, "Entry.obj");
         if (!TryGetSymbolAddress(llvmNm, entryObject, "NovaOrynDebugImageAnchor", out ulong anchorObjectAddress) ||
+            !TryGetSymbolAddress(llvmNm, entryObject, "NovaOrynDebugResume", out ulong resumeObjectAddress) ||
             !TryGetSymbolAddress(llvmNm, entryObject, "NovaOrynUefiEntry", out ulong entryObjectAddress) ||
-            anchorObjectAddress != entryObjectAddress)
+            anchorObjectAddress != entryObjectAddress || resumeObjectAddress <= anchorObjectAddress)
         {
-            return Fail("Debug Entry.obj does not contain NovaOrynDebugImageAnchor at NovaOrynUefiEntry. Rebuild Entry.asm with NOVAORYN_DEBUG.");
+            return Fail("Debug Entry.obj does not contain a valid NovaOrynDebugImageAnchor/NovaOrynDebugResume rendezvous. Rebuild Entry.asm with NOVAORYN_DEBUG.");
         }
 
         // The debug anchor intentionally sits at the first byte of NovaOrynUefiEntry.
@@ -156,6 +157,8 @@ static int MainEntry(string[] args)
             return Fail("Debug EFI image entry point could not be read from the PE32+ header.");
         }
 
+        ulong resumeAddress = anchorAddress + (resumeObjectAddress - anchorObjectAddress);
+
         string sourceMap = Path.Combine(project.OutputDirectory, "NovaOryn.DebugSymbols.json");
         SourceLineEntry[] entries = BuildSourceLineMap(llvmObjdump, llvmSymbolizer, output, pdb);
         if (entries.Length == 0)
@@ -166,13 +169,16 @@ static int MainEntry(string[] args)
         File.WriteAllText(sourceMap, JsonSerializer.Serialize(new
         {
             schemaVersion = 1,
-            productVersion = "0.37.3",
+            productVersion = "0.37.4",
             image = Path.GetFullPath(output),
             pdb = Path.GetFullPath(pdb),
             anchor = new
             {
                 symbol = "NovaOrynDebugImageAnchor",
-                linkedAddress = $"0x{anchorAddress:x}"
+                linkedAddress = $"0x{anchorAddress:x}",
+                resumeSymbol = "NovaOrynDebugResume",
+                resumeLinkedAddress = $"0x{resumeAddress:x}",
+                transport = "qemu-debugcon-0xe9-binary-v1"
             },
             entries,
             producedUtc = DateTimeOffset.UtcNow
@@ -180,7 +186,7 @@ static int MainEntry(string[] args)
 
         Console.WriteLine($"[ OK ] Native debug PDB: {pdb}");
         Console.WriteLine($"[ OK ] Source-line debug map: {sourceMap} ({entries.Length} line mapping(s))");
-        Console.WriteLine($"[ OK ] Debug relocation anchor: NovaOrynDebugImageAnchor = 0x{anchorAddress:x}");
+        Console.WriteLine($"[ OK ] Debug relocation rendezvous: anchor 0x{anchorAddress:x}, resume 0x{resumeAddress:x}");
     }
 
     return 0;

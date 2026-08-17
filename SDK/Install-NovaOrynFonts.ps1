@@ -58,7 +58,7 @@ $missingFonts = @()
 
 function Invoke-OptionalDownload([string]$Url, [string]$OutFile, [string]$Id) {
     if (Test-Path -LiteralPath $OutFile -PathType Leaf) {
-        Write-Host "[ OK ] Reusing cached source for $Id: $OutFile"
+        Write-Host "[ OK ] Reusing cached source for ${Id}: $OutFile"
         return $true
     }
 

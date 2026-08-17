@@ -6,6 +6,7 @@ section .text
 global NovaOrynUefiEntry
 %ifdef NOVAORYN_DEBUG
 global NovaOrynDebugImageAnchor
+global NovaOrynDebugResume
 %endif
 global NovaOrynCaptureUefiFramebuffer
 global NovaOrynCaptureFinalUefiMemoryMap
@@ -92,10 +93,42 @@ section .text
 NovaOrynUefiEntry:
 %ifdef NOVAORYN_DEBUG
 NovaOrynDebugImageAnchor:
-    ; Debug builds stop here once, before any kernel code. The IDE consumes this
-    ; trap internally to calculate the UEFI relocation delta, arms user source
-    ; breakpoints, and immediately continues. It is never a user-visible stop.
-    int3
+    ; Publish the actual runtime-relocated anchor address through QEMU isa-debugcon
+    ; (I/O port 0xE9), then wait in a private rendezvous loop while the IDE arms
+    ; source breakpoints. A literal INT3 is not used because system emulation can
+    ; deliver it as a guest #BP exception instead of a GDB stop packet.
+    ; Record: ASCII "NODBG64!" followed by the 64-bit little-endian anchor address.
+    mov r10, rdx
+    lea r9, [rel NovaOrynDebugImageAnchor]
+    mov dx, 0x00E9
+    mov al, 'N'
+    out dx, al
+    mov al, 'O'
+    out dx, al
+    mov al, 'D'
+    out dx, al
+    mov al, 'B'
+    out dx, al
+    mov al, 'G'
+    out dx, al
+    mov al, '6'
+    out dx, al
+    mov al, '4'
+    out dx, al
+    mov al, '!'
+    out dx, al
+    mov rax, r9
+    mov r8d, 8
+.debug_address_loop:
+    out dx, al
+    shr rax, 8
+    dec r8d
+    jnz .debug_address_loop
+    mov rdx, r10
+.debug_rendezvous:
+    pause
+    jmp .debug_rendezvous
+NovaOrynDebugResume:
 %endif
     ; UEFI x64 enters with ImageHandle in RCX and EFI_SYSTEM_TABLE* in RDX.
     ; Preserve both values and maintain Windows x64 shadow space/alignment.
