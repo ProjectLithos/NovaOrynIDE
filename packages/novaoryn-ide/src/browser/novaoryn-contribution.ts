@@ -13,6 +13,8 @@ import { NovaOrynDashboardWidget } from './novaoryn-dashboard-widget';
 import { NovaOrynKernelConsoleWidget } from './novaoryn-kernel-console-widget';
 import { NovaOrynHardwareWidget } from './novaoryn-hardware-widget';
 import { NovaOrynTestExplorerWidget } from './novaoryn-test-explorer-widget';
+import { NovaOrynTraceWidget } from './novaoryn-trace-widget';
+import { NovaOrynProfilerWidget } from './novaoryn-profiler-widget';
 
 export namespace NovaOrynCommands {
     export const OPEN: Command = {
@@ -48,6 +50,8 @@ export namespace NovaOrynCommands {
     export const CONSOLE: Command = { id: 'novaoryn.console', label: 'Open Kernel Console' };
     export const HARDWARE: Command = { id: 'novaoryn.hardware', label: 'Open Hardware / Device Tree' };
     export const TESTS: Command = { id: 'novaoryn.tests', label: 'Open Test Explorer' };
+    export const TRACE: Command = { id: 'novaoryn.trace', label: 'Open Tracing / Boot Analyser' };
+    export const PROFILER: Command = { id: 'novaoryn.profiler', label: 'Open Performance Profiler' };
 }
 
 @injectable()
@@ -75,6 +79,8 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     @inject(NovaOrynKernelConsoleWidget) protected readonly consoleWidget!: NovaOrynKernelConsoleWidget;
     @inject(NovaOrynHardwareWidget) protected readonly hardwareWidget!: NovaOrynHardwareWidget;
     @inject(NovaOrynTestExplorerWidget) protected readonly testExplorerWidget!: NovaOrynTestExplorerWidget;
+    @inject(NovaOrynTraceWidget) protected readonly traceWidget!: NovaOrynTraceWidget;
+    @inject(NovaOrynProfilerWidget) protected readonly profilerWidget!: NovaOrynProfilerWidget;
 
     protected toolbarInstalled = false;
     protected titleLogoInstalled = false;
@@ -128,6 +134,8 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         commands.registerCommand(NovaOrynCommands.CONSOLE, { execute: () => this.showEngineeringWidget(this.consoleWidget, 'bottom') });
         commands.registerCommand(NovaOrynCommands.HARDWARE, { execute: () => this.showEngineeringWidget(this.hardwareWidget, 'left'), isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.TESTS, { execute: () => this.showEngineeringWidget(this.testExplorerWidget, 'left'), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.TRACE, { execute: () => this.showEngineeringWidget(this.traceWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.PROFILER, { execute: () => this.showEngineeringWidget(this.profilerWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
     }
 
 
@@ -148,6 +156,8 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.CONSOLE.id, label: 'Kernel Console', order: '1' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.HARDWARE.id, label: 'Hardware / Device Tree', order: '2' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.TESTS.id, label: 'Test Explorer', order: '3' });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.TRACE.id, label: 'Tracing / Boot Analyser', order: '4' });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.PROFILER.id, label: 'Performance Profiler', order: '5' });
 
         menus.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
             commandId: NovaOrynCommands.RECONFIGURE_ROOT_CONTEXT.id,

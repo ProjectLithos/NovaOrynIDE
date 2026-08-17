@@ -15,6 +15,8 @@ import { NovaOrynDashboardWidget } from './novaoryn-dashboard-widget';
 import { NovaOrynKernelConsoleWidget } from './novaoryn-kernel-console-widget';
 import { NovaOrynHardwareWidget } from './novaoryn-hardware-widget';
 import { NovaOrynTestExplorerWidget } from './novaoryn-test-explorer-widget';
+import { NovaOrynTraceWidget } from './novaoryn-trace-widget';
+import { NovaOrynProfilerWidget } from './novaoryn-profiler-widget';
 import './style/novaoryn.css';
 
 export default new ContainerModule(bind => {
@@ -30,6 +32,8 @@ export default new ContainerModule(bind => {
     bind(NovaOrynKernelConsoleWidget).toSelf().inSingletonScope();
     bind(NovaOrynHardwareWidget).toSelf().inSingletonScope();
     bind(NovaOrynTestExplorerWidget).toSelf().inSingletonScope();
+    bind(NovaOrynTraceWidget).toSelf().inSingletonScope();
+    bind(NovaOrynProfilerWidget).toSelf().inSingletonScope();
     bind(WidgetFactory).toDynamicValue(ctx => ({
         id: NovaOrynWidget.ID,
         createWidget: () => ctx.container.get(NovaOrynWidget)
@@ -42,6 +46,8 @@ export default new ContainerModule(bind => {
     bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynKernelConsoleWidget.ID, createWidget: () => ctx.container.get(NovaOrynKernelConsoleWidget) })).inSingletonScope();
     bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynHardwareWidget.ID, createWidget: () => ctx.container.get(NovaOrynHardwareWidget) })).inSingletonScope();
     bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynTestExplorerWidget.ID, createWidget: () => ctx.container.get(NovaOrynTestExplorerWidget) })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynTraceWidget.ID, createWidget: () => ctx.container.get(NovaOrynTraceWidget) })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynProfilerWidget.ID, createWidget: () => ctx.container.get(NovaOrynProfilerWidget) })).inSingletonScope();
 
     bind(NovaOrynBreakpointManager).toSelf().inSingletonScope();
 

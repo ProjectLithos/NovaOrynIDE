@@ -32,6 +32,14 @@ import {
     NovaOrynBreakpointResult,
     NovaOrynRunOutput,
     NovaOrynRunResult,
+    NovaOrynTraceEvent,
+    NovaOrynBootStage,
+    NovaOrynTraceSnapshot,
+    NovaOrynTraceSaveResult,
+    NovaOrynProfilerSnapshot,
+    NovaOrynProfilerFunction,
+    NovaOrynProfilerCpu,
+    NovaOrynProfilerCounter,
     NovaOrynTestDescriptor,
     NovaOrynTestRunResult,
     NovaOrynTestOutput,
@@ -42,7 +50,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.48';
+const NOVAORYN_IDE_VERSION = '0.1.49';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -445,6 +453,15 @@ interface RunSession {
     nativeGlobalsLoaded?: boolean;
     serialLogPath?: string;
     serialLogOffset?: number;
+    startedAtMs: number;
+    telemetryBuffer: string;
+    traceEvents: NovaOrynTraceEvent[];
+    bootStages: Map<string, NovaOrynBootStage>;
+    currentBootStage?: string;
+    lastBootMilestoneMs?: number;
+    profileSamples: Map<string, { samples: number; totalDurationMs: number; category: string }>;
+    profileCpuSamples: Map<number, { samples: number; busySamples: number }>;
+    profileCounters: Map<string, { category: string; count: number; totalDurationMs: number }>;
 }
 
 
@@ -459,6 +476,7 @@ interface GeneratedProject {
 export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     protected readonly runSessions = new Map<string, RunSession>();
     protected readonly testRuns = new Map<string, { output: string; complete: boolean; exitCode?: number; error?: string }>();
+    protected readonly telemetryArchives = new Map<string, { trace: NovaOrynTraceSnapshot; profiler: NovaOrynProfilerSnapshot }>();
 
     async listOperatingSystems(): Promise<NovaOrynOperatingSystem[]> {
         await fs.mkdir(NOVAORYN_OS_ROOT, { recursive: true });
@@ -563,7 +581,9 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 requestedBreakpoints: breakpoints.map(item => ({ sourcePath: path.resolve(item.sourcePath), line: item.line, condition: item.condition?.trim() || undefined, hitCondition: item.hitCondition?.trim() || undefined })),
                 breakpointResults: [],
                 exceptionBreakpoints: { vectors: Array.from(new Set((exceptionBreakpoints.vectors ?? []).filter(vector => Number.isInteger(vector) && vector >= 0 && vector < 32))), breakOnPanic: !!exceptionBreakpoints.breakOnPanic },
-                debug: mode === 'debug' ? { active: false, paused: false, sourceSymbols: false, message: 'Building Debug kernel…' } : undefined
+                debug: mode === 'debug' ? { active: false, paused: false, sourceSymbols: false, message: 'Building Debug kernel…' } : undefined,
+                startedAtMs: Date.now(), telemetryBuffer: '', traceEvents: [], bootStages: new Map<string, NovaOrynBootStage>(),
+                profileSamples: new Map(), profileCpuSamples: new Map(), profileCounters: new Map()
             };
             this.runSessions.set(sessionId, session);
 
@@ -625,6 +645,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 const serialOffset = Math.max(0, Math.min(session.serialLogOffset ?? 0, serial.length));
                 if (serial.length > serialOffset) {
                     const fresh = serial.slice(serialOffset).replace(/\r/g, '');
+                    this.ingestTelemetry(session, fresh);
                     const labelled = fresh
                         .split('\n')
                         .filter((line, index, all) => line.length > 0 || index < all.length - 1)
@@ -649,9 +670,51 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         };
 
         if (session.complete && nextOffset === session.output.length) {
+            this.telemetryArchives.set(session.projectRoot, { trace: this.traceSnapshotForSession(session), profiler: this.profilerSnapshotForSession(session) });
             setTimeout(() => this.runSessions.delete(sessionId), 60_000);
         }
         return result;
+    }
+
+    async readTraceSnapshot(projectPath: string): Promise<NovaOrynTraceSnapshot> {
+        const session = this.latestSessionForProject(projectPath);
+        if (session) { return this.traceSnapshotForSession(session); }
+        return this.telemetryArchives.get(path.resolve(projectPath))?.trace ?? { active: false, capturedAtUtc: new Date().toISOString(), elapsedMs: 0, events: [], bootStages: [], message: 'Run or Debug the operating system to collect kernel trace data.' };
+    }
+
+    async saveTrace(projectPath: string): Promise<NovaOrynTraceSaveResult> {
+        try {
+            const root = path.resolve(projectPath);
+            const snapshot = await this.readTraceSnapshot(root);
+            if (snapshot.events.length === 0 && snapshot.bootStages.length === 0) return { success: false, error: 'No NovaOryn trace data has been collected yet.' };
+            const directory = path.join(root, '.novaoryn', 'traces');
+            await fs.mkdir(directory, { recursive: true });
+            const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const filePath = path.join(directory, `NovaOryn-Trace-${stamp}.notrace.json`);
+            await fs.writeFile(filePath, JSON.stringify({ schema: 'novaoryn-trace/v1', ...snapshot }, undefined, 2), 'utf8');
+            return { success: true, path: filePath };
+        } catch (error) { return { success: false, error: error instanceof Error ? error.message : String(error) }; }
+    }
+
+    async resetTrace(projectPath: string): Promise<NovaOrynTraceSnapshot> {
+        const session = this.latestSessionForProject(projectPath);
+        if (session) { session.traceEvents.length = 0; session.bootStages.clear(); session.currentBootStage = undefined; return this.traceSnapshotForSession(session); }
+        this.telemetryArchives.delete(path.resolve(projectPath));
+        return { active: false, capturedAtUtc: new Date().toISOString(), elapsedMs: 0, events: [], bootStages: [], message: 'Trace data cleared.' };
+    }
+
+    async readProfilerSnapshot(projectPath: string): Promise<NovaOrynProfilerSnapshot> {
+        const session = this.latestSessionForProject(projectPath);
+        if (session) return this.profilerSnapshotForSession(session);
+        return this.telemetryArchives.get(path.resolve(projectPath))?.profiler ?? { active: false, capturedAtUtc: new Date().toISOString(), elapsedMs: 0, totalSamples: 0, functions: [], cpus: [], counters: [], message: 'Run or Debug the operating system to collect profiling telemetry.' };
+    }
+
+    async resetProfiler(projectPath: string): Promise<NovaOrynProfilerSnapshot> {
+        const session = this.latestSessionForProject(projectPath);
+        if (session) { session.profileSamples.clear(); session.profileCpuSamples.clear(); session.profileCounters.clear(); return this.profilerSnapshotForSession(session); }
+        const archived = this.telemetryArchives.get(path.resolve(projectPath));
+        if (archived) archived.profiler = { active: false, capturedAtUtc: new Date().toISOString(), elapsedMs: 0, totalSamples: 0, functions: [], cpus: [], counters: [], message: 'Profiler data cleared.' };
+        return archived?.profiler ?? { active: false, capturedAtUtc: new Date().toISOString(), elapsedMs: 0, totalSamples: 0, functions: [], cpus: [], counters: [], message: 'Profiler data cleared.' };
     }
 
     async debugState(sessionId: string): Promise<NovaOrynDebugState> {
@@ -2954,6 +3017,96 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         }
         lines.push('</Solution>', '');
         return lines.join('\n');
+    }
+
+    protected latestSessionForProject(projectPath: string): RunSession | undefined {
+        const root = path.resolve(projectPath);
+        return Array.from(this.runSessions.values()).filter(item => item.projectRoot === root).sort((a, b) => b.startedAtMs - a.startedAtMs)[0];
+    }
+
+    protected elapsedMs(session: RunSession): number { return Math.max(0, Date.now() - session.startedAtMs); }
+
+    protected ingestTelemetry(session: RunSession, text: string): void {
+        session.telemetryBuffer += text.replace(/\r/g, '');
+        const lines = session.telemetryBuffer.split('\n');
+        session.telemetryBuffer = lines.pop() ?? '';
+        for (const raw of lines) {
+            const line = raw.trim(); if (!line) continue;
+            const now = this.elapsedMs(session);
+            if (this.ingestStructuredTelemetry(session, line, now)) continue;
+            this.ingestBootMilestone(session, line, now);
+        }
+    }
+
+    protected ingestStructuredTelemetry(session: RunSession, line: string, now: number): boolean {
+        const match = /^\[NOVAORYN:(TRACE|BOOT|PROFILE)\]\s*(.*)$/i.exec(line); if (!match) return false;
+        const kind = match[1].toUpperCase(); const values = this.parseTelemetryFields(match[2]);
+        const timestamp = Number(values['ms'] ?? values['timestamp_ms'] ?? now); const cpu = values['cpu'] !== undefined ? Number(values['cpu']) : undefined;
+        if (kind === 'BOOT') {
+            const name = values['stage'] ?? values['name'] ?? 'Boot'; const phase = (values['phase'] ?? 'end').toLowerCase();
+            if (phase === 'begin') this.beginBootStage(session, name, Number.isFinite(timestamp) ? timestamp : now, values['details']);
+            else this.endBootStage(session, name, Number.isFinite(timestamp) ? timestamp : now, (values['status'] as NovaOrynBootStage['status']) || 'complete', values['details']);
+            return true;
+        }
+        if (kind === 'TRACE') {
+            this.pushTraceEvent(session, { id: 0, timestampMs: Number.isFinite(timestamp) ? timestamp : now, category: this.traceCategory(values['category']), name: values['name'] ?? values['event'] ?? 'event', phase: this.tracePhase(values['phase']), cpuIndex: Number.isFinite(cpu) ? cpu : undefined, durationMs: this.numberField(values, 'duration_ms'), details: values['details'] });
+            return true;
+        }
+        const subtype = (values['kind'] ?? values['type'] ?? 'sample').toLowerCase();
+        if (subtype === 'sample') {
+            const name = values['function'] ?? values['name'] ?? values['symbol'] ?? 'unknown'; const category = values['category'] ?? 'cpu'; const duration = this.numberField(values, 'duration_ms') ?? 0;
+            const item = session.profileSamples.get(name) ?? { samples: 0, totalDurationMs: 0, category }; item.samples++; item.totalDurationMs += duration; session.profileSamples.set(name, item);
+            if (Number.isFinite(cpu)) { const c = session.profileCpuSamples.get(cpu!) ?? { samples: 0, busySamples: 0 }; c.samples++; c.busySamples += values['idle'] === '1' || values['idle'] === 'true' ? 0 : 1; session.profileCpuSamples.set(cpu!, c); }
+        } else {
+            const name = values['name'] ?? subtype; const category = values['category'] ?? subtype; const delta = this.numberField(values, 'delta') ?? 1; const duration = this.numberField(values, 'duration_ms') ?? 0;
+            const counter = session.profileCounters.get(name) ?? { category, count: 0, totalDurationMs: 0 }; counter.count += delta; counter.totalDurationMs += duration; session.profileCounters.set(name, counter);
+        }
+        return true;
+    }
+
+    protected parseTelemetryFields(text: string): Record<string, string> {
+        const result: Record<string, string> = {}; const regex = /([A-Za-z0-9_.-]+)=(?:"([^"]*)"|'([^']*)'|([^\s]+))/g; let m: RegExpExecArray | null;
+        while ((m = regex.exec(text))) result[m[1].toLowerCase()] = m[2] ?? m[3] ?? m[4] ?? '';
+        return result;
+    }
+    protected numberField(values: Record<string, string>, name: string): number | undefined { const value = Number(values[name]); return Number.isFinite(value) ? value : undefined; }
+    protected traceCategory(value?: string): NovaOrynTraceEvent['category'] { const allowed = new Set(['boot','interrupt','syscall','scheduler','driver','memory','storage','network','graphics','diagnostic','custom']); return allowed.has((value ?? '').toLowerCase()) ? (value!.toLowerCase() as NovaOrynTraceEvent['category']) : 'custom'; }
+    protected tracePhase(value?: string): NovaOrynTraceEvent['phase'] { const v=(value ?? 'instant').toLowerCase(); return v === 'begin' || v === 'end' ? v : 'instant'; }
+    protected pushTraceEvent(session: RunSession, event: NovaOrynTraceEvent): void { event.id = session.traceEvents.length ? session.traceEvents[session.traceEvents.length - 1].id + 1 : 1; session.traceEvents.push(event); if (session.traceEvents.length > 25000) session.traceEvents.splice(0, session.traceEvents.length - 25000); }
+
+    protected beginBootStage(session: RunSession, name: string, at: number, details?: string): void {
+        session.currentBootStage = name; session.bootStages.set(name, { name, startMs: at, status: 'running', details });
+        this.pushTraceEvent(session, { id: 0, timestampMs: at, category: 'boot', name, phase: 'begin', details });
+    }
+    protected endBootStage(session: RunSession, name: string, at: number, status: NovaOrynBootStage['status'] = 'complete', details?: string): void {
+        const current = session.bootStages.get(name); const startMs = current?.startMs ?? at; const durationMs = Math.max(0, at - startMs);
+        session.bootStages.set(name, { name, startMs, endMs: at, durationMs, status, details: details ?? current?.details }); session.currentBootStage = undefined;
+        this.pushTraceEvent(session, { id: 0, timestampMs: at, category: 'boot', name, phase: 'end', durationMs, details });
+        const key = `boot:${name}`; const sample = session.profileSamples.get(key) ?? { samples: 0, totalDurationMs: 0, category: 'boot' }; sample.samples++; sample.totalDurationMs += durationMs; session.profileSamples.set(key, sample);
+    }
+
+    protected ingestBootMilestone(session: RunSession, line: string, now: number): void {
+        const milestones: Array<[string, string]> = [
+            ['NovaOryn KMain started.', 'Kernel entry'], ['Final UEFI memory map retained', 'UEFI handoff'], ['GDT and TSS installed.', 'CPU descriptors'], ['IDT with 256 vectors installed.', 'Interrupt table'], ['Legacy PIC masked', 'Interrupt controllers'], ['ACPI MADT, MCFG, HPET, FADT and platform power services online.', 'ACPI / platform'], ['HPET, Local APIC timer, TSC, RTC/CMOS and invariant-TSC clock source online.', 'Timers / clocks'], ['Physical memory manager initialized from final UEFI map.', 'Physical memory'], ['Virtual memory manager attached to active x64 page tables.', 'Virtual memory'], ['Kernel heap status:', 'Kernel heap'], ['SMP and per-CPU state online.', 'SMP / per-CPU'], ['Scheduler and threads online.', 'Scheduler'], ['User/kernel separation online.', 'Protection'], ['System calls online.', 'System calls']
+        ];
+        const hit = milestones.find(([needle]) => line.includes(needle)); if (!hit) return;
+        const name = hit[1];
+        if (session.currentBootStage && session.currentBootStage !== name) this.endBootStage(session, session.currentBootStage, now, 'complete');
+        if (!session.bootStages.has(name)) this.beginBootStage(session, name, session.lastBootMilestoneMs ?? Math.max(0, now - 0.1));
+        this.endBootStage(session, name, now, line.includes('[FAIL]') ? 'failed' : line.includes('[WARN]') ? 'warning' : 'complete', line);
+        session.lastBootMilestoneMs = now;
+    }
+
+    protected traceSnapshotForSession(session: RunSession): NovaOrynTraceSnapshot {
+        return { active: !session.complete, sessionId: session.sessionId, capturedAtUtc: new Date().toISOString(), elapsedMs: this.elapsedMs(session), events: session.traceEvents.map(item => ({ ...item })), bootStages: Array.from(session.bootStages.values()).sort((a,b)=>a.startMs-b.startMs).map(item => ({ ...item })), message: session.traceEvents.length ? undefined : 'Waiting for NovaOryn kernel trace telemetry…' };
+    }
+    protected profilerSnapshotForSession(session: RunSession): NovaOrynProfilerSnapshot {
+        const raw = Array.from(session.profileSamples.entries()); const totalSamples = raw.reduce((sum,[,v])=>sum+v.samples,0); const totalDuration = raw.reduce((sum,[,v])=>sum+v.totalDurationMs,0);
+        const functions: NovaOrynProfilerFunction[] = raw.map(([name,v]) => ({ name: name.startsWith('boot:') ? name.slice(5) : name, category: v.category, samples: v.samples, totalDurationMs: v.totalDurationMs, averageDurationMs: v.samples ? v.totalDurationMs/v.samples : 0, percent: totalDuration > 0 ? v.totalDurationMs/totalDuration*100 : totalSamples ? v.samples/totalSamples*100 : 0 })).sort((a,b)=>b.percent-a.percent);
+        const cpus: NovaOrynProfilerCpu[] = Array.from(session.profileCpuSamples.entries()).map(([cpuIndex,v])=>({ cpuIndex, samples:v.samples, busySamples:v.busySamples, utilisationPercent:v.samples ? v.busySamples/v.samples*100 : 0 })).sort((a,b)=>a.cpuIndex-b.cpuIndex);
+        const counters: NovaOrynProfilerCounter[] = Array.from(session.profileCounters.entries()).map(([name,v])=>({ name, category:v.category, count:v.count, totalDurationMs:v.totalDurationMs || undefined, averageDurationMs:v.count && v.totalDurationMs ? v.totalDurationMs/v.count : undefined })).sort((a,b)=>b.count-a.count);
+        const stages=Array.from(session.bootStages.values()).filter(s=>s.endMs!==undefined); const bootDurationMs=stages.length ? Math.max(...stages.map(s=>s.endMs!))-Math.min(...stages.map(s=>s.startMs)) : undefined;
+        return { active: !session.complete, sessionId: session.sessionId, capturedAtUtc:new Date().toISOString(), elapsedMs:this.elapsedMs(session), totalSamples, functions, cpus, counters, bootDurationMs, message: totalSamples || counters.length ? undefined : 'Boot timing is collected automatically. Runtime CPU/function/counter profiling appears when the kernel emits [NOVAORYN:PROFILE] telemetry.' };
     }
 
     protected async refreshSdkBridge(projectRoot: string): Promise<void> {

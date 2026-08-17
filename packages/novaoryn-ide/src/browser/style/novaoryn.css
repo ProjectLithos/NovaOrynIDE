@@ -463,3 +463,37 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 .novaoryn-test-list { border:1px solid var(--theia-widget-border); }
 .novaoryn-test-row { display:grid; grid-template-columns:22px minmax(220px,1fr) auto; gap:7px; align-items:center; padding:7px; border-bottom:1px solid var(--theia-widget-border); }
 .novaoryn-test-row:last-child{border-bottom:0}.novaoryn-test-row small{display:block;opacity:.62;overflow-wrap:anywhere;margin-top:2px}.novaoryn-test-output{max-height:330px;overflow:auto;padding:8px;border:1px solid var(--theia-widget-border);background:var(--theia-terminal-background,var(--theia-editor-background));font-family:var(--theia-code-font-family);white-space:pre-wrap}.novaoryn-test-pass{color:var(--theia-testing-iconPassed,#73c991);margin-left:8px}.novaoryn-test-fail{color:var(--theia-errorForeground,#f48771);margin-left:8px}
+
+/* 0.1.49 kernel tracing/boot analyser and performance profiler. */
+.novaoryn-tool-actions { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.novaoryn-engineering-section { border:1px solid var(--theia-widget-border); background:var(--theia-editor-background); padding:10px 12px; margin-bottom:10px; }
+.novaoryn-engineering-section h3 { margin:0 0 8px; }
+.novaoryn-section-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.novaoryn-section-heading h3 { margin:0; }
+.novaoryn-muted { opacity:.65; }
+.novaoryn-boot-timeline { display:flex; flex-direction:column; gap:7px; }
+.novaoryn-boot-stage-label { display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+.novaoryn-boot-stage small { opacity:.58; display:block; overflow-wrap:anywhere; }
+.novaoryn-boot-track,.novaoryn-profile-track { height:8px; background:var(--theia-progressBar-background,rgba(127,127,127,.2)); overflow:hidden; border-radius:4px; }
+.novaoryn-boot-bar,.novaoryn-profile-track>span { display:block; height:100%; min-width:2px; background:var(--theia-progressBar-foreground,var(--theia-focusBorder)); border-radius:4px; }
+.novaoryn-boot-bar.warning { background:var(--theia-editorWarning-foreground,#cca700); }
+.novaoryn-boot-bar.failed { background:var(--theia-errorForeground,#f48771); }
+.novaoryn-trace-events { border:1px solid var(--theia-widget-border); max-height:420px; overflow:auto; font-family:var(--theia-code-font-family); }
+.novaoryn-trace-event { display:grid; grid-template-columns:95px 85px minmax(150px,1fr) 70px 90px minmax(160px,1fr); gap:8px; align-items:baseline; padding:4px 6px; border-bottom:1px solid var(--theia-widget-border); }
+.novaoryn-trace-event:last-child { border-bottom:0; }
+.novaoryn-trace-time,.novaoryn-trace-category { opacity:.7; }
+.novaoryn-trace-category { text-transform:uppercase; font-size:.82em; }
+.novaoryn-trace-event.warning { border-left:3px solid var(--theia-editorWarning-foreground,#cca700); }
+.novaoryn-trace-event.error { border-left:3px solid var(--theia-errorForeground,#f48771); }
+.novaoryn-trace-event small { opacity:.62; overflow-wrap:anywhere; }
+.novaoryn-telemetry-help { opacity:.68; }
+.novaoryn-profiler-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:10px; }
+.novaoryn-profile-row { display:grid; grid-template-columns:70px minmax(120px,1fr) 60px 85px; gap:8px; align-items:center; padding:5px 0; }
+.novaoryn-profile-functions { border:1px solid var(--theia-widget-border); }
+.novaoryn-profile-function { display:grid; grid-template-columns:minmax(150px,1.2fr) minmax(110px,1fr) 60px 90px 75px; gap:8px; align-items:center; padding:5px 6px; border-bottom:1px solid var(--theia-widget-border); }
+.novaoryn-profile-function:last-child { border-bottom:0; }
+.novaoryn-profile-function>span:first-child small { display:block; opacity:.58; }
+.novaoryn-profiler-counters { border:1px solid var(--theia-widget-border); }
+.novaoryn-profiler-counter { display:grid; grid-template-columns:minmax(180px,1fr) 110px 120px minmax(120px,1fr); gap:8px; align-items:baseline; padding:5px 6px; border-bottom:1px solid var(--theia-widget-border); }
+.novaoryn-profiler-counter:last-child { border-bottom:0; }
+@media (max-width:900px){.novaoryn-trace-event{grid-template-columns:80px 70px minmax(130px,1fr);}.novaoryn-trace-event>*:nth-child(n+4){display:none}.novaoryn-profile-function{grid-template-columns:minmax(130px,1fr) minmax(90px,1fr) 55px}.novaoryn-profile-function>*:nth-child(n+4){display:none}}

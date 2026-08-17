@@ -241,6 +241,84 @@ export interface NovaOrynBreakpointResult {
     message?: string;
 }
 
+
+export type NovaOrynTraceCategory = 'boot' | 'interrupt' | 'syscall' | 'scheduler' | 'driver' | 'memory' | 'storage' | 'network' | 'graphics' | 'diagnostic' | 'custom';
+export type NovaOrynTracePhase = 'instant' | 'begin' | 'end';
+
+export interface NovaOrynTraceEvent {
+    id: number;
+    timestampMs: number;
+    category: NovaOrynTraceCategory;
+    name: string;
+    phase: NovaOrynTracePhase;
+    cpuIndex?: number;
+    durationMs?: number;
+    details?: string;
+    severity?: 'info' | 'warning' | 'error';
+}
+
+export interface NovaOrynBootStage {
+    name: string;
+    startMs: number;
+    endMs?: number;
+    durationMs?: number;
+    status: 'running' | 'complete' | 'warning' | 'failed';
+    details?: string;
+}
+
+export interface NovaOrynTraceSnapshot {
+    active: boolean;
+    sessionId?: string;
+    capturedAtUtc: string;
+    elapsedMs: number;
+    events: NovaOrynTraceEvent[];
+    bootStages: NovaOrynBootStage[];
+    message?: string;
+}
+
+export interface NovaOrynTraceSaveResult {
+    success: boolean;
+    path?: string;
+    error?: string;
+}
+
+export interface NovaOrynProfilerFunction {
+    name: string;
+    category: string;
+    samples: number;
+    totalDurationMs: number;
+    averageDurationMs: number;
+    percent: number;
+}
+
+export interface NovaOrynProfilerCpu {
+    cpuIndex: number;
+    samples: number;
+    busySamples: number;
+    utilisationPercent: number;
+}
+
+export interface NovaOrynProfilerCounter {
+    name: string;
+    category: string;
+    count: number;
+    totalDurationMs?: number;
+    averageDurationMs?: number;
+}
+
+export interface NovaOrynProfilerSnapshot {
+    active: boolean;
+    sessionId?: string;
+    capturedAtUtc: string;
+    elapsedMs: number;
+    totalSamples: number;
+    functions: NovaOrynProfilerFunction[];
+    cpus: NovaOrynProfilerCpu[];
+    counters: NovaOrynProfilerCounter[];
+    bootDurationMs?: number;
+    message?: string;
+}
+
 export interface NovaOrynRunOutput {
     text: string;
     nextOffset: number;
@@ -293,6 +371,11 @@ export interface NovaOrynProjectService {
     reconfigureProject(projectPath: string, configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
     runOperatingSystem(projectPath: string, mode: NovaOrynRunMode, breakpoints?: NovaOrynBreakpointRequest[], exceptionBreakpoints?: NovaOrynExceptionBreakpointSettings): Promise<NovaOrynRunResult>;
     readRunOutput(sessionId: string, offset: number): Promise<NovaOrynRunOutput>;
+    readTraceSnapshot(projectPath: string): Promise<NovaOrynTraceSnapshot>;
+    saveTrace(projectPath: string): Promise<NovaOrynTraceSaveResult>;
+    resetTrace(projectPath: string): Promise<NovaOrynTraceSnapshot>;
+    readProfilerSnapshot(projectPath: string): Promise<NovaOrynProfilerSnapshot>;
+    resetProfiler(projectPath: string): Promise<NovaOrynProfilerSnapshot>;
     debugState(sessionId: string): Promise<NovaOrynDebugState>;
     debugCommand(sessionId: string, command: NovaOrynDebugCommand): Promise<NovaOrynDebugState>;
     toggleBreakpoint(sessionId: string, sourcePath: string, line: number, condition?: string, hitCondition?: string): Promise<NovaOrynBreakpointResult>;
