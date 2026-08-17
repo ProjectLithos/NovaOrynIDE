@@ -464,7 +464,7 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 .novaoryn-test-row { display:grid; grid-template-columns:22px minmax(220px,1fr) auto; gap:7px; align-items:center; padding:7px; border-bottom:1px solid var(--theia-widget-border); }
 .novaoryn-test-row:last-child{border-bottom:0}.novaoryn-test-row small{display:block;opacity:.62;overflow-wrap:anywhere;margin-top:2px}.novaoryn-test-output{max-height:330px;overflow:auto;padding:8px;border:1px solid var(--theia-widget-border);background:var(--theia-terminal-background,var(--theia-editor-background));font-family:var(--theia-code-font-family);white-space:pre-wrap}.novaoryn-test-pass{color:var(--theia-testing-iconPassed,#73c991);margin-left:8px}.novaoryn-test-fail{color:var(--theia-errorForeground,#f48771);margin-left:8px}
 
-/* 0.1.52 kernel tracing/boot analyser and performance profiler. */
+/* 0.1.53 kernel tracing/boot analyser and performance profiler. */
 .novaoryn-tool-actions { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
 .novaoryn-engineering-section { border:1px solid var(--theia-widget-border); background:var(--theia-editor-background); padding:10px 12px; margin-bottom:10px; }
 .novaoryn-engineering-section h3 { margin:0 0 8px; }
@@ -499,7 +499,7 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 @media (max-width:900px){.novaoryn-trace-event{grid-template-columns:80px 70px minmax(130px,1fr);}.novaoryn-trace-event>*:nth-child(n+4){display:none}.novaoryn-profile-function{grid-template-columns:minmax(130px,1fr) minmax(90px,1fr) 55px}.novaoryn-profile-function>*:nth-child(n+4){display:none}}
 
 
-/* 0.1.52 Driver Development Centre. */
+/* 0.1.53 Driver Development Centre. */
 .novaoryn-driver-create { border: 1px solid var(--theia-widget-border); padding: 14px; margin-bottom: 18px; border-radius: 6px; }
 .novaoryn-driver-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap: 10px; margin: 10px 0; }
 .novaoryn-driver-field { display:flex; flex-direction:column; gap:4px; }

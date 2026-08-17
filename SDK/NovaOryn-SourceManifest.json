@@ -1828,8 +1828,8 @@
     },
     {
       "path": "src/NovaOryn.Core/NovaOrynSdkContract.cs",
-      "size": 991,
-      "sha256": "7b3e37a0a125fe7511dcba835e62e79b93d70996f23cd5a9b804327d53dac8b0"
+      "size": 2177,
+      "sha256": "6df437898d66e610c0c8f79813a018f8ee25986bd3f210b55e814e1c9cc0fba9"
     },
     {
       "path": "src/NovaOryn.DocumentationGenerator/ApiCompatibilityWriter.cs",

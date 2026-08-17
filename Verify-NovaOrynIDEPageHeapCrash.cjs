@@ -26,4 +26,4 @@ for (const [name, ok] of checks) {
   if (!ok) failed++;
 }
 if (failed) process.exit(1);
-console.log('[ OK ] NovaOryn IDE 0.1.52 page-table, heap, and crash-dump contracts verified.');
+console.log('[ OK ] NovaOryn IDE 0.1.53 page-table, heap, and crash-dump contracts verified.');
