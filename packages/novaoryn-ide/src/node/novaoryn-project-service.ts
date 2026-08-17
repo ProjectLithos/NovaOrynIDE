@@ -24,7 +24,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.37';
+const NOVAORYN_IDE_VERSION = '0.1.38';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -153,7 +153,14 @@ class GdbRspClient {
 interface SourceBreakpoint {
     sourcePath: string;
     line: number;
+    resolvedLine: number;
     address: string;
+}
+
+interface ResolvedSourceAddress {
+    linkedAddress: bigint;
+    resolvedLine: number;
+    exactLine: boolean;
 }
 
 interface NativeSourceLine {
@@ -376,6 +383,8 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         const normalizedSource = path.resolve(sourcePath);
         const key = `${normalizedSource.toLowerCase()}:${line}`;
         const existing = session.breakpoints.get(key);
+        const pendingResult = session.breakpointResults.find(item =>
+            path.resolve(item.sourcePath).toLowerCase() === normalizedSource.toLowerCase() && item.line === line);
         const wasPaused = session.debug.paused;
         if (!wasPaused) {
             session.internalPause = true;
@@ -384,6 +393,19 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         }
 
         try {
+            // A stored breakpoint that failed to bind is not present in session.breakpoints.
+            // When Theia removes that pending breakpoint, treat this call as removal rather
+            // than accidentally attempting to arm it again.
+            if (!existing && pendingResult && !pendingResult.verified) {
+                session.breakpointResults = session.breakpointResults.filter(item =>
+                    !(path.resolve(item.sourcePath).toLowerCase() === normalizedSource.toLowerCase() && item.line === line));
+                if (!wasPaused) {
+                    session.gdb.run('c');
+                    session.debug = { ...session.debug!, paused: false, sourcePath: undefined, line: undefined, message: 'Kernel running. Waiting for breakpoint.' };
+                }
+                return { success: true, verified: false, sourcePath, line, message: 'Unverified breakpoint removed.' };
+            }
+
             if (existing) {
                 const reply = await session.gdb.command(`z0,${existing.address},1`);
                 session.breakpoints.delete(key);
@@ -498,6 +520,19 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         const runtimeResume = linkedResume + session.relocationDelta;
         await this.writeRip(gdb, runtimeResume);
         session.internalPause = false;
+
+        const unresolved = session.breakpointResults.filter(item => !item.verified);
+        if (unresolved.length > 0) {
+            session.debug = {
+                active: true, paused: true, sourceSymbols: true, gdbPort,
+                breakpoints: session.breakpointResults.map(item => ({ ...item })),
+                message: `${unresolved.length} requested breakpoint(s) could not be verified. Kernel held before KMain; fix/remove them, then Continue.`
+            };
+            session.output += `[WARN] ${session.breakpointResults.filter(item => item.verified).length}/${session.breakpointResults.length} requested source breakpoint(s) armed before KMain.\r\n`;
+            session.output += `[WARN] Kernel is held before KMain because ${unresolved.length} requested breakpoint(s) are unresolved. Remove or move the unverified breakpoint(s), then press Continue.\r\n`;
+            return;
+        }
+
         session.debug = {
             active: true, paused: false, sourceSymbols: true, gdbPort,
             breakpoints: session.breakpointResults.map(item => ({ ...item })),
@@ -512,37 +547,71 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         if (!session.gdb || session.relocationDelta === undefined || !session.nativeDebugMap) {
             return { success: false, verified: false, sourcePath, line, message: 'The native source map or EFI relocation is not ready.' };
         }
-        const linkedAddress = this.resolveLinkedSourceAddress(session.nativeDebugMap, sourcePath, line);
-        if (linkedAddress === undefined) {
-            return { success: false, verified: false, sourcePath, line, message: 'No executable NativeAOT sequence point exists for this C# source line.' };
+        const resolved = this.resolveLinkedSourceAddress(session.nativeDebugMap, sourcePath, line);
+        if (resolved === undefined) {
+            return { success: false, verified: false, sourcePath, line, message: 'No executable NativeAOT sequence point exists on this C# line or a nearby executable line in the same source file.' };
         }
-        const runtimeAddress = linkedAddress + session.relocationDelta;
+        const runtimeAddress = resolved.linkedAddress + session.relocationDelta;
         const address = runtimeAddress.toString(16);
         const reply = await session.gdb.command(`Z0,${address},1`);
-        const breakpoint = { sourcePath: path.resolve(sourcePath), line, address };
+        const breakpoint = { sourcePath: path.resolve(sourcePath), line, resolvedLine: resolved.resolvedLine, address };
         if (reply === 'OK') {
             session.breakpoints.set(`${path.resolve(sourcePath).toLowerCase()}:${line}`, breakpoint);
         }
+        const binding = resolved.exactLine
+            ? `line ${line}`
+            : `requested line ${line} -> executable line ${resolved.resolvedLine}`;
         return {
             success: reply === 'OK',
             verified: reply === 'OK',
             sourcePath,
             line,
+            resolvedLine: resolved.resolvedLine,
             address,
             message: reply === 'OK'
-                ? `Breakpoint verified at runtime address 0x${address}.`
-                : `QEMU rejected the source breakpoint: ${reply}`
+                ? `Breakpoint verified (${binding}) at runtime address 0x${address}.`
+                : `QEMU rejected the source breakpoint (${binding}): ${reply}`
         };
     }
 
-    protected resolveLinkedSourceAddress(debugMap: NativeDebugMap, sourcePath: string, line: number): bigint | undefined {
-        const normalized = path.resolve(sourcePath).replace(/\//g, '\\').toLowerCase();
-        const basename = path.basename(normalized);
-        const exact = debugMap.entries.find(entry =>
-            entry.line === line && path.resolve(entry.sourcePath).replace(/\//g, '\\').toLowerCase() === normalized);
-        const fallback = exact ?? debugMap.entries.find(entry =>
-            entry.line === line && path.basename(entry.sourcePath).toLowerCase() === basename.toLowerCase());
-        return fallback ? this.parseAddress(fallback.linkedAddress) : undefined;
+    protected resolveLinkedSourceAddress(debugMap: NativeDebugMap, sourcePath: string, line: number): ResolvedSourceAddress | undefined {
+        const normalize = (value: string) => path.resolve(value).replace(/\//g, '\\').toLowerCase();
+        const normalized = normalize(sourcePath);
+        const basename = path.basename(normalized).toLowerCase();
+
+        let entries = debugMap.entries.filter(entry => normalize(entry.sourcePath) === normalized);
+        if (entries.length === 0) {
+            const basenameMatches = debugMap.entries.filter(entry => path.basename(entry.sourcePath).toLowerCase() === basename);
+            const distinctSources = new Set(basenameMatches.map(entry => normalize(entry.sourcePath)));
+            if (distinctSources.size === 1) {
+                entries = basenameMatches;
+            }
+        }
+        if (entries.length === 0) {
+            return undefined;
+        }
+
+        const exact = entries.find(entry => entry.line === line);
+        if (exact) {
+            return { linkedAddress: this.parseAddress(exact.linkedAddress), resolvedLine: exact.line, exactLine: true };
+        }
+
+        // C# debuggers bind non-executable lines (braces, declarations, comments, blank
+        // lines) to the nearest useful sequence point. Prefer the next executable line,
+        // which matches normal breakpoint behaviour, and only fall back a few lines.
+        const forward = entries
+            .filter(entry => entry.line > line && entry.line - line <= 8)
+            .sort((a, b) => a.line - b.line || Number(this.parseAddress(a.linkedAddress) - this.parseAddress(b.linkedAddress)))[0];
+        if (forward) {
+            return { linkedAddress: this.parseAddress(forward.linkedAddress), resolvedLine: forward.line, exactLine: false };
+        }
+
+        const backward = entries
+            .filter(entry => entry.line < line && line - entry.line <= 3)
+            .sort((a, b) => b.line - a.line || Number(this.parseAddress(a.linkedAddress) - this.parseAddress(b.linkedAddress)))[0];
+        return backward
+            ? { linkedAddress: this.parseAddress(backward.linkedAddress), resolvedLine: backward.line, exactLine: false }
+            : undefined;
     }
 
     protected async handleGdbStop(session: RunSession, packet: string): Promise<void> {
@@ -573,8 +642,10 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 session.debug = {
                     ...session.debug,
                     sourcePath: hit.sourcePath,
-                    line: hit.line,
-                    message: `Breakpoint reached at ${path.basename(hit.sourcePath)}:${hit.line}.`
+                    line: hit.resolvedLine,
+                    message: hit.resolvedLine === hit.line
+                        ? `Breakpoint reached at ${path.basename(hit.sourcePath)}:${hit.line}.`
+                        : `Breakpoint reached at ${path.basename(hit.sourcePath)}:${hit.resolvedLine} (requested line ${hit.line}).`
                 };
                 return;
             }

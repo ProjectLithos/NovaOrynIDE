@@ -30,5 +30,10 @@ requireText(contribution, "label: 'Toggle Breakpoint'", 'Debug context submenu m
 rejectText(contribution, "keybinding: 'f9'", 'NovaOryn must not compete with Theia native F9 breakpoint keybinding.');
 requireText(service, 'await gdb.connect(gdbPort, 15000);', 'Debugger attach retry is required.');
 requireText(service, 'NovaOryn.DebugSymbols.json', 'Exact source-line debug manifest is required.');
+requireText(service, 'requested line ${line} -> executable line ${resolved.resolvedLine}', 'Breakpoint binding must report requested and resolved executable lines.');
+requireText(service, 'Kernel is held before KMain because', 'Unverified requested breakpoints must hold the kernel before KMain.');
+requireText(service, 'entry.line > line && entry.line - line <= 8', 'Non-executable C# lines must bind forward to a nearby NativeAOT sequence point.');
+requireText(service, 'entry.line < line && line - entry.line <= 3', 'Breakpoint resolver must have a bounded backward fallback.');
+requireText(service, "message: 'Unverified breakpoint removed.'", 'Removing a pending unverified breakpoint must not retry it.');
 rejectText(service, 'await this.waitForPort(gdbPort', 'Disposable GDB probe must not race the debugger connection.');
-console.log('[ OK ] Theia-native breakpoint gutter/F9 UI and NovaOryn runtime breakpoint bridge verified.');
+console.log('[ OK ] Theia-native breakpoint UI, pre-KMain verification hold, and NativeAOT source-line binding verified.');

@@ -1,4 +1,4 @@
-NovaOryn IDE 0.1.37 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
+NovaOryn IDE 0.1.38 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
 
 # NovaOryn IDE
 
@@ -15,11 +15,11 @@ The Run/Debug toolbar fixes from 0.1.12 remain in place: the toolbar stays below
 
 NovaOryn IDE is the desktop development environment for the NovaOryn Operating System SDK. It is a custom Eclipse Theia desktop application with NovaOryn-specific project configuration and generation.
 
-## Current release: 0.1.37
+## Current release: 0.1.38
 
-### 0.1.37 Debug relocation rendezvous
+### 0.1.38 Verified source-breakpoint binding
 
-NovaOryn IDE 0.1.37 bundles NovaOryn SDK 0.37.4 and replaces the Debug startup INT3 anchor with a QEMU debug-console runtime-address rendezvous. Exact source breakpoints are armed before KMain, while the internal preparation remains invisible to the user.
+NovaOryn IDE 0.1.38 keeps the SDK 0.37.4 debugcon relocation rendezvous and fixes C# breakpoints that could appear set while execution ran through them. Breakpoints on non-executable C# lines now bind to a nearby executable NativeAOT sequence point in the same file. The Build output reports the requested line, resolved executable line and relocated runtime address. If any requested breakpoint cannot be verified, the kernel remains paused before KMain instead of silently running past it.
 
 
 

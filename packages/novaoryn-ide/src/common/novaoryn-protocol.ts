@@ -81,6 +81,7 @@ export interface NovaOrynBreakpointResult {
     verified: boolean;
     sourcePath: string;
     line: number;
+    resolvedLine?: number;
     address?: string;
     message?: string;
 }
