@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "product": "NovaOryn OS SDK",
+  "sdkVersion": "0.38.0",
+  "apiVersion": "1.0",
+  "abiVersion": "1.0",
+  "compatibilityPolicy": "additive-within-major",
+  "architectures": [
+    "x64"
+  ],
+  "projectSchemaVersions": [
+    2
+  ],
+  "abi": {
+    "kernel": "1.0",
+    "driver": "1.0",
+    "syscall": "1.0",
+    "debug": "1.0",
+    "crashDump": "1.0",
+    "heapDiagnostics": "1.0"
+  },
+  "toolchain": {
+    "dotnet": "10.0.302",
+    "nativeAotIlc": "10.0.10",
+    "llvm": "22.1.6",
+    "targetAbi": "PE/COFF x64 UEFI"
+  },
+  "contracts": {
+    "publicApiBaseline": "NovaOryn.ApiBaseline.json",
+    "apiPolicy": "NovaOryn.ApiContract.json",
+    "driverManifestSchema": 1,
+    "compatibilityChecker": "Compare-NovaOrynApiCompatibility.ps1"
+  },
+  "rules": {
+    "majorApiChange": "Breaking public API changes require a new API major version.",
+    "minorApiChange": "Additive public API changes may increment the API minor version.",
+    "abi": "Kernel/driver/syscall/debug ABI versions are independently versioned.",
+    "consumers": "Drivers and applications must declare the API/ABI versions they were built against."
+  }
+}

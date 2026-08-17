@@ -34,11 +34,25 @@ internal static class ApiCompatibilityWriter
         string directory = Path.Combine(root, "Artifacts", "Documentation");
         Directory.CreateDirectory(directory);
         string output = Path.Combine(directory, "NovaOryn.ApiCompatibility.json");
+        string manifestPath = Path.Combine(root, "NovaOryn.SdkManifest.json");
+        string apiVersion = "1.0";
+        string abiVersion = "1.0";
+        if (File.Exists(manifestPath))
+        {
+            using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
+            if (manifest.RootElement.TryGetProperty("apiVersion", out JsonElement api)) apiVersion = api.GetString() ?? apiVersion;
+            if (manifest.RootElement.TryGetProperty("abiVersion", out JsonElement abi)) abiVersion = abi.GetString() ?? abiVersion;
+        }
+        string publicApiFingerprint = Hash(string.Join("\n", assemblies.SelectMany(a => a.items).Select(i => $"{i.QualifiedName}|{i.Signature}").OrderBy(x => x, StringComparer.Ordinal)));
         File.WriteAllText(output, JsonSerializer.Serialize(new
         {
             schemaVersion = 1,
             product = configuration.Product,
             version = configuration.Version,
+            apiVersion,
+            abiVersion,
+            compatibilityPolicy = "additive-within-major",
+            publicApiFingerprint,
             generatedUtc = DateTimeOffset.UtcNow,
             assemblies
         }, new JsonSerializerOptions { WriteIndented = true }));

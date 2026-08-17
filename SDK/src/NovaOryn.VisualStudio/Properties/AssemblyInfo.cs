@@ -4,6 +4,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("Visual Studio integration for NovaOryn kernels")]
 [assembly: AssemblyCompany("Project Lithos")]
 [assembly: AssemblyProduct("NovaOryn OS SDK")]
-[assembly: AssemblyVersion("0.37.4.0")]
-[assembly: AssemblyFileVersion("0.37.4.0")]
+[assembly: AssemblyVersion("0.38.0.0")]
+[assembly: AssemblyFileVersion("0.38.0.0")]
 [assembly: ComVisible(false)]

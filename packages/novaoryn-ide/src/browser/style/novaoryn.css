@@ -464,7 +464,7 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 .novaoryn-test-row { display:grid; grid-template-columns:22px minmax(220px,1fr) auto; gap:7px; align-items:center; padding:7px; border-bottom:1px solid var(--theia-widget-border); }
 .novaoryn-test-row:last-child{border-bottom:0}.novaoryn-test-row small{display:block;opacity:.62;overflow-wrap:anywhere;margin-top:2px}.novaoryn-test-output{max-height:330px;overflow:auto;padding:8px;border:1px solid var(--theia-widget-border);background:var(--theia-terminal-background,var(--theia-editor-background));font-family:var(--theia-code-font-family);white-space:pre-wrap}.novaoryn-test-pass{color:var(--theia-testing-iconPassed,#73c991);margin-left:8px}.novaoryn-test-fail{color:var(--theia-errorForeground,#f48771);margin-left:8px}
 
-/* 0.1.50 kernel tracing/boot analyser and performance profiler. */
+/* 0.1.52 kernel tracing/boot analyser and performance profiler. */
 .novaoryn-tool-actions { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
 .novaoryn-engineering-section { border:1px solid var(--theia-widget-border); background:var(--theia-editor-background); padding:10px 12px; margin-bottom:10px; }
 .novaoryn-engineering-section h3 { margin:0 0 8px; }
@@ -497,3 +497,20 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 .novaoryn-profiler-counter { display:grid; grid-template-columns:minmax(180px,1fr) 110px 120px minmax(120px,1fr); gap:8px; align-items:baseline; padding:5px 6px; border-bottom:1px solid var(--theia-widget-border); }
 .novaoryn-profiler-counter:last-child { border-bottom:0; }
 @media (max-width:900px){.novaoryn-trace-event{grid-template-columns:80px 70px minmax(130px,1fr);}.novaoryn-trace-event>*:nth-child(n+4){display:none}.novaoryn-profile-function{grid-template-columns:minmax(130px,1fr) minmax(90px,1fr) 55px}.novaoryn-profile-function>*:nth-child(n+4){display:none}}
+
+
+/* 0.1.52 Driver Development Centre. */
+.novaoryn-driver-create { border: 1px solid var(--theia-widget-border); padding: 14px; margin-bottom: 18px; border-radius: 6px; }
+.novaoryn-driver-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap: 10px; margin: 10px 0; }
+.novaoryn-driver-field { display:flex; flex-direction:column; gap:4px; }
+.novaoryn-driver-field input,.novaoryn-driver-field select { background:var(--theia-input-background); color:var(--theia-input-foreground); border:1px solid var(--theia-input-border); padding:6px; }
+.novaoryn-driver-capabilities { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:10px 0; }
+.novaoryn-driver-capabilities label,.novaoryn-driver-test-option { display:flex; gap:5px; align-items:center; }
+.novaoryn-driver-list { display:flex; flex-direction:column; gap:7px; }
+.novaoryn-driver-card { border:1px solid var(--theia-widget-border); border-radius:5px; padding:9px 11px; }
+.novaoryn-driver-card>div:first-child { display:flex; gap:8px; align-items:center; }
+.novaoryn-driver-kind,.novaoryn-driver-configured { padding:1px 6px; border-radius:10px; background:var(--theia-badge-background); color:var(--theia-badge-foreground); font-size:11px; }
+.novaoryn-driver-configured { background:var(--theia-statusBar-background); }
+.novaoryn-driver-card small { display:block; opacity:.7; margin-top:3px; }
+.novaoryn-driver-meta { margin-top:5px; font-size:12px; opacity:.85; }
+.novaoryn-driver-runtime { margin-top:18px; }

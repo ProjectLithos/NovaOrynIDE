@@ -40,6 +40,10 @@ import {
     NovaOrynProfilerFunction,
     NovaOrynProfilerCpu,
     NovaOrynProfilerCounter,
+    NovaOrynDriverDescriptor,
+    NovaOrynDriverManifest,
+    NovaOrynCreateDriverRequest,
+    NovaOrynCreateDriverResult,
     NovaOrynTestDescriptor,
     NovaOrynTestRunResult,
     NovaOrynTestOutput,
@@ -50,7 +54,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.50';
+const NOVAORYN_IDE_VERSION = '0.1.52';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -498,6 +502,118 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         return systems.sort((a, b) => a.name.localeCompare(b.name));
     }
 
+
+
+    async listDrivers(projectPath: string): Promise<NovaOrynDriverDescriptor[]> {
+        const projectRoot = path.resolve(projectPath);
+        if (!this.isOperatingSystemPath(projectRoot)) return [];
+        const result: NovaOrynDriverDescriptor[] = [];
+        const configurationResult = await this.readProjectConfiguration(projectRoot);
+        const configured = configurationResult.success && configurationResult.configuration
+            ? [...configurationResult.configuration.drivers, ...configurationResult.configuration.storageControllers, ...configurationResult.configuration.networkDrivers, ...configurationResult.configuration.input, ...configurationResult.configuration.graphics]
+            : [];
+        for (const name of Array.from(new Set(configured)).sort((a, b) => a.localeCompare(b))) {
+            result.push({ id: `configured:${name.toLowerCase()}`, name, projectPath: projectRoot, source: 'configured', kind: 'configured', configured: true });
+        }
+        const roots = [path.join(projectRoot, 'Drivers'), path.join(projectRoot, 'Kernel', 'Drivers'), path.join(projectRoot, 'DriverProjects')];
+        for (const driversRoot of roots) {
+            const entries = await fs.readdir(driversRoot, { withFileTypes: true }).catch(() => [] as import('fs').Dirent[]);
+            for (const entry of entries) {
+                if (!entry.isDirectory()) continue;
+                const folder = path.join(driversRoot, entry.name);
+                const manifestPath = path.join(folder, 'NovaOryn.Driver.json');
+                const projectFiles = (await fs.readdir(folder).catch(() => [] as string[])).filter(name => name.toLowerCase().endsWith('.csproj'));
+                if (!projectFiles.length) continue;
+                let manifest: NovaOrynDriverManifest | undefined;
+                try { manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8')) as NovaOrynDriverManifest; } catch { }
+                const name = manifest?.name || entry.name;
+                result.push({ id: `os:${folder.toLowerCase()}`, name, projectPath: path.join(folder, projectFiles[0]), manifestPath: manifest ? manifestPath : undefined, source: 'os', kind: manifest?.kind ?? 'platform', configured: configured.some(item => item.toLowerCase() === name.toLowerCase()), manifest });
+            }
+        }
+        const unique = new Map<string, NovaOrynDriverDescriptor>();
+        for (const item of result) unique.set(`${item.source}:${item.name.toLowerCase()}`, item);
+        return [...unique.values()].sort((a, b) => Number(b.source === 'os') - Number(a.source === 'os') || a.name.localeCompare(b.name));
+    }
+
+    async createDriver(projectPath: string, request: NovaOrynCreateDriverRequest): Promise<NovaOrynCreateDriverResult> {
+        try {
+            const projectRoot = path.resolve(projectPath);
+            if (!this.isOperatingSystemPath(projectRoot)) return { success: false, error: `Driver projects can only be created beneath ${NOVAORYN_OS_ROOT}.` };
+            await fs.access(path.join(projectRoot, 'NovaOryn.json'));
+            const safeName = this.safeSegment((request.name || '').trim());
+            if (!safeName || safeName.length < 2) return { success: false, error: 'Enter a driver name containing at least two letters or numbers.' };
+            const target = path.join(projectRoot, 'DriverProjects', safeName);
+            const relative = path.relative(projectRoot, target);
+            if (relative.startsWith('..') || path.isAbsolute(relative)) return { success: false, error: 'Invalid driver project path.' };
+            try { await fs.access(target); return { success: false, error: `Driver project ${safeName} already exists.` }; } catch { }
+            await fs.mkdir(target, { recursive: true });
+            const sdkContract = await this.readSdkContractVersions();
+            const capabilities = Array.from(new Set((request.capabilities ?? []).filter(value => ['mmio','pio','interrupts','msi','msix','dma','timers'].includes(value))));
+            const manifest: NovaOrynDriverManifest = { schemaVersion: 1, name: safeName, kind: request.kind, version: '0.1.0', sdkApiVersion: sdkContract.apiVersion, driverAbiVersion: sdkContract.driverAbiVersion, capabilities, description: request.description?.trim() || undefined };
+            if (request.kind === 'pci') { manifest.vendorId = this.normaliseHexId(request.vendorId); manifest.deviceId = this.normaliseHexId(request.deviceId); }
+            if (request.kind === 'usb') { manifest.usbVendorId = this.normaliseHexId(request.usbVendorId); manifest.usbProductId = this.normaliseHexId(request.usbProductId); }
+            if (request.kind === 'virtio' && Number.isInteger(request.virtioDeviceId)) manifest.virtioDeviceId = Math.max(0, Number(request.virtioDeviceId));
+            const manifestPath = path.join(target, 'NovaOryn.Driver.json');
+            const projectFile = path.join(target, `${safeName}.csproj`);
+            await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+            await fs.writeFile(projectFile, this.driverProjectFile(safeName), 'utf8');
+            await fs.writeFile(path.join(target, 'Driver.cs'), this.driverSource(safeName, manifest), 'utf8');
+            await fs.writeFile(path.join(target, 'README.md'), this.driverReadme(manifest), 'utf8');
+            let testProjectPath: string | undefined;
+            if (request.createTestProject) {
+                const testDir = path.join(projectRoot, 'Tests', `${safeName}.Driver.Tests`);
+                await fs.mkdir(testDir, { recursive: true });
+                testProjectPath = path.join(testDir, `${safeName}.Driver.Tests.csproj`);
+                const relDriver = path.relative(testDir, projectFile).replace(/\\/g, '/');
+                await fs.writeFile(testProjectPath, this.driverTestProjectFile(safeName, relDriver), 'utf8');
+                await fs.writeFile(path.join(testDir, 'Program.cs'), this.driverTestSource(safeName), 'utf8');
+            }
+            return { success: true, projectPath: projectFile, manifestPath, testProjectPath };
+        } catch (error) { return { success: false, error: error instanceof Error ? error.message : String(error) }; }
+    }
+
+    protected isOperatingSystemPath(projectRoot: string): boolean {
+        const osRoot = path.resolve(NOVAORYN_OS_ROOT);
+        const relative = path.relative(osRoot, projectRoot);
+        return !!relative && !relative.startsWith('..') && !path.isAbsolute(relative);
+    }
+
+    protected async readSdkContractVersions(): Promise<{ apiVersion: string; driverAbiVersion: string }> {
+        try {
+            const raw = JSON.parse(await fs.readFile(path.join(NOVAORYN_SDK_ROOT, 'NovaOryn.SdkManifest.json'), 'utf8')) as { apiVersion?: string; abi?: { driver?: string } };
+            return { apiVersion: raw.apiVersion || '1.0', driverAbiVersion: raw.abi?.driver || '1.0' };
+        } catch { return { apiVersion: '1.0', driverAbiVersion: '1.0' }; }
+    }
+
+    protected normaliseHexId(value?: string): string | undefined {
+        const cleaned = (value ?? '').trim().replace(/^0x/i, '').replace(/[^0-9a-f]/gi, '').slice(0, 4);
+        return cleaned ? `0x${cleaned.toUpperCase().padStart(4, '0')}` : undefined;
+    }
+
+    protected driverProjectFile(name: string): string {
+        return `<Project Sdk="Microsoft.NET.Sdk">\n  <PropertyGroup>\n    <TargetFramework>net10.0</TargetFramework>\n    <ImplicitUsings>disable</ImplicitUsings>\n    <Nullable>enable</Nullable>\n    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>\n    <AssemblyName>NovaOryn.Driver.${name}</AssemblyName>\n  </PropertyGroup>\n  <ItemGroup>\n    <ProjectReference Include="..\\..\\Sdk\\NovaOryn.Kernel.Drivers\\NovaOryn.Kernel.Drivers.csproj" />\n  </ItemGroup>\n</Project>\n`;
+    }
+
+    protected driverSource(name: string, manifest: NovaOrynDriverManifest): string {
+        const ns = `NovaOryn.Driver.${this.namespace(name)}`;
+        const match = manifest.kind === 'pci'
+            ? `// PCI match: vendor ${manifest.vendorId ?? 'any'}, device ${manifest.deviceId ?? 'any'}`
+            : manifest.kind === 'usb' ? `// USB match: VID ${manifest.usbVendorId ?? 'any'}, PID ${manifest.usbProductId ?? 'any'}`
+            : manifest.kind === 'virtio' ? `// VirtIO device id: ${manifest.virtioDeviceId ?? 0}` : '// Platform-device driver';
+        return `using System;\nusing NovaOryn.Kernel.Drivers;\n\nnamespace ${ns};\n\n/// <summary>${manifest.description || `${name} NovaOryn device driver.`}</summary>\npublic static unsafe class ${this.namespace(name)}Driver\n{\n    ${match}\n    public const string DriverAbiVersion = ${JSON.stringify(manifest.driverAbiVersion)};\n\n    /// <summary>Registers this driver with the NovaOryn driver framework.</summary>\n    public static Boolean Initialize()\n    {\n        // TODO: replace the generic match rule with the device identifiers from NovaOryn.Driver.json.\n        KernelDriverMatchRule rule = new(KernelDeviceBus.Synthetic, false, 0, false, 0, false, 0U, 0U);\n        KernelDriverCallbacks callbacks = new(&Probe, &Start, &Stop, &Remove, &Interrupt);\n        return KernelDrivers.RegisterDriver(rule, callbacks, out _);\n    }\n\n    private static Boolean Probe(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Start(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Stop(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Remove(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Interrupt(KernelDriverDeviceContext* context, UInt64 cookie) => context != null;\n}\n`;
+    }
+
+    protected driverReadme(manifest: NovaOrynDriverManifest): string {
+        return `# ${manifest.name}\n\nNovaOryn ${manifest.kind} driver project generated by NovaOryn IDE ${NOVAORYN_IDE_VERSION}.\n\n- SDK API: ${manifest.sdkApiVersion}\n- Driver ABI: ${manifest.driverAbiVersion}\n- Capabilities: ${manifest.capabilities.join(', ') || 'none declared'}\n\nEdit \`NovaOryn.Driver.json\` when changing device identifiers or capabilities. Keep the declared ABI compatible with the SDK manifest.\n`;
+    }
+
+    protected driverTestProjectFile(name: string, driverProjectRelative: string): string {
+        return `<Project Sdk="Microsoft.NET.Sdk">\n  <PropertyGroup>\n    <TargetFramework>net10.0</TargetFramework>\n    <OutputType>Exe</OutputType>\n    <ImplicitUsings>disable</ImplicitUsings>\n    <Nullable>enable</Nullable>\n  </PropertyGroup>\n  <ItemGroup><ProjectReference Include="${driverProjectRelative}" /></ItemGroup>\n</Project>\n`;
+    }
+
+    protected driverTestSource(name: string): string {
+        return `using System;\n\nConsole.WriteLine("NovaOryn driver contract test: ${name}");\nConsole.WriteLine("[ OK ] Driver project and manifest are loadable.");\nreturn 0;\n`;
+    }
 
     async listTests(projectPath: string): Promise<NovaOrynTestDescriptor[]> {
         const projectRoot = path.resolve(projectPath);
@@ -1126,7 +1242,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.1.50 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.1.52 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);

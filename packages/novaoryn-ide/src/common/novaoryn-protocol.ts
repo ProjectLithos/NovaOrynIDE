@@ -335,6 +335,61 @@ export interface NovaOrynConfigurationResult {
     error?: string;
 }
 
+
+export type NovaOrynDriverTemplateKind = 'pci' | 'usb' | 'virtio' | 'platform';
+export type NovaOrynDriverCapability = 'mmio' | 'pio' | 'interrupts' | 'msi' | 'msix' | 'dma' | 'timers';
+
+export interface NovaOrynDriverManifest {
+    schemaVersion: 1;
+    name: string;
+    kind: NovaOrynDriverTemplateKind;
+    version: string;
+    sdkApiVersion: string;
+    driverAbiVersion: string;
+    vendorId?: string;
+    deviceId?: string;
+    subsystemVendorId?: string;
+    subsystemDeviceId?: string;
+    classCode?: string;
+    usbVendorId?: string;
+    usbProductId?: string;
+    virtioDeviceId?: number;
+    capabilities: NovaOrynDriverCapability[];
+    description?: string;
+}
+
+export interface NovaOrynDriverDescriptor {
+    id: string;
+    name: string;
+    projectPath: string;
+    manifestPath?: string;
+    source: 'os' | 'configured';
+    kind: NovaOrynDriverTemplateKind | 'configured';
+    configured: boolean;
+    manifest?: NovaOrynDriverManifest;
+}
+
+export interface NovaOrynCreateDriverRequest {
+    name: string;
+    kind: NovaOrynDriverTemplateKind;
+    description?: string;
+    vendorId?: string;
+    deviceId?: string;
+    usbVendorId?: string;
+    usbProductId?: string;
+    virtioDeviceId?: number;
+    capabilities: NovaOrynDriverCapability[];
+    createTestProject: boolean;
+}
+
+export interface NovaOrynCreateDriverResult {
+    success: boolean;
+    projectPath?: string;
+    manifestPath?: string;
+    testProjectPath?: string;
+    error?: string;
+}
+
 export interface NovaOrynTestDescriptor {
     id: string;
     name: string;
@@ -389,6 +444,8 @@ export interface NovaOrynProjectService {
     loadCrashDump(dumpPath: string): Promise<NovaOrynCrashDumpResult>;
     configureExceptionBreakpoints(sessionId: string, settings: NovaOrynExceptionBreakpointSettings): Promise<NovaOrynDebugState>;
     selectExecutionContext(sessionId: string, threadId: string): Promise<NovaOrynDebugState>;
+    listDrivers(projectPath: string): Promise<NovaOrynDriverDescriptor[]>;
+    createDriver(projectPath: string, request: NovaOrynCreateDriverRequest): Promise<NovaOrynCreateDriverResult>;
     listTests(projectPath: string): Promise<NovaOrynTestDescriptor[]>;
     runTest(projectPath: string, testId: string): Promise<NovaOrynTestRunResult>;
     readTestOutput(runId: string, offset: number): Promise<NovaOrynTestOutput>;

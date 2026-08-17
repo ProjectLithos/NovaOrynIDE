@@ -1,25 +1,22 @@
 {
-  "baseVersion": "0.37.3",
-  "version": "0.37.4",
-  "summary": "Replaces the Debug INT3 relocation anchor with a QEMU debug-console runtime-address rendezvous and fixes cached optional-font PowerShell interpolation.",
+  "baseVersion": "0.37.4",
+  "version": "0.38.0",
+  "summary": "Establishes stable API/ABI contracts and SDK manifest; adds IDE Driver Development Centre support.",
   "changedFiles": [
     "Directory.Build.props",
-    "Install-NovaOrynFonts.ps1",
-    "NovaOryn-Changes.json",
+    "NovaOryn.SdkManifest.json",
+    "NovaOryn.ApiContract.json",
+    "NovaOryn.ApiBaseline.json",
     "NovaOryn-SourceManifest.json",
     "README.md",
+    "Validate-NovaOryn.ps1",
+    "Verify-NovaOrynSdkContract.ps1",
     "docs/NovaOryn.Documentation.json",
-    "docs/Release-0.37.4.md",
-    "native/x64/Entry.asm",
-    "src/NovaOryn.ImageBuilder/Program.cs",
-    "src/NovaOryn.Linker/Program.cs",
-    "src/NovaOryn.ManagedCompiler/Program.cs",
-    "src/NovaOryn.QemuLauncher/Program.cs",
-    "src/NovaOryn.VisualStudio/NovaOrynPackage.cs",
-    "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/NovaOrynKernel.vstemplate",
-    "src/NovaOryn.VisualStudio/Properties/AssemblyInfo.cs",
-    "src/NovaOryn.VisualStudio/source.extension.vsixmanifest",
-    "toolchain/NovaOryn.Toolchain.json"
+    "docs/Release-0.38.0.md",
+    "src/NovaOryn.Core/NovaOrynSdkContract.cs",
+    "src/NovaOryn.DocumentationGenerator/ApiCompatibilityWriter.cs",
+    "toolchain/NovaOryn.Toolchain.json",
+    "Compare-NovaOrynApiCompatibility.ps1"
   ],
   "deletedFiles": []
 }

@@ -1,3 +1,4 @@
+
 import { inject, injectable } from 'inversify';
 import { BoxLayout } from '@lumino/widgets';
 import { Command, CommandContribution, CommandRegistry, MAIN_MENU_BAR, MenuContribution, MenuModelRegistry, MessageService } from '@theia/core/lib/common';
@@ -15,6 +16,7 @@ import { NovaOrynHardwareWidget } from './novaoryn-hardware-widget';
 import { NovaOrynTestExplorerWidget } from './novaoryn-test-explorer-widget';
 import { NovaOrynTraceWidget } from './novaoryn-trace-widget';
 import { NovaOrynProfilerWidget } from './novaoryn-profiler-widget';
+import { NovaOrynDriverCentreWidget } from './novaoryn-driver-centre-widget';
 
 export namespace NovaOrynCommands {
     export const OPEN: Command = {
@@ -52,6 +54,7 @@ export namespace NovaOrynCommands {
     export const TESTS: Command = { id: 'novaoryn.tests', label: 'Open Test Explorer' };
     export const TRACE: Command = { id: 'novaoryn.trace', label: 'Open Tracing / Boot Analyser' };
     export const PROFILER: Command = { id: 'novaoryn.profiler', label: 'Open Performance Profiler' };
+    export const DRIVERS: Command = { id: 'novaoryn.engineering.drivers', label: 'Driver Development Centre' };
 }
 
 @injectable()
@@ -81,6 +84,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     @inject(NovaOrynTestExplorerWidget) protected readonly testExplorerWidget!: NovaOrynTestExplorerWidget;
     @inject(NovaOrynTraceWidget) protected readonly traceWidget!: NovaOrynTraceWidget;
     @inject(NovaOrynProfilerWidget) protected readonly profilerWidget!: NovaOrynProfilerWidget;
+    @inject(NovaOrynDriverCentreWidget) protected readonly driverCentreWidget!: NovaOrynDriverCentreWidget;
 
     protected toolbarInstalled = false;
     protected titleLogoInstalled = false;
@@ -136,6 +140,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         commands.registerCommand(NovaOrynCommands.TESTS, { execute: () => this.showEngineeringWidget(this.testExplorerWidget, 'left'), isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.TRACE, { execute: () => this.showEngineeringWidget(this.traceWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.PROFILER, { execute: () => this.showEngineeringWidget(this.profilerWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.DRIVERS, { execute: () => this.showEngineeringWidget(this.driverCentreWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
     }
 
 
@@ -158,6 +163,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.TESTS.id, label: 'Test Explorer', order: '3' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.TRACE.id, label: 'Tracing / Boot Analyser', order: '4' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.PROFILER.id, label: 'Performance Profiler', order: '5' });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.DRIVERS.id, label: 'Driver Development Centre', order: '6' });
 
         menus.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
             commandId: NovaOrynCommands.RECONFIGURE_ROOT_CONTEXT.id,

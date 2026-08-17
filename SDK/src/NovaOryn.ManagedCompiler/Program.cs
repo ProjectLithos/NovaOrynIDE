@@ -130,7 +130,7 @@ static int MainEntry(string[] args)
     File.WriteAllText(compileManifest, JsonSerializer.Serialize(new
     {
         schemaVersion = 6,
-        productVersion = "0.37.4",
+        productVersion = "0.38.0",
         project = project.Name,
         kernelEntry = project.KernelEntry,
         architecture = project.TargetArchitecture,
