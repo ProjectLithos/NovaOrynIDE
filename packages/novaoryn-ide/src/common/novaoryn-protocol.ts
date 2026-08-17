@@ -473,6 +473,53 @@ export interface NovaOrynAnalyzerSnapshot {
     targetArchitecture?: NovaOrynTargetArchitecture;
 }
 
+
+export type NovaOrynBinaryKind = 'pe' | 'coff' | 'pdb' | 'map' | 'debug-map' | 'archive' | 'unknown';
+export type NovaOrynBinaryOrigin = 'os' | 'sdk';
+export type NovaOrynBinarySymbolKind = 'function' | 'data' | 'public' | 'source-line' | 'unknown';
+
+export interface NovaOrynBinaryDescriptor {
+    id: string;
+    name: string;
+    path: string;
+    origin: NovaOrynBinaryOrigin;
+    kind: NovaOrynBinaryKind;
+    sizeBytes: number;
+    modifiedUtc: string;
+}
+
+export interface NovaOrynBinarySection {
+    name: string;
+    virtualAddress: string;
+    virtualSize: number;
+    rawSize: number;
+    characteristics: string;
+}
+
+export interface NovaOrynBinarySymbol {
+    name: string;
+    address?: string;
+    size?: number;
+    kind: NovaOrynBinarySymbolKind;
+    sourcePath?: string;
+    line?: number;
+}
+
+export interface NovaOrynBinaryInspection {
+    success: boolean;
+    binary?: NovaOrynBinaryDescriptor;
+    format?: string;
+    architecture?: string;
+    imageBase?: string;
+    entryPoint?: string;
+    sections: NovaOrynBinarySection[];
+    symbols: NovaOrynBinarySymbol[];
+    symbolCount: number;
+    truncated: boolean;
+    message?: string;
+    error?: string;
+}
+
 export interface NovaOrynProjectService {
     listOperatingSystems(): Promise<NovaOrynOperatingSystem[]>;
     createProject(configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
@@ -499,6 +546,8 @@ export interface NovaOrynProjectService {
     configureExceptionBreakpoints(sessionId: string, settings: NovaOrynExceptionBreakpointSettings): Promise<NovaOrynDebugState>;
     selectExecutionContext(sessionId: string, threadId: string): Promise<NovaOrynDebugState>;
     analyzeOperatingSystem(projectPath: string): Promise<NovaOrynAnalyzerSnapshot>;
+    listBinaries(projectPath: string): Promise<NovaOrynBinaryDescriptor[]>;
+    inspectBinary(projectPath: string, binaryPath: string, symbolFilter?: string): Promise<NovaOrynBinaryInspection>;
     listTargets(projectPath: string): Promise<NovaOrynTargetState>;
     getActiveTarget(projectPath: string): Promise<NovaOrynTargetProfile | undefined>;
     saveTarget(projectPath: string, target: NovaOrynTargetProfile): Promise<NovaOrynTargetMutationResult>;

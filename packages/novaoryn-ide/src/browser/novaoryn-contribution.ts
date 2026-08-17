@@ -19,6 +19,7 @@ import { NovaOrynProfilerWidget } from './novaoryn-profiler-widget';
 import { NovaOrynDriverCentreWidget } from './novaoryn-driver-centre-widget';
 import { NovaOrynTargetManagerWidget } from './novaoryn-target-manager-widget';
 import { NovaOrynStaticAnalyzerWidget } from './novaoryn-static-analyzer-widget';
+import { NovaOrynBinarySymbolExplorerWidget } from './novaoryn-binary-symbol-explorer-widget';
 
 export namespace NovaOrynCommands {
     export const OPEN: Command = {
@@ -59,6 +60,7 @@ export namespace NovaOrynCommands {
     export const DRIVERS: Command = { id: 'novaoryn.engineering.drivers', label: 'Driver Development Centre' };
     export const TARGETS: Command = { id: 'novaoryn.engineering.targets', label: 'Target Manager' };
     export const ANALYZERS: Command = { id: 'novaoryn.engineering.analyzers', label: 'OS-specific Static Analyzers' };
+    export const BINARIES: Command = { id: 'novaoryn.engineering.binarySymbols', label: 'Binary / Symbol Explorer' };
 }
 
 @injectable()
@@ -91,6 +93,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     @inject(NovaOrynDriverCentreWidget) protected readonly driverCentreWidget!: NovaOrynDriverCentreWidget;
     @inject(NovaOrynTargetManagerWidget) protected readonly targetManagerWidget!: NovaOrynTargetManagerWidget;
     @inject(NovaOrynStaticAnalyzerWidget) protected readonly staticAnalyzerWidget!: NovaOrynStaticAnalyzerWidget;
+    @inject(NovaOrynBinarySymbolExplorerWidget) protected readonly binarySymbolExplorerWidget!: NovaOrynBinarySymbolExplorerWidget;
 
     protected toolbarInstalled = false;
     protected titleLogoInstalled = false;
@@ -151,7 +154,15 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         commands.registerCommand(NovaOrynCommands.ANALYZERS, {
             execute: () => {
                 this.staticAnalyzerWidget.setProjectPath(this.currentOperatingSystemPath());
+        this.binarySymbolExplorerWidget.setProjectPath(this.currentOperatingSystemPath());
                 return this.showEngineeringWidget(this.staticAnalyzerWidget, 'main');
+            },
+            isEnabled: () => !!this.currentOperatingSystemPath()
+        });
+        commands.registerCommand(NovaOrynCommands.BINARIES, {
+            execute: () => {
+                this.binarySymbolExplorerWidget.setProjectPath(this.currentOperatingSystemPath());
+                return this.showEngineeringWidget(this.binarySymbolExplorerWidget, 'main');
             },
             isEnabled: () => !!this.currentOperatingSystemPath()
         });
@@ -180,6 +191,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.DRIVERS.id, label: 'Driver Development Centre', order: '6' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.TARGETS.id, label: 'Target Manager', order: '7' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.ANALYZERS.id, label: 'OS-specific Static Analyzers', order: '8' });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.BINARIES.id, label: 'Binary / Symbol Explorer', order: '9' });
 
         menus.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
             commandId: NovaOrynCommands.RECONFIGURE_ROOT_CONTEXT.id,

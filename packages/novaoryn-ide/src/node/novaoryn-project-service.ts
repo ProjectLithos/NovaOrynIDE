@@ -52,6 +52,10 @@ import {
     NovaOrynTargetMutationResult,
     NovaOrynAnalyzerSnapshot,
     NovaOrynAnalyzerDiagnostic,
+    NovaOrynBinaryDescriptor,
+    NovaOrynBinaryInspection,
+    NovaOrynBinarySection,
+    NovaOrynBinarySymbol,
     NovaOrynProjectService
 } from '../common/novaoryn-protocol';
 
@@ -59,7 +63,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.2.4';
+const NOVAORYN_IDE_VERSION = '0.2.5';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -745,6 +749,155 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             infoCount: diagnostics.filter(item => item.severity === 'info').length,
             targetArchitecture: activeTarget?.architecture
         };
+    }
+
+    async listBinaries(projectPath: string): Promise<NovaOrynBinaryDescriptor[]> {
+        const projectRoot = path.resolve(projectPath);
+        if (!this.isOperatingSystemPath(projectRoot)) return [];
+        const result: NovaOrynBinaryDescriptor[] = [];
+        const seen = new Set<string>();
+        const extensions = new Set(['.efi','.exe','.dll','.obj','.lib','.pdb','.map','.a','.so']);
+        const addFile = async (filePath: string, origin: 'os' | 'sdk'): Promise<void> => {
+            const resolved = path.resolve(filePath);
+            const key = resolved.toLowerCase(); if (seen.has(key)) return;
+            const base = path.basename(resolved);
+            const lower = base.toLowerCase();
+            const ext = path.extname(lower);
+            if (!extensions.has(ext) && lower !== 'novaoryn.debugsymbols.json') return;
+            try {
+                const stat = await fs.stat(resolved); if (!stat.isFile()) return;
+                const kind: NovaOrynBinaryDescriptor['kind'] = lower === 'novaoryn.debugsymbols.json' ? 'debug-map'
+                    : ext === '.pdb' ? 'pdb' : ext === '.map' ? 'map' : ext === '.lib' || ext === '.a' ? 'archive'
+                    : ['.efi','.exe','.dll'].includes(ext) ? 'pe' : ext === '.obj' ? 'coff' : 'unknown';
+                result.push({ id: `${origin}:${resolved.toLowerCase()}`, name: base, path: resolved, origin, kind, sizeBytes: stat.size, modifiedUtc: stat.mtime.toISOString() });
+                seen.add(key);
+            } catch { }
+        };
+        const scan = async (directory: string, origin: 'os' | 'sdk', depth: number): Promise<void> => {
+            if (depth < 0 || result.length >= 600) return;
+            const entries = await fs.readdir(directory, { withFileTypes: true }).catch(() => [] as import('fs').Dirent[]);
+            for (const entry of entries) {
+                if (result.length >= 600) break;
+                const full = path.join(directory, entry.name);
+                if (entry.isDirectory()) {
+                    if (entry.name === 'node_modules' || entry.name === '.git') continue;
+                    await scan(full, origin, depth - 1);
+                } else if (entry.isFile()) await addFile(full, origin);
+            }
+        };
+        await scan(path.join(projectRoot, 'Artifacts'), 'os', 5);
+        await scan(path.join(projectRoot, 'bin'), 'os', 4);
+        await scan(path.join(projectRoot, 'obj'), 'os', 4);
+        await scan(path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel'), 'sdk', 4);
+        return result.sort((a,b) => Number(b.origin === 'os') - Number(a.origin === 'os') || a.name.localeCompare(b.name) || a.path.localeCompare(b.path));
+    }
+
+    async inspectBinary(projectPath: string, binaryPath: string, symbolFilter = ''): Promise<NovaOrynBinaryInspection> {
+        const projectRoot = path.resolve(projectPath);
+        const resolved = path.resolve(binaryPath);
+        const allowedRoots = [projectRoot, path.resolve(NOVAORYN_SDK_ROOT, 'Artifacts')];
+        if (!this.isOperatingSystemPath(projectRoot) || !allowedRoots.some(root => { const rel = path.relative(root, resolved); return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel)); })) {
+            return { success: false, sections: [], symbols: [], symbolCount: 0, truncated: false, error: 'Binary inspection is limited to the open NovaOryn OS and bundled SDK artifacts.' };
+        }
+        const binaries = await this.listBinaries(projectRoot);
+        const binary = binaries.find(item => path.resolve(item.path).toLowerCase() === resolved.toLowerCase());
+        if (!binary) return { success: false, sections: [], symbols: [], symbolCount: 0, truncated: false, error: 'The selected artifact is no longer available.' };
+        try {
+            if (binary.kind === 'debug-map') return await this.inspectDebugMap(binary, symbolFilter);
+            if (binary.kind === 'pdb') return await this.inspectPdb(binary, symbolFilter);
+            if (binary.kind === 'map') return await this.inspectLinkerMap(binary, symbolFilter);
+            return await this.inspectNativeBinary(binary, symbolFilter);
+        } catch (error) {
+            return { success: false, binary, sections: [], symbols: [], symbolCount: 0, truncated: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
+    protected binaryFilter(symbols: NovaOrynBinarySymbol[], filter: string, limit = 2000): { symbols: NovaOrynBinarySymbol[]; symbolCount: number; truncated: boolean } {
+        const needle = filter.trim().toLowerCase();
+        const filtered = needle ? symbols.filter(item => item.name.toLowerCase().includes(needle) || (item.sourcePath ?? '').toLowerCase().includes(needle)) : symbols;
+        return { symbols: filtered.slice(0, limit), symbolCount: filtered.length, truncated: filtered.length > limit };
+    }
+
+    protected async inspectDebugMap(binary: NovaOrynBinaryDescriptor, filter: string): Promise<NovaOrynBinaryInspection> {
+        const raw = JSON.parse(await fs.readFile(binary.path, 'utf8')) as any;
+        const rows = Array.isArray(raw.entries) ? raw.entries : [];
+        const symbols: NovaOrynBinarySymbol[] = rows.flatMap((entry: any) => {
+            const address = entry.linkedAddress ?? entry.LinkedAddress;
+            const sourcePath = entry.sourcePath ?? entry.SourcePath;
+            const line = entry.line ?? entry.Line;
+            if (!address || !sourcePath || !Number.isInteger(line)) return [];
+            return [{ name: `${path.basename(String(sourcePath))}:${line}`, address: String(address), kind: 'source-line' as const, sourcePath: String(sourcePath), line: Number(line) }];
+        });
+        if (raw.anchor?.symbol && raw.anchor?.linkedAddress) symbols.unshift({ name: String(raw.anchor.symbol), address: String(raw.anchor.linkedAddress), kind: 'public' });
+        const selected = this.binaryFilter(symbols, filter);
+        return { success: true, binary, format: 'NovaOryn Debug Symbol Map v1', architecture: 'x86_64', imageBase: raw.imageBase ? String(raw.imageBase) : undefined, sections: [], ...selected, message: 'Source-line addresses are read from NovaOryn.DebugSymbols.json.' };
+    }
+
+    protected async inspectPdb(binary: NovaOrynBinaryDescriptor, filter: string): Promise<NovaOrynBinaryInspection> {
+        const tool = path.join(NOVAORYN_SDK_ROOT, '.toolchain', 'LLVM', 'bin', 'llvm-pdbutil.exe');
+        if (!(await this.exists(tool))) return { success: true, binary, format: 'PDB', sections: [], symbols: [], symbolCount: 0, truncated: false, message: 'llvm-pdbutil is not installed, so PDB metadata cannot be enumerated.' };
+        const output = await this.captureTool(tool, ['dump', '--publics', '--globals', binary.path]);
+        const symbols: NovaOrynBinarySymbol[] = [];
+        const seen = new Set<string>();
+        for (const line of output.text.split(/\r?\n/)) {
+            const name = line.match(/`([^`]+)`/)?.[1] ?? line.match(/name\s*=\s*([^,]+)$/i)?.[1]?.trim();
+            if (!name || name.length > 500 || seen.has(name)) continue;
+            const addr = line.match(/addr\s*=\s*([0-9]+):([0-9A-Fa-f]+)/i);
+            const address = addr ? `${addr[1]}:${addr[2]}` : undefined;
+            symbols.push({ name, address, kind: 'public' }); seen.add(name);
+        }
+        const selected = this.binaryFilter(symbols, filter);
+        return { success: output.exitCode === 0, binary, format: 'Microsoft Program Database (PDB)', sections: [], ...selected, message: output.exitCode === 0 ? 'Public/global symbols enumerated with llvm-pdbutil.' : output.text.trim().slice(0, 500) };
+    }
+
+    protected async inspectLinkerMap(binary: NovaOrynBinaryDescriptor, filter: string): Promise<NovaOrynBinaryInspection> {
+        const text = await fs.readFile(binary.path, 'utf8');
+        const symbols: NovaOrynBinarySymbol[] = [];
+        const re = /^\s*(?:0x)?([0-9A-Fa-f]{8,16})\s+(.+?)\s*$/gm; let m: RegExpExecArray | null;
+        while ((m = re.exec(text))) { const name = m[2].trim(); if (name && name.length < 500) symbols.push({ name, address: `0x${m[1]}`, kind: 'unknown' }); }
+        const selected = this.binaryFilter(symbols, filter);
+        return { success: true, binary, format: 'Linker map', sections: [], ...selected };
+    }
+
+    protected async inspectNativeBinary(binary: NovaOrynBinaryDescriptor, filter: string): Promise<NovaOrynBinaryInspection> {
+        const bytes = await fs.readFile(binary.path);
+        const sections: NovaOrynBinarySection[] = [];
+        let format = binary.kind === 'coff' ? 'COFF object' : 'Native binary';
+        let architecture: string | undefined;
+        let imageBase: string | undefined;
+        let entryPoint: string | undefined;
+        if (bytes.length >= 0x40 && bytes.readUInt16LE(0) === 0x5a4d) {
+            const pe = bytes.readUInt32LE(0x3c);
+            if (pe + 24 <= bytes.length && bytes.readUInt32LE(pe) === 0x00004550) {
+                format = 'PE/COFF';
+                const machine = bytes.readUInt16LE(pe + 4); architecture = machine === 0x8664 ? 'x86_64' : machine === 0xaa64 ? 'arm64' : machine === 0x5064 ? 'riscv64' : `machine 0x${machine.toString(16)}`;
+                const sectionCount = bytes.readUInt16LE(pe + 6); const optionalSize = bytes.readUInt16LE(pe + 20); const optional = pe + 24;
+                if (optional + optionalSize <= bytes.length) {
+                    const magic = bytes.readUInt16LE(optional); const entryRva = bytes.readUInt32LE(optional + 16);
+                    if (magic === 0x20b) { const base = bytes.readBigUInt64LE(optional + 24); imageBase = `0x${base.toString(16)}`; entryPoint = `0x${(base + BigInt(entryRva)).toString(16)}`; }
+                    else if (magic === 0x10b) { const base = BigInt(bytes.readUInt32LE(optional + 28)); imageBase = `0x${base.toString(16)}`; entryPoint = `0x${(base + BigInt(entryRva)).toString(16)}`; }
+                }
+                const table = optional + optionalSize;
+                for (let i=0;i<sectionCount;i++) { const o=table+i*40; if (o+40>bytes.length) break; const name=bytes.subarray(o,o+8).toString('ascii').replace(/\0.*$/,''); const va=bytes.readUInt32LE(o+12); const vs=bytes.readUInt32LE(o+8); const raw=bytes.readUInt32LE(o+16); const ch=bytes.readUInt32LE(o+36); sections.push({name,virtualAddress:`0x${va.toString(16)}`,virtualSize:vs,rawSize:raw,characteristics:`0x${ch.toString(16).padStart(8,'0')}`}); }
+            }
+        } else if (bytes.length >= 20) {
+            const machine=bytes.readUInt16LE(0); architecture = machine===0x8664?'x86_64':machine===0xaa64?'arm64':undefined;
+        }
+        const nm = path.join(NOVAORYN_SDK_ROOT, '.toolchain', 'LLVM', 'bin', 'llvm-nm.exe');
+        let symbols: NovaOrynBinarySymbol[] = [];
+        let message: string | undefined;
+        if (await this.exists(nm)) {
+            const output = await this.captureTool(nm, ['--print-size','--size-sort','--demangle', binary.path]);
+            if (output.exitCode === 0) {
+                for (const line of output.text.split(/\r?\n/)) {
+                    const m = /^\s*([0-9A-Fa-f]+)\s+([0-9A-Fa-f]+)\s+([A-Za-z?])\s+(.+)$/.exec(line); if (!m) continue;
+                    const type=m[3].toUpperCase(); const kind: NovaOrynBinarySymbol['kind'] = ['T','W'].includes(type)?'function':['B','D','R','S','G'].includes(type)?'data':'unknown';
+                    symbols.push({name:m[4].trim(),address:`0x${m[1]}`,size:Number.parseInt(m[2],16),kind});
+                }
+            } else message = output.text.trim().slice(0,500);
+        } else message = 'llvm-nm is not installed in the bundled SDK toolchain; binary headers and sections are still available.';
+        const selected=this.binaryFilter(symbols,filter);
+        return {success:true,binary,format,architecture,imageBase,entryPoint,sections,...selected,message};
     }
 
     async listTargets(projectPath: string): Promise<NovaOrynTargetState> {
@@ -1480,7 +1633,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.2.4 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.2.5 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
