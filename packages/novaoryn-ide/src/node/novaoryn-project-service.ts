@@ -61,6 +61,9 @@ import {
     NovaOrynInterruptSnapshot,
     NovaOrynInterruptVectorInfo,
     NovaOrynInterruptMechanism,
+    NovaOrynSyscallSnapshot,
+    NovaOrynSyscallEntry,
+    NovaOrynSyscallAbi,
     NovaOrynMemoryRegionCategory,
     NovaOrynProjectService
 } from '../common/novaoryn-protocol';
@@ -69,7 +72,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.2.7';
+const NOVAORYN_IDE_VERSION = '0.2.9';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -1067,6 +1070,64 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         } catch (error) { return empty('Interrupt/APIC state could not be read from the paused kernel.', true, true, error instanceof Error ? error.message : String(error)); }
     }
 
+    async inspectSyscalls(projectPath: string): Promise<NovaOrynSyscallSnapshot> {
+        const root = path.resolve(projectPath);
+        const capturedAtUtc = new Date().toISOString();
+        const configurationResult = await this.readProjectConfiguration(root);
+        const configuredModel = configurationResult.success ? configurationResult.configuration?.syscallModel : undefined;
+        const counts = (): Record<NovaOrynSyscallAbi, number> => ({ 'novaoryn-get':0, 'novaoryn-set':0, 'novaoryn-event':0, linux:0, 'windows-nt':0 });
+        const builtins = (): NovaOrynSyscallEntry[] => [
+            { abi:'novaoryn-get', number:0, encoded:'0x1000000000000000', name:'ABI version', source:'builtin', registered:true, description:'Returns the NovaOryn native syscall ABI version.' },
+            { abi:'novaoryn-get', number:1, encoded:'0x1000000000000001', name:'Monotonic time', source:'builtin', registered:true, description:'Returns monotonic nanoseconds.' },
+            { abi:'novaoryn-get', number:2, encoded:'0x1000000000000002', name:'Online processor count', source:'builtin', registered:true },
+            { abi:'novaoryn-set', number:0, encoded:'0x1100000000000000', name:'Scheduler quantum', source:'builtin', registered:true, description:'Sets the scheduler quantum in nanoseconds.' },
+            { abi:'novaoryn-event', number:0, encoded:'0x1200000000000000', name:'Yield', source:'builtin', registered:true, description:'Yields the current processor scheduler context.' },
+            { abi:'linux', number:24, name:'sched_yield', source:'builtin', registered:true, description:'Linux-style scheduler yield compatibility syscall.' }
+        ];
+        const session = this.latestSessionForProject(root);
+        if (!session || session.mode !== 'debug' || !session.gdb || !session.debug?.active) {
+            return { success:true, active:false, paused:false, capturedAtUtc, configuredModel, registrySlots:64, entries:builtins(), registeredCounts:counts(), message:'Showing configured and built-in syscall contracts. Start Debug and pause the kernel to inspect live registered handlers.' };
+        }
+        if (!session.debug.paused) {
+            return { success:true, active:true, paused:false, capturedAtUtc, configuredModel, registrySlots:64, entries:builtins(), registeredCounts:counts(), message:'Kernel is running. Pause it to read the live syscall registry.' };
+        }
+        try {
+            await this.ensureNativeGlobalSymbols(session);
+            if (session.relocationDelta === undefined) throw new Error('Kernel relocation delta is unavailable.');
+            const addressOf = (suffix: string): bigint | undefined => {
+                const symbol = this.findKernelGlobal(session, 'KernelSystemCalls', suffix);
+                return symbol ? symbol.linkedAddress + session.relocationDelta! : undefined;
+            };
+            const readByte = async (suffix:string):Promise<number|undefined> => { const a=addressOf(suffix); if(a===undefined)return undefined; const b=await this.readMemory(session.gdb!,a,1); return b.length===1?b[0]:undefined; };
+            const readU32 = async (suffix:string):Promise<number|undefined> => { const a=addressOf(suffix); if(a===undefined)return undefined; const b=await this.readMemory(session.gdb!,a,4); return b.length===4?b.readUInt32LE(0):undefined; };
+            const readU64 = async (suffix:string):Promise<bigint|undefined> => { const a=addressOf(suffix); if(a===undefined)return undefined; return this.readU64(session.gdb!,a); };
+            const initialized=(await readByte('_initialized'))===1;
+            const smapEnabled=(await readByte('_smapEnabled'))===1;
+            const configuredProcessors=await readU32('_configuredProcessors');
+            const stackBase=await readU64('_stackBase'), stackTop=await readU64('_stackTop');
+            const registryAddress=addressOf('_registry');
+            const entries=builtins(); const registeredCounts=counts();
+            const abiAtIndex: NovaOrynSyscallAbi[]=['novaoryn-get','novaoryn-set','novaoryn-event','linux','windows-nt'];
+            if (registryAddress !== undefined) {
+                const raw=await this.readMemoryChunked(session.gdb,registryAddress,64*8*5,1024);
+                if(raw.length===64*8*5) {
+                    for(let table=0;table<5;table++) for(let number=0;number<64;number++) {
+                        const handler=raw.readBigUInt64LE((table*64+number)*8); if(handler===0n) continue;
+                        const abi=abiAtIndex[table]; registeredCounts[abi]++;
+                        const linked=session.relocationDelta!==undefined?handler-session.relocationDelta:undefined;
+                        const source=linked!==undefined&&session.nativeDebugMap?this.resolveSourceLocation(session.nativeDebugMap,linked):undefined;
+                        const encoded=abi==='novaoryn-get'?`0x${(0x1000000000000000n+BigInt(number)).toString(16)}`:abi==='novaoryn-set'?`0x${(0x1100000000000000n+BigInt(number)).toString(16)}`:abi==='novaoryn-event'?`0x${(0x1200000000000000n+BigInt(number)).toString(16)}`:undefined;
+                        entries.push({abi,number,encoded,name:`Registered ${abi} ${number}`,source:'registered',registered:true,handlerAddress:this.formatAddress(handler),sourcePath:source?.sourcePath,line:source?.line});
+                    }
+                }
+            }
+            entries.sort((a,b)=>abiAtIndex.indexOf(a.abi)-abiAtIndex.indexOf(b.abi)||a.number-b.number||a.source.localeCompare(b.source));
+            return { success:true,active:true,paused:true,capturedAtUtc,configuredModel,initialized,smapEnabled,configuredProcessors,syscallStackBase:stackBase?this.formatAddress(stackBase):undefined,syscallStackTop:stackTop?this.formatAddress(stackTop):undefined,syscallStackBytes:stackBase&&stackTop&&stackTop>=stackBase?this.safeNumber(stackTop-stackBase):32768,registrySlots:64,entries,registeredCounts,message:`Read KernelSystemCalls and ${Object.values(registeredCounts).reduce((a,b)=>a+b,0)} registered handler(s) from paused kernel memory.` };
+        } catch(error) {
+            return { success:false,active:true,paused:true,capturedAtUtc,configuredModel,registrySlots:64,entries:builtins(),registeredCounts:counts(),error:error instanceof Error?error.message:String(error),message:'Live syscall registry could not be read.' };
+        }
+    }
+
     protected uefiMemoryType(type: number): { name: string; category: NovaOrynMemoryRegionCategory } {
         switch (type) {
             case 0: return { name: 'Reserved', category: 'reserved' };
@@ -1846,7 +1907,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.2.7 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.2.9 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -3222,7 +3283,8 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             }
             for (const [component, suffixes] of [
                 ['KernelInterruptDispatch', ['_initialized','_localApicBase','_callbacks','_cookies','_allocated']],
-                ['KernelInterruptBroker', ['_initialized','_localApic','_ioApic','_x2Apic','_routes','_capacity','_count','_ioApics','_ioApicCount']]
+                ['KernelInterruptBroker', ['_initialized','_localApic','_ioApic','_x2Apic','_routes','_capacity','_count','_ioApics','_ioApicCount']],
+                ['KernelSystemCalls', ['_registry','_initialized','_smapEnabled','_stateAddress','_stackBase','_stackTop','_configuredProcessors']]
             ] as Array<[string,string[]]>) {
                 for (const suffix of suffixes) {
                     if (this.findKernelGlobal(session, component, suffix)) continue;

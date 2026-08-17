@@ -30,7 +30,7 @@ try {
   requireText('packages/novaoryn-ide/src/browser/novaoryn-frontend-module.ts', 'NovaOrynMemoryMapVisualizerWidget', 'widget registration');
   requireRegex('packages/novaoryn-ide/src/browser/style/novaoryn.css', /\.novaoryn-memory-track\s*\{/, 'visual memory track styling');
   requireText('Build-NovaOrynIDE.bat', 'Verify-NovaOrynIDEMemoryMap.cjs', 'build gate');
-  console.log(`[ OK ] NovaOryn IDE 0.2.7 Memory-map Visualiser contract verified (${checks.length} checks).`);
+  console.log(`[ OK ] NovaOryn IDE 0.2.9 Memory-map Visualiser contract verified (${checks.length} checks).`);
   process.exit(0);
 } catch (error) {
   console.error(`[FAIL] ${error.message}`);

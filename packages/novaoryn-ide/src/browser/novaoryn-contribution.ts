@@ -22,6 +22,7 @@ import { NovaOrynStaticAnalyzerWidget } from './novaoryn-static-analyzer-widget'
 import { NovaOrynBinarySymbolExplorerWidget } from './novaoryn-binary-symbol-explorer-widget';
 import { NovaOrynMemoryMapVisualizerWidget } from './novaoryn-memory-map-visualizer-widget';
 import { NovaOrynInterruptApicVisualizerWidget } from './novaoryn-interrupt-apic-visualizer-widget';
+import { NovaOrynSyscallExplorerWidget } from './novaoryn-syscall-explorer-widget';
 
 export namespace NovaOrynCommands {
     export const OPEN: Command = {
@@ -65,6 +66,7 @@ export namespace NovaOrynCommands {
     export const BINARIES: Command = { id: 'novaoryn.engineering.binarySymbols', label: 'Binary / Symbol Explorer' };
     export const MEMORY_MAP: Command = { id: 'novaoryn.engineering.memoryMap', label: 'Memory-map Visualiser' };
     export const INTERRUPTS: Command = { id: 'novaoryn.engineering.interruptApic', label: 'Interrupt / APIC Visualiser' };
+    export const SYSCALLS: Command = { id: 'novaoryn.engineering.syscalls', label: 'Syscall Explorer' };
 }
 
 @injectable()
@@ -100,6 +102,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     @inject(NovaOrynBinarySymbolExplorerWidget) protected readonly binarySymbolExplorerWidget!: NovaOrynBinarySymbolExplorerWidget;
     @inject(NovaOrynMemoryMapVisualizerWidget) protected readonly memoryMapVisualizerWidget!: NovaOrynMemoryMapVisualizerWidget;
     @inject(NovaOrynInterruptApicVisualizerWidget) protected readonly interruptApicVisualizerWidget!: NovaOrynInterruptApicVisualizerWidget;
+    @inject(NovaOrynSyscallExplorerWidget) protected readonly syscallExplorerWidget!: NovaOrynSyscallExplorerWidget;
 
     protected toolbarInstalled = false;
     protected titleLogoInstalled = false;
@@ -185,6 +188,13 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
             },
             isEnabled: () => !!this.currentOperatingSystemPath()
         });
+        commands.registerCommand(NovaOrynCommands.SYSCALLS, {
+            execute: () => {
+                this.syscallExplorerWidget.setProjectPath(this.currentOperatingSystemPath());
+                return this.showEngineeringWidget(this.syscallExplorerWidget, 'main');
+            },
+            isEnabled: () => !!this.currentOperatingSystemPath()
+        });
     }
 
 
@@ -213,6 +223,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.BINARIES.id, label: 'Binary / Symbol Explorer', order: '9' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.MEMORY_MAP.id, label: 'Memory-map Visualiser', order: '10' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.INTERRUPTS.id, label: 'Interrupt / APIC Visualiser', order: '11' });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.SYSCALLS.id, label: 'Syscall Explorer', order: '12' });
 
         menus.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
             commandId: NovaOrynCommands.RECONFIGURE_ROOT_CONTEXT.id,

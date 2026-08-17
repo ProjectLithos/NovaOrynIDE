@@ -634,6 +634,43 @@ export interface NovaOrynInterruptSnapshot {
     error?: string;
 }
 
+
+
+export type NovaOrynSyscallAbi = 'novaoryn-get' | 'novaoryn-set' | 'novaoryn-event' | 'linux' | 'windows-nt';
+export type NovaOrynSyscallSource = 'builtin' | 'registered';
+
+export interface NovaOrynSyscallEntry {
+    abi: NovaOrynSyscallAbi;
+    number: number;
+    encoded?: string;
+    name: string;
+    source: NovaOrynSyscallSource;
+    registered: boolean;
+    handlerAddress?: string;
+    sourcePath?: string;
+    line?: number;
+    description?: string;
+}
+
+export interface NovaOrynSyscallSnapshot {
+    success: boolean;
+    active: boolean;
+    paused: boolean;
+    capturedAtUtc: string;
+    configuredModel?: SyscallModel;
+    initialized?: boolean;
+    smapEnabled?: boolean;
+    configuredProcessors?: number;
+    syscallStackBase?: string;
+    syscallStackTop?: string;
+    syscallStackBytes?: number;
+    registrySlots: number;
+    entries: NovaOrynSyscallEntry[];
+    registeredCounts: Record<NovaOrynSyscallAbi, number>;
+    message?: string;
+    error?: string;
+}
+
 export interface NovaOrynProjectService {
     listOperatingSystems(): Promise<NovaOrynOperatingSystem[]>;
     createProject(configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
@@ -664,6 +701,7 @@ export interface NovaOrynProjectService {
     inspectBinary(projectPath: string, binaryPath: string, symbolFilter?: string): Promise<NovaOrynBinaryInspection>;
     inspectMemoryMap(projectPath: string): Promise<NovaOrynMemoryMapSnapshot>;
     inspectInterrupts(projectPath: string): Promise<NovaOrynInterruptSnapshot>;
+    inspectSyscalls(projectPath: string): Promise<NovaOrynSyscallSnapshot>;
     listTargets(projectPath: string): Promise<NovaOrynTargetState>;
     getActiveTarget(projectPath: string): Promise<NovaOrynTargetProfile | undefined>;
     saveTarget(projectPath: string, target: NovaOrynTargetProfile): Promise<NovaOrynTargetMutationResult>;
