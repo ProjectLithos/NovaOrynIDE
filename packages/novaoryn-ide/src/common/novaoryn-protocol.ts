@@ -446,6 +446,33 @@ export interface NovaOrynTargetProfile {
 export interface NovaOrynTargetState { schemaVersion: 1; activeTargetId: string; targets: NovaOrynTargetProfile[]; }
 export interface NovaOrynTargetMutationResult { success: boolean; state?: NovaOrynTargetState; error?: string; }
 
+
+export type NovaOrynAnalyzerSeverity = 'error' | 'warning' | 'info';
+export type NovaOrynAnalyzerCategory = 'boundary' | 'architecture' | 'kernel-safety' | 'driver-capability' | 'interrupt-safety' | 'userland-safety';
+
+export interface NovaOrynAnalyzerDiagnostic {
+    code: string;
+    severity: NovaOrynAnalyzerSeverity;
+    category: NovaOrynAnalyzerCategory;
+    message: string;
+    filePath: string;
+    line: number;
+    column: number;
+    rule: string;
+}
+
+export interface NovaOrynAnalyzerSnapshot {
+    schemaVersion: 1;
+    analyzedAtUtc: string;
+    projectPath: string;
+    filesAnalyzed: number;
+    diagnostics: NovaOrynAnalyzerDiagnostic[];
+    errorCount: number;
+    warningCount: number;
+    infoCount: number;
+    targetArchitecture?: NovaOrynTargetArchitecture;
+}
+
 export interface NovaOrynProjectService {
     listOperatingSystems(): Promise<NovaOrynOperatingSystem[]>;
     createProject(configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
@@ -471,6 +498,7 @@ export interface NovaOrynProjectService {
     loadCrashDump(dumpPath: string): Promise<NovaOrynCrashDumpResult>;
     configureExceptionBreakpoints(sessionId: string, settings: NovaOrynExceptionBreakpointSettings): Promise<NovaOrynDebugState>;
     selectExecutionContext(sessionId: string, threadId: string): Promise<NovaOrynDebugState>;
+    analyzeOperatingSystem(projectPath: string): Promise<NovaOrynAnalyzerSnapshot>;
     listTargets(projectPath: string): Promise<NovaOrynTargetState>;
     getActiveTarget(projectPath: string): Promise<NovaOrynTargetProfile | undefined>;
     saveTarget(projectPath: string, target: NovaOrynTargetProfile): Promise<NovaOrynTargetMutationResult>;

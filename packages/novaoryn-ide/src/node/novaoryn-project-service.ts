@@ -50,6 +50,8 @@ import {
     NovaOrynTargetProfile,
     NovaOrynTargetState,
     NovaOrynTargetMutationResult,
+    NovaOrynAnalyzerSnapshot,
+    NovaOrynAnalyzerDiagnostic,
     NovaOrynProjectService
 } from '../common/novaoryn-protocol';
 
@@ -57,7 +59,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.2.1';
+const NOVAORYN_IDE_VERSION = '0.2.2';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -617,6 +619,132 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             if (!Number.isInteger(target.qemu.memoryMiB) || target.qemu.memoryMiB < 64 || target.qemu.memoryMiB > 1048576) return 'QEMU RAM must be between 64 MiB and 1 TiB.';
         }
         return undefined;
+    }
+
+    async analyzeOperatingSystem(projectPath: string): Promise<NovaOrynAnalyzerSnapshot> {
+        const projectRoot = path.resolve(projectPath);
+        const diagnostics: NovaOrynAnalyzerDiagnostic[] = [];
+        let filesAnalyzed = 0;
+        const activeTarget = await this.getActiveTarget(projectRoot).catch(() => undefined);
+        if (!this.isOperatingSystemPath(projectRoot)) {
+            return { schemaVersion: 1, analyzedAtUtc: new Date().toISOString(), projectPath: projectRoot, filesAnalyzed: 0, diagnostics: [], errorCount: 0, warningCount: 0, infoCount: 0 };
+        }
+
+        const add = (code: string, severity: NovaOrynAnalyzerDiagnostic['severity'], category: NovaOrynAnalyzerDiagnostic['category'], message: string, filePath: string, line: number, column: number, rule: string): void => {
+            diagnostics.push({ code, severity, category, message, filePath, line, column, rule });
+        };
+        const location = (text: string, index: number): { line: number; column: number } => {
+            const before = text.slice(0, Math.max(0, index));
+            const lines = before.split(/\r?\n/);
+            return { line: lines.length, column: (lines[lines.length - 1]?.length ?? 0) + 1 };
+        };
+        const reportPattern = (text: string, regex: RegExp, filePath: string, code: string, severity: NovaOrynAnalyzerDiagnostic['severity'], category: NovaOrynAnalyzerDiagnostic['category'], message: string, rule: string): void => {
+            regex.lastIndex = 0;
+            let match: RegExpExecArray | null;
+            while ((match = regex.exec(text))) {
+                const loc = location(text, match.index);
+                add(code, severity, category, message, filePath, loc.line, loc.column, rule);
+                if (!regex.global) break;
+            }
+        };
+        const sourceFiles: string[] = [];
+        const scan = async (directory: string): Promise<void> => {
+            const entries = await fs.readdir(directory, { withFileTypes: true }).catch(() => [] as import('fs').Dirent[]);
+            for (const entry of entries) {
+                if (entry.name === 'bin' || entry.name === 'obj' || entry.name === '.novaoryn' || entry.name === '.git' || entry.name === 'node_modules' || entry.name === 'Sdk' || entry.name === 'SDK') continue;
+                const full = path.join(directory, entry.name);
+                if (entry.isDirectory()) await scan(full);
+                else if (entry.isFile() && entry.name.toLowerCase().endsWith('.cs')) sourceFiles.push(full);
+            }
+        };
+        await scan(projectRoot);
+
+        for (const filePath of sourceFiles) {
+            let text: string;
+            try { text = await fs.readFile(filePath, 'utf8'); } catch { continue; }
+            filesAnalyzed++;
+            const relative = path.relative(projectRoot, filePath).replace(/\\/g, '/');
+            const lower = relative.toLowerCase();
+            const inKernel = lower === 'kernel/kernel.cs' || lower.startsWith('kernel/');
+            const inDriver = lower.startsWith('drivers/') || lower.startsWith('driverprojects/') || lower.includes('/drivers/');
+            const inUserland = lower.startsWith('userland/') || lower.includes('/userland/');
+            const inArchitectureLayer = lower.includes('/arch/') || lower.includes('/architecture/') || lower.includes('/hal/') || lower.startsWith('arch/') || lower.startsWith('hal/');
+
+            if (inUserland) {
+                reportPattern(text, /\busing\s+NovaOryn\.Kernel(?:\.|\s*;)/g, filePath, 'NOA1001', 'error', 'boundary', 'Userland code must not reference NovaOryn.Kernel assemblies directly; use a syscall/service contract.', 'kernel-userland-boundary');
+                reportPattern(text, /\bunsafe\b|\b(?:byte|sbyte|short|ushort|int|uint|long|ulong|void)\s*\*/g, filePath, 'NOA1002', 'warning', 'userland-safety', 'Unsafe/pointer code in userland bypasses normal NovaOryn isolation expectations and should be justified behind a supported capability/API.', 'unsafe-userland');
+            }
+            if (inKernel || inDriver) {
+                reportPattern(text, /\bThread\.Sleep\s*\(|\bTask\.Delay\s*\(/g, filePath, 'NOA2001', 'error', 'kernel-safety', 'Blocking managed sleep/delay is not valid in kernel or driver code; use NovaOryn timers/scheduler primitives.', 'blocking-kernel-wait');
+                reportPattern(text, /\bthrow\s+(?:new\s+)?[A-Za-z_]/g, filePath, 'NOA2002', 'warning', 'kernel-safety', 'Kernel/driver code should return an explicit status/error contract instead of relying on managed exceptions in normal failure paths.', 'kernel-exception-path');
+                reportPattern(text, /\basync\s+(?:System\.)?(?:Threading\.Tasks\.)?Task\b|\basync\s+Task\b/g, filePath, 'NOA2003', 'warning', 'kernel-safety', 'Managed async/Task execution is not part of the freestanding kernel scheduling contract unless an SDK subsystem explicitly provides it.', 'kernel-managed-async');
+            }
+            if (!inArchitectureLayer && !inDriver && (inKernel || lower.startsWith('services/'))) {
+                reportPattern(text, /\b(?:PortIO|IoPort|In8|In16|In32|Out8|Out16|Out32)\b/g, filePath, 'NOA3001', 'error', 'architecture', 'Direct I/O-port access leaked outside the architecture/HAL/driver boundary.', 'hardware-access-boundary');
+                reportPattern(text, /\bNovaOryn\.Arch\.(?:X64|Arm64|RiscV64)\b/g, filePath, 'NOA3002', 'warning', 'architecture', 'Architecture-specific API referenced from generic OS code; move it behind NovaOryn architecture/HAL contracts.', 'architecture-leakage');
+            }
+            if (activeTarget?.architecture && activeTarget.architecture !== 'x86_64' && !inArchitectureLayer) {
+                reportPattern(text, /\b(?:X64|x86_64|CPUID|MSR|CR0|CR2|CR3|CR4|APIC|x2APIC)\b/g, filePath, 'NOA3003', 'warning', 'architecture', `The active target is ${activeTarget.architecture}, but generic source contains x64-specific implementation vocabulary.`, 'active-target-architecture');
+            }
+
+            const interruptMethod = /\b(?:Interrupt|Irq|Isr|Exception)\w*\s*\([^)]*\)\s*(?:=>|\{)/gi;
+            let interruptMatch: RegExpExecArray | null;
+            while ((interruptMatch = interruptMethod.exec(text))) {
+                const start = interruptMatch.index;
+                const sample = text.slice(start, Math.min(text.length, start + 1600));
+                const allocation = /\bnew\s+[A-Za-z_][A-Za-z0-9_.<>]*\s*(?:\(|\[)/.exec(sample);
+                if (allocation) {
+                    const loc = location(text, start + allocation.index);
+                    add('NOA4001', 'warning', 'interrupt-safety', 'Allocation detected in an interrupt/IRQ/ISR/exception handler. Interrupt paths should avoid heap allocation and unbounded work.', filePath, loc.line, loc.column, 'interrupt-allocation');
+                }
+            }
+        }
+
+        // Driver manifests are authoritative capability declarations. Match obvious SDK surface use
+        // against each driver project so undeclared hardware privileges are visible before boot.
+        const driverRoot = path.join(projectRoot, 'DriverProjects');
+        const driverEntries = await fs.readdir(driverRoot, { withFileTypes: true }).catch(() => [] as import('fs').Dirent[]);
+        const capabilityUses: Array<{ capability: string; regex: RegExp; label: string }> = [
+            { capability: 'mmio', regex: /\b(?:Mmio|MMIO|MapMmio|MemoryMappedIo)\b/, label: 'MMIO' },
+            { capability: 'pio', regex: /\b(?:PortIO|IoPort|In8|In16|In32|Out8|Out16|Out32)\b/, label: 'port I/O' },
+            { capability: 'interrupts', regex: /\b(?:Interrupt|Irq|IRQ|Isr|ISR)\b/, label: 'interrupt' },
+            { capability: 'msi', regex: /\bMSI\b|\bMsi\b/, label: 'MSI' },
+            { capability: 'msix', regex: /\bMSI-X\b|\bMSIX\b|\bMsiX\b|\bMsix\b/, label: 'MSI-X' },
+            { capability: 'dma', regex: /\bDMA\b|\bDma\b/, label: 'DMA' },
+            { capability: 'timers', regex: /\b(?:KernelTimer|TimerBroker|HighResolutionTimer)\b/, label: 'timer' }
+        ];
+        for (const entry of driverEntries) {
+            if (!entry.isDirectory()) continue;
+            const folder = path.join(driverRoot, entry.name);
+            const manifestPath = path.join(folder, 'NovaOryn.Driver.json');
+            let manifest: NovaOrynDriverManifest | undefined;
+            try { manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8')) as NovaOrynDriverManifest; } catch { continue; }
+            const declared = new Set(manifest.capabilities ?? []);
+            const files = sourceFiles.filter(file => file.toLowerCase().startsWith((folder + path.sep).toLowerCase()));
+            for (const filePath of files) {
+                const text = await fs.readFile(filePath, 'utf8').catch(() => '');
+                for (const use of capabilityUses) {
+                    const found = use.regex.exec(text);
+                    if (found && !declared.has(use.capability as any)) {
+                        const loc = location(text, found.index);
+                        add('NOA5001', 'error', 'driver-capability', `${manifest.name} uses ${use.label} functionality but does not declare the '${use.capability}' capability in NovaOryn.Driver.json.`, filePath, loc.line, loc.column, 'driver-capability-declaration');
+                    }
+                }
+            }
+        }
+
+        diagnostics.sort((a, b) => a.filePath.localeCompare(b.filePath) || a.line - b.line || a.code.localeCompare(b.code));
+        return {
+            schemaVersion: 1,
+            analyzedAtUtc: new Date().toISOString(),
+            projectPath: projectRoot,
+            filesAnalyzed,
+            diagnostics,
+            errorCount: diagnostics.filter(item => item.severity === 'error').length,
+            warningCount: diagnostics.filter(item => item.severity === 'warning').length,
+            infoCount: diagnostics.filter(item => item.severity === 'info').length,
+            targetArchitecture: activeTarget?.architecture
+        };
     }
 
     async listTargets(projectPath: string): Promise<NovaOrynTargetState> {
@@ -1352,7 +1480,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.2.1 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.2.2 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);

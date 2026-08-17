@@ -516,7 +516,7 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 .novaoryn-driver-runtime { margin-top:18px; }
 
 
-/* NovaOryn IDE 0.2.1 Target Manager */
+/* NovaOryn Target Manager */
 .novaoryn-target-create { margin-bottom: 18px; }
 .novaoryn-target-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px 14px; margin:10px 0 14px; }
 .novaoryn-target-field { display:flex; flex-direction:column; gap:5px; }
@@ -530,3 +530,14 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 .novaoryn-target-meta { margin-top:6px; opacity:.78; font-size:12px; }
 .novaoryn-target-actions { display:flex; gap:8px; margin-top:10px; }
 .novaoryn-target-note { margin-top:18px; }
+
+
+/* NovaOryn IDE 0.2.2 OS-specific Static Analyzers */
+.novaoryn-analyzer-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-bottom:12px; }
+.novaoryn-analyzer-summary>div { border:1px solid var(--theia-widget-border); background:var(--theia-editor-background); padding:9px 10px; display:flex; flex-direction:column; gap:2px; }
+.novaoryn-analyzer-summary strong { font-size:20px; }.novaoryn-analyzer-summary span{opacity:.68;font-size:12px;}
+.novaoryn-analyzer-list { border:1px solid var(--theia-widget-border); max-height:520px; overflow:auto; }
+.novaoryn-analyzer-row { display:grid; grid-template-columns:72px 72px minmax(280px,1fr) minmax(180px,.65fr); gap:8px; align-items:start; padding:7px 8px; border-bottom:1px solid var(--theia-widget-border); border-left:3px solid transparent; }
+.novaoryn-analyzer-row:last-child{border-bottom:0}.novaoryn-analyzer-row.error{border-left-color:var(--theia-errorForeground,#f48771)}.novaoryn-analyzer-row.warning{border-left-color:var(--theia-editorWarning-foreground,#cca700)}.novaoryn-analyzer-row.info{border-left-color:var(--theia-editorInfo-foreground,#75beff)}
+.novaoryn-analyzer-severity { font-size:11px;font-weight:700;opacity:.8; }.novaoryn-analyzer-message small{display:block;opacity:.55;margin-top:2px}.novaoryn-analyzer-row code{font-size:11px;opacity:.72;overflow-wrap:anywhere}.novaoryn-analyzer-clean{opacity:.72}.novaoryn-analyzer-rule-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px 12px}
+@media (max-width:900px){.novaoryn-analyzer-row{grid-template-columns:62px 62px minmax(180px,1fr)}.novaoryn-analyzer-row code{grid-column:1/-1}}
