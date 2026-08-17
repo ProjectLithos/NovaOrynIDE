@@ -257,6 +257,28 @@ export interface NovaOrynConfigurationResult {
     error?: string;
 }
 
+export interface NovaOrynTestDescriptor {
+    id: string;
+    name: string;
+    projectPath: string;
+    source: 'os' | 'sdk';
+    category: string;
+}
+
+export interface NovaOrynTestRunResult {
+    success: boolean;
+    runId?: string;
+    error?: string;
+}
+
+export interface NovaOrynTestOutput {
+    text: string;
+    nextOffset: number;
+    complete: boolean;
+    exitCode?: number;
+    error?: string;
+}
+
 export interface NovaOrynProjectResult {
     success: boolean;
     projectPath?: string;
@@ -284,5 +306,8 @@ export interface NovaOrynProjectService {
     loadCrashDump(dumpPath: string): Promise<NovaOrynCrashDumpResult>;
     configureExceptionBreakpoints(sessionId: string, settings: NovaOrynExceptionBreakpointSettings): Promise<NovaOrynDebugState>;
     selectExecutionContext(sessionId: string, threadId: string): Promise<NovaOrynDebugState>;
+    listTests(projectPath: string): Promise<NovaOrynTestDescriptor[]>;
+    runTest(projectPath: string, testId: string): Promise<NovaOrynTestRunResult>;
+    readTestOutput(runId: string, offset: number): Promise<NovaOrynTestOutput>;
 }
 

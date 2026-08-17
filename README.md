@@ -1,4 +1,4 @@
-NovaOryn IDE 0.1.46 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
+NovaOryn IDE 0.1.47 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
 
 # NovaOryn IDE
 
@@ -15,7 +15,19 @@ The Run/Debug toolbar fixes from 0.1.12 remain in place: the toolbar stays below
 
 NovaOryn IDE is the desktop development environment for the NovaOryn Operating System SDK. It is a custom Eclipse Theia desktop application with NovaOryn-specific project configuration and generation.
 
-## Current release: 0.1.46
+## Current release: 0.1.47
+
+### 0.1.47 Professional OS engineering workspace
+
+NovaOryn IDE 0.1.47 adds four first-class operating-system engineering tools. The **OS Dashboard** becomes the default view after explicitly opening an existing NovaOryn operating system and summarizes the kernel model, architecture, scheduler, syscall model, target settings, driver count, test count, hardware configuration and diagnostics.
+
+The new **NovaOryn Console** is a dedicated bottom panel for build, QEMU and serial/kernel output. It supports filtering, pause/resume, clear and auto-scroll. Debug QEMU serial output is tailed from the active run and labelled as kernel output so boot/runtime messages remain visible inside the IDE.
+
+The **Hardware / Device Tree** presents configured CPU/SMP, interrupt/timer, platform/bus, storage, networking, input, graphics and audio devices as an OS-specific tree. The **Test Explorer** discovers individual C# test executable projects from both the operating-system Tests folder and the bundled SDK tests, runs one with NovaOryn's pinned .NET SDK, streams output and reports PASS/FAIL.
+
+All four views are available under the **NovaOryn > Engineering** menu.
+
+## Previous release: 0.1.46
 
 ### 0.1.46 Page-table/heap inspection and crash-dump debugging
 
@@ -23,7 +35,7 @@ NovaOryn IDE 0.1.46 adds an x64 **Page Tables** inspector that walks the active 
 
 The **Kernel Heap** inspector reads the NativeAOT `KernelHeap` metadata directly from the stopped kernel, showing committed, allocated, free and peak bytes together with the first-fit free/live block table and allocation tokens.
 
-The new **Crash Dump Debugging** workflow writes `.nodump.json` captures beneath the OS project's `.novaoryn\crash-dumps` directory. Dumps include debugger state, registers, named locals, x64 unwind call stack, mixed disassembly, page-table translation, heap state, and stack/code memory. Exception and panic stops automatically create a dump, and a saved dump can be reopened in NovaOryn Debug without QEMU running.
+The **Crash Dump Debugging** workflow writes `.nodump.json` captures beneath the OS project's `.novaoryn\crash-dumps` directory. Dumps include debugger state, registers, named locals, x64 unwind call stack, mixed disassembly, page-table translation, heap state, and stack/code memory. Exception and panic stops automatically create a dump, and a saved dump can be reopened in NovaOryn Debug without QEMU running.
 
 ## Previous release: 0.1.44
 

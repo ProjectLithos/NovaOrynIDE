@@ -9,6 +9,10 @@ import { EDITOR_CONTEXT_MENU, EDITOR_LINENUMBER_CONTEXT_MENU, EditorManager } fr
 import { NovaOrynBreakpointManager } from './novaoryn-breakpoint-manager';
 import { NovaOrynWidget, NOVAORYN_EXPLICIT_WORKSPACE_OPEN } from './novaoryn-widget';
 import { NovaOrynToolbarWidget } from './novaoryn-toolbar-widget';
+import { NovaOrynDashboardWidget } from './novaoryn-dashboard-widget';
+import { NovaOrynKernelConsoleWidget } from './novaoryn-kernel-console-widget';
+import { NovaOrynHardwareWidget } from './novaoryn-hardware-widget';
+import { NovaOrynTestExplorerWidget } from './novaoryn-test-explorer-widget';
 
 export namespace NovaOrynCommands {
     export const OPEN: Command = {
@@ -40,6 +44,10 @@ export namespace NovaOrynCommands {
         id: 'novaoryn.debug.breakpointHitCount',
         label: 'Edit Breakpoint Hit Count…'
     };
+    export const DASHBOARD: Command = { id: 'novaoryn.dashboard', label: 'Open OS Dashboard' };
+    export const CONSOLE: Command = { id: 'novaoryn.console', label: 'Open Kernel Console' };
+    export const HARDWARE: Command = { id: 'novaoryn.hardware', label: 'Open Hardware / Device Tree' };
+    export const TESTS: Command = { id: 'novaoryn.tests', label: 'Open Test Explorer' };
 }
 
 @injectable()
@@ -48,6 +56,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
 
     @inject(WorkspaceService)
     protected readonly workspaceService!: WorkspaceService;
+
 
     @inject(SelectionService)
     protected readonly selectionService!: SelectionService;
@@ -61,8 +70,11 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     @inject(MessageService)
     protected readonly messageService!: MessageService;
 
-    @inject(NovaOrynToolbarWidget)
-    protected readonly toolbarWidget!: NovaOrynToolbarWidget;
+    @inject(NovaOrynToolbarWidget) protected readonly toolbarWidget!: NovaOrynToolbarWidget;
+    @inject(NovaOrynDashboardWidget) protected readonly dashboardWidget!: NovaOrynDashboardWidget;
+    @inject(NovaOrynKernelConsoleWidget) protected readonly consoleWidget!: NovaOrynKernelConsoleWidget;
+    @inject(NovaOrynHardwareWidget) protected readonly hardwareWidget!: NovaOrynHardwareWidget;
+    @inject(NovaOrynTestExplorerWidget) protected readonly testExplorerWidget!: NovaOrynTestExplorerWidget;
 
     protected toolbarInstalled = false;
     protected titleLogoInstalled = false;
@@ -112,6 +124,10 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
             isEnabled: () => true,
             isVisible: () => true
         });
+        commands.registerCommand(NovaOrynCommands.DASHBOARD, { execute: () => this.showEngineeringWidget(this.dashboardWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.CONSOLE, { execute: () => this.showEngineeringWidget(this.consoleWidget, 'bottom') });
+        commands.registerCommand(NovaOrynCommands.HARDWARE, { execute: () => this.showEngineeringWidget(this.hardwareWidget, 'left'), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.TESTS, { execute: () => this.showEngineeringWidget(this.testExplorerWidget, 'left'), isEnabled: () => !!this.currentOperatingSystemPath() });
     }
 
 
@@ -123,10 +139,15 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
 
         const novaOrynMenu = [...MAIN_MENU_BAR, '8_novaoryn'];
         menus.registerSubmenu(novaOrynMenu, 'NovaOryn', { sortString: '8' });
+        menus.registerSubmenu([...novaOrynMenu, '2_engineering'], 'Engineering');
         menus.registerMenuAction([...novaOrynMenu, '1_configuration'], {
             commandId: NovaOrynCommands.RECONFIGURE.id,
             label: 'Reconfigure OS'
         });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.DASHBOARD.id, label: 'OS Dashboard', order: '0' });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.CONSOLE.id, label: 'Kernel Console', order: '1' });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.HARDWARE.id, label: 'Hardware / Device Tree', order: '2' });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.TESTS.id, label: 'Test Explorer', order: '3' });
 
         menus.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
             commandId: NovaOrynCommands.RECONFIGURE_ROOT_CONTEXT.id,
@@ -173,6 +194,10 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         const explicitOpen = window.sessionStorage.getItem(NOVAORYN_EXPLICIT_WORKSPACE_OPEN);
         if (explicitOpen) {
             window.sessionStorage.removeItem(NOVAORYN_EXPLICIT_WORKSPACE_OPEN);
+            if (this.workspaceService.opened) {
+                await this.showEngineeringWidget(this.dashboardWidget, 'main');
+                return;
+            }
         } else if (this.workspaceService.opened) {
             await this.workspaceService.close();
             return;
@@ -336,6 +361,14 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         if (await widget.beginReconfigureOperatingSystem(projectPath)) {
             await this.openView({ activate: true, reveal: true });
         }
+    }
+
+    protected async showEngineeringWidget(widget: any, area: 'main' | 'bottom' | 'left'): Promise<void> {
+        if (!widget.isAttached) {
+            await this.shell.addWidget(widget, { area });
+        }
+        if (typeof widget.refresh === 'function') await widget.refresh();
+        this.shell.activateWidget(widget.id);
     }
 
     /**

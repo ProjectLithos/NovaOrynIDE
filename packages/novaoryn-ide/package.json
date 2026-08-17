@@ -1,6 +1,6 @@
 {
   "name": "@novaoryn/ide-extension",
-  "version": "0.1.46",
+  "version": "0.1.48",
   "private": true,
   "license": "MIT",
   "theiaExtensions": [

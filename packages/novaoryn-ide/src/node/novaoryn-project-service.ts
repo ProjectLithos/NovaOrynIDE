@@ -32,6 +32,9 @@ import {
     NovaOrynBreakpointResult,
     NovaOrynRunOutput,
     NovaOrynRunResult,
+    NovaOrynTestDescriptor,
+    NovaOrynTestRunResult,
+    NovaOrynTestOutput,
     NovaOrynProjectService
 } from '../common/novaoryn-protocol';
 
@@ -39,7 +42,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.46';
+const NOVAORYN_IDE_VERSION = '0.1.48';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -440,6 +443,8 @@ interface RunSession {
     unwindTableLoaded?: boolean;
     nativeGlobals?: NativeGlobalSymbol[];
     nativeGlobalsLoaded?: boolean;
+    serialLogPath?: string;
+    serialLogOffset?: number;
 }
 
 
@@ -453,6 +458,7 @@ interface GeneratedProject {
 @injectable()
 export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     protected readonly runSessions = new Map<string, RunSession>();
+    protected readonly testRuns = new Map<string, { output: string; complete: boolean; exitCode?: number; error?: string }>();
 
     async listOperatingSystems(): Promise<NovaOrynOperatingSystem[]> {
         await fs.mkdir(NOVAORYN_OS_ROOT, { recursive: true });
@@ -472,6 +478,65 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             }
         }
         return systems.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+
+    async listTests(projectPath: string): Promise<NovaOrynTestDescriptor[]> {
+        const projectRoot = path.resolve(projectPath);
+        const tests: NovaOrynTestDescriptor[] = [];
+        const scan = async (root: string, source: 'os' | 'sdk'): Promise<void> => {
+            try {
+                const entries = await fs.readdir(root, { withFileTypes: true });
+                for (const entry of entries) {
+                    if (!entry.isDirectory()) continue;
+                    const folder = path.join(root, entry.name);
+                    const children = await fs.readdir(folder).catch(() => [] as string[]);
+                    const csproj = children.find(name => name.toLowerCase().endsWith('.csproj'));
+                    if (!csproj) continue;
+                    const projectFile = path.join(folder, csproj);
+                    const name = path.basename(csproj, '.csproj');
+                    const category = name.replace(/^NovaOryn\./i, '').replace(/\.Tests$/i, '').replace(/[._-]+/g, ' ');
+                    tests.push({ id: `${source}:${projectFile.toLowerCase()}`, name, projectPath: projectFile, source, category });
+                }
+            } catch { }
+        };
+        await scan(path.join(projectRoot, 'Tests'), 'os');
+        await scan(path.join(projectRoot, 'tests'), 'os');
+        await scan(path.join(NOVAORYN_SDK_ROOT, 'tests'), 'sdk');
+        const unique = new Map<string, NovaOrynTestDescriptor>();
+        for (const test of tests) unique.set(test.projectPath.toLowerCase(), test);
+        return [...unique.values()].sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    async runTest(projectPath: string, testId: string): Promise<NovaOrynTestRunResult> {
+        try {
+            const tests = await this.listTests(projectPath);
+            const test = tests.find(item => item.id === testId);
+            if (!test) return { success: false, error: 'The selected NovaOryn test was not found.' };
+            const dotnet = path.join(NOVAORYN_SDK_ROOT, '.toolchain', 'DotNet', 'dotnet.exe');
+            await fs.access(dotnet);
+            const runId = `test-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+            const run = { output: `[INFO] NovaOryn Test Explorer\r\n[INFO] ${test.name}\r\n[INFO] Project: ${test.projectPath}\r\n\r\n`, complete: false } as { output: string; complete: boolean; exitCode?: number; error?: string };
+            this.testRuns.set(runId, run);
+            const child = spawn(dotnet, ['run', '--project', test.projectPath, '--configuration', 'Debug', '--nologo'], {
+                cwd: path.dirname(test.projectPath), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe']
+            });
+            child.stdout?.setEncoding('utf8'); child.stderr?.setEncoding('utf8');
+            child.stdout?.on('data', data => { run.output += data; });
+            child.stderr?.on('data', data => { run.output += data; });
+            child.on('error', error => { run.error = error.message; run.output += `\r\n[FAIL] ${error.message}\r\n`; run.exitCode = 1; run.complete = true; });
+            child.on('close', code => { run.exitCode = code ?? 1; run.output += code === 0 ? '\r\n[ OK ] Test passed.\r\n' : `\r\n[FAIL] Test exited with code ${code ?? -1}.\r\n`; run.complete = true; });
+            return { success: true, runId };
+        } catch (error) { return { success: false, error: error instanceof Error ? error.message : String(error) }; }
+    }
+
+    async readTestOutput(runId: string, offset: number): Promise<NovaOrynTestOutput> {
+        const run = this.testRuns.get(runId);
+        if (!run) return { text: '', nextOffset: offset, complete: true, exitCode: 1, error: 'Unknown NovaOryn test run.' };
+        const safeOffset = Math.max(0, Math.min(offset, run.output.length));
+        const text = run.output.slice(safeOffset);
+        if (run.complete) this.testRuns.delete(runId);
+        return { text, nextOffset: run.output.length, complete: run.complete, exitCode: run.exitCode, error: run.error };
     }
 
 
@@ -554,6 +619,24 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             };
         }
 
+        if (session.serialLogPath) {
+            try {
+                const serial = await fs.readFile(session.serialLogPath, 'utf8');
+                const serialOffset = Math.max(0, Math.min(session.serialLogOffset ?? 0, serial.length));
+                if (serial.length > serialOffset) {
+                    const fresh = serial.slice(serialOffset).replace(/\r/g, '');
+                    const labelled = fresh
+                        .split('\n')
+                        .filter((line, index, all) => line.length > 0 || index < all.length - 1)
+                        .map(line => `[KERNEL] ${line}`)
+                        .join('\n');
+                    if (labelled) {
+                        session.output += `\n${labelled}\n`;
+                    }
+                    session.serialLogOffset = serial.length;
+                }
+            } catch { }
+        }
         const safeOffset = Math.max(0, Math.min(offset, session.output.length));
         const text = session.output.slice(safeOffset);
         const nextOffset = session.output.length;
@@ -1126,6 +1209,8 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         await fs.mkdir(runDirectory, { recursive: true });
         const varsCopy = path.join(runDirectory, 'OVMF_VARS.fd');
         const serialLog = path.join(runDirectory, 'serial.log');
+        session.serialLogPath = serialLog;
+        session.serialLogOffset = 0;
         const debugConLog = path.join(runDirectory, 'debugcon.bin');
         await fs.copyFile(ovmfVars, varsCopy);
         const gdbPort = await this.findFreePort(1234, 1299);

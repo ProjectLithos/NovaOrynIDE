@@ -11,6 +11,10 @@ import { NovaOrynToolbarWidget } from './novaoryn-toolbar-widget';
 import { NovaOrynEditorEnvironmentContribution } from './novaoryn-editor-environment';
 import { NovaOrynBreakpointManager } from './novaoryn-breakpoint-manager';
 import { NovaOrynDebugInspectorWidget } from './novaoryn-debug-inspector-widget';
+import { NovaOrynDashboardWidget } from './novaoryn-dashboard-widget';
+import { NovaOrynKernelConsoleWidget } from './novaoryn-kernel-console-widget';
+import { NovaOrynHardwareWidget } from './novaoryn-hardware-widget';
+import { NovaOrynTestExplorerWidget } from './novaoryn-test-explorer-widget';
 import './style/novaoryn.css';
 
 export default new ContainerModule(bind => {
@@ -22,6 +26,10 @@ export default new ContainerModule(bind => {
     bind(NovaOrynWidget).toSelf();
     bind(NovaOrynToolbarWidget).toSelf().inSingletonScope();
     bind(NovaOrynDebugInspectorWidget).toSelf().inSingletonScope();
+    bind(NovaOrynDashboardWidget).toSelf().inSingletonScope();
+    bind(NovaOrynKernelConsoleWidget).toSelf().inSingletonScope();
+    bind(NovaOrynHardwareWidget).toSelf().inSingletonScope();
+    bind(NovaOrynTestExplorerWidget).toSelf().inSingletonScope();
     bind(WidgetFactory).toDynamicValue(ctx => ({
         id: NovaOrynWidget.ID,
         createWidget: () => ctx.container.get(NovaOrynWidget)
@@ -30,6 +38,10 @@ export default new ContainerModule(bind => {
         id: NovaOrynDebugInspectorWidget.ID,
         createWidget: () => ctx.container.get(NovaOrynDebugInspectorWidget)
     })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynDashboardWidget.ID, createWidget: () => ctx.container.get(NovaOrynDashboardWidget) })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynKernelConsoleWidget.ID, createWidget: () => ctx.container.get(NovaOrynKernelConsoleWidget) })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynHardwareWidget.ID, createWidget: () => ctx.container.get(NovaOrynHardwareWidget) })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynTestExplorerWidget.ID, createWidget: () => ctx.container.get(NovaOrynTestExplorerWidget) })).inSingletonScope();
 
     bind(NovaOrynBreakpointManager).toSelf().inSingletonScope();
 

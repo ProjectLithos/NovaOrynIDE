@@ -12,6 +12,7 @@ import { WorkspaceService } from '@theia/workspace/lib/browser/workspace-service
 import { NovaOrynDebugCommand, NovaOrynDebugState, NovaOrynProjectService, NovaOrynRunMode } from '../common/novaoryn-protocol';
 import { NovaOrynBreakpointManager } from './novaoryn-breakpoint-manager';
 import { NovaOrynDebugInspectorWidget } from './novaoryn-debug-inspector-widget';
+import { NovaOrynKernelConsoleWidget } from './novaoryn-kernel-console-widget';
 
 const RUN_MODE_STORAGE_KEY = 'novaoryn.ide.runMode';
 const OUTPUT_CHANNEL_NAME = 'NovaOryn Build';
@@ -43,6 +44,9 @@ export class NovaOrynToolbarWidget extends ReactWidget {
 
     @inject(NovaOrynDebugInspectorWidget)
     protected readonly debugInspector!: NovaOrynDebugInspectorWidget;
+
+    @inject(NovaOrynKernelConsoleWidget)
+    protected readonly kernelConsole!: NovaOrynKernelConsoleWidget;
 
     protected runMode: NovaOrynRunMode = 'run';
     protected launching = false;
@@ -266,15 +270,20 @@ export class NovaOrynToolbarWidget extends ReactWidget {
         const channel = this.outputChannelManager.getChannel(OUTPUT_CHANNEL_NAME);
         channel.clear();
         channel.show({ preserveFocus: false });
-        channel.appendLine(`[INFO] NovaOryn ${this.runMode === 'debug' ? 'Debug' : 'No Debug'}: ${projectPath}`);
-        channel.appendLine('[INFO] Build and launch output follows.');
-        channel.appendLine('');
+        this.kernelConsole.clear();
+        if (!this.kernelConsole.isAttached) { await this.shell.addWidget(this.kernelConsole, { area: 'bottom' }); }
+        this.shell.activateWidget(this.kernelConsole.id);
+        const consoleHeader = `[INFO] NovaOryn ${this.runMode === 'debug' ? 'Debug' : 'No Debug'}: ${projectPath}\n[INFO] Build and launch output follows.\n\n`;
+        channel.append(consoleHeader);
+        this.kernelConsole.append(consoleHeader);
 
         try {
             channel.appendLine('[INFO] Saving all modified files before build.');
+            this.kernelConsole.append('[INFO] Saving all modified files before build.\n');
             await this.shell.saveAll();
             channel.appendLine('[ OK ] All modified files saved.');
             channel.appendLine('');
+            this.kernelConsole.append('[ OK ] All modified files saved.\n\n');
 
             const requestedBreakpoints = this.runMode === 'debug'
                 ? this.breakpointManager.all().map(({ sourcePath, line, condition, hitCondition }) => ({ sourcePath, line, condition, hitCondition }))
@@ -298,6 +307,7 @@ export class NovaOrynToolbarWidget extends ReactWidget {
                 const output = await this.projectService.readRunOutput(result.sessionId, offset);
                 if (output.text) {
                     channel.append(output.text);
+                    this.kernelConsole.append(output.text);
                 }
                 offset = output.nextOffset;
 
@@ -318,11 +328,14 @@ export class NovaOrynToolbarWidget extends ReactWidget {
                 if (output.complete) {
                     if (output.error) {
                         channel.appendLine(`\n[FAIL] ${output.error}`);
+                        this.kernelConsole.append(`\n[FAIL] ${output.error}\n`);
                     }
                     if (output.exitCode === 0) {
-                        channel.appendLine(this.runMode === 'debug' ? '\n[ OK ] NovaOryn debug session ended.' : '\n[ OK ] NovaOryn build/run command completed successfully.');
+                        const done = this.runMode === 'debug' ? '\n[ OK ] NovaOryn debug session ended.\n' : '\n[ OK ] NovaOryn build/run command completed successfully.\n';
+                        channel.append(done); this.kernelConsole.append(done);
                     } else {
-                        channel.appendLine(`\n[FAIL] NovaOryn build/run command exited with code ${output.exitCode ?? -1}.`);
+                        const failed = `\n[FAIL] NovaOryn build/run command exited with code ${output.exitCode ?? -1}.\n`;
+                        channel.append(failed); this.kernelConsole.append(failed);
                         await this.messageService.error(`NovaOryn Run failed with exit code ${output.exitCode ?? -1}.`);
                     }
                     break;
@@ -333,6 +346,7 @@ export class NovaOrynToolbarWidget extends ReactWidget {
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             channel.appendLine(`\n[FAIL] ${message}`);
+            this.kernelConsole.append(`\n[FAIL] ${message}\n`);
             await this.messageService.error(`NovaOryn Run failed: ${message}`);
         } finally {
             this.launching = false;
