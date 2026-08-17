@@ -148,7 +148,13 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         commands.registerCommand(NovaOrynCommands.PROFILER, { execute: () => this.showEngineeringWidget(this.profilerWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.DRIVERS, { execute: () => this.showEngineeringWidget(this.driverCentreWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.TARGETS, { execute: () => this.showEngineeringWidget(this.targetManagerWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
-        commands.registerCommand(NovaOrynCommands.ANALYZERS, { execute: () => this.showEngineeringWidget(this.staticAnalyzerWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.ANALYZERS, {
+            execute: () => {
+                this.staticAnalyzerWidget.setProjectPath(this.currentOperatingSystemPath());
+                return this.showEngineeringWidget(this.staticAnalyzerWidget, 'main');
+            },
+            isEnabled: () => !!this.currentOperatingSystemPath()
+        });
     }
 
 
@@ -213,6 +219,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         this.installToolbarBelowMenu();
         await this.workspaceService.ready;
         this.toolbarWidget.refresh();
+        this.staticAnalyzerWidget.setProjectPath(this.currentOperatingSystemPath());
 
         // NovaOryn IDE must always start at its own OS chooser. The only time an
         // already-open workspace is allowed through startup is the one-shot reload
