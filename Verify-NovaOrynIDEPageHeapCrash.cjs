@@ -11,7 +11,8 @@ const checks = [
   ['large-page translation', service.includes("pageSize = '1 GiB'") && service.includes("pageSize = '2 MiB'") && service.includes("pageSize = '4 KiB'")],
   ['page-table UI', widget.includes('Page Tables — x64 Translation') && widget.includes('refreshPageTable')],
   ['heap protocol', protocol.includes('NovaOrynHeapSnapshot') && protocol.includes('NovaOrynHeapBlock')],
-  ['NativeAOT heap metadata reader', service.includes("findHeapGlobal(session, '_state')") && service.includes('readMemoryChunked') && service.includes('KernelHeap metadata read directly')],
+  ['SDK heap diagnostic ABI', fs.readFileSync(path.join(root, 'SDK/src/NovaOryn.Kernel.Heap/KernelHeap.cs'), 'utf8').includes('DiagnosticMetadataAddress') && fs.readFileSync(path.join(root, 'SDK/src/NovaOryn.Kernel.Heap/KernelHeap.cs'), 'utf8').includes('InitializeDiagnosticMetadata')],
+  ['stable heap diagnostic ABI reader', service.includes('0xFFFF81FFFFFFC000n') && service.includes('diagnosticMagic') && service.includes('KernelHeap metadata read from NovaOryn heap diagnostic ABI v1')],
   ['heap UI', widget.includes('<h3>Kernel Heap</h3>') && widget.includes('Refresh Heap')],
   ['crash dump protocol', protocol.includes('NovaOrynCrashDumpResult') && protocol.includes('NovaOrynCrashDumpSummary')],
   ['crash dump capture', service.includes("'.novaoryn', 'crash-dumps'") && service.includes('.nodump.json') && service.includes('captureCrashDump')],
@@ -25,4 +26,4 @@ for (const [name, ok] of checks) {
   if (!ok) failed++;
 }
 if (failed) process.exit(1);
-console.log('[ OK ] NovaOryn IDE 0.1.49 page-table, heap, and crash-dump contracts verified.');
+console.log('[ OK ] NovaOryn IDE 0.1.50 page-table, heap, and crash-dump contracts verified.');

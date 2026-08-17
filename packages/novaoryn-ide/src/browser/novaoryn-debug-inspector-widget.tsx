@@ -240,7 +240,7 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
             <div className='novaoryn-debug-actions'>
                 <button className='theia-button' disabled={!this.sessionId || !this.state.paused} onClick={() => void this.refreshHeap()}>Refresh Heap</button>
             </div>
-            <p className='novaoryn-debug-note'>Reads KernelHeap's NativeAOT metadata directly, including committed/allocated/free bytes and the live/free first-fit block table.</p>
+            <p className='novaoryn-debug-note'>Reads KernelHeap's stable NovaOryn diagnostic ABI directly, including committed/allocated/free bytes and the authoritative live/free first-fit block table.</p>
             {heap && !heap.success && <div className='novaoryn-debug-value error'>{heap.error}</div>}
             {heap?.success && <>
                 <div className='novaoryn-heap-summary'>

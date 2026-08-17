@@ -2,7 +2,7 @@
   "name": "@novaoryn/ide-electron",
   "private": true,
   "productName": "NovaOryn IDE",
-  "version": "0.1.49",
+  "version": "0.1.50",
   "main": "lib/backend/electron-main.js",
   "theia": {
     "target": "electron",
@@ -40,7 +40,7 @@
     }
   },
   "dependencies": {
-    "@novaoryn/ide-extension": "0.1.49",
+    "@novaoryn/ide-extension": "0.1.50",
     "@vscode/windows-ca-certs": "0.3.4",
     "@theia/core": "1.74.0",
     "@theia/editor": "1.74.0",

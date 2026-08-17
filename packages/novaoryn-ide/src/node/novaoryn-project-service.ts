@@ -50,7 +50,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.49';
+const NOVAORYN_IDE_VERSION = '0.1.50';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -1098,13 +1098,39 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             return { success: false, error: 'Kernel heap state can be inspected only while a NovaOryn kernel is paused.' };
         }
         try {
-            await this.ensureNativeGlobalSymbols(session);
-            const stateSymbol = this.findHeapGlobal(session, '_state');
-            if (!stateSymbol || session.relocationDelta === undefined) {
-                return { success: false, error: 'NativeAOT did not expose the KernelHeap._state global in MinimalKernel.pdb/map, so heap blocks cannot be inspected in this build.' };
+            // NovaOryn KernelHeap ABI v1 keeps its live allocator metadata in a fixed debugger-readable
+            // virtual region at the top of the kernel-heap reservation. This is authoritative and does
+            // not depend on private NativeAOT static-field names surviving PDB/link-map generation.
+            const diagnosticAddress = 0xFFFF81FFFFFFC000n;
+            const diagnosticHeader = await this.readMemoryChunked(session.gdb, diagnosticAddress, 64, 64);
+            const diagnosticMagic = 0x4E4F484541503031n;
+            let stateAddress: bigint;
+            let stateBytes: Buffer;
+            let diagnosticCommitted: bigint | undefined;
+            let diagnosticAllocated: bigint | undefined;
+            let diagnosticPeak: bigint | undefined;
+            let diagnosticLive: number | undefined;
+            let diagnosticInitialized: boolean | undefined;
+            let diagnosticAbi = false;
+            if (diagnosticHeader.length === 64 && diagnosticHeader.readBigUInt64LE(0) === diagnosticMagic && diagnosticHeader.readUInt32LE(8) === 1 && diagnosticHeader.readUInt32LE(12) === 512) {
+                diagnosticAbi = true;
+                diagnosticCommitted = diagnosticHeader.readBigUInt64LE(16);
+                diagnosticAllocated = diagnosticHeader.readBigUInt64LE(24);
+                diagnosticPeak = diagnosticHeader.readBigUInt64LE(32);
+                diagnosticLive = diagnosticHeader.readUInt32LE(48);
+                diagnosticInitialized = diagnosticHeader[56] !== 0;
+                stateAddress = diagnosticAddress + 64n;
+                stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
+            } else {
+                // Backward compatibility for kernels built before the stable heap diagnostic ABI.
+                await this.ensureNativeGlobalSymbols(session);
+                const stateSymbol = this.findHeapGlobal(session, '_state');
+                if (!stateSymbol || session.relocationDelta === undefined) {
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.1.50 or later.' };
+                }
+                stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
+                stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
             }
-            const stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
-            const stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
             if (stateBytes.length !== 12800) {
                 return { success: false, error: `Could not read the KernelHeap state table at ${this.formatAddress(stateAddress)}.` };
             }
@@ -1140,15 +1166,21 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 const bytes = await this.readMemory(session.gdb!, symbol.linkedAddress + session.relocationDelta!, 4);
                 return bytes.length === 4 ? bytes.readUInt32LE(0) : undefined;
             };
-            const committed = await readGlobalU64('_committed');
-            const allocated = await readGlobalU64('_allocated');
-            const peak = await readGlobalU64('_peak');
-            const live = await readGlobalU32('_live');
-            const initializedSymbol = this.findHeapGlobal(session, '_initialized');
-            let initialized: boolean | undefined;
-            if (initializedSymbol) {
-                const byte = await this.readMemory(session.gdb, initializedSymbol.linkedAddress + session.relocationDelta, 1);
-                if (byte.length === 1) initialized = byte[0] !== 0;
+            let committed = diagnosticCommitted;
+            let allocated = diagnosticAllocated;
+            let peak = diagnosticPeak;
+            let live = diagnosticLive;
+            let initialized = diagnosticInitialized;
+            if (!diagnosticAbi) {
+                committed = await readGlobalU64('_committed');
+                allocated = await readGlobalU64('_allocated');
+                peak = await readGlobalU64('_peak');
+                live = await readGlobalU32('_live');
+                const initializedSymbol = this.findHeapGlobal(session, '_initialized');
+                if (initializedSymbol) {
+                    const byte = await this.readMemory(session.gdb, initializedSymbol.linkedAddress + session.relocationDelta!, 1);
+                    if (byte.length === 1) initialized = byte[0] !== 0;
+                }
             }
             return {
                 success: true,
@@ -1160,7 +1192,9 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 liveAllocations: live ?? liveDerived,
                 freeBlocks: freeBlocksDerived,
                 blocks,
-                message: `KernelHeap metadata read directly from NativeAOT globals (${blocks.length} active/free block record(s)).`
+                message: diagnosticAbi
+                    ? `KernelHeap metadata read from NovaOryn heap diagnostic ABI v1 (${blocks.length} active/free block record(s)).`
+                    : `KernelHeap metadata read from legacy NativeAOT globals (${blocks.length} active/free block record(s)).`
             };
         } catch (error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };

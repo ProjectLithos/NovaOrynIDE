@@ -86,9 +86,17 @@ public static unsafe class KernelHeap
         internal fixed Byte States[MaximumBlocks];
     }
 
-#pragma warning disable CS0169 // Fixed-buffer member access is not counted as use of the containing freestanding state field.
-    private static State _state;
-#pragma warning restore CS0169
+    /// <summary>Gets the fixed virtual address of the debugger-readable kernel-heap diagnostic metadata area.</summary>
+    public const UInt64 DiagnosticMetadataAddress = KernelAddressSpace.KernelHeapBase + KernelAddressSpace.KernelHeapLength - 0x4000UL;
+    /// <summary>Gets the byte length reserved for the debugger-readable heap metadata area.</summary>
+    public const UInt64 DiagnosticMetadataLength = 0x4000UL;
+    /// <summary>Gets the current heap diagnostic ABI version.</summary>
+    public const UInt32 DiagnosticMetadataVersion = 1U;
+
+    private const UInt64 DiagnosticMagic = 0x4E4F484541503031UL;
+    private const UInt64 DiagnosticStateOffset = 64UL;
+    private const UInt64 AllocatableHeapLength = KernelAddressSpace.KernelHeapLength - DiagnosticMetadataLength;
+    private static Boolean _diagnosticMetadataReady;
     private static UInt64 _committed;
     private static UInt64 _allocated;
     private static UInt64 _peak;
@@ -132,10 +140,12 @@ public static unsafe class KernelHeap
             _status = KernelHeapStatus.DependencyNotInitialized;
             return false;
         }
+        if (!InitializeDiagnosticMetadata()) return false;
         Reset();
         if (!Grow(GrowthPages)) return false;
         _initialized = true;
         _status = KernelHeapStatus.Success;
+        SynchronizeDiagnosticHeader();
         return true;
     }
 
@@ -186,10 +196,11 @@ public static unsafe class KernelHeap
             _status = KernelHeapStatus.DependencyNotInitialized;
             return false;
         }
-        fixed (UInt64* starts = _state.Starts)
-        fixed (UInt64* lengths = _state.Lengths)
-        fixed (UInt64* tokens = _state.Tokens)
-        fixed (Byte* states = _state.States)
+        State* state = GetState();
+        UInt64* starts = state->Starts;
+        UInt64* lengths = state->Lengths;
+        UInt64* tokens = state->Tokens;
+        Byte* states = state->States;
         {
             for (Int32 i = 0; i < MaximumBlocks; i++)
             {
@@ -200,6 +211,7 @@ public static unsafe class KernelHeap
                 _live--;
                 Coalesce();
                 _status = KernelHeapStatus.Success;
+                SynchronizeDiagnosticHeader();
                 return true;
             }
         }
@@ -211,10 +223,12 @@ public static unsafe class KernelHeap
     /// <returns>An immutable statistics snapshot.</returns>
     public static KernelHeapStatistics GetStatistics()
     {
+        if (!_diagnosticMetadataReady) return new KernelHeapStatistics(0UL, 0UL, 0UL, 0UL, 0, 0);
         UInt64 free = 0UL;
         Int32 blocks = 0;
-        fixed (UInt64* lengths = _state.Lengths)
-        fixed (Byte* states = _state.States)
+        State* state = GetState();
+        UInt64* lengths = state->Lengths;
+        Byte* states = state->States;
         {
             for (Int32 i = 0; i < MaximumBlocks; i++)
             {
@@ -229,10 +243,11 @@ public static unsafe class KernelHeap
     private static Boolean TryAllocateExisting(UInt64 bytes, UInt64 alignment, Boolean zeroFill, out KernelHeapAllocation allocation)
     {
         allocation = default;
-        fixed (UInt64* starts = _state.Starts)
-        fixed (UInt64* lengths = _state.Lengths)
-        fixed (UInt64* tokens = _state.Tokens)
-        fixed (Byte* states = _state.States)
+        State* state = GetState();
+        UInt64* starts = state->Starts;
+        UInt64* lengths = state->Lengths;
+        UInt64* tokens = state->Tokens;
+        Byte* states = state->States;
         {
             for (Int32 i = 0; i < MaximumBlocks; i++)
             {
@@ -280,6 +295,7 @@ public static unsafe class KernelHeap
                 }
                 allocation = new KernelHeapAllocation(token, aligned, bytes);
                 _status = KernelHeapStatus.Success;
+                SynchronizeDiagnosticHeader();
                 return true;
             }
         }
@@ -294,7 +310,7 @@ public static unsafe class KernelHeap
             return false;
         }
         UInt64 bytes = pages * PageSize;
-        if (_committed > KernelAddressSpace.KernelHeapLength || bytes > KernelAddressSpace.KernelHeapLength - _committed)
+        if (_committed > AllocatableHeapLength || bytes > AllocatableHeapLength - _committed)
         {
             _status = KernelHeapStatus.OutOfMemory;
             return false;
@@ -328,9 +344,10 @@ public static unsafe class KernelHeap
             mapped++;
         }
 
-        fixed (UInt64* starts = _state.Starts)
-        fixed (UInt64* lengths = _state.Lengths)
-        fixed (Byte* states = _state.States)
+        State* state = GetState();
+        UInt64* starts = state->Starts;
+        UInt64* lengths = state->Lengths;
+        Byte* states = state->States;
         {
             states[slot] = 1;
             starts[slot] = KernelAddressSpace.KernelHeapBase + _committed;
@@ -338,12 +355,14 @@ public static unsafe class KernelHeap
         }
         _committed += bytes;
         Coalesce();
+        SynchronizeDiagnosticHeader();
         return true;
     }
 
     private static Int32 FindUnused(Int32 excluded, Int32 excluded2)
     {
-        fixed (Byte* states = _state.States)
+        State* state = GetState();
+        Byte* states = state->States;
         {
             for (Int32 i = 0; i < MaximumBlocks; i++)
                 if (i != excluded && i != excluded2 && states[i] == 0) return i;
@@ -354,9 +373,10 @@ public static unsafe class KernelHeap
     private static void Coalesce()
     {
         Boolean changed = true;
-        fixed (UInt64* starts = _state.Starts)
-        fixed (UInt64* lengths = _state.Lengths)
-        fixed (Byte* states = _state.States)
+        State* state = GetState();
+        UInt64* starts = state->Starts;
+        UInt64* lengths = state->Lengths;
+        Byte* states = state->States;
         {
             while (changed)
             {
@@ -395,18 +415,69 @@ public static unsafe class KernelHeap
         _peak = 0UL;
         _live = 0;
         _nextToken = 1UL;
-        fixed (UInt64* starts = _state.Starts)
-        fixed (UInt64* lengths = _state.Lengths)
-        fixed (UInt64* tokens = _state.Tokens)
-        fixed (Byte* states = _state.States)
+        State* state = GetState();
+        UInt64* starts = state->Starts;
+        UInt64* lengths = state->Lengths;
+        UInt64* tokens = state->Tokens;
+        Byte* states = state->States;
+        for (Int32 i = 0; i < MaximumBlocks; i++)
         {
-            for (Int32 i = 0; i < MaximumBlocks; i++)
-            {
-                starts[i] = 0UL;
-                lengths[i] = 0UL;
-                tokens[i] = 0UL;
-                states[i] = 0;
-            }
+            starts[i] = 0UL;
+            lengths[i] = 0UL;
+            tokens[i] = 0UL;
+            states[i] = 0;
         }
+        SynchronizeDiagnosticHeader();
+    }
+
+    private static State* GetState() => (State*)(nuint)(DiagnosticMetadataAddress + DiagnosticStateOffset);
+
+    private static Boolean InitializeDiagnosticMetadata()
+    {
+        if (_diagnosticMetadataReady) return true;
+        UInt64 pages = DiagnosticMetadataLength / PageSize;
+        if (!KernelPhysicalMemory.TryAllocate(pages, 1UL, out KernelPhysicalAllocation physical))
+        {
+            _status = KernelHeapStatus.OutOfMemory;
+            return false;
+        }
+        UInt64 mapped = 0UL;
+        KernelVirtualMemoryProtection protection = KernelVirtualMemoryProtection.Read | KernelVirtualMemoryProtection.Write | KernelVirtualMemoryProtection.Global;
+        for (UInt64 page = 0UL; page < pages; page++)
+        {
+            UInt64 virtualAddress = DiagnosticMetadataAddress + page * PageSize;
+            UInt64 physicalAddress = physical.StartAddress + page * PageSize;
+            if (!KernelVirtualMemory.TryMap(virtualAddress, physicalAddress, KernelVirtualPageSize.Page4KiB, protection))
+            {
+                for (UInt64 undo = 0UL; undo < mapped; undo++) KernelVirtualMemory.TryUnmap(DiagnosticMetadataAddress + undo * PageSize);
+                KernelPhysicalMemory.TryRelease(physical);
+                _status = KernelHeapStatus.MappingFailed;
+                return false;
+            }
+            mapped++;
+        }
+        Byte* bytes = (Byte*)(nuint)DiagnosticMetadataAddress;
+        for (UInt64 i = 0UL; i < DiagnosticMetadataLength; i++) bytes[i] = 0;
+        _diagnosticMetadataReady = true;
+        SynchronizeDiagnosticHeader();
+        return true;
+    }
+
+    private static void SynchronizeDiagnosticHeader()
+    {
+        if (!_diagnosticMetadataReady) return;
+        UInt64* qwords = (UInt64*)(nuint)DiagnosticMetadataAddress;
+        UInt32* dwords = (UInt32*)(nuint)DiagnosticMetadataAddress;
+        Byte* bytes = (Byte*)(nuint)DiagnosticMetadataAddress;
+        qwords[0] = DiagnosticMagic;
+        dwords[2] = DiagnosticMetadataVersion;
+        dwords[3] = MaximumBlocks;
+        qwords[2] = _committed;
+        qwords[3] = _allocated;
+        qwords[4] = _peak;
+        qwords[5] = _nextToken;
+        dwords[12] = (UInt32)_live;
+        dwords[13] = (UInt32)_status;
+        bytes[56] = _initialized ? (Byte)1 : (Byte)0;
     }
 }

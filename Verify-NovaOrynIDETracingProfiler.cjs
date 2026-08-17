@@ -11,4 +11,4 @@ const checks=[
 ];
 const missing=[]; for(const [file,tokens] of checks){const s=read(file);for(const token of tokens)if(!s.includes(token))missing.push(`${file}: ${token}`)}
 if(missing.length){console.error('[FAIL] NovaOryn IDE tracing/profiler contract missing:\n'+missing.join('\n'));process.exit(1)}
-console.log('[ OK ] NovaOryn IDE 0.1.49 Tracing/Boot Analyser and Performance Profiler contracts verified.');
+console.log('[ OK ] NovaOryn IDE 0.1.50 Tracing/Boot Analyser and Performance Profiler contracts verified.');
