@@ -47,6 +47,9 @@ import {
     NovaOrynTestDescriptor,
     NovaOrynTestRunResult,
     NovaOrynTestOutput,
+    NovaOrynTargetProfile,
+    NovaOrynTargetState,
+    NovaOrynTargetMutationResult,
     NovaOrynProjectService
 } from '../common/novaoryn-protocol';
 
@@ -54,7 +57,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.53';
+const NOVAORYN_IDE_VERSION = '0.2.1';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -572,6 +575,97 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         } catch (error) { return { success: false, error: error instanceof Error ? error.message : String(error) }; }
     }
 
+    protected targetFile(projectRoot: string): string { return path.join(projectRoot, 'NovaOryn.Targets.json'); }
+
+    protected defaultTargetState(configuration?: NovaOrynProjectConfiguration): NovaOrynTargetState {
+        const architecture = configuration?.targetArchitecture ?? 'x86_64';
+        const target: NovaOrynTargetProfile = {
+            schemaVersion: 1,
+            id: `qemu-${architecture}`,
+            name: architecture === 'x86_64' ? 'QEMU x64' : `QEMU ${architecture}`,
+            kind: 'qemu', architecture,
+            qemu: { cpuCount: Math.max(1, Math.ceil(os.cpus().length / 2)), memoryMiB: 512, machine: architecture === 'x86_64' ? 'q35' : 'virt', accelerator: 'tcg', display: 'sdl' }
+        };
+        return { schemaVersion: 1, activeTargetId: target.id, targets: [target] };
+    }
+
+    protected async readTargetState(projectRoot: string): Promise<NovaOrynTargetState> {
+        const config = await this.readProjectConfiguration(projectRoot);
+        const fallback = this.defaultTargetState(config.configuration);
+        try {
+            const parsed = JSON.parse(await fs.readFile(this.targetFile(projectRoot), 'utf8')) as NovaOrynTargetState;
+            if (parsed.schemaVersion !== 1 || !Array.isArray(parsed.targets) || parsed.targets.length === 0) return fallback;
+            const targets = parsed.targets.filter(item => item && item.schemaVersion === 1 && typeof item.id === 'string' && typeof item.name === 'string');
+            if (targets.length === 0) return fallback;
+            const activeTargetId = targets.some(item => item.id === parsed.activeTargetId) ? parsed.activeTargetId : targets[0].id;
+            return { schemaVersion: 1, activeTargetId, targets };
+        } catch {
+            await fs.writeFile(this.targetFile(projectRoot), JSON.stringify(fallback, null, 2) + '\n', 'utf8').catch(() => undefined);
+            return fallback;
+        }
+    }
+
+    protected validateTarget(target: NovaOrynTargetProfile): string | undefined {
+        if (!target || target.schemaVersion !== 1) return 'Unsupported NovaOryn target schema.';
+        if (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(target.id || '')) return 'Target ID must contain only letters, numbers, dot, underscore and dash.';
+        if (!(target.name || '').trim()) return 'Target name is required.';
+        if (!['qemu','physical','remote'].includes(target.kind)) return 'Unsupported target kind.';
+        if (!['x86_64','arm64','riscv64'].includes(target.architecture)) return 'Unsupported target architecture.';
+        if (target.kind === 'qemu') {
+            if (!target.qemu) return 'QEMU settings are required.';
+            if (!Number.isInteger(target.qemu.cpuCount) || target.qemu.cpuCount < 1 || target.qemu.cpuCount > 256) return 'QEMU CPU count must be between 1 and 256.';
+            if (!Number.isInteger(target.qemu.memoryMiB) || target.qemu.memoryMiB < 64 || target.qemu.memoryMiB > 1048576) return 'QEMU RAM must be between 64 MiB and 1 TiB.';
+        }
+        return undefined;
+    }
+
+    async listTargets(projectPath: string): Promise<NovaOrynTargetState> {
+        const root = path.resolve(projectPath);
+        if (!this.isOperatingSystemPath(root)) return this.defaultTargetState();
+        return this.readTargetState(root);
+    }
+
+    async getActiveTarget(projectPath: string): Promise<NovaOrynTargetProfile | undefined> {
+        const state = await this.listTargets(projectPath);
+        return state.targets.find(item => item.id === state.activeTargetId);
+    }
+
+    async saveTarget(projectPath: string, target: NovaOrynTargetProfile): Promise<NovaOrynTargetMutationResult> {
+        try {
+            const root = path.resolve(projectPath);
+            if (!this.isOperatingSystemPath(root)) return { success: false, error: 'Targets can only be saved for a NovaOryn OS workspace.' };
+            const invalid = this.validateTarget(target); if (invalid) return { success: false, error: invalid };
+            const state = await this.readTargetState(root);
+            const index = state.targets.findIndex(item => item.id === target.id);
+            if (index >= 0) state.targets[index] = target; else state.targets.push(target);
+            if (!state.activeTargetId) state.activeTargetId = target.id;
+            await fs.writeFile(this.targetFile(root), JSON.stringify(state, null, 2) + '\n', 'utf8');
+            return { success: true, state };
+        } catch (error) { return { success: false, error: error instanceof Error ? error.message : String(error) }; }
+    }
+
+    async deleteTarget(projectPath: string, targetId: string): Promise<NovaOrynTargetMutationResult> {
+        try {
+            const root = path.resolve(projectPath); const state = await this.readTargetState(root);
+            if (state.targets.length <= 1) return { success: false, state, error: 'A NovaOryn OS must retain at least one target.' };
+            state.targets = state.targets.filter(item => item.id !== targetId);
+            if (state.targets.length === 0) return { success: false, error: 'A NovaOryn OS must retain at least one target.' };
+            if (!state.targets.some(item => item.id === state.activeTargetId)) state.activeTargetId = state.targets[0].id;
+            await fs.writeFile(this.targetFile(root), JSON.stringify(state, null, 2) + '\n', 'utf8');
+            return { success: true, state };
+        } catch (error) { return { success: false, error: error instanceof Error ? error.message : String(error) }; }
+    }
+
+    async setActiveTarget(projectPath: string, targetId: string): Promise<NovaOrynTargetMutationResult> {
+        try {
+            const root = path.resolve(projectPath); const state = await this.readTargetState(root);
+            if (!state.targets.some(item => item.id === targetId)) return { success: false, state, error: `Target ${targetId} was not found.` };
+            state.activeTargetId = targetId;
+            await fs.writeFile(this.targetFile(root), JSON.stringify(state, null, 2) + '\n', 'utf8');
+            return { success: true, state };
+        } catch (error) { return { success: false, error: error instanceof Error ? error.message : String(error) }; }
+    }
+
     protected isOperatingSystemPath(projectRoot: string): boolean {
         const osRoot = path.resolve(NOVAORYN_OS_ROOT);
         const relative = path.relative(osRoot, projectRoot);
@@ -685,6 +779,10 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
 
             await fs.access(path.join(projectRoot, 'NovaOryn.json'));
             await this.refreshSdkBridge(projectRoot);
+            const activeTarget = await this.getActiveTarget(projectRoot);
+            if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
+            if (activeTarget.kind !== 'qemu') return { success: false, error: `${activeTarget.name} is a ${activeTarget.kind} target. Physical/remote execution is reserved for NovaOryn IDE item 22; the target is retained and can already be configured.` };
+            if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/boot pipeline is x86_64; the Target Manager will retain this target until that architecture backend is installed.` };
 
             const runPath = path.join(projectRoot, 'Run.bat');
             await fs.access(runPath);
@@ -692,7 +790,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             const modeArgument = mode === 'debug' ? 'Debug' : 'Run';
             const sessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
             const session: RunSession = {
-                sessionId, output: '', complete: false, mode, projectRoot,
+                sessionId, output: `[INFO] NovaOryn target: ${activeTarget.name} (${activeTarget.kind}/${activeTarget.architecture})\r\n`, complete: false, mode, projectRoot,
                 breakpoints: new Map<string, SourceBreakpoint>(),
                 requestedBreakpoints: breakpoints.map(item => ({ sourcePath: path.resolve(item.sourcePath), line: item.line, condition: item.condition?.trim() || undefined, hitCondition: item.hitCondition?.trim() || undefined })),
                 breakpointResults: [],
@@ -707,7 +805,19 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 cwd: projectRoot,
                 detached: false,
                 windowsHide: true,
-                stdio: ['ignore', 'pipe', 'pipe']
+                stdio: ['ignore', 'pipe', 'pipe'],
+                env: {
+                    ...process.env,
+                    NOVAORYN_TARGET_ID: activeTarget.id,
+                    NOVAORYN_TARGET_NAME: activeTarget.name,
+                    NOVAORYN_TARGET_KIND: activeTarget.kind,
+                    NOVAORYN_TARGET_ARCH: activeTarget.architecture,
+                    NOVAORYN_TARGET_CPUS: String(activeTarget.qemu?.cpuCount ?? 1),
+                    NOVAORYN_TARGET_MEMORY_MIB: String(activeTarget.qemu?.memoryMiB ?? 512),
+                    NOVAORYN_TARGET_MACHINE: activeTarget.qemu?.machine ?? 'q35',
+                    NOVAORYN_TARGET_ACCELERATOR: activeTarget.qemu?.accelerator ?? 'tcg',
+                    NOVAORYN_TARGET_DISPLAY: activeTarget.qemu?.display ?? 'sdl'
+                }
             });
 
             child.stdout?.setEncoding('utf8');
@@ -1242,7 +1352,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.1.53 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.2.1 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -1427,10 +1537,16 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         const debugConLog = path.join(runDirectory, 'debugcon.bin');
         await fs.copyFile(ovmfVars, varsCopy);
         const gdbPort = await this.findFreePort(1234, 1299);
-        const qemuCpus = Math.max(1, Math.ceil(os.cpus().length / 2));
+        const activeTarget = await this.getActiveTarget(session.projectRoot);
+        const qemu = activeTarget?.kind === 'qemu' ? activeTarget.qemu : undefined;
+        const qemuCpus = Math.max(1, qemu?.cpuCount ?? Math.ceil(os.cpus().length / 2));
+        const memoryMiB = Math.max(64, qemu?.memoryMiB ?? 512);
+        const machine = qemu?.machine || 'q35';
+        const accelerator = qemu?.accelerator === 'whpx' ? 'whpx' : 'tcg,thread=multi';
+        const display = qemu?.display || 'sdl';
         const args = [
-            '-machine', 'q35', '-accel', 'tcg,thread=multi', '-cpu', 'max', '-smp', String(qemuCpus), '-m', '512M',
-            '-display', 'sdl',
+            '-machine', machine, '-accel', accelerator, '-cpu', 'max', '-smp', String(qemuCpus), '-m', `${memoryMiB}M`,
+            '-display', display,
             '-drive', `if=pflash,format=raw,unit=0,readonly=on,file=${ovmfCode}`,
             '-drive', `if=pflash,format=raw,unit=1,file=${varsCopy}`,
             '-drive', `if=none,format=raw,readonly=on,file=${imagePath},id=boot`,

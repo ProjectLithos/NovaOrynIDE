@@ -514,3 +514,19 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 .novaoryn-driver-card small { display:block; opacity:.7; margin-top:3px; }
 .novaoryn-driver-meta { margin-top:5px; font-size:12px; opacity:.85; }
 .novaoryn-driver-runtime { margin-top:18px; }
+
+
+/* NovaOryn IDE 0.2.1 Target Manager */
+.novaoryn-target-create { margin-bottom: 18px; }
+.novaoryn-target-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px 14px; margin:10px 0 14px; }
+.novaoryn-target-field { display:flex; flex-direction:column; gap:5px; }
+.novaoryn-target-field span { font-size:12px; opacity:.78; }
+.novaoryn-target-field input,.novaoryn-target-field select { min-height:28px; }
+.novaoryn-target-list { display:grid; gap:10px; }
+.novaoryn-target-card { border:1px solid var(--theia-panel-border); padding:12px; border-radius:4px; }
+.novaoryn-target-card.active { outline:1px solid var(--theia-focusBorder); }
+.novaoryn-target-card-title { display:flex; align-items:center; gap:8px; }
+.novaoryn-target-active { font-size:10px; font-weight:700; padding:2px 5px; border:1px solid var(--theia-focusBorder); border-radius:3px; }
+.novaoryn-target-meta { margin-top:6px; opacity:.78; font-size:12px; }
+.novaoryn-target-actions { display:flex; gap:8px; margin-top:10px; }
+.novaoryn-target-note { margin-top:18px; }

@@ -419,6 +419,33 @@ export interface NovaOrynProjectResult {
     error?: string;
 }
 
+export type NovaOrynTargetKind = 'qemu' | 'physical' | 'remote';
+export type NovaOrynTargetArchitecture = 'x86_64' | 'arm64' | 'riscv64';
+export type NovaOrynQemuAccelerator = 'tcg' | 'whpx' | 'auto';
+export type NovaOrynQemuDisplay = 'sdl' | 'gtk' | 'none';
+
+export interface NovaOrynQemuTargetSettings {
+    cpuCount: number;
+    memoryMiB: number;
+    machine: string;
+    accelerator: NovaOrynQemuAccelerator;
+    display: NovaOrynQemuDisplay;
+}
+export interface NovaOrynPhysicalTargetSettings { gdbHost: string; gdbPort: number; serialPort?: string; baudRate?: number; }
+export interface NovaOrynRemoteTargetSettings { host: string; port: number; }
+export interface NovaOrynTargetProfile {
+    schemaVersion: 1;
+    id: string;
+    name: string;
+    kind: NovaOrynTargetKind;
+    architecture: NovaOrynTargetArchitecture;
+    qemu?: NovaOrynQemuTargetSettings;
+    physical?: NovaOrynPhysicalTargetSettings;
+    remote?: NovaOrynRemoteTargetSettings;
+}
+export interface NovaOrynTargetState { schemaVersion: 1; activeTargetId: string; targets: NovaOrynTargetProfile[]; }
+export interface NovaOrynTargetMutationResult { success: boolean; state?: NovaOrynTargetState; error?: string; }
+
 export interface NovaOrynProjectService {
     listOperatingSystems(): Promise<NovaOrynOperatingSystem[]>;
     createProject(configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
@@ -444,6 +471,11 @@ export interface NovaOrynProjectService {
     loadCrashDump(dumpPath: string): Promise<NovaOrynCrashDumpResult>;
     configureExceptionBreakpoints(sessionId: string, settings: NovaOrynExceptionBreakpointSettings): Promise<NovaOrynDebugState>;
     selectExecutionContext(sessionId: string, threadId: string): Promise<NovaOrynDebugState>;
+    listTargets(projectPath: string): Promise<NovaOrynTargetState>;
+    getActiveTarget(projectPath: string): Promise<NovaOrynTargetProfile | undefined>;
+    saveTarget(projectPath: string, target: NovaOrynTargetProfile): Promise<NovaOrynTargetMutationResult>;
+    deleteTarget(projectPath: string, targetId: string): Promise<NovaOrynTargetMutationResult>;
+    setActiveTarget(projectPath: string, targetId: string): Promise<NovaOrynTargetMutationResult>;
     listDrivers(projectPath: string): Promise<NovaOrynDriverDescriptor[]>;
     createDriver(projectPath: string, request: NovaOrynCreateDriverRequest): Promise<NovaOrynCreateDriverResult>;
     listTests(projectPath: string): Promise<NovaOrynTestDescriptor[]>;

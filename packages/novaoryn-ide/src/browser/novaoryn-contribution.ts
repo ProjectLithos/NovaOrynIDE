@@ -17,6 +17,7 @@ import { NovaOrynTestExplorerWidget } from './novaoryn-test-explorer-widget';
 import { NovaOrynTraceWidget } from './novaoryn-trace-widget';
 import { NovaOrynProfilerWidget } from './novaoryn-profiler-widget';
 import { NovaOrynDriverCentreWidget } from './novaoryn-driver-centre-widget';
+import { NovaOrynTargetManagerWidget } from './novaoryn-target-manager-widget';
 
 export namespace NovaOrynCommands {
     export const OPEN: Command = {
@@ -55,6 +56,7 @@ export namespace NovaOrynCommands {
     export const TRACE: Command = { id: 'novaoryn.trace', label: 'Open Tracing / Boot Analyser' };
     export const PROFILER: Command = { id: 'novaoryn.profiler', label: 'Open Performance Profiler' };
     export const DRIVERS: Command = { id: 'novaoryn.engineering.drivers', label: 'Driver Development Centre' };
+    export const TARGETS: Command = { id: 'novaoryn.engineering.targets', label: 'Target Manager' };
 }
 
 @injectable()
@@ -85,6 +87,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     @inject(NovaOrynTraceWidget) protected readonly traceWidget!: NovaOrynTraceWidget;
     @inject(NovaOrynProfilerWidget) protected readonly profilerWidget!: NovaOrynProfilerWidget;
     @inject(NovaOrynDriverCentreWidget) protected readonly driverCentreWidget!: NovaOrynDriverCentreWidget;
+    @inject(NovaOrynTargetManagerWidget) protected readonly targetManagerWidget!: NovaOrynTargetManagerWidget;
 
     protected toolbarInstalled = false;
     protected titleLogoInstalled = false;
@@ -141,6 +144,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         commands.registerCommand(NovaOrynCommands.TRACE, { execute: () => this.showEngineeringWidget(this.traceWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.PROFILER, { execute: () => this.showEngineeringWidget(this.profilerWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.DRIVERS, { execute: () => this.showEngineeringWidget(this.driverCentreWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.TARGETS, { execute: () => this.showEngineeringWidget(this.targetManagerWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
     }
 
 
@@ -164,6 +168,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.TRACE.id, label: 'Tracing / Boot Analyser', order: '4' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.PROFILER.id, label: 'Performance Profiler', order: '5' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.DRIVERS.id, label: 'Driver Development Centre', order: '6' });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.TARGETS.id, label: 'Target Manager', order: '7' });
 
         menus.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
             commandId: NovaOrynCommands.RECONFIGURE_ROOT_CONTEXT.id,
