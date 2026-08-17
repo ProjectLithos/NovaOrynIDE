@@ -264,7 +264,7 @@ try {
     if (Test-Path -LiteralPath $fontInstaller -PathType Leaf) {
         Write-Step 'Installing optional Linux-kernel console font pack.'
         & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $fontInstaller
-        if ($LASTEXITCODE -ne 0) { Fail "Linux-kernel font installation failed with exit code $LASTEXITCODE." }
+        if ($LASTEXITCODE -ne 0) { Write-Host "[WARN] Optional Linux-kernel font installation returned exit code $LASTEXITCODE; continuing because fonts are not required for the SDK toolchain." }
     }
     Write-Ok 'NovaOryn toolchain validation completed.'
     exit 0

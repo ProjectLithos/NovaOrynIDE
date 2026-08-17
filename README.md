@@ -13,16 +13,12 @@ The Run/Debug toolbar fixes from 0.1.12 remain in place: the toolbar stays below
 
 NovaOryn IDE is the desktop development environment for the NovaOryn Operating System SDK. It is a custom Eclipse Theia desktop application with NovaOryn-specific project configuration and generation.
 
-## Current release: 0.1.33
-
-### 0.1.33 Build-owned GitHub publishing
-
-A successful `Build-NovaOrynIDE.bat` now publishes the NovaOryn IDE source tree to `https://github.com/ProjectLithos/NovaOrynIDE.git` on branch `main`. The build initialises Git when necessary, adopts existing `origin/main` history for freshly extracted source trees, stages all source including the bundled `SDK\` source, commits only when source changes exist, and pushes the result. Downloaded toolchains, npm dependencies, build output, caches, logs, `bin`, `obj`, `lib`, and `Artifacts` are excluded by `.gitignore`.
+## Current release: 0.1.32
 
 
-### 0.1.33 Bundled SDK toolchain mode
+### 0.1.32 Bundled SDK toolchain mode
 
-NovaOryn IDE 0.1.33 bundles NovaOryn SDK 0.37.2 under `SDK\` and verifies its toolchain in embedded mode. The embedded SDK no longer has to be a separate Git repository or clean standalone checkout. Standalone SDK installation still keeps the normal Git repository/clean-tree safety gate.
+NovaOryn IDE 0.1.36 bundles NovaOryn SDK 0.37.3 under `SDK\` and verifies its toolchain in embedded mode. The embedded SDK no longer has to be a separate Git repository or clean standalone checkout. Standalone SDK installation still keeps the normal Git repository/clean-tree safety gate.
 
 ### 0.1.30 Debug build failure propagation
 

@@ -53,17 +53,66 @@ function Convert-KernelFontToPsf2([string]$SourcePath, [string]$OutputPath, [int
 New-Item -ItemType Directory -Path $Destination -Force | Out-Null
 $sourceDir = Join-Path $Destination 'Source'
 New-Item -ItemType Directory -Path $sourceDir -Force | Out-Null
+$installedFonts = @()
+$missingFonts = @()
+
+function Invoke-OptionalDownload([string]$Url, [string]$OutFile, [string]$Id) {
+    if (Test-Path -LiteralPath $OutFile -PathType Leaf) {
+        Write-Host "[ OK ] Reusing cached source for $Id: $OutFile"
+        return $true
+    }
+
+    $attempts = 3
+    for ($attempt = 1; $attempt -le $attempts; $attempt++) {
+        try {
+            Write-Host "[INFO] Downloading $Id from Linux kernel $KernelCommit (attempt $attempt/$attempts)."
+            Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -Headers @{ 'User-Agent' = 'NovaOryn-SDK-FontInstaller' }
+            return $true
+        } catch {
+            Remove-Item -LiteralPath $OutFile -Force -ErrorAction SilentlyContinue
+            $status = $null
+            try { $status = [int]$_.Exception.Response.StatusCode } catch { }
+            $message = $_.Exception.Message
+            if ($attempt -lt $attempts -and ($status -eq 429 -or $status -ge 500 -or -not $status)) {
+                $delay = [Math]::Pow(2, $attempt)
+                Write-Host "[WARN] Optional font download failed for $Id (HTTP $status). Retrying in $delay second(s)."
+                Start-Sleep -Seconds $delay
+                continue
+            }
+            Write-Host "[WARN] Optional font $Id could not be downloaded: $message"
+            return $false
+        }
+    }
+    return $false
+}
 
 foreach ($font in $Fonts) {
     $sourcePath = Join-Path $sourceDir $font.Source
-    $url = "$KernelRepository/$KernelCommit/lib/fonts/$($font.Source)"
-    Write-Host "[INFO] Downloading $($font.Id) from Linux kernel $KernelCommit."
-    Invoke-WebRequest -Uri $url -OutFile $sourcePath -UseBasicParsing
-    $firstLine = Get-Content -LiteralPath $sourcePath -TotalCount 1
-    if ($firstLine -notmatch 'SPDX-License-Identifier:\s*GPL-2.0') { throw "Unexpected license header in $($font.Source)." }
     $psfPath = Join-Path $Destination ($font.Id + '.psf')
-    Convert-KernelFontToPsf2 $sourcePath $psfPath $font.Width $font.Height
-    Write-Host "[ OK ] $($font.Id): $($font.Width)x$($font.Height) -> $psfPath"
+
+    if (Test-Path -LiteralPath $psfPath -PathType Leaf) {
+        Write-Host "[ OK ] Reusing installed $($font.Id): $psfPath"
+        $installedFonts += $font
+        continue
+    }
+
+    $url = "$KernelRepository/$KernelCommit/lib/fonts/$($font.Source)"
+    if (-not (Invoke-OptionalDownload $url $sourcePath $font.Id)) {
+        $missingFonts += $font.Id
+        continue
+    }
+
+    try {
+        $firstLine = Get-Content -LiteralPath $sourcePath -TotalCount 1
+        if ($firstLine -notmatch 'SPDX-License-Identifier:\s*GPL-2.0') { throw "Unexpected license header in $($font.Source)." }
+        Convert-KernelFontToPsf2 $sourcePath $psfPath $font.Width $font.Height
+        Write-Host "[ OK ] $($font.Id): $($font.Width)x$($font.Height) -> $psfPath"
+        $installedFonts += $font
+    } catch {
+        Remove-Item -LiteralPath $psfPath -Force -ErrorAction SilentlyContinue
+        Write-Host "[WARN] Optional font $($font.Id) could not be installed: $($_.Exception.Message)"
+        $missingFonts += $font.Id
+    }
 }
 
 $metadata = [ordered]@{
@@ -73,8 +122,17 @@ $metadata = [ordered]@{
     license = 'GPL-2.0'
     generatedFormat = 'PSF2'
     glyphCount = 256
-    fonts = @($Fonts | ForEach-Object { [ordered]@{ id=$_.Id; sourceFile=$_.Source; width=$_.Width; height=$_.Height; gitBlob=$_.Blob; psfFile=($_.Id + '.psf') } })
+    complete = ($missingFonts.Count -eq 0)
+    missingFonts = @($missingFonts)
+    fonts = @($installedFonts | ForEach-Object { [ordered]@{ id=$_.Id; sourceFile=$_.Source; width=$_.Width; height=$_.Height; gitBlob=$_.Blob; psfFile=($_.Id + '.psf') } })
 }
 $metadata | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $Destination 'LinuxKernelFonts.json') -Encoding UTF8
-Write-Host '[ OK ] Linux kernel console font pack installed.'
+if ($installedFonts.Count -gt 0) {
+    Write-Host "[ OK ] Linux kernel console font pack ready with $($installedFonts.Count) installed font(s)."
+} else {
+    Write-Host '[WARN] No optional Linux-kernel fonts are currently installed; NovaOryn will use its embedded fallback console font.'
+}
+if ($missingFonts.Count -gt 0) {
+    Write-Host "[WARN] Optional fonts not installed: $($missingFonts -join ', '). This does not block the NovaOryn SDK toolchain."
+}
 exit 0

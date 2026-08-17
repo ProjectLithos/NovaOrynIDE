@@ -24,7 +24,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.35';
+const NOVAORYN_IDE_VERSION = '0.1.36';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -426,7 +426,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
 
         session.nativeDebugMap = JSON.parse(await fs.readFile(debugMapPath, 'utf8')) as NativeDebugMap;
         if (session.nativeDebugMap.anchor?.symbol !== 'NovaOrynDebugImageAnchor' || !session.nativeDebugMap.anchor.linkedAddress || !Array.isArray(session.nativeDebugMap.entries) || session.nativeDebugMap.entries.length === 0) {
-            throw new Error('NovaOryn.DebugSymbols.json is incomplete or does not contain NovaOrynDebugImageAnchor. Rebuild the SDK/kernel in Debug mode with the bundled NovaOryn SDK 0.37.2 or later.');
+            throw new Error('NovaOryn.DebugSymbols.json is incomplete or does not contain NovaOrynDebugImageAnchor. Rebuild the SDK/kernel in Debug mode with the bundled NovaOryn SDK 0.37.3 or later.');
         }
 
         const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 17);

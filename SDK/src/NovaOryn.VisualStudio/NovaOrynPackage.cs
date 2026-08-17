@@ -12,7 +12,7 @@ namespace NovaOryn.VisualStudio;
 /// Provides the NovaOryn Visual Studio package and registers its build and run command handlers.
 /// </summary>
 [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
-[InstalledProductRegistration("NovaOryn OS SDK", "Visual Studio integration for NovaOryn kernels", "0.37.2")]
+[InstalledProductRegistration("NovaOryn OS SDK", "Visual Studio integration for NovaOryn kernels", "0.37.3")]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 [ProvideAutoLoad(UIContextGuids80.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]
 [Guid(PackageIds.PackageGuidString)]
@@ -47,7 +47,7 @@ public sealed class NovaOrynPackage : AsyncPackage
             ?? throw new InvalidOperationException("Visual Studio priority command service is unavailable.");
         _target = new NovaOrynPriorityLaunchCommandTarget(new NovaOrynLaunchService(this));
         ErrorHandler.ThrowOnFailure(_registration.RegisterPriorityCommandTarget(0, _target, out _cookie));
-        Output.WriteLine("[ OK ] NovaOryn Visual Studio extension 0.37.2 loaded.");
+        Output.WriteLine("[ OK ] NovaOryn Visual Studio extension 0.37.3 loaded.");
     }
     private void OnProjectAdded(Project project)
     {
