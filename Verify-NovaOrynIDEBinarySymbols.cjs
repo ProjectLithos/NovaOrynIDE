@@ -22,4 +22,4 @@ required(widget, 'setProjectPath(projectPath: string | undefined)', 'explicit OS
 required(frontend, 'NovaOrynBinarySymbolExplorerWidget', 'Binary/Symbol Explorer widget registration');
 required(contribution, "novaoryn.engineering.binarySymbols", 'Binary/Symbol Explorer command');
 required(contribution, "label: 'Binary / Symbol Explorer', order: '9'", 'Binary/Symbol Explorer Engineering menu');
-if (!process.exitCode) console.log('[ OK ] NovaOryn IDE 0.2.9 Binary / Symbol Explorer contract verified.');
+if (!process.exitCode) console.log('[ OK ] NovaOryn IDE 0.3.0 Binary / Symbol Explorer contract verified.');

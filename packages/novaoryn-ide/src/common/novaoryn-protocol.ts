@@ -672,6 +672,7 @@ export interface NovaOrynSyscallSnapshot {
 }
 
 export interface NovaOrynProjectService {
+    getSdkApiSiteUrl(): Promise<string>;
     listOperatingSystems(): Promise<NovaOrynOperatingSystem[]>;
     createProject(configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
     readProjectConfiguration(projectPath: string): Promise<NovaOrynConfigurationResult>;

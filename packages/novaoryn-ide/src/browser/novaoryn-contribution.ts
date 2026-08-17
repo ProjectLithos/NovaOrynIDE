@@ -3,7 +3,7 @@ import { inject, injectable } from 'inversify';
 import { BoxLayout } from '@lumino/widgets';
 import { Command, CommandContribution, CommandRegistry, MAIN_MENU_BAR, MenuContribution, MenuModelRegistry, MessageService } from '@theia/core/lib/common';
 import { SelectionService } from '@theia/core/lib/common/selection-service';
-import { AbstractViewContribution, FrontendApplicationContribution } from '@theia/core/lib/browser';
+import { AbstractViewContribution, CommonMenus, FrontendApplicationContribution } from '@theia/core/lib/browser';
 import { NavigatorContextMenu } from '@theia/navigator/lib/browser/navigator-contribution';
 import { WorkspaceService } from '@theia/workspace/lib/browser/workspace-service';
 import { EDITOR_CONTEXT_MENU, EDITOR_LINENUMBER_CONTEXT_MENU, EditorManager } from '@theia/editor/lib/browser';
@@ -23,6 +23,7 @@ import { NovaOrynBinarySymbolExplorerWidget } from './novaoryn-binary-symbol-exp
 import { NovaOrynMemoryMapVisualizerWidget } from './novaoryn-memory-map-visualizer-widget';
 import { NovaOrynInterruptApicVisualizerWidget } from './novaoryn-interrupt-apic-visualizer-widget';
 import { NovaOrynSyscallExplorerWidget } from './novaoryn-syscall-explorer-widget';
+import { NovaOrynSdkApiWidget } from './novaoryn-sdk-api-widget';
 
 export namespace NovaOrynCommands {
     export const OPEN: Command = {
@@ -67,6 +68,7 @@ export namespace NovaOrynCommands {
     export const MEMORY_MAP: Command = { id: 'novaoryn.engineering.memoryMap', label: 'Memory-map Visualiser' };
     export const INTERRUPTS: Command = { id: 'novaoryn.engineering.interruptApic', label: 'Interrupt / APIC Visualiser' };
     export const SYSCALLS: Command = { id: 'novaoryn.engineering.syscalls', label: 'Syscall Explorer' };
+    export const SDK_API: Command = { id: 'novaoryn.help.sdkApi', label: 'SDK API' };
 }
 
 @injectable()
@@ -103,6 +105,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     @inject(NovaOrynMemoryMapVisualizerWidget) protected readonly memoryMapVisualizerWidget!: NovaOrynMemoryMapVisualizerWidget;
     @inject(NovaOrynInterruptApicVisualizerWidget) protected readonly interruptApicVisualizerWidget!: NovaOrynInterruptApicVisualizerWidget;
     @inject(NovaOrynSyscallExplorerWidget) protected readonly syscallExplorerWidget!: NovaOrynSyscallExplorerWidget;
+    @inject(NovaOrynSdkApiWidget) protected readonly sdkApiWidget!: NovaOrynSdkApiWidget;
 
     protected toolbarInstalled = false;
     protected titleLogoInstalled = false;
@@ -195,6 +198,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
             },
             isEnabled: () => !!this.currentOperatingSystemPath()
         });
+        commands.registerCommand(NovaOrynCommands.SDK_API, { execute: () => this.showEngineeringWidget(this.sdkApiWidget, 'main') });
     }
 
 
@@ -224,6 +228,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.MEMORY_MAP.id, label: 'Memory-map Visualiser', order: '10' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.INTERRUPTS.id, label: 'Interrupt / APIC Visualiser', order: '11' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.SYSCALLS.id, label: 'Syscall Explorer', order: '12' });
+        menus.registerMenuAction(CommonMenus.HELP, { commandId: NovaOrynCommands.SDK_API.id, label: 'SDK API', order: 'a20' });
 
         menus.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
             commandId: NovaOrynCommands.RECONFIGURE_ROOT_CONTEXT.id,

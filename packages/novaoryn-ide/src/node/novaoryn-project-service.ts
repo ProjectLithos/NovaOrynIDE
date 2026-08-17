@@ -72,7 +72,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.2.9';
+const NOVAORYN_IDE_VERSION = '0.3.0';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -499,6 +499,12 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     protected readonly runSessions = new Map<string, RunSession>();
     protected readonly testRuns = new Map<string, { output: string; complete: boolean; exitCode?: number; error?: string }>();
     protected readonly telemetryArchives = new Map<string, { trace: NovaOrynTraceSnapshot; profiler: NovaOrynProfilerSnapshot }>();
+
+    async getSdkApiSiteUrl(): Promise<string> {
+        const indexPath = path.join(NOVAORYN_SDK_ROOT, 'docs', 'site', 'index.html');
+        await fs.access(indexPath);
+        return pathToFileURL(indexPath).toString();
+    }
 
     async listOperatingSystems(): Promise<NovaOrynOperatingSystem[]> {
         await fs.mkdir(NOVAORYN_OS_ROOT, { recursive: true });
@@ -1907,7 +1913,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.2.9 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.3.0 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
