@@ -166,3 +166,89 @@
 .monaco-editor .margin-view-overlays .line-numbers {
     cursor: pointer;
 }
+
+/* Current native statement. The arrow remains distinct from breakpoint dots and
+   the whole source line receives a subtle highlight while the kernel is paused. */
+.monaco-editor .novaoryn-current-statement-line {
+    background: color-mix(in srgb, var(--theia-debugIcon-breakpointForeground, #e5b454) 14%, transparent) !important;
+}
+.monaco-editor .margin-view-overlays .novaoryn-current-statement-glyph {
+    background: var(--theia-debugIcon-breakpointCurrentStackframeForeground, #e5b454) !important;
+    clip-path: polygon(12% 12%, 88% 50%, 12% 88%) !important;
+    width: 13px !important;
+    height: 13px !important;
+    margin: 3px auto 0 !important;
+}
+.monaco-editor .margin-view-overlays .novaoryn-current-statement-lines {
+    border-left: 2px solid var(--theia-debugIcon-breakpointCurrentStackframeForeground, #e5b454) !important;
+}
+
+.novaoryn-debug-inspector-widget {
+    overflow: auto;
+    background: var(--theia-sideBar-background);
+    color: var(--theia-foreground);
+}
+.novaoryn-debug-inspector,
+.novaoryn-debug-inspector-empty {
+    padding: 10px 12px 18px;
+    font-size: 12px;
+}
+.novaoryn-debug-inspector-empty {
+    opacity: .72;
+}
+.novaoryn-debug-inspector section {
+    margin-bottom: 18px;
+}
+.novaoryn-debug-inspector h3 {
+    margin: 0 0 7px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    opacity: .78;
+}
+.novaoryn-debug-table {
+    border-top: 1px solid var(--theia-widget-border);
+}
+.novaoryn-debug-row {
+    display: grid;
+    grid-template-columns: minmax(58px, auto) minmax(120px, 1fr) auto;
+    gap: 8px;
+    align-items: baseline;
+    padding: 4px 2px;
+    border-bottom: 1px solid var(--theia-widget-border);
+    font-family: var(--theia-code-font-family);
+}
+.novaoryn-debug-name {
+    font-weight: 700;
+}
+.novaoryn-debug-value,
+.novaoryn-debug-address {
+    overflow-wrap: anywhere;
+}
+.novaoryn-debug-address {
+    opacity: .62;
+}
+.novaoryn-debug-note {
+    margin: 0 0 8px;
+    line-height: 1.35;
+    opacity: .72;
+}
+.novaoryn-debug-register-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 4px 8px;
+}
+.novaoryn-debug-register {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 6px;
+    border: 1px solid var(--theia-widget-border);
+    border-radius: 3px;
+    font-family: var(--theia-code-font-family);
+}
+.novaoryn-debug-register span {
+    font-weight: 700;
+}
+.novaoryn-debug-row.clickable { cursor: pointer; }
+.novaoryn-debug-row.clickable:hover { background: var(--theia-list-hoverBackground); }

@@ -10,6 +10,7 @@ import { NovaOrynWidget } from './novaoryn-widget';
 import { NovaOrynToolbarWidget } from './novaoryn-toolbar-widget';
 import { NovaOrynEditorEnvironmentContribution } from './novaoryn-editor-environment';
 import { NovaOrynBreakpointManager } from './novaoryn-breakpoint-manager';
+import { NovaOrynDebugInspectorWidget } from './novaoryn-debug-inspector-widget';
 import './style/novaoryn.css';
 
 export default new ContainerModule(bind => {
@@ -20,9 +21,14 @@ export default new ContainerModule(bind => {
 
     bind(NovaOrynWidget).toSelf();
     bind(NovaOrynToolbarWidget).toSelf().inSingletonScope();
+    bind(NovaOrynDebugInspectorWidget).toSelf().inSingletonScope();
     bind(WidgetFactory).toDynamicValue(ctx => ({
         id: NovaOrynWidget.ID,
         createWidget: () => ctx.container.get(NovaOrynWidget)
+    })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(ctx => ({
+        id: NovaOrynDebugInspectorWidget.ID,
+        createWidget: () => ctx.container.get(NovaOrynDebugInspectorWidget)
     })).inSingletonScope();
 
     bind(NovaOrynBreakpointManager).toSelf().inSingletonScope();

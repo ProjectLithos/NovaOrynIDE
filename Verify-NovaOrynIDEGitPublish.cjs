@@ -13,7 +13,7 @@ const requiredBuildFragments = [
   'git remote set-url origin "%NOVAORYN_GIT_REMOTE%"',
   'git add -A',
   'git diff --cached --quiet',
-  'git commit -m "NovaOryn IDE 0.1.39"',
+  'git commit -m "NovaOryn IDE 0.1.40"',
   'git push -u origin "%NOVAORYN_GIT_BRANCH%"',
   'rmdir /s /q "%NOVAORYN_SDK_ROOT%\\.git"',
 ];

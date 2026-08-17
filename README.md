@@ -1,4 +1,4 @@
-NovaOryn IDE 0.1.39 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
+NovaOryn IDE 0.1.40 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
 
 # NovaOryn IDE
 
@@ -15,15 +15,17 @@ The Run/Debug toolbar fixes from 0.1.12 remain in place: the toolbar stays below
 
 NovaOryn IDE is the desktop development environment for the NovaOryn Operating System SDK. It is a custom Eclipse Theia desktop application with NovaOryn-specific project configuration and generation.
 
-## Current release: 0.1.39
+## Current release: 0.1.40
 
-### 0.1.39 Debug-symbol schema compatibility
+### 0.1.40 Source stepping and debug inspection
 
-NovaOryn IDE 0.1.39 fixes the debugger failure `The "paths[0]" argument must be of type string. Received undefined`. The bundled SDK 0.37.4 generated source-map entry record fields as `SourcePath`, `Line` and `LinkedAddress`, while the IDE expected camelCase. The IDE now accepts both forms, validates every mapping before using Node path functions, and the SDK now emits camelCase maps for future builds.
+NovaOryn IDE 0.1.40 turns the previously machine-step-only controls into source-oriented Debug operations. **Step Into** machine-steps until the NativeAOT source line changes. **Step Over** recognizes x64 CALL instructions and runs to a temporary return-site breakpoint so ordinary calls are skipped while user breakpoints remain authoritative. **Step Out** uses the current x64 frame return address and continues to the caller. Continue, Pause, Restart and Stop remain connected directly to the QEMU GDB stub.
 
-### 0.1.39 Verified source-breakpoint binding
+When execution is paused, the IDE now paints a current-statement arrow and whole-line highlight, automatically reveals the stopped C# line, and opens a **NovaOryn Debug** inspector containing the call stack, native frame/stack values and x64 integer registers. Call-stack rows with source information can be clicked to open that frame. Because the current SDK source-map JSON does not yet export named NativeAOT C# local-variable records, the Locals view deliberately exposes native frame/argument slots rather than inventing C# variable names.
 
-NovaOryn IDE 0.1.39 keeps the SDK 0.37.4 debugcon relocation rendezvous and fixes C# breakpoints that could appear set while execution ran through them. Breakpoints on non-executable C# lines now bind to a nearby executable NativeAOT sequence point in the same file. The Build output reports the requested line, resolved executable line and relocated runtime address. If any requested breakpoint cannot be verified, the kernel remains paused before KMain instead of silently running past it.
+### 0.1.39 breakpoint fixes retained
+
+The 0.1.39 debug-map schema compatibility and verified source-breakpoint binding fixes remain in 0.1.40. The IDE accepts both PascalCase and camelCase source-map entries, binds non-executable C# lines to nearby executable sequence points, and holds the kernel before KMain if a requested source breakpoint cannot be verified.
 
 
 

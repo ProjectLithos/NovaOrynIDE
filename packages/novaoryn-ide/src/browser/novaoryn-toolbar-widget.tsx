@@ -5,10 +5,13 @@ import { FileUri } from '@theia/core/lib/common/file-uri';
 import { ApplicationShell } from '@theia/core/lib/browser/shell/application-shell';
 import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
 import { EditorManager } from '@theia/editor/lib/browser';
+import { MonacoEditor } from '@theia/monaco/lib/browser/monaco-editor';
+import * as monaco from '@theia/monaco-editor-core';
 import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
 import { WorkspaceService } from '@theia/workspace/lib/browser/workspace-service';
 import { NovaOrynDebugCommand, NovaOrynDebugState, NovaOrynProjectService, NovaOrynRunMode } from '../common/novaoryn-protocol';
 import { NovaOrynBreakpointManager } from './novaoryn-breakpoint-manager';
+import { NovaOrynDebugInspectorWidget } from './novaoryn-debug-inspector-widget';
 
 const RUN_MODE_STORAGE_KEY = 'novaoryn.ide.runMode';
 const OUTPUT_CHANNEL_NAME = 'NovaOryn Build';
@@ -38,12 +41,16 @@ export class NovaOrynToolbarWidget extends ReactWidget {
     @inject(NovaOrynBreakpointManager)
     protected readonly breakpointManager!: NovaOrynBreakpointManager;
 
+    @inject(NovaOrynDebugInspectorWidget)
+    protected readonly debugInspector!: NovaOrynDebugInspectorWidget;
+
     protected runMode: NovaOrynRunMode = 'run';
     protected launching = false;
     protected sessionId: string | undefined;
     protected debugState: NovaOrynDebugState = { active: false, paused: false, sourceSymbols: false };
     protected lastRevealedStop = '';
     protected breakpointsArmedForSession: string | undefined;
+    protected readonly pausedDecorations = new Map<MonacoEditor, string[]>();
 
     @postConstruct()
     protected init(): void {
@@ -92,6 +99,10 @@ export class NovaOrynToolbarWidget extends ReactWidget {
             {debug && <div className='novaoryn-debug-controls' aria-label='NovaOryn debugger controls'>
                 <button className='novaoryn-debug-button novaoryn-breakpoint-button' disabled={!canSetBreakpoint} title='Toggle breakpoint on the current source line (also click the far-left editor gutter)' onClick={() => this.toggleBreakpoint()}>
                     <span className='codicon codicon-debug-breakpoint' aria-hidden='true'></span>
+                </button>
+                <span className='novaoryn-debug-separator'></span>
+                <button className='novaoryn-debug-button' disabled={!active} title='Show Call Stack, Locals and Registers' onClick={() => this.showDebugInspector()}>
+                    <span className='codicon codicon-debug-alt' aria-hidden='true'></span>
                 </button>
                 <span className='novaoryn-debug-separator'></span>
                 <button className='novaoryn-debug-button' disabled={!paused} title='Continue (F5)' onClick={() => this.sendDebugCommand('continue')}>
@@ -162,8 +173,11 @@ export class NovaOrynToolbarWidget extends ReactWidget {
         }
         try {
             this.debugState = await this.projectService.debugCommand(this.sessionId, command);
+            this.debugInspector.setState(this.debugState);
+            this.syncPausedLineDecoration();
             this.update();
             await this.revealStoppedSource();
+            if (this.debugState.paused) { await this.showDebugInspector(false); }
         } catch (error) {
             await this.messageService.error(error instanceof Error ? error.message : String(error));
         }
@@ -183,9 +197,61 @@ export class NovaOrynToolbarWidget extends ReactWidget {
             const position = { line: Math.max(0, this.debugState.line - 1), character: 0 };
             editor.editor.cursor = position;
             editor.editor.revealPosition(position);
+            this.syncPausedLineDecoration();
         } catch {
             // The debugger remains usable even if an editor cannot be opened automatically.
         }
+    }
+
+    protected async showDebugInspector(activate = true): Promise<void> {
+        if (!this.debugInspector.isAttached) {
+            await this.shell.addWidget(this.debugInspector, { area: 'right', rank: 900 });
+        }
+        this.debugInspector.setState(this.debugState);
+        if (activate) {
+            this.shell.activateWidget(this.debugInspector.id);
+        } else {
+            this.shell.revealWidget(this.debugInspector.id);
+        }
+    }
+
+    protected syncPausedLineDecoration(): void {
+        const stoppedPath = this.debugState.paused && this.debugState.sourcePath
+            ? this.normalizePath(this.debugState.sourcePath)
+            : undefined;
+        const stoppedLine = this.debugState.line;
+        const liveEditors = new Set(MonacoEditor.getAll(this.editorManager));
+
+        for (const [editor, decorations] of Array.from(this.pausedDecorations.entries())) {
+            if (!liveEditors.has(editor)) {
+                this.pausedDecorations.delete(editor);
+                continue;
+            }
+            if (!stoppedPath || this.normalizePath(editor.uri.path.fsPath()) !== stoppedPath) {
+                editor.getControl().deltaDecorations(decorations, []);
+                this.pausedDecorations.delete(editor);
+            }
+        }
+
+        if (!stoppedPath || !stoppedLine) { return; }
+        for (const editor of liveEditors) {
+            if (this.normalizePath(editor.uri.path.fsPath()) !== stoppedPath) { continue; }
+            const old = this.pausedDecorations.get(editor) ?? [];
+            const ids = editor.getControl().deltaDecorations(old, [{
+                range: new monaco.Range(stoppedLine, 1, stoppedLine, 1),
+                options: {
+                    isWholeLine: true,
+                    className: 'novaoryn-current-statement-line',
+                    glyphMarginClassName: 'novaoryn-current-statement-glyph',
+                    linesDecorationsClassName: 'novaoryn-current-statement-lines'
+                }
+            }]);
+            this.pausedDecorations.set(editor, ids);
+        }
+    }
+
+    protected normalizePath(value: string): string {
+        return value.replace(/\\/g, '/').toLowerCase();
     }
 
     protected async runCurrentOperatingSystem(): Promise<void> {
@@ -235,6 +301,8 @@ export class NovaOrynToolbarWidget extends ReactWidget {
 
                 if (this.runMode === 'debug') {
                     this.debugState = await this.projectService.debugState(result.sessionId);
+                    this.debugInspector.setState(this.debugState);
+                    this.syncPausedLineDecoration();
                     this.breakpointManager.applyRuntimeBreakpoints(this.debugState.breakpoints);
                     if (this.debugState.active && this.breakpointsArmedForSession !== result.sessionId) {
                         this.breakpointsArmedForSession = result.sessionId;
@@ -242,6 +310,7 @@ export class NovaOrynToolbarWidget extends ReactWidget {
                     }
                     this.update();
                     await this.revealStoppedSource();
+                    if (this.debugState.paused) { await this.showDebugInspector(false); }
                 }
 
                 if (output.complete) {
@@ -268,6 +337,8 @@ export class NovaOrynToolbarWidget extends ReactWidget {
             this.sessionId = undefined;
             this.breakpointManager.setSession(undefined);
             this.debugState = { active: false, paused: false, sourceSymbols: false };
+            this.debugInspector.setState(this.debugState);
+            this.syncPausedLineDecoration();
             this.lastRevealedStop = '';
             this.breakpointsArmedForSession = undefined;
             this.update();

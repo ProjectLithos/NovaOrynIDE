@@ -59,6 +59,25 @@ export interface NovaOrynOperatingSystem {
 export type NovaOrynRunMode = 'run' | 'debug';
 export type NovaOrynDebugCommand = 'continue' | 'pause' | 'step-into' | 'step-over' | 'step-out' | 'restart' | 'stop';
 
+export interface NovaOrynDebugRegister {
+    name: string;
+    value: string;
+}
+
+export interface NovaOrynDebugFrame {
+    index: number;
+    address: string;
+    label: string;
+    sourcePath?: string;
+    line?: number;
+}
+
+export interface NovaOrynDebugVariable {
+    name: string;
+    value: string;
+    kind: 'local' | 'argument' | 'stack';
+}
+
 export interface NovaOrynRunResult {
     success: boolean;
     sessionId?: string;
@@ -74,6 +93,10 @@ export interface NovaOrynDebugState {
     sourcePath?: string;
     line?: number;
     message?: string;
+    registers?: NovaOrynDebugRegister[];
+    callStack?: NovaOrynDebugFrame[];
+    locals?: NovaOrynDebugVariable[];
+    localsMessage?: string;
 }
 
 export interface NovaOrynBreakpointResult {

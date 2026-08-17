@@ -14,6 +14,9 @@ import {
     NovaOrynRunMode,
     NovaOrynDebugCommand,
     NovaOrynDebugState,
+    NovaOrynDebugFrame,
+    NovaOrynDebugRegister,
+    NovaOrynDebugVariable,
     NovaOrynBreakpointResult,
     NovaOrynRunOutput,
     NovaOrynRunResult,
@@ -24,7 +27,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.39';
+const NOVAORYN_IDE_VERSION = '0.1.40';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -174,6 +177,14 @@ interface NativeDebugMap {
     entries: NativeSourceLine[];
 }
 
+interface StepPlan {
+    kind: 'step-into' | 'step-over' | 'step-out';
+    sourcePath?: string;
+    line?: number;
+    machineSteps: number;
+    temporaryAddress?: bigint;
+}
+
 interface RunSession {
     output: string;
     complete: boolean;
@@ -193,6 +204,7 @@ interface RunSession {
     anchorStopResolve?: () => void;
     internalPause?: boolean;
     lastBreakpoint?: SourceBreakpoint;
+    stepPlan?: StepPlan;
 }
 
 interface GeneratedProject {
@@ -335,6 +347,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             return { active: false, paused: false, sourceSymbols: false, message: 'No active NovaOryn debug session.' };
         }
         if (command === 'stop') {
+            session.stepPlan = undefined;
             session.gdb?.close();
             session.qemu?.kill();
             session.debug = { ...session.debug, active: false, paused: false, message: 'Debug session stopped.' };
@@ -347,6 +360,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             session.qemu?.kill();
             session.breakpoints.clear();
             session.lastBreakpoint = undefined;
+            session.stepPlan = undefined;
             session.debug = { active: false, paused: false, sourceSymbols: session.debug.sourceSymbols, message: 'Restarting QEMU debugger…' };
             await this.launchDebugQemu(session);
             return session.debug!;
@@ -360,18 +374,40 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             return session.debug;
         }
         if (command === 'continue') {
+            await this.clearTemporaryStepBreakpoint(session);
+            session.stepPlan = undefined;
             session.gdb.run('c');
-            session.debug = { ...session.debug, paused: false, sourcePath: undefined, line: undefined, message: 'Kernel running. Waiting for breakpoint.' };
+            session.debug = this.runningDebugState(session, 'Kernel running. Waiting for breakpoint.');
             return session.debug;
         }
         if (!session.debug.paused) {
             return { ...session.debug, message: 'Step commands are available after a breakpoint or Pause.' };
         }
-        // QEMU's GDB stub provides machine single-step. Without final NativeAOT line tables,
-        // step-over/out cannot be made source-accurate, so all three advance one machine step.
-        session.gdb.run('s');
-        session.debug = { ...session.debug, paused: false, message: `${command} requested…` };
-        return session.debug;
+
+        if (command === 'step-out') {
+            const rbp = await this.readRegister(session.gdb, 6);
+            const returnAddress = rbp !== 0n ? await this.readU64(session.gdb, rbp + 8n) : 0n;
+            if (returnAddress === 0n) {
+                return { ...session.debug, message: 'Step Out could not determine the current frame return address.' };
+            }
+            const reply = await session.gdb.command(`Z0,${returnAddress.toString(16)},1`);
+            if (reply !== 'OK') {
+                return { ...session.debug, message: `Step Out temporary breakpoint was rejected by QEMU: ${reply}` };
+            }
+            session.stepPlan = { kind: 'step-out', sourcePath: session.debug.sourcePath, line: session.debug.line, machineSteps: 0, temporaryAddress: returnAddress };
+            session.gdb.run('c');
+            session.debug = this.runningDebugState(session, 'Step Out running to the caller…');
+            return session.debug;
+        }
+
+        session.stepPlan = {
+            kind: command,
+            sourcePath: session.debug.sourcePath,
+            line: session.debug.line,
+            machineSteps: 0
+        };
+        await this.advanceStepPlan(session);
+        return session.debug!;
     }
 
     async toggleBreakpoint(sessionId: string, sourcePath: string, line: number): Promise<NovaOrynBreakpointResult> {
@@ -644,42 +680,314 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             return;
         }
 
-        session.debug = { ...session.debug, paused: true, message: packet.startsWith('T05') || packet.startsWith('S05') ? 'Kernel stopped.' : `Kernel stopped: ${packet}` };
-
         try {
             if (!session.gdb || session.relocationDelta === undefined || !session.nativeDebugMap) {
+                session.debug = { ...session.debug, paused: true, message: 'Kernel stopped.' };
                 return;
             }
+
             const rip = await this.readRip(session.gdb);
             const candidates = [rip, rip > 0n ? rip - 1n : rip];
             const hit = Array.from(session.breakpoints.values()).find(bp =>
                 candidates.some(candidate => candidate === this.parseAddress(bp.address)));
+
             if (hit) {
+                await this.clearTemporaryStepBreakpoint(session);
+                session.stepPlan = undefined;
                 session.lastBreakpoint = hit;
                 session.debug = {
                     ...session.debug,
+                    paused: true,
                     sourcePath: hit.sourcePath,
                     line: hit.resolvedLine,
                     message: hit.resolvedLine === hit.line
                         ? `Breakpoint reached at ${path.basename(hit.sourcePath)}:${hit.line}.`
                         : `Breakpoint reached at ${path.basename(hit.sourcePath)}:${hit.resolvedLine} (requested line ${hit.line}).`
                 };
+                await this.populatePausedDebugData(session, rip);
                 return;
             }
 
-            const linkedRip = rip - session.relocationDelta;
-            const nearest = this.resolveSourceLocation(session.nativeDebugMap, linkedRip);
-            if (nearest) {
-                session.debug = {
-                    ...session.debug,
-                    sourcePath: nearest.sourcePath,
-                    line: nearest.line,
-                    message: `Kernel paused at ${path.basename(nearest.sourcePath)}:${nearest.line}.`
-                };
+            if (session.stepPlan) {
+                const plan = session.stepPlan;
+                if (plan.temporaryAddress && candidates.some(candidate => candidate === plan.temporaryAddress)) {
+                    await this.clearTemporaryStepBreakpoint(session);
+                    if (plan.kind === 'step-out') {
+                        session.stepPlan = undefined;
+                        await this.publishPausedLocation(session, rip, 'Step Out completed.');
+                        return;
+                    }
+                }
+
+                const linkedRip = rip - session.relocationDelta;
+                const location = this.resolveSourceLocation(session.nativeDebugMap, linkedRip);
+                const changedSourceLine = !!location &&
+                    (!plan.sourcePath || this.normalizeSourcePath(location.sourcePath) !== this.normalizeSourcePath(plan.sourcePath) || location.line !== plan.line);
+                if (changedSourceLine) {
+                    session.stepPlan = undefined;
+                    await this.publishPausedLocation(session, rip, `${this.stepLabel(plan.kind)} completed.`);
+                    return;
+                }
+
+                if (plan.machineSteps >= 20000) {
+                    session.stepPlan = undefined;
+                    await this.publishPausedLocation(session, rip, `${this.stepLabel(plan.kind)} stopped after the safety limit of 20,000 machine instructions.`);
+                    return;
+                }
+
+                await this.advanceStepPlan(session, rip);
+                return;
             }
+
+            await this.publishPausedLocation(
+                session,
+                rip,
+                packet.startsWith('T05') || packet.startsWith('S05') ? 'Kernel stopped.' : `Kernel stopped: ${packet}`
+            );
         } catch (error) {
-            session.debug = { ...session.debug, message: `Kernel stopped; source location lookup failed: ${error instanceof Error ? error.message : String(error)}` };
+            session.stepPlan = undefined;
+            session.debug = { ...session.debug, paused: true, message: `Kernel stopped; source/debug-state lookup failed: ${error instanceof Error ? error.message : String(error)}` };
         }
+    }
+
+    protected async publishPausedLocation(session: RunSession, rip: bigint, message: string): Promise<void> {
+        if (!session.debug || session.relocationDelta === undefined || !session.nativeDebugMap) {
+            return;
+        }
+        const linkedRip = rip - session.relocationDelta;
+        const nearest = this.resolveSourceLocation(session.nativeDebugMap, linkedRip);
+        session.debug = {
+            ...session.debug,
+            paused: true,
+            sourcePath: nearest?.sourcePath,
+            line: nearest?.line,
+            message: nearest ? `${message} ${path.basename(nearest.sourcePath)}:${nearest.line}.` : message
+        };
+        await this.populatePausedDebugData(session, rip);
+    }
+
+    protected async advanceStepPlan(session: RunSession, knownRip?: bigint): Promise<void> {
+        const plan = session.stepPlan;
+        if (!plan || !session.gdb || !session.debug) {
+            return;
+        }
+        plan.machineSteps++;
+
+        if (plan.kind === 'step-over') {
+            const rip = knownRip ?? await this.readRip(session.gdb);
+            const instructionLength = await this.currentCallInstructionLength(session.gdb, rip);
+            if (instructionLength > 0) {
+                const afterCall = rip + BigInt(instructionLength);
+                const reply = await session.gdb.command(`Z0,${afterCall.toString(16)},1`);
+                if (reply === 'OK') {
+                    plan.temporaryAddress = afterCall;
+                    session.gdb.run('c');
+                    session.debug = this.runningDebugState(session, 'Step Over running…');
+                    return;
+                }
+            }
+        }
+
+        session.gdb.run('s');
+        session.debug = this.runningDebugState(session, `${this.stepLabel(plan.kind)} running…`);
+    }
+
+    protected async clearTemporaryStepBreakpoint(session: RunSession): Promise<void> {
+        const address = session.stepPlan?.temporaryAddress;
+        if (!address || !session.gdb) {
+            return;
+        }
+        try { await session.gdb.command(`z0,${address.toString(16)},1`); } catch { }
+        if (session.stepPlan) {
+            session.stepPlan.temporaryAddress = undefined;
+        }
+    }
+
+    protected runningDebugState(session: RunSession, message: string): NovaOrynDebugState {
+        return {
+            ...(session.debug ?? { active: true, sourceSymbols: true }),
+            active: true,
+            paused: false,
+            sourcePath: undefined,
+            line: undefined,
+            registers: undefined,
+            callStack: undefined,
+            locals: undefined,
+            localsMessage: undefined,
+            message
+        };
+    }
+
+    protected stepLabel(kind: StepPlan['kind']): string {
+        if (kind === 'step-into') { return 'Step Into'; }
+        if (kind === 'step-over') { return 'Step Over'; }
+        return 'Step Out';
+    }
+
+    protected normalizeSourcePath(sourcePath: string): string {
+        return path.resolve(sourcePath).replace(/\\/g, '/').toLowerCase();
+    }
+
+    protected async currentCallInstructionLength(gdb: GdbRspClient, rip: bigint): Promise<number> {
+        const bytes = await this.readMemory(gdb, rip, 15);
+        if (bytes.length === 0) { return 0; }
+        let i = 0;
+        while (i < bytes.length && (bytes[i] === 0x66 || bytes[i] === 0x67 || bytes[i] === 0xf2 || bytes[i] === 0xf3 || (bytes[i] >= 0x40 && bytes[i] <= 0x4f))) { i++; }
+        if (bytes[i] === 0xe8) { return i + 5; }
+        if (bytes[i] !== 0xff || i + 1 >= bytes.length) { return 0; }
+        const modrm = bytes[i + 1];
+        const reg = (modrm >> 3) & 7;
+        if (reg !== 2 && reg !== 3) { return 0; }
+        let length = i + 2;
+        const mod = (modrm >> 6) & 3;
+        const rm = modrm & 7;
+        if (mod !== 3 && rm === 4) {
+            if (length >= bytes.length) { return 0; }
+            const sib = bytes[length++];
+            const base = sib & 7;
+            if (mod === 0 && base === 5) { length += 4; }
+        }
+        if (mod === 0 && rm === 5) { length += 4; }
+        else if (mod === 1) { length += 1; }
+        else if (mod === 2) { length += 4; }
+        return length <= bytes.length ? length : 0;
+    }
+
+    protected async populatePausedDebugData(session: RunSession, rip: bigint): Promise<void> {
+        if (!session.gdb || !session.debug) { return; }
+        const registers = await this.readRegisterSet(session.gdb);
+        const registerMap = new Map(registers.map(item => [item.name, this.parseAddress(item.value)]));
+        const rbp = registerMap.get('rbp') ?? 0n;
+        const rsp = registerMap.get('rsp') ?? 0n;
+        const callStack = await this.readCallStack(session, rip, rbp, rsp);
+        const locals = await this.readFrameSlots(session.gdb, rbp, rsp);
+        session.debug = {
+            ...session.debug,
+            registers,
+            callStack,
+            locals,
+            localsMessage: 'NativeAOT C# local-variable names are not exported by the current NovaOryn source map yet; Locals shows the current native frame/stack slots while Registers shows the complete x64 integer register set.'
+        };
+    }
+
+    protected async readRegisterSet(gdb: GdbRspClient): Promise<NovaOrynDebugRegister[]> {
+        const names = ['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15','rip','rflags'];
+        const values: NovaOrynDebugRegister[] = [];
+        for (let i = 0; i < names.length; i++) {
+            const value = await this.readRegister(gdb, i);
+            values.push({ name: names[i], value: `0x${value.toString(16).padStart(16, '0')}` });
+        }
+        return values;
+    }
+
+    protected async readCallStack(session: RunSession, rip: bigint, initialRbp: bigint, rsp: bigint): Promise<NovaOrynDebugFrame[]> {
+        const frames: NovaOrynDebugFrame[] = [];
+        const addFrame = (address: bigint, index: number) => {
+            let location: NativeSourceLine | undefined;
+            if (session.relocationDelta !== undefined && session.nativeDebugMap) {
+                const linked = address - session.relocationDelta;
+                location = this.resolveSourceLocation(session.nativeDebugMap, linked);
+            }
+            frames.push({
+                index,
+                address: `0x${address.toString(16)}`,
+                label: location ? `${path.basename(location.sourcePath)}:${location.line}` : `0x${address.toString(16)}`,
+                sourcePath: location?.sourcePath,
+                line: location?.line
+            });
+        };
+        addFrame(rip, 0);
+        if (!session.gdb) { return frames; }
+        let rbp = initialRbp;
+        const visited = new Set<string>();
+        for (let index = 1; index < 24 && rbp !== 0n; index++) {
+            const key = rbp.toString(16);
+            if (visited.has(key)) { break; }
+            visited.add(key);
+            const previousRbp = await this.readU64(session.gdb, rbp);
+            const returnAddress = await this.readU64(session.gdb, rbp + 8n);
+            if (returnAddress === 0n) { break; }
+            addFrame(returnAddress, index);
+            if (previousRbp <= rbp || previousRbp - rbp > 0x1000000n) { break; }
+            rbp = previousRbp;
+        }
+
+        // NativeAOT may use RBP as a general-purpose register even in Debug builds.
+        // If a conventional frame chain was unavailable, conservatively scan a small
+        // portion of the current stack for return addresses that map to known source.
+        if (frames.length === 1 && rsp !== 0n && session.relocationDelta !== undefined && session.nativeDebugMap) {
+            const stack = await this.readMemory(session.gdb, rsp, 0x100);
+            for (let offset = 0; offset + 8 <= stack.length && frames.length < 16; offset += 8) {
+                let candidate = 0n;
+                for (let i = 7; i >= 0; i--) { candidate = (candidate << 8n) | BigInt(stack[offset + i]); }
+                if (candidate === 0n) { continue; }
+                const linkedCandidate = candidate - session.relocationDelta;
+                if (!this.isWithinDebugMap(session.nativeDebugMap, linkedCandidate)) { continue; }
+                const location = this.resolveSourceLocation(session.nativeDebugMap, linkedCandidate);
+                if (!location) { continue; }
+                const duplicate = frames.some(frame => frame.address.toLowerCase() === `0x${candidate.toString(16)}`);
+                if (!duplicate) { addFrame(candidate, frames.length); }
+            }
+        }
+        return frames;
+    }
+
+    protected async readFrameSlots(gdb: GdbRspClient, rbp: bigint, rsp: bigint): Promise<NovaOrynDebugVariable[]> {
+        const result: NovaOrynDebugVariable[] = [];
+        if (rbp !== 0n) {
+            for (let offset = -0x40; offset <= -0x08; offset += 8) {
+                const address = rbp + BigInt(offset);
+                const value = await this.readU64(gdb, address);
+                result.push({ name: `[rbp${offset.toString(16)}]`, value: `0x${value.toString(16).padStart(16, '0')}`, kind: 'local' });
+            }
+            for (let offset = 0x10; offset <= 0x30; offset += 8) {
+                const value = await this.readU64(gdb, rbp + BigInt(offset));
+                result.push({ name: `[rbp+0x${offset.toString(16)}]`, value: `0x${value.toString(16).padStart(16, '0')}`, kind: 'argument' });
+            }
+        } else if (rsp !== 0n) {
+            for (let offset = 0; offset <= 0x40; offset += 8) {
+                const value = await this.readU64(gdb, rsp + BigInt(offset));
+                result.push({ name: `[rsp+0x${offset.toString(16)}]`, value: `0x${value.toString(16).padStart(16, '0')}`, kind: 'stack' });
+            }
+        }
+        return result;
+    }
+
+    protected async readRegister(gdb: GdbRspClient, index: number): Promise<bigint> {
+        const reply = await gdb.command(`p${index.toString(16)}`);
+        if (!/^[0-9a-fA-F]+$/.test(reply) || reply.length < 2) {
+            throw new Error(`QEMU returned an invalid register value for p${index.toString(16)}: ${reply}`);
+        }
+        const bytes = reply.match(/../g) ?? [];
+        return BigInt(`0x${bytes.reverse().join('')}`);
+    }
+
+    protected async readMemory(gdb: GdbRspClient, address: bigint, length: number): Promise<Buffer> {
+        const reply = await gdb.command(`m${address.toString(16)},${length.toString(16)}`);
+        if (reply.startsWith('E') || !/^[0-9a-fA-F]*$/.test(reply) || reply.length % 2 !== 0) {
+            return Buffer.alloc(0);
+        }
+        return Buffer.from(reply, 'hex');
+    }
+
+    protected async readU64(gdb: GdbRspClient, address: bigint): Promise<bigint> {
+        const bytes = await this.readMemory(gdb, address, 8);
+        if (bytes.length !== 8) { return 0n; }
+        let value = 0n;
+        for (let i = 7; i >= 0; i--) { value = (value << 8n) | BigInt(bytes[i]); }
+        return value;
+    }
+
+    protected isWithinDebugMap(debugMap: NativeDebugMap, linkedAddress: bigint): boolean {
+        if (debugMap.entries.length === 0) { return false; }
+        let min = this.parseAddress(debugMap.entries[0].linkedAddress);
+        let max = min;
+        for (const entry of debugMap.entries) {
+            const address = this.parseAddress(entry.linkedAddress);
+            if (address < min) { min = address; }
+            if (address > max) { max = address; }
+        }
+        return linkedAddress >= min && linkedAddress <= max + 0x10000n;
     }
 
     protected resolveSourceLocation(debugMap: NativeDebugMap, linkedAddress: bigint): NativeSourceLine | undefined {
@@ -723,12 +1031,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     }
 
     protected async readRip(gdb: GdbRspClient): Promise<bigint> {
-        const reply = await gdb.command('p10');
-        if (!/^[0-9a-fA-F]+$/.test(reply) || reply.length < 2) {
-            throw new Error(`QEMU returned an invalid RIP register value: ${reply}`);
-        }
-        const bytes = reply.match(/../g) ?? [];
-        return BigInt(`0x${bytes.reverse().join('')}`);
+        return this.readRegister(gdb, 16);
     }
 
     protected parseAddress(value: string): bigint {
