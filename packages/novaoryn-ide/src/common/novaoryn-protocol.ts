@@ -520,6 +520,57 @@ export interface NovaOrynBinaryInspection {
     error?: string;
 }
 
+
+
+export type NovaOrynMemoryRegionCategory = 'usable' | 'boot-reclaimable' | 'runtime' | 'acpi-reclaimable' | 'acpi-nvs' | 'mmio' | 'reserved' | 'unusable' | 'persistent' | 'unaccepted' | 'unknown';
+
+export interface NovaOrynMemoryMapRegion {
+    index: number;
+    firmwareType: number;
+    typeName: string;
+    category: NovaOrynMemoryRegionCategory;
+    physicalStart: string;
+    physicalEnd: string;
+    virtualStart: string;
+    pageCount: number;
+    byteCount: number;
+    attributes: string;
+}
+
+export interface NovaOrynMemoryReservation {
+    name: string;
+    physicalStart: string;
+    byteCount: number;
+    details?: string;
+}
+
+export interface NovaOrynMemoryMapCategorySummary {
+    category: NovaOrynMemoryRegionCategory;
+    regionCount: number;
+    byteCount: number;
+}
+
+export interface NovaOrynMemoryMapSnapshot {
+    success: boolean;
+    active: boolean;
+    paused: boolean;
+    capturedAtUtc: string;
+    descriptorVersion?: number;
+    descriptorSize?: number;
+    descriptorCount?: number;
+    mapKey?: string;
+    mapRuntimeAddress?: string;
+    captureAttempts?: number;
+    totalBytes?: number;
+    usableBytes?: number;
+    highestPhysicalAddress?: string;
+    regions: NovaOrynMemoryMapRegion[];
+    categories: NovaOrynMemoryMapCategorySummary[];
+    reservations: NovaOrynMemoryReservation[];
+    message?: string;
+    error?: string;
+}
+
 export interface NovaOrynProjectService {
     listOperatingSystems(): Promise<NovaOrynOperatingSystem[]>;
     createProject(configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
@@ -548,6 +599,7 @@ export interface NovaOrynProjectService {
     analyzeOperatingSystem(projectPath: string): Promise<NovaOrynAnalyzerSnapshot>;
     listBinaries(projectPath: string): Promise<NovaOrynBinaryDescriptor[]>;
     inspectBinary(projectPath: string, binaryPath: string, symbolFilter?: string): Promise<NovaOrynBinaryInspection>;
+    inspectMemoryMap(projectPath: string): Promise<NovaOrynMemoryMapSnapshot>;
     listTargets(projectPath: string): Promise<NovaOrynTargetState>;
     getActiveTarget(projectPath: string): Promise<NovaOrynTargetProfile | undefined>;
     saveTarget(projectPath: string, target: NovaOrynTargetProfile): Promise<NovaOrynTargetMutationResult>;

@@ -21,6 +21,7 @@ import { NovaOrynDriverCentreWidget } from './novaoryn-driver-centre-widget';
 import { NovaOrynTargetManagerWidget } from './novaoryn-target-manager-widget';
 import { NovaOrynStaticAnalyzerWidget } from './novaoryn-static-analyzer-widget';
 import { NovaOrynBinarySymbolExplorerWidget } from './novaoryn-binary-symbol-explorer-widget';
+import { NovaOrynMemoryMapVisualizerWidget } from './novaoryn-memory-map-visualizer-widget';
 import './style/novaoryn.css';
 
 export default new ContainerModule(bind => {
@@ -42,6 +43,7 @@ export default new ContainerModule(bind => {
     bind(NovaOrynTargetManagerWidget).toSelf().inSingletonScope();
     bind(NovaOrynStaticAnalyzerWidget).toSelf().inSingletonScope();
     bind(NovaOrynBinarySymbolExplorerWidget).toSelf().inSingletonScope();
+    bind(NovaOrynMemoryMapVisualizerWidget).toSelf().inSingletonScope();
     bind(WidgetFactory).toDynamicValue(ctx => ({
         id: NovaOrynWidget.ID,
         createWidget: () => ctx.container.get(NovaOrynWidget)
@@ -60,6 +62,7 @@ export default new ContainerModule(bind => {
     bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynTargetManagerWidget.ID, createWidget: () => ctx.container.get(NovaOrynTargetManagerWidget) })).inSingletonScope();
     bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynStaticAnalyzerWidget.ID, createWidget: () => ctx.container.get(NovaOrynStaticAnalyzerWidget) })).inSingletonScope();
     bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynBinarySymbolExplorerWidget.ID, createWidget: () => ctx.container.get(NovaOrynBinarySymbolExplorerWidget) })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynMemoryMapVisualizerWidget.ID, createWidget: () => ctx.container.get(NovaOrynMemoryMapVisualizerWidget) })).inSingletonScope();
 
     bind(NovaOrynBreakpointManager).toSelf().inSingletonScope();
 

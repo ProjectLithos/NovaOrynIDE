@@ -20,6 +20,7 @@ import { NovaOrynDriverCentreWidget } from './novaoryn-driver-centre-widget';
 import { NovaOrynTargetManagerWidget } from './novaoryn-target-manager-widget';
 import { NovaOrynStaticAnalyzerWidget } from './novaoryn-static-analyzer-widget';
 import { NovaOrynBinarySymbolExplorerWidget } from './novaoryn-binary-symbol-explorer-widget';
+import { NovaOrynMemoryMapVisualizerWidget } from './novaoryn-memory-map-visualizer-widget';
 
 export namespace NovaOrynCommands {
     export const OPEN: Command = {
@@ -61,6 +62,7 @@ export namespace NovaOrynCommands {
     export const TARGETS: Command = { id: 'novaoryn.engineering.targets', label: 'Target Manager' };
     export const ANALYZERS: Command = { id: 'novaoryn.engineering.analyzers', label: 'OS-specific Static Analyzers' };
     export const BINARIES: Command = { id: 'novaoryn.engineering.binarySymbols', label: 'Binary / Symbol Explorer' };
+    export const MEMORY_MAP: Command = { id: 'novaoryn.engineering.memoryMap', label: 'Memory-map Visualiser' };
 }
 
 @injectable()
@@ -94,6 +96,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     @inject(NovaOrynTargetManagerWidget) protected readonly targetManagerWidget!: NovaOrynTargetManagerWidget;
     @inject(NovaOrynStaticAnalyzerWidget) protected readonly staticAnalyzerWidget!: NovaOrynStaticAnalyzerWidget;
     @inject(NovaOrynBinarySymbolExplorerWidget) protected readonly binarySymbolExplorerWidget!: NovaOrynBinarySymbolExplorerWidget;
+    @inject(NovaOrynMemoryMapVisualizerWidget) protected readonly memoryMapVisualizerWidget!: NovaOrynMemoryMapVisualizerWidget;
 
     protected toolbarInstalled = false;
     protected titleLogoInstalled = false;
@@ -154,7 +157,6 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         commands.registerCommand(NovaOrynCommands.ANALYZERS, {
             execute: () => {
                 this.staticAnalyzerWidget.setProjectPath(this.currentOperatingSystemPath());
-        this.binarySymbolExplorerWidget.setProjectPath(this.currentOperatingSystemPath());
                 return this.showEngineeringWidget(this.staticAnalyzerWidget, 'main');
             },
             isEnabled: () => !!this.currentOperatingSystemPath()
@@ -163,6 +165,13 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
             execute: () => {
                 this.binarySymbolExplorerWidget.setProjectPath(this.currentOperatingSystemPath());
                 return this.showEngineeringWidget(this.binarySymbolExplorerWidget, 'main');
+            },
+            isEnabled: () => !!this.currentOperatingSystemPath()
+        });
+        commands.registerCommand(NovaOrynCommands.MEMORY_MAP, {
+            execute: () => {
+                this.memoryMapVisualizerWidget.setProjectPath(this.currentOperatingSystemPath());
+                return this.showEngineeringWidget(this.memoryMapVisualizerWidget, 'main');
             },
             isEnabled: () => !!this.currentOperatingSystemPath()
         });
@@ -192,6 +201,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.TARGETS.id, label: 'Target Manager', order: '7' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.ANALYZERS.id, label: 'OS-specific Static Analyzers', order: '8' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.BINARIES.id, label: 'Binary / Symbol Explorer', order: '9' });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.MEMORY_MAP.id, label: 'Memory-map Visualiser', order: '10' });
 
         menus.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
             commandId: NovaOrynCommands.RECONFIGURE_ROOT_CONTEXT.id,

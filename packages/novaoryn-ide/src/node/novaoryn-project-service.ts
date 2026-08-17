@@ -56,6 +56,9 @@ import {
     NovaOrynBinaryInspection,
     NovaOrynBinarySection,
     NovaOrynBinarySymbol,
+    NovaOrynMemoryMapSnapshot,
+    NovaOrynMemoryMapRegion,
+    NovaOrynMemoryRegionCategory,
     NovaOrynProjectService
 } from '../common/novaoryn-protocol';
 
@@ -63,7 +66,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.2.5';
+const NOVAORYN_IDE_VERSION = '0.2.6';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -900,6 +903,127 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         return {success:true,binary,format,architecture,imageBase,entryPoint,sections,...selected,message};
     }
 
+    async inspectMemoryMap(projectPath: string): Promise<NovaOrynMemoryMapSnapshot> {
+        const capturedAtUtc = new Date().toISOString();
+        const empty = (message: string, active = false, paused = false, error?: string): NovaOrynMemoryMapSnapshot => ({
+            success: false, active, paused, capturedAtUtc, regions: [], categories: [], reservations: [], message, error
+        });
+        const projectRoot = path.resolve(projectPath);
+        if (!this.isOperatingSystemPath(projectRoot)) return empty('Open a NovaOryn operating system to inspect its memory map.');
+        const session = this.latestSessionForProject(projectRoot);
+        if (!session || session.mode !== 'debug' || !session.debug?.active || !session.gdb) {
+            return empty('Start the operating system in Debug mode, then pause it after KMain to inspect the retained final UEFI memory map.');
+        }
+        if (!session.debug.paused) return empty('Pause the kernel to read its retained final UEFI memory map safely.', true, false);
+        if (session.relocationDelta === undefined) return empty('The debugger has not resolved the relocated kernel image yet.', true, true);
+        try {
+            const linkedBootContext = await this.findLinkedNativeSymbol(session, 'NovaOrynBootContext');
+            if (linkedBootContext === undefined) return empty('NovaOrynBootContext was not found in the linked kernel map. Rebuild the Debug kernel with symbols enabled.', true, true);
+            const runtimeBootContext = linkedBootContext + session.relocationDelta;
+            const header = await this.readMemoryChunked(session.gdb, runtimeBootContext, 0x98, 0x98);
+            if (header.length !== 0x98 || header.readBigUInt64LE(0) !== 0x4E59524F41564F4En) {
+                return empty(`The NovaOryn boot-context ABI was not readable at ${this.formatAddress(runtimeBootContext)}.`, true, true);
+            }
+            const mapAddress = header.readBigUInt64LE(0x38);
+            const mapLength = header.readBigUInt64LE(0x40);
+            const mapKey = header.readBigUInt64LE(0x48);
+            const descriptorSize64 = header.readBigUInt64LE(0x50);
+            const descriptorVersion = header.readUInt32LE(0x58);
+            const captureAttempts = header.readUInt32LE(0x5c);
+            const exitStatus = header.readBigUInt64LE(0x60);
+            const finalFlag = header.readBigUInt64LE(0x68);
+            if (finalFlag !== 1n || exitStatus !== 0n) return empty(`The retained firmware map is not final (flag=${finalFlag}, ExitBootServices status=${exitStatus}).`, true, true);
+            if (descriptorSize64 < 40n || descriptorSize64 > 4096n || (descriptorSize64 & 7n) !== 0n || mapLength === 0n || mapLength > 524288n || mapLength % descriptorSize64 !== 0n) {
+                return empty('The retained UEFI memory-map metadata is invalid or outside the supported NovaOryn boot-context limits.', true, true);
+            }
+            const descriptorSize = Number(descriptorSize64);
+            const descriptorCount = Number(mapLength / descriptorSize64);
+            const bytes = await this.readMemoryChunked(session.gdb, mapAddress, Number(mapLength), 1024);
+            if (bytes.length !== Number(mapLength)) return empty(`Could not read the complete UEFI memory map at ${this.formatAddress(mapAddress)}.`, true, true);
+            const regions: NovaOrynMemoryMapRegion[] = [];
+            let total = 0n; let usable = 0n; let highest = 0n;
+            const categoryBytes = new Map<NovaOrynMemoryRegionCategory, { count: number; bytes: bigint }>();
+            for (let index = 0; index < descriptorCount; index++) {
+                const offset = index * descriptorSize;
+                const firmwareType = bytes.readUInt32LE(offset);
+                const physicalStart = bytes.readBigUInt64LE(offset + 8);
+                const virtualStart = bytes.readBigUInt64LE(offset + 16);
+                const pages = bytes.readBigUInt64LE(offset + 24);
+                const attributes = bytes.readBigUInt64LE(offset + 32);
+                const byteCount = pages * 4096n;
+                const physicalEnd = physicalStart + byteCount;
+                const type = this.uefiMemoryType(firmwareType);
+                total += byteCount; if (type.category === 'usable') usable += byteCount; if (physicalEnd > highest) highest = physicalEnd;
+                const previous = categoryBytes.get(type.category) ?? { count: 0, bytes: 0n };
+                previous.count++; previous.bytes += byteCount; categoryBytes.set(type.category, previous);
+                regions.push({ index, firmwareType, typeName: type.name, category: type.category, physicalStart: this.formatAddress(physicalStart), physicalEnd: this.formatAddress(physicalEnd), virtualStart: this.formatAddress(virtualStart), pageCount: this.safeNumber(pages), byteCount: this.safeNumber(byteCount), attributes: `0x${attributes.toString(16).padStart(16, '0')}` });
+            }
+            const reservations = [] as NovaOrynMemoryMapSnapshot['reservations'];
+            const addReservation = (name: string, address: bigint, byteCount: bigint, details?: string): void => {
+                if (address !== 0n && byteCount !== 0n) reservations.push({ name, physicalStart: this.formatAddress(address), byteCount: this.safeNumber(byteCount), details });
+            };
+            addReservation('Framebuffer', header.readBigUInt64LE(0x08), header.readBigUInt64LE(0x10), 'UEFI GOP framebuffer');
+            addReservation('Bootstrap page-table workspace', header.readBigUInt64LE(0x70), header.readBigUInt64LE(0x78) * 4096n, 'Reserved before ExitBootServices');
+            addReservation('AP startup trampoline', header.readBigUInt64LE(0x88), header.readBigUInt64LE(0x90) * 4096n, 'SIPI trampoline below 1 MiB');
+            const categories = [...categoryBytes.entries()].map(([category, value]) => ({ category, regionCount: value.count, byteCount: this.safeNumber(value.bytes) })).sort((a,b) => b.byteCount - a.byteCount);
+            return {
+                success: true, active: true, paused: true, capturedAtUtc, descriptorVersion, descriptorSize, descriptorCount,
+                mapKey: `0x${mapKey.toString(16)}`, mapRuntimeAddress: this.formatAddress(mapAddress), captureAttempts,
+                totalBytes: this.safeNumber(total), usableBytes: this.safeNumber(usable), highestPhysicalAddress: this.formatAddress(highest),
+                regions, categories, reservations,
+                message: `Read ${descriptorCount} descriptor(s) directly from the retained final UEFI memory map in the paused NovaOryn kernel.`
+            };
+        } catch (error) {
+            return empty('The memory map could not be read from the paused kernel.', true, true, error instanceof Error ? error.message : String(error));
+        }
+    }
+
+    protected uefiMemoryType(type: number): { name: string; category: NovaOrynMemoryRegionCategory } {
+        switch (type) {
+            case 0: return { name: 'Reserved', category: 'reserved' };
+            case 1: return { name: 'Loader Code', category: 'boot-reclaimable' };
+            case 2: return { name: 'Loader Data', category: 'boot-reclaimable' };
+            case 3: return { name: 'Boot Services Code', category: 'boot-reclaimable' };
+            case 4: return { name: 'Boot Services Data', category: 'boot-reclaimable' };
+            case 5: return { name: 'Runtime Services Code', category: 'runtime' };
+            case 6: return { name: 'Runtime Services Data', category: 'runtime' };
+            case 7: return { name: 'Conventional Memory', category: 'usable' };
+            case 8: return { name: 'Unusable Memory', category: 'unusable' };
+            case 9: return { name: 'ACPI Reclaim Memory', category: 'acpi-reclaimable' };
+            case 10: return { name: 'ACPI NVS Memory', category: 'acpi-nvs' };
+            case 11: return { name: 'Memory-mapped I/O', category: 'mmio' };
+            case 12: return { name: 'Memory-mapped I/O Port Space', category: 'mmio' };
+            case 13: return { name: 'PAL Code', category: 'reserved' };
+            case 14: return { name: 'Persistent Memory', category: 'persistent' };
+            case 15: return { name: 'Unaccepted Memory', category: 'unaccepted' };
+            default: return { name: `Firmware Type ${type}`, category: 'unknown' };
+        }
+    }
+
+    protected async findLinkedNativeSymbol(session: RunSession, symbolName: string): Promise<bigint | undefined> {
+        const image = session.nativeDebugMap?.image ?? path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel', 'MinimalKernel.efi');
+        const nm = path.join(NOVAORYN_SDK_ROOT, '.toolchain', 'LLVM', 'bin', 'llvm-nm.exe');
+        if (await this.exists(nm) && await this.exists(image)) {
+            const output = await this.captureTool(nm, ['--numeric-sort', image]);
+            if (output.exitCode === 0) {
+                for (const line of output.text.split(/\r?\n/)) {
+                    const match = /^\s*([0-9a-fA-F]+)\s+[A-Za-z?]\s+(.+?)\s*$/.exec(line);
+                    if (match && match[2] === symbolName) return BigInt(`0x${match[1]}`);
+                }
+            }
+        }
+        try {
+            const mapText = await fs.readFile(path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel', 'MinimalKernel.map'), 'utf8');
+            for (const line of mapText.split(/\r?\n/)) {
+                if (!line.includes(symbolName)) continue;
+                const values = Array.from(line.matchAll(/(?:0x)?([0-9a-fA-F]{8,16})/g)).map(match => BigInt(`0x${match[1]}`));
+                const linkedAddress = values.find(value => value >= 0x100000000n);
+                if (linkedAddress !== undefined) return linkedAddress;
+            }
+        } catch { }
+        return undefined;
+    }
+
     async listTargets(projectPath: string): Promise<NovaOrynTargetState> {
         const root = path.resolve(projectPath);
         if (!this.isOperatingSystemPath(root)) return this.defaultTargetState();
@@ -1633,7 +1757,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.2.5 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.2.6 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
