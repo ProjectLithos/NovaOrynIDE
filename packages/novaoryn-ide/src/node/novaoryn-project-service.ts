@@ -24,7 +24,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.38';
+const NOVAORYN_IDE_VERSION = '0.1.39';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -446,8 +446,25 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         const ovmfVars = 'C:\\Program Files\\qemu\\share\\edk2-i386-vars.fd';
         await Promise.all([fs.access(imagePath), fs.access(debugMapPath), fs.access(qemuPath), fs.access(ovmfCode), fs.access(ovmfVars)]);
 
-        session.nativeDebugMap = JSON.parse(await fs.readFile(debugMapPath, 'utf8')) as NativeDebugMap;
-        if (session.nativeDebugMap.anchor?.symbol !== 'NovaOrynDebugImageAnchor' || !session.nativeDebugMap.anchor.linkedAddress || !session.nativeDebugMap.anchor.resumeLinkedAddress || session.nativeDebugMap.anchor.transport !== 'qemu-debugcon-0xe9-binary-v1' || !Array.isArray(session.nativeDebugMap.entries) || session.nativeDebugMap.entries.length === 0) {
+        const rawDebugMap = JSON.parse(await fs.readFile(debugMapPath, 'utf8')) as { anchor?: NativeDebugMap['anchor']; entries?: Array<Record<string, unknown>> };
+        const normalizedEntries: NativeSourceLine[] = Array.isArray(rawDebugMap.entries)
+            ? rawDebugMap.entries.flatMap(entry => {
+                // System.Text.Json serializes the SDK's SourceLineEntry record using
+                // PascalCase property names, while older IDE builds expected camelCase.
+                // Accept both schemas and discard malformed rows before path handling.
+                const sourcePath = typeof entry.sourcePath === 'string' ? entry.sourcePath
+                    : typeof entry.SourcePath === 'string' ? entry.SourcePath : undefined;
+                const lineValue = typeof entry.line === 'number' ? entry.line
+                    : typeof entry.Line === 'number' ? entry.Line : undefined;
+                const linkedAddress = typeof entry.linkedAddress === 'string' ? entry.linkedAddress
+                    : typeof entry.LinkedAddress === 'string' ? entry.LinkedAddress : undefined;
+                return sourcePath && sourcePath.trim() && Number.isInteger(lineValue) && (lineValue ?? 0) > 0 && linkedAddress
+                    ? [{ sourcePath, line: lineValue!, linkedAddress }]
+                    : [];
+            })
+            : [];
+        session.nativeDebugMap = { anchor: rawDebugMap.anchor!, entries: normalizedEntries };
+        if (session.nativeDebugMap.anchor?.symbol !== 'NovaOrynDebugImageAnchor' || !session.nativeDebugMap.anchor.linkedAddress || !session.nativeDebugMap.anchor.resumeLinkedAddress || session.nativeDebugMap.anchor.transport !== 'qemu-debugcon-0xe9-binary-v1' || session.nativeDebugMap.entries.length === 0) {
             throw new Error('NovaOryn.DebugSymbols.json is incomplete or does not contain the NovaOryn 0.37.4 debug rendezvous metadata. Rebuild the SDK/kernel in Debug mode.');
         }
 
@@ -575,7 +592,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     }
 
     protected resolveLinkedSourceAddress(debugMap: NativeDebugMap, sourcePath: string, line: number): ResolvedSourceAddress | undefined {
-        const normalize = (value: string) => path.resolve(value).replace(/\//g, '\\').toLowerCase();
+        const normalize = (value: string | undefined) => value ? path.resolve(value).replace(/\//g, '\\').toLowerCase() : '';
         const normalized = normalize(sourcePath);
         const basename = path.basename(normalized).toLowerCase();
 

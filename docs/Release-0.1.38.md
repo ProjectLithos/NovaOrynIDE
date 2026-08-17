@@ -1,6 +1,6 @@
-# NovaOryn IDE 0.1.38
+# NovaOryn IDE 0.1.39
 
-NovaOryn IDE 0.1.38 fixes source breakpoints that could appear in the editor while the NativeAOT kernel ran straight through them.
+NovaOryn IDE 0.1.39 fixes source breakpoints that could appear in the editor while the NativeAOT kernel ran straight through them.
 
 - Requested breakpoints are resolved and armed while QEMU is still held before `KMain`.
 - Non-executable C# lines such as braces, declarations and blank/comment lines bind to the nearest executable NativeAOT sequence point in the same source file, preferring the next line.

@@ -1,4 +1,4 @@
-NovaOryn IDE 0.1.38 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
+NovaOryn IDE 0.1.39 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
 
 # NovaOryn IDE
 
@@ -15,11 +15,15 @@ The Run/Debug toolbar fixes from 0.1.12 remain in place: the toolbar stays below
 
 NovaOryn IDE is the desktop development environment for the NovaOryn Operating System SDK. It is a custom Eclipse Theia desktop application with NovaOryn-specific project configuration and generation.
 
-## Current release: 0.1.38
+## Current release: 0.1.39
 
-### 0.1.38 Verified source-breakpoint binding
+### 0.1.39 Debug-symbol schema compatibility
 
-NovaOryn IDE 0.1.38 keeps the SDK 0.37.4 debugcon relocation rendezvous and fixes C# breakpoints that could appear set while execution ran through them. Breakpoints on non-executable C# lines now bind to a nearby executable NativeAOT sequence point in the same file. The Build output reports the requested line, resolved executable line and relocated runtime address. If any requested breakpoint cannot be verified, the kernel remains paused before KMain instead of silently running past it.
+NovaOryn IDE 0.1.39 fixes the debugger failure `The "paths[0]" argument must be of type string. Received undefined`. The bundled SDK 0.37.4 generated source-map entry record fields as `SourcePath`, `Line` and `LinkedAddress`, while the IDE expected camelCase. The IDE now accepts both forms, validates every mapping before using Node path functions, and the SDK now emits camelCase maps for future builds.
+
+### 0.1.39 Verified source-breakpoint binding
+
+NovaOryn IDE 0.1.39 keeps the SDK 0.37.4 debugcon relocation rendezvous and fixes C# breakpoints that could appear set while execution ran through them. Breakpoints on non-executable C# lines now bind to a nearby executable NativeAOT sequence point in the same file. The Build output reports the requested line, resolved executable line and relocated runtime address. If any requested breakpoint cannot be verified, the kernel remains paused before KMain instead of silently running past it.
 
 
 

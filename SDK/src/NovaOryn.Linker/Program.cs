@@ -182,7 +182,7 @@ static int MainEntry(string[] args)
             },
             entries,
             producedUtc = DateTimeOffset.UtcNow
-        }, new JsonSerializerOptions { WriteIndented = true }));
+        }, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
 
         Console.WriteLine($"[ OK ] Native debug PDB: {pdb}");
         Console.WriteLine($"[ OK ] Source-line debug map: {sourceMap} ({entries.Length} line mapping(s))");
