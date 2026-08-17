@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+<ItemGroup><Compile Include="..\..\src\NovaOryn.Kernel.Ps2\Ps2Contracts.cs" Link="Ps2Contracts.cs" /><Compile Include="..\..\src\NovaOryn.Kernel.Ps2\KeyboardLayouts.cs" Link="KeyboardLayouts.cs" /><Compile Include="..\..\src\NovaOryn.Userland.Keyboard\KeyboardCommand.cs" Link="KeyboardCommand.cs" /></ItemGroup>
+</Project>

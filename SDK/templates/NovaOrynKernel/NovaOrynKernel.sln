@@ -1,0 +1,130 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOrynKernel", "NovaOrynKernel.csproj", "{50650001-1111-4A00-8000-000000000065}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Freestanding.CoreLib", "Sdk\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj", "{A078DEC1-182E-56BD-B3B1-ECA9084916ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Console", "Sdk\NovaOryn.Kernel.Console\NovaOryn.Kernel.Console.csproj", "{0F43B7FA-F19A-5157-AA6D-DC12432450AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Memory", "Sdk\NovaOryn.Kernel.Memory\NovaOryn.Kernel.Memory.csproj", "{A9D5A8B7-1B48-5D47-9F0E-988893226FD7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Platform.X64", "Sdk\NovaOryn.Kernel.Platform.X64\NovaOryn.Kernel.Platform.X64.csproj", "{30D2B904-9F8F-5377-BB65-88FAEA4D51E1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.X64.LowLevel", "Sdk\NovaOryn.Kernel.X64.LowLevel\NovaOryn.Kernel.X64.LowLevel.csproj", "{47451288-1546-5703-9CB5-EC8E4F96DC25}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Entry.X64", "Sdk\NovaOryn.Kernel.Entry.X64\NovaOryn.Kernel.Entry.X64.csproj", "{F7ACEE9F-11A0-5AC3-8572-4BDF971FB925}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.VirtualMemory", "Sdk\NovaOryn.Kernel.VirtualMemory\NovaOryn.Kernel.VirtualMemory.csproj", "{6B4FE873-A2E4-5E30-91CF-A424DC23C29A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.AddressSpace", "Sdk\NovaOryn.Kernel.AddressSpace\NovaOryn.Kernel.AddressSpace.csproj", "{D4E5639F-EB13-5565-89E5-03ED344127F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Heap", "Sdk\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj", "{21FD078F-B9CB-4AE0-BEB7-FD1A0DB0329A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Acpi", "Sdk\NovaOryn.Kernel.Acpi\NovaOryn.Kernel.Acpi.csproj", "{90CE6B81-C390-51C9-9336-5879E01408DC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Time", "Sdk\NovaOryn.Kernel.Time\NovaOryn.Kernel.Time.csproj", "{5C148A50-0E5B-4A92-9A3A-6E4EE8A18D02}"
+EndProject
+Project("{66A26720-8FB5-11D2-AA7E-00C04F688DDE}") = "Userland", "Userland", "{03520000-1111-4A00-8000-000000000001}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Userland", "Userland\NovaOryn.Userland\NovaOryn.Userland.csproj", "{03520000-1111-4A00-8000-000000000010}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Userland.Commands", "Userland\Commands\NovaOryn.Userland.Commands.csproj", "{03520000-1111-4A00-8000-000000000011}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Userland.Settings", "Userland\Settings\NovaOryn.Userland.Settings.csproj", "{03520000-1111-4A00-8000-000000000012}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Userland.Fonts", "Userland\Fonts\NovaOryn.Userland.Fonts.csproj", "{03520000-1111-4A00-8000-000000000013}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Userland.Images", "Userland\Images\NovaOryn.Userland.Images.csproj", "{03520000-1111-4A00-8000-000000000014}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Userland.Drivers", "Userland\Drivers\NovaOryn.Userland.Drivers.csproj", "{03520000-1111-4A00-8000-000000000015}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5C148A50-0E5B-4A92-9A3A-6E4EE8A18D02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C148A50-0E5B-4A92-9A3A-6E4EE8A18D02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C148A50-0E5B-4A92-9A3A-6E4EE8A18D02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C148A50-0E5B-4A92-9A3A-6E4EE8A18D02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90CE6B81-C390-51C9-9336-5879E01408DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90CE6B81-C390-51C9-9336-5879E01408DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90CE6B81-C390-51C9-9336-5879E01408DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90CE6B81-C390-51C9-9336-5879E01408DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21FD078F-B9CB-4AE0-BEB7-FD1A0DB0329A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21FD078F-B9CB-4AE0-BEB7-FD1A0DB0329A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21FD078F-B9CB-4AE0-BEB7-FD1A0DB0329A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21FD078F-B9CB-4AE0-BEB7-FD1A0DB0329A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B4FE873-A2E4-5E30-91CF-A424DC23C29A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B4FE873-A2E4-5E30-91CF-A424DC23C29A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B4FE873-A2E4-5E30-91CF-A424DC23C29A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B4FE873-A2E4-5E30-91CF-A424DC23C29A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A078DEC1-182E-56BD-B3B1-ECA9084916ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A078DEC1-182E-56BD-B3B1-ECA9084916ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A078DEC1-182E-56BD-B3B1-ECA9084916ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A078DEC1-182E-56BD-B3B1-ECA9084916ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F43B7FA-F19A-5157-AA6D-DC12432450AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F43B7FA-F19A-5157-AA6D-DC12432450AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F43B7FA-F19A-5157-AA6D-DC12432450AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F43B7FA-F19A-5157-AA6D-DC12432450AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9D5A8B7-1B48-5D47-9F0E-988893226FD7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9D5A8B7-1B48-5D47-9F0E-988893226FD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9D5A8B7-1B48-5D47-9F0E-988893226FD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9D5A8B7-1B48-5D47-9F0E-988893226FD7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{30D2B904-9F8F-5377-BB65-88FAEA4D51E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30D2B904-9F8F-5377-BB65-88FAEA4D51E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30D2B904-9F8F-5377-BB65-88FAEA4D51E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30D2B904-9F8F-5377-BB65-88FAEA4D51E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47451288-1546-5703-9CB5-EC8E4F96DC25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47451288-1546-5703-9CB5-EC8E4F96DC25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47451288-1546-5703-9CB5-EC8E4F96DC25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47451288-1546-5703-9CB5-EC8E4F96DC25}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7ACEE9F-11A0-5AC3-8572-4BDF971FB925}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7ACEE9F-11A0-5AC3-8572-4BDF971FB925}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7ACEE9F-11A0-5AC3-8572-4BDF971FB925}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7ACEE9F-11A0-5AC3-8572-4BDF971FB925}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50650001-1111-4A00-8000-000000000065}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50650001-1111-4A00-8000-000000000065}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50650001-1111-4A00-8000-000000000065}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50650001-1111-4A00-8000-000000000065}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4E5639F-EB13-5565-89E5-03ED344127F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4E5639F-EB13-5565-89E5-03ED344127F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4E5639F-EB13-5565-89E5-03ED344127F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4E5639F-EB13-5565-89E5-03ED344127F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03520000-1111-4A00-8000-000000000010}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03520000-1111-4A00-8000-000000000010}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03520000-1111-4A00-8000-000000000010}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03520000-1111-4A00-8000-000000000010}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03520000-1111-4A00-8000-000000000011}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03520000-1111-4A00-8000-000000000011}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03520000-1111-4A00-8000-000000000011}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03520000-1111-4A00-8000-000000000011}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03520000-1111-4A00-8000-000000000012}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03520000-1111-4A00-8000-000000000012}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03520000-1111-4A00-8000-000000000012}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03520000-1111-4A00-8000-000000000012}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03520000-1111-4A00-8000-000000000013}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03520000-1111-4A00-8000-000000000013}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03520000-1111-4A00-8000-000000000013}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03520000-1111-4A00-8000-000000000013}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03520000-1111-4A00-8000-000000000014}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03520000-1111-4A00-8000-000000000014}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03520000-1111-4A00-8000-000000000014}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03520000-1111-4A00-8000-000000000014}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03520000-1111-4A00-8000-000000000015}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03520000-1111-4A00-8000-000000000015}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03520000-1111-4A00-8000-000000000015}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03520000-1111-4A00-8000-000000000015}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{03520000-1111-4A00-8000-000000000010} = {03520000-1111-4A00-8000-000000000001}
+		{03520000-1111-4A00-8000-000000000011} = {03520000-1111-4A00-8000-000000000001}
+		{03520000-1111-4A00-8000-000000000012} = {03520000-1111-4A00-8000-000000000001}
+		{03520000-1111-4A00-8000-000000000013} = {03520000-1111-4A00-8000-000000000001}
+		{03520000-1111-4A00-8000-000000000014} = {03520000-1111-4A00-8000-000000000001}
+		{03520000-1111-4A00-8000-000000000015} = {03520000-1111-4A00-8000-000000000001}
+	EndGlobalSection
+EndGlobal

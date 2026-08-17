@@ -1,0 +1,80 @@
+param(
+    [string]$Destination = (Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) '.toolchain\Fonts\LinuxKernel')
+)
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+
+$KernelRepository = 'https://raw.githubusercontent.com/torvalds/linux'
+$KernelCommit = 'a13307e97d5c54b65720bb71fa379960ded1e51a'
+$Fonts = @(
+    @{ Id='linux-vga-8x8';     Source='font_8x8.c';      Width=8;  Height=8;  Blob='e5b697fc967500fc9532591ae77329f191d4028d' },
+    @{ Id='linux-vga-8x16';    Source='font_8x16.c';     Width=8;  Height=16; Blob='523e95c75569eee09d133adf1e52c6b08a18fab3' },
+    @{ Id='linux-vga-6x11';    Source='font_6x11.c';     Width=6;  Height=11; Blob='671487ccc1724d9b73f969c5cb8ee6d39f1264f5' },
+    @{ Id='linux-sun-8x16';    Source='font_sun8x16.c';  Width=8;  Height=16; Blob='2b7b2d8e548ac100a112ec6c6a62ca6311112d89' },
+    @{ Id='linux-sun-12x22';   Source='font_sun12x22.c'; Width=12; Height=22; Blob='2afbc144bea81b8be8acafe2679a47bd017af4b5' }
+)
+
+function Write-UInt32LE([System.IO.BinaryWriter]$Writer, [UInt32]$Value) { $Writer.Write($Value) }
+function Convert-KernelFontToPsf2([string]$SourcePath, [string]$OutputPath, [int]$Width, [int]$Height) {
+    $text = Get-Content -LiteralPath $SourcePath -Raw
+    # Linux kernel font sources use more than one comment style. Locate the
+    # font_data initializer itself, then parse only its bitmap payload.
+    $table = [regex]::Match($text, 'static\s+const\s+struct\s+font_data\s+fontdata_[A-Za-z0-9_]+\s*=\s*\{\s*\{[^}]*\}\s*,\s*\{', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    if (-not $table.Success) { throw "Unable to locate font bitmap initializer in $SourcePath." }
+    $glyphText = $text.Substring($table.Index + $table.Length)
+    $end = $glyphText.IndexOf('} }')
+    if ($end -lt 0) { $end = $glyphText.IndexOf('}}') }
+    if ($end -gt 0) { $glyphText = $glyphText.Substring(0, $end) }
+    $matches = [regex]::Matches($glyphText, '0x([0-9A-Fa-f]{2})\s*,')
+    $rowBytes = [int][Math]::Ceiling($Width / 8.0)
+    $bytesPerGlyph = $rowBytes * $Height
+    $required = 256 * $bytesPerGlyph
+    if ($matches.Count -lt $required) { throw "$SourcePath contains only $($matches.Count) glyph bytes; $required are required." }
+    $glyphBytes = New-Object byte[] $required
+    for ($i = 0; $i -lt $required; $i++) { $glyphBytes[$i] = [Convert]::ToByte($matches[$i].Groups[1].Value, 16) }
+
+    $stream = [System.IO.File]::Open($OutputPath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+    try {
+        $writer = New-Object System.IO.BinaryWriter($stream)
+        try {
+            Write-UInt32LE $writer ([UInt32]::Parse('864AB572', [Globalization.NumberStyles]::HexNumber)) # PSF2 magic
+            Write-UInt32LE $writer 0          # version
+            Write-UInt32LE $writer 32         # header size
+            Write-UInt32LE $writer 0          # no Unicode table; glyph index equals byte value
+            Write-UInt32LE $writer 256        # glyph count
+            Write-UInt32LE $writer ([UInt32]$bytesPerGlyph)
+            Write-UInt32LE $writer ([UInt32]$Height)
+            Write-UInt32LE $writer ([UInt32]$Width)
+            $writer.Write($glyphBytes)
+        } finally { $writer.Dispose() }
+    } finally { $stream.Dispose() }
+}
+
+New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+$sourceDir = Join-Path $Destination 'Source'
+New-Item -ItemType Directory -Path $sourceDir -Force | Out-Null
+
+foreach ($font in $Fonts) {
+    $sourcePath = Join-Path $sourceDir $font.Source
+    $url = "$KernelRepository/$KernelCommit/lib/fonts/$($font.Source)"
+    Write-Host "[INFO] Downloading $($font.Id) from Linux kernel $KernelCommit."
+    Invoke-WebRequest -Uri $url -OutFile $sourcePath -UseBasicParsing
+    $firstLine = Get-Content -LiteralPath $sourcePath -TotalCount 1
+    if ($firstLine -notmatch 'SPDX-License-Identifier:\s*GPL-2.0') { throw "Unexpected license header in $($font.Source)." }
+    $psfPath = Join-Path $Destination ($font.Id + '.psf')
+    Convert-KernelFontToPsf2 $sourcePath $psfPath $font.Width $font.Height
+    Write-Host "[ OK ] $($font.Id): $($font.Width)x$($font.Height) -> $psfPath"
+}
+
+$metadata = [ordered]@{
+    source = 'Linux kernel'
+    repository = 'https://github.com/torvalds/linux'
+    commit = $KernelCommit
+    license = 'GPL-2.0'
+    generatedFormat = 'PSF2'
+    glyphCount = 256
+    fonts = @($Fonts | ForEach-Object { [ordered]@{ id=$_.Id; sourceFile=$_.Source; width=$_.Width; height=$_.Height; gitBlob=$_.Blob; psfFile=($_.Id + '.psf') } })
+}
+$metadata | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $Destination 'LinuxKernelFonts.json') -Encoding UTF8
+Write-Host '[ OK ] Linux kernel console font pack installed.'
+exit 0

@@ -1,4 +1,4 @@
-import { ContainerModule } from '@theia/core/shared/inversify';
+import { ContainerModule } from 'inversify';
 import { CommandContribution, MenuContribution } from '@theia/core/lib/common';
 import { FrontendApplicationContribution, WebSocketConnectionProvider, WidgetFactory } from '@theia/core/lib/browser';
 import {
@@ -7,6 +7,9 @@ import {
 } from '../common/novaoryn-protocol';
 import { NovaOrynContribution } from './novaoryn-contribution';
 import { NovaOrynWidget } from './novaoryn-widget';
+import { NovaOrynToolbarWidget } from './novaoryn-toolbar-widget';
+import { NovaOrynEditorEnvironmentContribution } from './novaoryn-editor-environment';
+import { NovaOrynBreakpointManager } from './novaoryn-breakpoint-manager';
 import './style/novaoryn.css';
 
 export default new ContainerModule(bind => {
@@ -16,10 +19,16 @@ export default new ContainerModule(bind => {
     }).inSingletonScope();
 
     bind(NovaOrynWidget).toSelf();
+    bind(NovaOrynToolbarWidget).toSelf().inSingletonScope();
     bind(WidgetFactory).toDynamicValue(ctx => ({
         id: NovaOrynWidget.ID,
         createWidget: () => ctx.container.get(NovaOrynWidget)
     })).inSingletonScope();
+
+    bind(NovaOrynBreakpointManager).toSelf().inSingletonScope();
+
+    bind(NovaOrynEditorEnvironmentContribution).toSelf().inSingletonScope();
+    bind(FrontendApplicationContribution).toService(NovaOrynEditorEnvironmentContribution);
 
     bind(NovaOrynContribution).toSelf().inSingletonScope();
     bind(CommandContribution).toService(NovaOrynContribution);

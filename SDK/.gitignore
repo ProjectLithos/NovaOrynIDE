@@ -1,0 +1,8 @@
+.toolchain/
+Artifacts/
+Logs/
+.vs/
+**/bin/
+**/obj/
+*.user
+*.suo

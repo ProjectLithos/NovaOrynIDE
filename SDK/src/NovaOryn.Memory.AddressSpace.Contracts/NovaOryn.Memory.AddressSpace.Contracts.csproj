@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>NovaOryn.Memory.AddressSpace</RootNamespace>
+    <AssemblyName>NovaOryn.Memory.AddressSpace.Contracts</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovaOryn.Core\NovaOryn.Core.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>NovaOryn.Memory.Virtual.X64</RootNamespace>
+    <AssemblyName>NovaOryn.Memory.Virtual.X64</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovaOryn.Core\NovaOryn.Core.csproj" />
+    <ProjectReference Include="..\NovaOryn.Primitives\NovaOryn.Primitives.csproj" />
+    <ProjectReference Include="..\NovaOryn.Memory.Virtual.Contracts\NovaOryn.Memory.Virtual.Contracts.csproj" />
+  </ItemGroup>
+</Project>

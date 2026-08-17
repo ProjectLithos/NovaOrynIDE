@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\NovaOryn.Kernel.Drivers\KernelDriverContracts.cs" Link="KernelDriverContracts.cs" />
+    <Compile Include="..\..\src\NovaOryn.Kernel.Pci\PciContracts.cs" Link="PciContracts.cs" />
+    <Compile Include="..\..\src\NovaOryn.Kernel.Pci\PciMath.cs" Link="PciMath.cs" />
+  </ItemGroup>
+</Project>

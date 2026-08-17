@@ -1,4 +1,4 @@
-import { ContainerModule } from '@theia/core/shared/inversify';
+import { ContainerModule } from 'inversify';
 import { ConnectionHandler, JsonRpcConnectionHandler } from '@theia/core/lib/common/messaging';
 import {
     NOVAORYN_PROJECT_SERVICE_PATH,

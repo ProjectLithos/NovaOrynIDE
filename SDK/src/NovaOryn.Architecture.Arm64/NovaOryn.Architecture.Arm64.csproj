@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>NovaOryn.Architecture.Arm64</AssemblyName>
+    <RootNamespace>NovaOryn.Architecture.Arm64</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovaOryn.Core\NovaOryn.Core.csproj" />
+    <ProjectReference Include="..\NovaOryn.Architecture.Contracts\NovaOryn.Architecture.Contracts.csproj" />
+  </ItemGroup>
+</Project>

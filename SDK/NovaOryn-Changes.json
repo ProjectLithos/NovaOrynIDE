@@ -1,0 +1,26 @@
+{
+  "baseVersion": "0.37.1",
+  "version": "0.37.2",
+  "summary": "Adds embedded SDK toolchain mode so the SDK can live under NovaOrynIDE\\SDK without requiring that bundled SDK directory to be its own Git repository.",
+  "changedFiles": [
+    "Directory.Build.props",
+    "Install-NovaOrynToolchain.ps1",
+    "NovaOryn-Changes.json",
+    "NovaOryn-SourceManifest.json",
+    "README.md",
+    "docs/NovaOryn.Documentation.json",
+    "docs/Release-0.37.2.md",
+    "src/NovaOryn.ImageBuilder/Program.cs",
+    "src/NovaOryn.Linker/Program.cs",
+    "src/NovaOryn.ManagedCompiler/Program.cs",
+    "src/NovaOryn.QemuLauncher/Program.cs",
+    "src/NovaOryn.VisualStudio/NovaOrynPackage.cs",
+    "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/NovaOrynKernel.vstemplate",
+    "src/NovaOryn.VisualStudio/Properties/AssemblyInfo.cs",
+    "src/NovaOryn.VisualStudio/source.extension.vsixmanifest",
+    "toolchain/NovaOryn.Toolchain.json"
+  ],
+  "deletedFiles": [
+    "docs/Release-0.37.1.md"
+  ]
+}

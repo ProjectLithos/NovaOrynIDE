@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <NoStdLib>true</NoStdLib>
+    <NoConfig>true</NoConfig>
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+    <AssemblyName>NovaOryn.Kernel.Bootstrap</AssemblyName>
+    <NovaOrynSystemModule>NovaOryn.Freestanding.CoreLib</NovaOrynSystemModule>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Console\NovaOryn.Kernel.Console.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.CommandLine\NovaOryn.Kernel.CommandLine.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Memory\NovaOryn.Kernel.Memory.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.VirtualMemory\NovaOryn.Kernel.VirtualMemory.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.AddressSpace\NovaOryn.Kernel.AddressSpace.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Acpi\NovaOryn.Kernel.Acpi.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Time\NovaOryn.Kernel.Time.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Smp\NovaOryn.Kernel.Smp.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Scheduler\NovaOryn.Kernel.Scheduler.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Protection\NovaOryn.Kernel.Protection.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.SystemCalls\NovaOryn.Kernel.SystemCalls.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Ps2\NovaOryn.Kernel.Ps2.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Processes\NovaOryn.Kernel.Processes.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Drivers\NovaOryn.Kernel.Drivers.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.InterruptDispatch\NovaOryn.Kernel.InterruptDispatch.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.InterruptBroker\NovaOryn.Kernel.InterruptBroker.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.TimerDispatch\NovaOryn.Kernel.TimerDispatch.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Storage\NovaOryn.Kernel.Storage.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Networking\NovaOryn.Kernel.Networking.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Pci\NovaOryn.Kernel.Pci.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Nvme\NovaOryn.Kernel.Nvme.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Ahci\NovaOryn.Kernel.Ahci.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Virtio\NovaOryn.Kernel.Virtio.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Graphics\NovaOryn.Kernel.Graphics.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Virtio.Gpu\NovaOryn.Kernel.Virtio.Gpu.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.E1000\NovaOryn.Kernel.E1000.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Rtl8168\NovaOryn.Kernel.Rtl8168.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Platform.X64\NovaOryn.Kernel.Platform.X64.csproj" />
+      <ProjectReference Include="..\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj" />
+    <ProjectReference Include="..\NovaOryn.Bus.Usb\NovaOryn.Bus.Usb.csproj" />
+    <ProjectReference Include="..\NovaOryn.Usb.Xhci\NovaOryn.Usb.Xhci.csproj" />
+    <ProjectReference Include="..\NovaOryn.Usb.Hid\NovaOryn.Usb.Hid.csproj" />
+    <ProjectReference Include="..\NovaOryn.Usb.MassStorage\NovaOryn.Usb.MassStorage.csproj" />
+    <ProjectReference Include="..\NovaOryn.Usb.Hub\NovaOryn.Usb.Hub.csproj" />
+  </ItemGroup>
+</Project>

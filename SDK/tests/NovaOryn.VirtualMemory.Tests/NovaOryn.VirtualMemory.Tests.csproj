@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <NovaOrynSkipPublicApiValidation>true</NovaOrynSkipPublicApiValidation>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\NovaOryn.Primitives\NovaOryn.Primitives.csproj" />
+    <ProjectReference Include="..\..\src\NovaOryn.Memory.Virtual.Contracts\NovaOryn.Memory.Virtual.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\NovaOryn.Memory.Virtual.X64\NovaOryn.Memory.Virtual.X64.csproj" />
+  </ItemGroup>
+</Project>

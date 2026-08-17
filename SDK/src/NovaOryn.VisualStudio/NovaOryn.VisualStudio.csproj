@@ -1,0 +1,208 @@
+<Project>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+
+    <ProjectGuid>{AA2A444B-3AB7-48C5-B738-A70E6182D3E1}</ProjectGuid>
+    <ProjectTypeGuids>{82B43B9B-A64C-4715-B499-D71E9CA2BD60};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+
+    <OutputType>Library</OutputType>
+    <RootNamespace>NovaOryn.VisualStudio</RootNamespace>
+    <AssemblyName>NovaOryn.VisualStudio</AssemblyName>
+    <TargetFramework>net472</TargetFramework>
+
+    <!-- SDK-style MSBuild is required here. It imports ResolvePackageAssets,
+         which turns the successful NuGet restore into compiler references. -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+
+    <LangVersion>12.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">17.0</VisualStudioVersion>
+    <MinimumVisualStudioVersion>17.0</MinimumVisualStudioVersion>
+
+    <VsixDeployOnDebug>false</VsixDeployOnDebug>
+    <GeneratePkgDefFile>true</GeneratePkgDefFile>
+    <CreateVsixContainer>true</CreateVsixContainer>
+    <DeployExtension>false</DeployExtension>
+    <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
+    <IncludeDebugSymbolsInVSIXContainer>true</IncludeDebugSymbolsInVSIXContainer>
+    <IncludeDebugSymbolsInLocalVSIXDeployment>true</IncludeDebugSymbolsInLocalVSIXDeployment>
+    <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
+    <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
+    <UseCodebase>true</UseCodebase>
+
+    <TargetVsixContainerName>NovaOryn.VisualStudio.vsix</TargetVsixContainerName>
+    <NovaOrynTemplatePackageRoot Condition="'$(NovaOrynTemplatePackageRoot)' == ''">$(MSBuildProjectDirectory)\..\..\Artifacts\VisualStudio\ProjectTemplates</NovaOrynTemplatePackageRoot>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <OutputPath>bin\Debug\</OutputPath>
+    <IntermediateOutputPath>obj\Debug\</IntermediateOutputPath>
+    <VsixOutputPath>$(OutputPath)</VsixOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <OutputPath>bin\Release\</OutputPath>
+    <IntermediateOutputPath>obj\Release\</IntermediateOutputPath>
+    <VsixOutputPath>$(OutputPath)</VsixOutputPath>
+  </PropertyGroup>
+
+  <!-- Evaluate this only after the configuration-specific OutputPath exists. -->
+  <PropertyGroup>
+    <TargetVsixContainer>$(OutputPath)$(TargetVsixContainerName)</TargetVsixContainer>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="EnvDTE" />
+    <Reference Include="EnvDTE80" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The SDK-style project imports NuGet's generated .props/.targets and
+         ResolvePackageAssets. These references therefore become real compiler
+         references instead of restore-only entries. -->
+    <PackageReference Include="Microsoft.VisualStudio.SDK"
+                      Version="17.14.40265"
+                      ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Shell.15.0"
+                      Version="17.14.40264"
+                      ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Shell.Framework"
+                      Version="17.14.40264"
+                      ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Interop"
+                      Version="17.14.40260"
+                      ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.OLE.Interop"
+                      Version="17.14.40260"
+                      ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading"
+                      Version="17.14.15"
+                      ExcludeAssets="runtime" />
+
+    <PackageReference Include="Microsoft.VSSDK.BuildTools"
+                      Version="17.14.2142"
+                      GeneratePathProperty="true">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime;build;native;contentfiles;analyzers;buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472"
+                      Version="1.0.3"
+                      PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- SDK-style projects compile C# files recursively. The template source is
+       a VSIX asset and must never be compiled into NovaOryn.VisualStudio.dll. -->
+  <ItemGroup>
+    <Compile Remove="ProjectTemplates\**\*.cs" />
+    <None Remove="NovaOrynCommands.vsct" />
+    <None Remove="ProjectTemplates\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <VSCTCompile Include="NovaOrynCommands.vsct">
+      <ResourceName>Menus.ctmenu</ResourceName>
+      <SubType>Designer</SubType>
+    </VSCTCompile>
+
+    <None Update="source.extension.vsixmanifest">
+      <SubType>Designer</SubType>
+    </None>
+    <!-- Independent single-project templates. Build-NovaOrynVSIX.ps1 creates these
+         ZIPs before MSBuild starts, so VSSDK can register every template asset. -->
+    <Content Include="$(NovaOrynTemplatePackageRoot)\*.zip">
+      <Link>ProjectTemplates\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <VSIXSubPath>ProjectTemplates</VSIXSubPath>
+      <TargetPath>ProjectTemplates\%(Filename)%(Extension)</TargetPath>
+    </Content>
+
+</ItemGroup>
+
+  <!-- Finish the standard SDK build pipeline first. PackageReference-generated
+       .props/.targets are now available, including the BuildTools task setup. -->
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <!-- Microsoft.VSSDK.BuildTools 17.x predates official implicit SDK-style VSIX
+       support. Import the Visual Studio SDK targets explicitly after the .NET SDK
+       targets so CreateVsixContainer, VSCTCompile, pkgdef, and VSIX tasks exist. -->
+  <Import Project="$(PkgMicrosoft_VSSDK_BuildTools)\tools\VSSDK\Microsoft.VsSDK.targets"
+          Condition="Exists('$(PkgMicrosoft_VSSDK_BuildTools)\tools\VSSDK\Microsoft.VsSDK.targets')" />
+
+  <Target Name="RequireOrynVssdkTargets"
+          BeforeTargets="Build">
+    <Error Condition="'$(PkgMicrosoft_VSSDK_BuildTools)' == ''"
+           Text="Microsoft.VSSDK.BuildTools package path was not generated. Delete src\NovaOryn.VisualStudio\obj and restore again." />
+    <Error Condition="!Exists('$(PkgMicrosoft_VSSDK_BuildTools)\tools\VSSDK\Microsoft.VsSDK.targets')"
+           Text="Microsoft.VsSDK.targets was not restored from Microsoft.VSSDK.BuildTools 17.14.2142." />
+  </Target>
+
+  <!-- Override the default only after Microsoft.VsSDK.targets has been imported. -->
+  <PropertyGroup>
+    <TargetVsixContainerName>NovaOryn.VisualStudio.vsix</TargetVsixContainerName>
+    <NovaOrynTemplatePackageRoot Condition="'$(NovaOrynTemplatePackageRoot)' == ''">$(MSBuildProjectDirectory)\..\..\Artifacts\VisualStudio\ProjectTemplates</NovaOrynTemplatePackageRoot>
+    <TargetVsixContainer>$(OutputPath)$(TargetVsixContainerName)</TargetVsixContainer>
+  </PropertyGroup>
+
+  <!-- Reassert the final container path immediately before packaging so no
+       VSSDK default can replace the product filename. -->
+  <Target Name="SetOrynVsixContainerPath"
+          BeforeTargets="CreateVsixContainer">
+    <PropertyGroup>
+      <TargetVsixContainer>$(OutputPath)$(TargetVsixContainerName)</TargetVsixContainer>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="RequireVisualStudioSdkCompileReferences"
+          BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <_OrynVisualStudioShellReference Include="@(ReferencePath)"
+          Condition="'%(Filename)' == 'Microsoft.VisualStudio.Shell.15.0'" />
+      <_OrynVisualStudioShellInteropReference Include="@(ReferencePath)"
+          Condition="'%(Filename)' == 'Microsoft.VisualStudio.Shell.Interop' Or '%(Filename)' == 'Microsoft.VisualStudio.Shell.Interop.8.0'" />
+    </ItemGroup>
+    <Error Condition="'@(_OrynVisualStudioShellReference)' == ''"
+           Text="Microsoft.VisualStudio.Shell.15.0 was restored but was not resolved as a compiler reference. Delete src\NovaOryn.VisualStudio\obj and restore again." />
+    <Error Condition="'@(_OrynVisualStudioShellInteropReference)' == ''"
+           Text="The Visual Studio Shell interop compiler reference was not resolved from Microsoft.VisualStudio.SDK." />
+  </Target>
+<Target Name="EnsureOrynVsixWasCreated"
+          AfterTargets="Build"
+          DependsOnTargets="CreateVsixContainer">
+    <Error Condition="!Exists('$(TargetVsixContainer)')"
+           Text="The NovaOryn VSIX was not generated. Expected: $(TargetVsixContainer)" />
+    <Message Importance="high"
+             Text="[ OK ] NovaOryn VSIX generated: $(TargetVsixContainer)" />
+  </Target>
+
+</Project>

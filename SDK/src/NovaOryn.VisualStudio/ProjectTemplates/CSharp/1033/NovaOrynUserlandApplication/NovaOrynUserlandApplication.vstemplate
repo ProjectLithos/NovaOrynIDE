@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<VSTemplate xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" Version="3.0.0" Type="Project">
+  <TemplateData>
+    <Name>NovaOryn Userland Application</Name>
+    <Description>Create an independently compiled NovaOryn userland application. Place it below Userland for automatic workspace discovery.</Description>
+    <Icon>NovaOrynKernel.ico</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <LanguageTag>csharp</LanguageTag>
+    <PlatformTag>other</PlatformTag>
+    <ProjectTypeTag>other</ProjectTypeTag>
+    <TemplateID>NovaOryn.Project.UserlandApplication</TemplateID>
+    <DefaultName>NovaOrynApplication</DefaultName>
+    <SortOrder>20</SortOrder>
+    <CreateNewFolder>true</CreateNewFolder>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="Template.csproj" ReplaceParameters="true" TargetFileName="$safeprojectname$.csproj">
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true" TargetFileName="Program.cs">Program.cs</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>

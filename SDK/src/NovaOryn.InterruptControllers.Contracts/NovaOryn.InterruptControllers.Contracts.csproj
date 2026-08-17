@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>NovaOryn.InterruptControllers.Contracts</AssemblyName>
+    <RootNamespace>NovaOryn.InterruptControllers</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovaOryn.Interrupts.Contracts\NovaOryn.Interrupts.Contracts.csproj" />
+    <ProjectReference Include="..\NovaOryn.Primitives\NovaOryn.Primitives.csproj" />
+  </ItemGroup>
+</Project>

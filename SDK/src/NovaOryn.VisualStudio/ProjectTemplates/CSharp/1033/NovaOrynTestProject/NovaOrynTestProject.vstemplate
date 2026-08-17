@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<VSTemplate xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" Version="3.0.0" Type="Project">
+  <TemplateData>
+    <Name>NovaOryn Test Project</Name>
+    <Description>Create an independently executable NovaOryn test program. Tests remain ordinary programs rather than being forced into a specific test framework.</Description>
+    <Icon>NovaOrynKernel.ico</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <LanguageTag>csharp</LanguageTag>
+    <PlatformTag>other</PlatformTag>
+    <ProjectTypeTag>other</ProjectTypeTag>
+    <TemplateID>NovaOryn.Project.Test</TemplateID>
+    <DefaultName>NovaOrynTest</DefaultName>
+    <SortOrder>30</SortOrder>
+    <CreateNewFolder>true</CreateNewFolder>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="Template.csproj" ReplaceParameters="true" TargetFileName="$safeprojectname$.csproj">
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true" TargetFileName="Program.cs">Program.cs</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>

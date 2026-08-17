@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "ideVersion": "0.1.34",
+  "policy": {
+    "productionCriticalAllowed": 0,
+    "productionHighPolicy": "fail-unless-explicitly-approved",
+    "developmentFindings": "reported-but-not-shipped-runtime-gated"
+  },
+  "approvedProductionHighPackages": [
+    {
+      "name": "electron",
+      "maxSeverity": "high",
+      "reason": "Eclipse Theia 1.74.0 requires Electron 42.3.0 exactly. The latest stable Theia release available for this release has not yet moved to the patched Electron 42.7.x line.",
+      "reviewAfter": "2026-08-31"
+    },
+    {
+      "name": "@theia/electron",
+      "maxSeverity": "high",
+      "reason": "Meta-vulnerability inherited from the exact Electron peer required by Eclipse Theia 1.74.0.",
+      "reviewAfter": "2026-08-31"
+    },
+    {
+      "name": "extract-zip",
+      "maxSeverity": "high",
+      "reason": "Transitive Electron installer dependency. Retained only while required by the Theia-compatible Electron package; review with the next Theia/Electron update.",
+      "reviewAfter": "2026-08-31"
+    }
+  ]
+}

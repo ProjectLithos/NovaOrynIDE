@@ -1,8 +1,14 @@
+.novaoryn-widget {
+    overflow: hidden;
+}
 .novaoryn-page {
     box-sizing: border-box;
-    min-height: 100%;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
     padding: 36px;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: var(--theia-editor-background);
     color: var(--theia-editor-foreground);
 }
@@ -14,6 +20,7 @@
     border-radius: 10px;
     background: var(--theia-sideBar-background);
 }
+.novaoryn-card-wide { max-width: 980px; }
 .novaoryn-brand {
     font-size: 13px;
     font-weight: 800;
@@ -22,14 +29,140 @@
 }
 .novaoryn-card h1 { margin: 8px 0 0; font-size: 34px; }
 .novaoryn-version { margin-top: 2px; opacity: .65; }
-.novaoryn-card label { display: block; margin: 18px 0 6px; font-weight: 600; }
-.novaoryn-card input, .novaoryn-card select { width: 100%; box-sizing: border-box; }
+.novaoryn-card fieldset {
+    margin: 24px 0 0;
+    padding: 18px 20px 22px;
+    border: 1px solid var(--theia-widget-border);
+    border-radius: 8px;
+}
+.novaoryn-card legend { padding: 0 8px; font-weight: 700; font-size: 16px; }
+.novaoryn-card label { display: block; margin: 14px 0 6px; font-weight: 600; }
+.novaoryn-card input[type='text'], .novaoryn-card input:not([type]), .novaoryn-card select { width: 100%; box-sizing: border-box; }
+.novaoryn-field:first-child label { margin-top: 4px; }
+.novaoryn-check-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 4px 18px;
+}
+.novaoryn-check {
+    display: flex !important;
+    align-items: center;
+    gap: 7px;
+    margin: 8px 0 !important;
+    font-weight: 400 !important;
+}
+.novaoryn-check input { width: auto !important; }
+.novaoryn-multi > label { margin-top: 16px; }
 .novaoryn-actions { margin-top: 26px; }
-.novaoryn-actions button { min-width: 220px; }
+.novaoryn-actions button { min-width: 250px; }
 .novaoryn-note {
     margin-top: 24px;
     padding: 14px;
     border-left: 3px solid var(--theia-focusBorder);
     background: var(--theia-editor-background);
     line-height: 1.5;
+}
+
+.novaoryn-start-page { display:block; padding:22px 28px 32px; }
+.novaoryn-start-card { width:min(920px, 100%); margin:0 auto; padding:18px 24px 28px; text-align:center; }
+.novaoryn-start-art { width:220px; height:220px; max-width:42vw; max-height:42vw; margin:0 auto 10px; background:url('./novaoryn-logo.png') center/contain no-repeat; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; }
+.novaoryn-start-card h1 { margin:10px 0 4px; font-size:32px; }
+.novaoryn-start-card > p { margin:8px 0; }
+.novaoryn-start-actions { margin:16px 0 18px; }
+.novaoryn-start-actions .theia-button { min-width:220px; font-size:16px; padding:9px 18px; }
+.novaoryn-existing { max-width:720px; margin:18px auto 0; padding-top:16px; border-top:1px solid var(--theia-widget-border); text-align:left; }
+.novaoryn-existing h2 { font-size:18px; }
+.novaoryn-os-list { display:grid; gap:8px; margin:12px 0; }
+.novaoryn-os-entry { appearance:none; width:100%; padding:12px 14px; text-align:left; border:1px solid var(--theia-widget-border); border-radius:6px; background:var(--theia-sideBar-background); color:var(--theia-editor-foreground); cursor:pointer; }
+.novaoryn-os-entry:hover { border-color:var(--theia-focusBorder); background:var(--theia-list-hoverBackground); }
+.novaoryn-os-entry strong, .novaoryn-os-entry span { display:block; }
+.novaoryn-os-entry span { margin-top:4px; opacity:.68; font-size:12px; }
+.novaoryn-readonly-path { padding:7px 9px; border:1px solid var(--theia-input-border); background:var(--theia-input-background); color:var(--theia-descriptionForeground); font-family:var(--theia-code-font-family); }
+
+.novaoryn-existing-help { margin:4px 0 12px; opacity:.72; }
+@media (max-height: 760px) {
+    .novaoryn-start-page { padding-top:14px; }
+    .novaoryn-start-card { padding-top:10px; }
+    .novaoryn-start-art { width:170px; height:170px; max-width:34vw; max-height:34vw; }
+    .novaoryn-start-card h1 { font-size:28px; }
+}
+@media (max-width: 760px) {
+    .novaoryn-page { padding:18px; }
+    .novaoryn-start-page { padding:14px; }
+    .novaoryn-start-card { padding:10px; }
+}
+
+.novaoryn-run-toolbar-widget {
+    min-height: 34px;
+    background: var(--theia-titleBar-activeBackground, var(--theia-editor-background));
+    border-bottom: 1px solid var(--theia-widget-border);
+}
+.novaoryn-run-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    box-sizing: border-box;
+    padding: 3px 8px;
+}
+.novaoryn-run-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 74px;
+    height: 28px;
+    margin: 0;
+}
+.novaoryn-run-mode {
+    width: 104px;
+    height: 28px;
+    box-sizing: border-box;
+}
+.novaoryn-debug-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 28px;
+    padding-left: 4px;
+}
+.novaoryn-debug-button {
+    width: 28px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--theia-foreground);
+    cursor: pointer;
+}
+.novaoryn-debug-button:hover:not(:disabled) { background: var(--theia-toolbar-hoverBackground, var(--theia-list-hoverBackground)); }
+.novaoryn-debug-button:disabled { opacity: .38; cursor: default; }
+
+.novaoryn-breakpoint-button:not(:disabled) {
+    color: #e51400;
+    opacity: 1;
+}
+.novaoryn-debug-separator { width: 1px; height: 18px; margin: 0 3px; background: var(--theia-widget-border); }
+.novaoryn-debug-state { margin-left: 5px; padding: 2px 6px; border-radius: 4px; font-size: 11px; opacity: .72; }
+.novaoryn-debug-state.running { opacity: 1; }
+.novaoryn-debug-state.paused { opacity: 1; font-weight: 700; }
+
+/* Source breakpoints live in Monaco's far-left glyph margin and are available
+   before a debug session starts. Pending and verified breakpoints intentionally
+   use the same strong visual dot; verification is exposed by hover text. */
+.monaco-editor .margin-view-overlays .novaoryn-breakpoint-glyph {
+    cursor: pointer !important;
+    background-image: radial-gradient(circle at center, #e51400 0 5px, transparent 5.5px) !important;
+    background-repeat: no-repeat !important;
+    background-position: center center !important;
+}
+.monaco-editor .margin-view-overlays .novaoryn-breakpoint-glyph.pending {
+    opacity: .78;
+}
+.monaco-editor .margin-view-overlays .novaoryn-breakpoint-glyph.verified {
+    opacity: 1;
+}
+.monaco-editor .margin-view-overlays .glyph-margin,
+.monaco-editor .margin-view-overlays .line-numbers {
+    cursor: pointer;
 }

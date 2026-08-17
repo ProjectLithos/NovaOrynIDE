@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Library</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>disable</ImplicitUsings><Nullable>disable</Nullable><DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences><NoStdLib>true</NoStdLib><NoConfig>true</NoConfig><RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion><GenerateAssemblyInfo>false</GenerateAssemblyInfo><GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute><DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences><AllowUnsafeBlocks>true</AllowUnsafeBlocks><AssemblyName>NovaOryn.Kernel.E1000</AssemblyName></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Pci\NovaOryn.Kernel.Pci.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Drivers\NovaOryn.Kernel.Drivers.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Memory\NovaOryn.Kernel.Memory.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.AddressSpace\NovaOryn.Kernel.AddressSpace.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Networking\NovaOryn.Kernel.Networking.csproj" />
+  </ItemGroup>
+</Project>

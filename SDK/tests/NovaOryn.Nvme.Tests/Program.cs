@@ -1,0 +1,3 @@
+using NovaOryn.Kernel.Nvme;
+static void Ok(bool v,string s){if(!v)throw new Exception(s);Console.WriteLine("[ OK ] "+s);}
+Ok(NvmeMath.IsNvmeClass(0x010802U),"PCI class 01/08/02 is NVMe.");Ok(!NvmeMath.IsNvmeClass(0x010601U),"AHCI is not misidentified as NVMe.");Ok(NvmeMath.DoorbellOffset(0,false,0)==0x1000U,"Admin SQ doorbell starts at 0x1000.");Ok(NvmeMath.DoorbellOffset(1,true,0)==0x100CU,"I/O CQ doorbell offset follows the NVMe stride formula.");Ok(NvmeMath.SelectQueueEntries(64,128)==64,"Queue entries respect the controller maximum.");Ok(NvmeMath.NamespaceBlockSize(9)==512U&&NvmeMath.NamespaceBlockSize(12)==4096U,"LBA data-size exponent decodes standard block sizes.");Console.WriteLine("[ OK ] NVMe methodology tests passed.");

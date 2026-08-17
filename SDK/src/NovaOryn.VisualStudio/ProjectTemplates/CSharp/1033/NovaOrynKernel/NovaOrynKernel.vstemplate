@@ -1,0 +1,200 @@
+<?xml version='1.0' encoding='utf-8'?>
+<VSTemplate xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" Version="3.0.0" Type="Project">
+  <TemplateData>
+    <Name>NovaOryn Kernel</Name>
+    <Description>Create a freestanding C# NovaOryn kernel workspace (SDK 0.37.2) with an authoritative configuration-driven kernel/userland project graph.</Description>
+    <Icon>NovaOrynKernel.ico</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <LanguageTag>csharp</LanguageTag>
+    <PlatformTag>other</PlatformTag>
+    <ProjectTypeTag>other</ProjectTypeTag>
+    <TemplateID>NovaOryn.Project.Kernel</TemplateID>
+    <DefaultName>NovaOrynKernel</DefaultName>
+    <SortOrder>1</SortOrder>
+    <CreateNewFolder>true</CreateNewFolder>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="NovaOrynKernel.csproj" ReplaceParameters="true" TargetFileName="$safeprojectname$.csproj">
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Boot\BootStartup.cs">Boot\BootStartup.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Build-Kernel.bat">Build-Kernel.bat</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Build-WorkspaceProjects.ps1">Build-WorkspaceProjects.ps1</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="HAL\HardwareAbstractionLayer.cs">HAL\HardwareAbstractionLayer.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Kernel\Kernel.cs">Kernel\Kernel.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="KernelProjects\README.md">KernelProjects\README.md</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="NovaOrynProject.json">NovaOrynProject.json</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="NovaOryn.Configuration.json">NovaOryn.Configuration.json</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="NovaOryn.Configuration.props">NovaOryn.Configuration.props</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="NovaOryn.Configuration.targets">NovaOryn.Configuration.targets</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="README-Kernel.md">README-Kernel.md</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Run-Kernel.bat">Run-Kernel.bat</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Bus.Usb\KernelUsbBus.cs">Sdk\NovaOryn.Bus.Usb\KernelUsbBus.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Bus.Usb\NovaOryn.Bus.Usb.csproj">Sdk\NovaOryn.Bus.Usb\NovaOryn.Bus.Usb.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Bus.Usb\UsbContracts.cs">Sdk\NovaOryn.Bus.Usb\UsbContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Bus.Usb\UsbDescriptorParser.cs">Sdk\NovaOryn.Bus.Usb\UsbDescriptorParser.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Freestanding.CoreLib\CoreLib.cs">Sdk\NovaOryn.Freestanding.CoreLib\CoreLib.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj">Sdk\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Acpi\KernelAcpi.cs">Sdk\NovaOryn.Kernel.Acpi\KernelAcpi.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Acpi\KernelAcpiPlatform.cs">Sdk\NovaOryn.Kernel.Acpi\KernelAcpiPlatform.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Acpi\NovaOryn.Kernel.Acpi.csproj">Sdk\NovaOryn.Kernel.Acpi\NovaOryn.Kernel.Acpi.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.AddressSpace\KernelAddressSpace.cs">Sdk\NovaOryn.Kernel.AddressSpace\KernelAddressSpace.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.AddressSpace\NovaOryn.Kernel.AddressSpace.csproj">Sdk\NovaOryn.Kernel.AddressSpace\NovaOryn.Kernel.AddressSpace.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Ahci\AhciContracts.cs">Sdk\NovaOryn.Kernel.Ahci\AhciContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Ahci\AhciMath.cs">Sdk\NovaOryn.Kernel.Ahci\AhciMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Ahci\KernelAhci.cs">Sdk\NovaOryn.Kernel.Ahci\KernelAhci.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Ahci\NovaOryn.Kernel.Ahci.csproj">Sdk\NovaOryn.Kernel.Ahci\NovaOryn.Kernel.Ahci.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.CommandLine\KernelCommandLine.cs">Sdk\NovaOryn.Kernel.CommandLine\KernelCommandLine.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.CommandLine\NovaOryn.Kernel.CommandLine.csproj">Sdk\NovaOryn.Kernel.CommandLine\NovaOryn.Kernel.CommandLine.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Console\BitmapFont.cs">Sdk\NovaOryn.Kernel.Console\BitmapFont.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Console\BootContext.cs">Sdk\NovaOryn.Kernel.Console\BootContext.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Console\ConsoleFont.cs">Sdk\NovaOryn.Kernel.Console\ConsoleFont.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Console\FramebufferBuffering.cs">Sdk\NovaOryn.Kernel.Console\FramebufferBuffering.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Console\FramebufferConsole.cs">Sdk\NovaOryn.Kernel.Console\FramebufferConsole.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Console\KernelConsole.cs">Sdk\NovaOryn.Kernel.Console\KernelConsole.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Console\NovaOryn.Kernel.Console.csproj">Sdk\NovaOryn.Kernel.Console\NovaOryn.Kernel.Console.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Drivers\KernelDriverContracts.cs">Sdk\NovaOryn.Kernel.Drivers\KernelDriverContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Drivers\KernelDriverMath.cs">Sdk\NovaOryn.Kernel.Drivers\KernelDriverMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Drivers\KernelDrivers.cs">Sdk\NovaOryn.Kernel.Drivers\KernelDrivers.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Drivers\NovaOryn.Kernel.Drivers.csproj">Sdk\NovaOryn.Kernel.Drivers\NovaOryn.Kernel.Drivers.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.E1000\E1000Contracts.cs">Sdk\NovaOryn.Kernel.E1000\E1000Contracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.E1000\E1000Math.cs">Sdk\NovaOryn.Kernel.E1000\E1000Math.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.E1000\KernelE1000.cs">Sdk\NovaOryn.Kernel.E1000\KernelE1000.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.E1000\NovaOryn.Kernel.E1000.csproj">Sdk\NovaOryn.Kernel.E1000\NovaOryn.Kernel.E1000.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Entry.X64\KernelEntry.cs">Sdk\NovaOryn.Kernel.Entry.X64\KernelEntry.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Entry.X64\NovaOryn.Kernel.Entry.X64.csproj">Sdk\NovaOryn.Kernel.Entry.X64\NovaOryn.Kernel.Entry.X64.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Graphics\FirmwareFramebuffer.cs">Sdk\NovaOryn.Kernel.Graphics\FirmwareFramebuffer.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Graphics\GraphicsContracts.cs">Sdk\NovaOryn.Kernel.Graphics\GraphicsContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Graphics\KernelGraphics.cs">Sdk\NovaOryn.Kernel.Graphics\KernelGraphics.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Graphics\NovaOryn.Kernel.Graphics.csproj">Sdk\NovaOryn.Kernel.Graphics\NovaOryn.Kernel.Graphics.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Graphics\SimpleFramebuffer.cs">Sdk\NovaOryn.Kernel.Graphics\SimpleFramebuffer.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Heap\KernelEarlyAllocator.cs">Sdk\NovaOryn.Kernel.Heap\KernelEarlyAllocator.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Heap\KernelHeap.cs">Sdk\NovaOryn.Kernel.Heap\KernelHeap.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj">Sdk\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.InterruptBroker\KernelInterruptBroker.cs">Sdk\NovaOryn.Kernel.InterruptBroker\KernelInterruptBroker.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.InterruptBroker\KernelInterruptBrokerContracts.cs">Sdk\NovaOryn.Kernel.InterruptBroker\KernelInterruptBrokerContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.InterruptBroker\KernelInterruptBrokerMath.cs">Sdk\NovaOryn.Kernel.InterruptBroker\KernelInterruptBrokerMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.InterruptBroker\NovaOryn.Kernel.InterruptBroker.csproj">Sdk\NovaOryn.Kernel.InterruptBroker\NovaOryn.Kernel.InterruptBroker.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.InterruptDispatch\KernelInterruptDispatch.cs">Sdk\NovaOryn.Kernel.InterruptDispatch\KernelInterruptDispatch.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.InterruptDispatch\NovaOryn.Kernel.InterruptDispatch.csproj">Sdk\NovaOryn.Kernel.InterruptDispatch\NovaOryn.Kernel.InterruptDispatch.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Memory\KernelPhysicalMemory.Bootstrap.cs">Sdk\NovaOryn.Kernel.Memory\KernelPhysicalMemory.Bootstrap.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Memory\KernelPhysicalMemory.cs">Sdk\NovaOryn.Kernel.Memory\KernelPhysicalMemory.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Memory\NovaOryn.Kernel.Memory.csproj">Sdk\NovaOryn.Kernel.Memory\NovaOryn.Kernel.Memory.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelDhcpDns.cs">Sdk\NovaOryn.Kernel.Networking\KernelDhcpDns.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelNetworkContracts.cs">Sdk\NovaOryn.Kernel.Networking\KernelNetworkContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelNetworking.cs">Sdk\NovaOryn.Kernel.Networking\KernelNetworking.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelNetworkMath.cs">Sdk\NovaOryn.Kernel.Networking\KernelNetworkMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelNetworkQueue.cs">Sdk\NovaOryn.Kernel.Networking\KernelNetworkQueue.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelNetworkStack.cs">Sdk\NovaOryn.Kernel.Networking\KernelNetworkStack.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelSockets.cs">Sdk\NovaOryn.Kernel.Networking\KernelSockets.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\NovaOryn.Kernel.Networking.csproj">Sdk\NovaOryn.Kernel.Networking\NovaOryn.Kernel.Networking.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Nvme\KernelNvme.cs">Sdk\NovaOryn.Kernel.Nvme\KernelNvme.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Nvme\NovaOryn.Kernel.Nvme.csproj">Sdk\NovaOryn.Kernel.Nvme\NovaOryn.Kernel.Nvme.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Nvme\NvmeContracts.cs">Sdk\NovaOryn.Kernel.Nvme\NvmeContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Nvme\NvmeMath.cs">Sdk\NovaOryn.Kernel.Nvme\NvmeMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Pci\KernelPci.cs">Sdk\NovaOryn.Kernel.Pci\KernelPci.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Pci\NovaOryn.Kernel.Pci.csproj">Sdk\NovaOryn.Kernel.Pci\NovaOryn.Kernel.Pci.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Pci\PciContracts.cs">Sdk\NovaOryn.Kernel.Pci\PciContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Pci\PciMath.cs">Sdk\NovaOryn.Kernel.Pci\PciMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Platform.X64\KernelPlatform.cs">Sdk\NovaOryn.Kernel.Platform.X64\KernelPlatform.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Platform.X64\NovaOryn.Kernel.Platform.X64.csproj">Sdk\NovaOryn.Kernel.Platform.X64\NovaOryn.Kernel.Platform.X64.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Polling\KernelPolling.cs">Sdk\NovaOryn.Kernel.Polling\KernelPolling.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Polling\NovaOryn.Kernel.Polling.csproj">Sdk\NovaOryn.Kernel.Polling\NovaOryn.Kernel.Polling.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Processes\KernelProcesses.cs">Sdk\NovaOryn.Kernel.Processes\KernelProcesses.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Processes\NovaOryn.Kernel.Processes.csproj">Sdk\NovaOryn.Kernel.Processes\NovaOryn.Kernel.Processes.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Processes\ProcessAddressSpace.cs">Sdk\NovaOryn.Kernel.Processes\ProcessAddressSpace.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Processes\ProcessContracts.cs">Sdk\NovaOryn.Kernel.Processes\ProcessContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Processes\ProcessExecutableMath.cs">Sdk\NovaOryn.Kernel.Processes\ProcessExecutableMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Protection\KernelProtection.cs">Sdk\NovaOryn.Kernel.Protection\KernelProtection.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Protection\KernelProtectionContracts.cs">Sdk\NovaOryn.Kernel.Protection\KernelProtectionContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Protection\KernelProtectionMath.cs">Sdk\NovaOryn.Kernel.Protection\KernelProtectionMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Protection\NovaOryn.Kernel.Protection.csproj">Sdk\NovaOryn.Kernel.Protection\NovaOryn.Kernel.Protection.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Ps2\KernelPs2.cs">Sdk\NovaOryn.Kernel.Ps2\KernelPs2.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Ps2\KeyboardLayouts.cs">Sdk\NovaOryn.Kernel.Ps2\KeyboardLayouts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Ps2\NovaOryn.Kernel.Ps2.csproj">Sdk\NovaOryn.Kernel.Ps2\NovaOryn.Kernel.Ps2.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Ps2\Ps2Contracts.cs">Sdk\NovaOryn.Kernel.Ps2\Ps2Contracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Rtl8168\KernelRtl8168.cs">Sdk\NovaOryn.Kernel.Rtl8168\KernelRtl8168.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Rtl8168\NovaOryn.Kernel.Rtl8168.csproj">Sdk\NovaOryn.Kernel.Rtl8168\NovaOryn.Kernel.Rtl8168.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Rtl8168\Rtl8168Contracts.cs">Sdk\NovaOryn.Kernel.Rtl8168\Rtl8168Contracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Rtl8168\Rtl8168Math.cs">Sdk\NovaOryn.Kernel.Rtl8168\Rtl8168Math.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Scheduler\KernelScheduler.cs">Sdk\NovaOryn.Kernel.Scheduler\KernelScheduler.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Scheduler\KernelSchedulerContracts.cs">Sdk\NovaOryn.Kernel.Scheduler\KernelSchedulerContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Scheduler\KernelSchedulerMath.cs">Sdk\NovaOryn.Kernel.Scheduler\KernelSchedulerMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Scheduler\NovaOryn.Kernel.Scheduler.csproj">Sdk\NovaOryn.Kernel.Scheduler\NovaOryn.Kernel.Scheduler.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Serial\KernelSerial.cs">Sdk\NovaOryn.Kernel.Serial\KernelSerial.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Serial\NovaOryn.Kernel.Serial.csproj">Sdk\NovaOryn.Kernel.Serial\NovaOryn.Kernel.Serial.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Serial\SerialContracts.cs">Sdk\NovaOryn.Kernel.Serial\SerialContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Serial\SerialMath.cs">Sdk\NovaOryn.Kernel.Serial\SerialMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Smp\KernelSmp.cs">Sdk\NovaOryn.Kernel.Smp\KernelSmp.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Smp\KernelSmpContracts.cs">Sdk\NovaOryn.Kernel.Smp\KernelSmpContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Smp\KernelSmpMath.cs">Sdk\NovaOryn.Kernel.Smp\KernelSmpMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Smp\NovaOryn.Kernel.Smp.csproj">Sdk\NovaOryn.Kernel.Smp\NovaOryn.Kernel.Smp.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Storage\KernelStorage.cs">Sdk\NovaOryn.Kernel.Storage\KernelStorage.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Storage\KernelStorageContracts.cs">Sdk\NovaOryn.Kernel.Storage\KernelStorageContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Storage\KernelStorageMath.cs">Sdk\NovaOryn.Kernel.Storage\KernelStorageMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Storage\KernelStorageQueue.cs">Sdk\NovaOryn.Kernel.Storage\KernelStorageQueue.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Storage\KernelVfs.cs">Sdk\NovaOryn.Kernel.Storage\KernelVfs.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Storage\NovaOryn.Kernel.Storage.csproj">Sdk\NovaOryn.Kernel.Storage\NovaOryn.Kernel.Storage.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.SystemCalls\KernelSystemCallContracts.cs">Sdk\NovaOryn.Kernel.SystemCalls\KernelSystemCallContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.SystemCalls\KernelSystemCallMath.cs">Sdk\NovaOryn.Kernel.SystemCalls\KernelSystemCallMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.SystemCalls\KernelSystemCalls.cs">Sdk\NovaOryn.Kernel.SystemCalls\KernelSystemCalls.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.SystemCalls\NovaOryn.Kernel.SystemCalls.csproj">Sdk\NovaOryn.Kernel.SystemCalls\NovaOryn.Kernel.SystemCalls.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Time\KernelRtcCmos.cs">Sdk\NovaOryn.Kernel.Time\KernelRtcCmos.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Time\KernelRtcMath.cs">Sdk\NovaOryn.Kernel.Time\KernelRtcMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Time\KernelTime.cs">Sdk\NovaOryn.Kernel.Time\KernelTime.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Time\KernelTimeContracts.cs">Sdk\NovaOryn.Kernel.Time\KernelTimeContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Time\KernelTimeMath.cs">Sdk\NovaOryn.Kernel.Time\KernelTimeMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Time\KernelTimerFacilities.cs">Sdk\NovaOryn.Kernel.Time\KernelTimerFacilities.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Time\NovaOryn.Kernel.Time.csproj">Sdk\NovaOryn.Kernel.Time\NovaOryn.Kernel.Time.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.TimerDispatch\KernelTimerDispatch.cs">Sdk\NovaOryn.Kernel.TimerDispatch\KernelTimerDispatch.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.TimerDispatch\NovaOryn.Kernel.TimerDispatch.csproj">Sdk\NovaOryn.Kernel.TimerDispatch\NovaOryn.Kernel.TimerDispatch.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Virtio.Gpu\KernelVirtioGpu.cs">Sdk\NovaOryn.Kernel.Virtio.Gpu\KernelVirtioGpu.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Virtio.Gpu\NovaOryn.Kernel.Virtio.Gpu.csproj">Sdk\NovaOryn.Kernel.Virtio.Gpu\NovaOryn.Kernel.Virtio.Gpu.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Virtio.Gpu\VirtioGpuContracts.cs">Sdk\NovaOryn.Kernel.Virtio.Gpu\VirtioGpuContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Virtio\KernelVirtio.cs">Sdk\NovaOryn.Kernel.Virtio\KernelVirtio.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Virtio\NovaOryn.Kernel.Virtio.csproj">Sdk\NovaOryn.Kernel.Virtio\NovaOryn.Kernel.Virtio.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Virtio\VirtioContracts.cs">Sdk\NovaOryn.Kernel.Virtio\VirtioContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Virtio\VirtioMath.cs">Sdk\NovaOryn.Kernel.Virtio\VirtioMath.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.VirtualMemory\KernelVirtualMemory.cs">Sdk\NovaOryn.Kernel.VirtualMemory\KernelVirtualMemory.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.VirtualMemory\KernelVirtualMemory.DirectMap.cs">Sdk\NovaOryn.Kernel.VirtualMemory\KernelVirtualMemory.DirectMap.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.VirtualMemory\NovaOryn.Kernel.VirtualMemory.csproj">Sdk\NovaOryn.Kernel.VirtualMemory\NovaOryn.Kernel.VirtualMemory.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.X64.LowLevel\Native.cs">Sdk\NovaOryn.Kernel.X64.LowLevel\Native.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.X64.LowLevel\NovaOryn.Kernel.X64.LowLevel.csproj">Sdk\NovaOryn.Kernel.X64.LowLevel\NovaOryn.Kernel.X64.LowLevel.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.String\NovaOryn.String.csproj">Sdk\NovaOryn.String\NovaOryn.String.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.String\StringFormatter.cs">Sdk\NovaOryn.String\StringFormatter.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Usb.Hid\NovaOryn.Usb.Hid.csproj">Sdk\NovaOryn.Usb.Hid\NovaOryn.Usb.Hid.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Usb.Hid\UsbHid.cs">Sdk\NovaOryn.Usb.Hid\UsbHid.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Usb.Hub\NovaOryn.Usb.Hub.csproj">Sdk\NovaOryn.Usb.Hub\NovaOryn.Usb.Hub.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Usb.Hub\UsbHub.cs">Sdk\NovaOryn.Usb.Hub\UsbHub.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Usb.MassStorage\NovaOryn.Usb.MassStorage.csproj">Sdk\NovaOryn.Usb.MassStorage\NovaOryn.Usb.MassStorage.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Usb.MassStorage\UsbMassStorage.cs">Sdk\NovaOryn.Usb.MassStorage\UsbMassStorage.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Usb.Xhci\KernelXhci.cs">Sdk\NovaOryn.Usb.Xhci\KernelXhci.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Usb.Xhci\NovaOryn.Usb.Xhci.csproj">Sdk\NovaOryn.Usb.Xhci\NovaOryn.Usb.Xhci.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Usb.Xhci\XhciContracts.cs">Sdk\NovaOryn.Usb.Xhci\XhciContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Tests\README.md">Tests\README.md</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\BufferingCommand.cs">Userland\Commands\BufferingCommand.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\ClearCommand.cs">Userland\Commands\ClearCommand.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\CommandCatalog.cs">Userland\Commands\CommandCatalog.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\DevicesCommand.cs">Userland\Commands\DevicesCommand.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\DriversCommand.cs">Userland\Commands\DriversCommand.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\EchoCommand.cs">Userland\Commands\EchoCommand.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\FontCommand.cs">Userland\Commands\FontCommand.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\GeneralCommands.cs">Userland\Commands\GeneralCommands.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\HelpCommand.cs">Userland\Commands\HelpCommand.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\InfoCommand.cs">Userland\Commands\InfoCommand.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\KeyboardCommand.cs">Userland\Commands\KeyboardCommand.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\MemoryCommand.cs">Userland\Commands\MemoryCommand.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\NovaOryn.Userland.Commands.csproj">Userland\Commands\NovaOryn.Userland.Commands.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Commands\UptimeCommand.cs">Userland\Commands\UptimeCommand.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Drivers\NovaOryn.Userland.Drivers.csproj">Userland\Drivers\NovaOryn.Userland.Drivers.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Drivers\UserlandDriverContracts.cs">Userland\Drivers\UserlandDriverContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Fonts\NovaOryn.Userland.Fonts.csproj">Userland\Fonts\NovaOryn.Userland.Fonts.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Fonts\UserlandFontCatalog.cs">Userland\Fonts\UserlandFontCatalog.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Images\NovaOryn.Userland.Images.csproj">Userland\Images\NovaOryn.Userland.Images.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Images\UserlandImageContracts.cs">Userland\Images\UserlandImageContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\NovaOryn.Userland\NovaOryn.Userland.csproj">Userland\NovaOryn.Userland\NovaOryn.Userland.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\README.md">Userland\README.md</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Settings\NovaOryn.Userland.Settings.csproj">Userland\Settings\NovaOryn.Userland.Settings.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Settings\UserlandSettings.cs">Userland\Settings\UserlandSettings.cs</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>

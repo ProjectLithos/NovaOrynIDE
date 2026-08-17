@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <RootNamespace>NovaOryn.Primitives</RootNamespace>
+    <AssemblyName>NovaOryn.Primitives</AssemblyName>
+  </PropertyGroup>
+
+</Project>

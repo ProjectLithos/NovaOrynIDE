@@ -2,6 +2,11 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
+echo [INFO] NovaOryn IDE Run 0.1.34
+
+set "NOVAORYN_IDE_ROOT=%~dp0"
+set "NOVAORYN_SDK_ROOT=%~dp0SDK"
+
 set "NOVAORYN_NODE=%~dp0.toolchain\Node\node.exe"
 set "NOVAORYN_NPM=%~dp0.toolchain\Node\npm.cmd"
 set "NOVAORYN_PYTHON=%~dp0.toolchain\Python\python.exe"
@@ -43,7 +48,7 @@ if not exist "%ELECTRON_MAIN%" (
   if not "%RESULT%"=="0" exit /b %RESULT%
 )
 
-echo [INFO] Starting NovaOryn IDE 0.0.10...
+echo [INFO] Starting NovaOryn IDE 0.1.34...
 call "%NOVAORYN_NPM%" run start --workspace @novaoryn/ide-electron
 set "RESULT=%errorlevel%"
 exit /b %RESULT%

@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<VSTemplate xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" Version="3.0.0" Type="Project">
+  <TemplateData>
+    <Name>NovaOryn Kernel Library</Name>
+    <Description>Create a freestanding NovaOryn kernel-side library. Place it below KernelProjects to link it into the kernel automatically.</Description>
+    <Icon>NovaOrynKernel.ico</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <LanguageTag>csharp</LanguageTag>
+    <PlatformTag>other</PlatformTag>
+    <ProjectTypeTag>other</ProjectTypeTag>
+    <TemplateID>NovaOryn.Project.KernelLibrary</TemplateID>
+    <DefaultName>NovaOrynKernelLibrary</DefaultName>
+    <SortOrder>11</SortOrder>
+    <CreateNewFolder>true</CreateNewFolder>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="Template.csproj" ReplaceParameters="true" TargetFileName="$safeprojectname$.csproj">
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true" TargetFileName="KernelLibrary.cs">KernelLibrary.cs</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>

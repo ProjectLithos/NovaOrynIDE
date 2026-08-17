@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>NovaOryn.Interrupts.Contracts</AssemblyName>
+    <RootNamespace>NovaOryn.Interrupts</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovaOryn.Architecture.Contracts\NovaOryn.Architecture.Contracts.csproj" />
+    <ProjectReference Include="..\NovaOryn.Primitives\NovaOryn.Primitives.csproj" />
+  </ItemGroup>
+</Project>

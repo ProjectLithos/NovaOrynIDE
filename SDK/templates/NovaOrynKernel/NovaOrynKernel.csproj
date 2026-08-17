@@ -1,0 +1,80 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="NovaOryn.Configuration.props" Condition="Exists('NovaOryn.Configuration.props')" />
+  <Import Project="NovaOryn.Configuration.targets" Condition="Exists('NovaOryn.Configuration.targets')" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <NoStdLib>true</NoStdLib>
+    <NoConfig>true</NoConfig>
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+    <AssemblyName>NovaOryn.Kernel.Bootstrap</AssemblyName>
+    <RootNamespace>NovaOryn.Kernel.Bootstrap</RootNamespace>
+    <NovaOrynSystemModule>NovaOryn.Freestanding.CoreLib</NovaOrynSystemModule>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <NovaOrynProject>true</NovaOrynProject>
+    <NovaOrynProjectType>Kernel</NovaOrynProjectType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Kernel\Kernel.cs" />
+    <Compile Include="Boot\BootStartup.cs" />
+    <Compile Include="HAL\HardwareAbstractionLayer.cs" />
+    <ProjectReference Include="Sdk\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.String\NovaOryn.String.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Console\NovaOryn.Kernel.Console.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.CommandLine\NovaOryn.Kernel.CommandLine.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Memory\NovaOryn.Kernel.Memory.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.VirtualMemory\NovaOryn.Kernel.VirtualMemory.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.AddressSpace\NovaOryn.Kernel.AddressSpace.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Acpi\NovaOryn.Kernel.Acpi.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Time\NovaOryn.Kernel.Time.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Smp\NovaOryn.Kernel.Smp.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Scheduler\NovaOryn.Kernel.Scheduler.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Protection\NovaOryn.Kernel.Protection.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.SystemCalls\NovaOryn.Kernel.SystemCalls.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Ps2\NovaOryn.Kernel.Ps2.csproj" Condition="'$(NovaOrynKernelAreaInput)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Processes\NovaOryn.Kernel.Processes.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Drivers\NovaOryn.Kernel.Drivers.csproj" Condition="'$(NovaOrynKernelAreaDrivers)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.InterruptDispatch\NovaOryn.Kernel.InterruptDispatch.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.InterruptBroker\NovaOryn.Kernel.InterruptBroker.csproj" Condition="'$(NovaOrynKernelAreaDrivers)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.TimerDispatch\NovaOryn.Kernel.TimerDispatch.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Polling\NovaOryn.Kernel.Polling.csproj" Condition="'$(NovaOrynKernelAreaDrivers)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Storage\NovaOryn.Kernel.Storage.csproj" Condition="'$(NovaOrynKernelAreaStorage)' == 'true' Or '$(NovaOrynKernelAreaFilesystems)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Networking\NovaOryn.Kernel.Networking.csproj" Condition="'$(NovaOrynKernelAreaNetworking)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Pci\NovaOryn.Kernel.Pci.csproj" Condition="'$(NovaOrynKernelAreaDrivers)' == 'true' Or '$(NovaOrynKernelAreaStorage)' == 'true' Or '$(NovaOrynKernelAreaNetworking)' == 'true' Or '$(NovaOrynKernelAreaUSB)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Nvme\NovaOryn.Kernel.Nvme.csproj" Condition="'$(NovaOrynKernelAreaStorage)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Ahci\NovaOryn.Kernel.Ahci.csproj" Condition="'$(NovaOrynKernelAreaStorage)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Virtio\NovaOryn.Kernel.Virtio.csproj" Condition="'$(NovaOrynKernelAreaNetworking)' == 'true' Or '$(NovaOrynKernelAreaStorage)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Graphics\NovaOryn.Kernel.Graphics.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Virtio.Gpu\NovaOryn.Kernel.Virtio.Gpu.csproj" Condition="'$(NovaOrynKernelAreaDrivers)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Serial\NovaOryn.Kernel.Serial.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.E1000\NovaOryn.Kernel.E1000.csproj" Condition="'$(NovaOrynKernelAreaNetworking)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Rtl8168\NovaOryn.Kernel.Rtl8168.csproj" Condition="'$(NovaOrynKernelAreaNetworking)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Platform.X64\NovaOryn.Kernel.Platform.X64.csproj" />
+    <None Include="NovaOrynProject.json" />
+    <None Include="NovaOryn.Configuration.json" />
+    <None Include="NovaOryn.Configuration.props" />
+    <None Include="NovaOryn.Configuration.targets" />
+    <None Include="Build-Kernel.bat" />
+    <None Include="Run-Kernel.bat" />
+    <None Include="README-Kernel.md" />
+    <ProjectReference Include="Sdk\NovaOryn.Bus.Usb\NovaOryn.Bus.Usb.csproj" Condition="'$(NovaOrynKernelAreaUSB)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Usb.Xhci\NovaOryn.Usb.Xhci.csproj" Condition="'$(NovaOrynKernelAreaUSB)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Usb.Hid\NovaOryn.Usb.Hid.csproj" Condition="'$(NovaOrynKernelAreaUSB)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Usb.MassStorage\NovaOryn.Usb.MassStorage.csproj" Condition="'$(NovaOrynKernelAreaUSB)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.Usb.Hub\NovaOryn.Usb.Hub.csproj" Condition="'$(NovaOrynKernelAreaUSB)' == 'true'" />
+    <!-- Configuration is authoritative: folder location alone never links a project into the kernel. -->
+    <ProjectReference Include="@(NovaOrynConfiguredKernelProject)" />
+    <None Include="KernelProjects\README.md" />
+    <None Include="Userland\README.md" />
+    <None Include="Tests\README.md" />
+    <None Include="Build-WorkspaceProjects.ps1" />
+  </ItemGroup>
+</Project>

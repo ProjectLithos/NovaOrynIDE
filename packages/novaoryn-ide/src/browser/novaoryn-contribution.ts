@@ -1,18 +1,60 @@
-import { inject, injectable } from '@theia/core/shared/inversify';
-import { Command, CommandContribution, CommandRegistry, MenuContribution, MenuModelRegistry } from '@theia/core/lib/common';
-import { AbstractViewContribution, FrontendApplication, FrontendApplicationContribution } from '@theia/core/lib/browser';
-import { NovaOrynWidget } from './novaoryn-widget';
+import { inject, injectable } from 'inversify';
+import { BoxLayout } from '@lumino/widgets';
+import { Command, CommandContribution, CommandRegistry, MAIN_MENU_BAR, MenuContribution, MenuModelRegistry, MessageService } from '@theia/core/lib/common';
+import { SelectionService } from '@theia/core/lib/common/selection-service';
+import { AbstractViewContribution, FrontendApplicationContribution } from '@theia/core/lib/browser';
+import { NavigatorContextMenu } from '@theia/navigator/lib/browser/navigator-contribution';
+import { WorkspaceService } from '@theia/workspace/lib/browser/workspace-service';
+import { EDITOR_CONTEXT_MENU, EDITOR_LINENUMBER_CONTEXT_MENU, EditorManager } from '@theia/editor/lib/browser';
+import { NovaOrynBreakpointManager } from './novaoryn-breakpoint-manager';
+import { NovaOrynWidget, NOVAORYN_EXPLICIT_WORKSPACE_OPEN } from './novaoryn-widget';
+import { NovaOrynToolbarWidget } from './novaoryn-toolbar-widget';
 
 export namespace NovaOrynCommands {
     export const OPEN: Command = {
         id: 'novaoryn.openConfigurator',
         label: 'NovaOryn: Create Operating System'
     };
+
+    export const RECONFIGURE: Command = {
+        id: 'novaoryn.reconfigureOperatingSystem',
+        label: 'Reconfigure NovaOryn OS'
+    };
+
+    export const RECONFIGURE_ROOT_CONTEXT: Command = {
+        id: 'novaoryn.reconfigureOperatingSystem.rootContext',
+        label: 'Reconfigure NovaOryn OS'
+    };
+
+    export const TOGGLE_BREAKPOINT: Command = {
+        id: 'novaoryn.debug.toggleBreakpoint',
+        label: 'Toggle Breakpoint'
+    };
 }
 
 @injectable()
 export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidget>
     implements CommandContribution, MenuContribution, FrontendApplicationContribution {
+
+    @inject(WorkspaceService)
+    protected readonly workspaceService!: WorkspaceService;
+
+    @inject(SelectionService)
+    protected readonly selectionService!: SelectionService;
+
+    @inject(EditorManager)
+    protected readonly editorManager!: EditorManager;
+
+    @inject(NovaOrynBreakpointManager)
+    protected readonly breakpointManager!: NovaOrynBreakpointManager;
+
+    @inject(MessageService)
+    protected readonly messageService!: MessageService;
+
+    @inject(NovaOrynToolbarWidget)
+    protected readonly toolbarWidget!: NovaOrynToolbarWidget;
+
+    protected toolbarInstalled = false;
 
     constructor() {
         super({
@@ -27,16 +69,199 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         commands.registerCommand(NovaOrynCommands.OPEN, {
             execute: () => this.openView({ activate: true, reveal: true })
         });
+
+        commands.registerCommand(NovaOrynCommands.RECONFIGURE, {
+            execute: () => this.reconfigureCurrentOperatingSystem(),
+            isEnabled: () => !!this.currentOperatingSystemPath(),
+            isVisible: () => !!this.currentOperatingSystemPath()
+        });
+
+        commands.registerCommand(NovaOrynCommands.RECONFIGURE_ROOT_CONTEXT, {
+            execute: () => this.reconfigureCurrentOperatingSystem(),
+            isEnabled: () => this.isOperatingSystemRootSelected(),
+            isVisible: () => this.isOperatingSystemRootSelected()
+        });
+
+        commands.registerCommand(NovaOrynCommands.TOGGLE_BREAKPOINT, {
+            execute: () => this.toggleCurrentBreakpoint(),
+            // Keep the command present in the editor context menu even when Theia
+            // temporarily has no currentEditor while the context menu owns focus.
+            isEnabled: () => true,
+            isVisible: () => true
+        });
     }
+
 
     registerMenus(menus: MenuModelRegistry): void {
         menus.registerMenuAction(['1_file', '1_new'], {
             commandId: NovaOrynCommands.OPEN.id,
             label: 'NovaOryn Operating System'
         });
+
+        const novaOrynMenu = [...MAIN_MENU_BAR, '8_novaoryn'];
+        menus.registerSubmenu(novaOrynMenu, 'NovaOryn', { sortString: '8' });
+        menus.registerMenuAction([...novaOrynMenu, '1_configuration'], {
+            commandId: NovaOrynCommands.RECONFIGURE.id,
+            label: 'Reconfigure OS'
+        });
+
+        menus.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
+            commandId: NovaOrynCommands.RECONFIGURE_ROOT_CONTEXT.id,
+            label: 'Reconfigure NovaOryn OS',
+            order: '0'
+        });
+
+        const editorDebugMenu = [...EDITOR_CONTEXT_MENU, '2_novaoryn_debug'];
+        menus.registerSubmenu(editorDebugMenu, 'Debug');
+        menus.registerMenuAction([...editorDebugMenu, '1_breakpoints'], {
+            commandId: NovaOrynCommands.TOGGLE_BREAKPOINT.id,
+            label: 'Toggle Breakpoint',
+            order: '0'
+        });
+
+        // Theia uses a distinct menu for right-clicks on the line-number/glyph
+        // gutter. Link the same Debug submenu there so both source and gutter
+        // context menus expose Debug -> Toggle Breakpoint.
+        menus.linkCompoundMenuNode({
+            newParentPath: EDITOR_LINENUMBER_CONTEXT_MENU,
+            submenuPath: editorDebugMenu
+        });
     }
 
-    async onStart(_app: FrontendApplication): Promise<void> {
+    async onStart(): Promise<void> {
+        this.installToolbarBelowMenu();
+        await this.workspaceService.ready;
+        this.toolbarWidget.refresh();
+
+        // NovaOryn IDE must always start at its own OS chooser. The only time an
+        // already-open workspace is allowed through startup is the one-shot reload
+        // initiated by an explicit Open Existing OS action in NovaOryn itself.
+        const explicitOpen = window.sessionStorage.getItem(NOVAORYN_EXPLICIT_WORKSPACE_OPEN);
+        if (explicitOpen) {
+            window.sessionStorage.removeItem(NOVAORYN_EXPLICIT_WORKSPACE_OPEN);
+        } else if (this.workspaceService.opened) {
+            await this.workspaceService.close();
+            return;
+        }
+
         await this.openView({ activate: true, reveal: true });
+    }
+
+
+
+    protected async toggleCurrentBreakpoint(): Promise<void> {
+        const context = this.breakpointManager.consumeContextLocation();
+        if (context && context.sourcePath.toLowerCase().endsWith('.cs')) {
+            await this.breakpointManager.toggle(context.sourcePath, context.line);
+            return;
+        }
+
+        const widget = this.editorManager.currentEditor ?? this.editorManager.activeEditor;
+        if (!widget) {
+            await this.messageService.warn('Open a C# source file before toggling a breakpoint.');
+            return;
+        }
+        const sourcePath = widget.editor.uri.path.fsPath();
+        if (!sourcePath.toLowerCase().endsWith('.cs')) {
+            await this.messageService.warn('Breakpoints can currently be placed in C# source files.');
+            return;
+        }
+        const line = widget.editor.cursor.line + 1;
+        if (line < 1) {
+            await this.messageService.warn('Place the caret on the source line where you want the breakpoint.');
+            return;
+        }
+        await this.breakpointManager.toggle(sourcePath, line);
+    }
+
+    protected currentOperatingSystemPath(): string | undefined {
+        const workspace = this.workspaceService.workspace;
+        if (!workspace) {
+            return undefined;
+        }
+        return workspace.resource.path.fsPath();
+    }
+
+    protected selectedNavigatorPath(): string | undefined {
+        const rawSelection = this.selectionService.selection as unknown;
+        const selection = Array.isArray(rawSelection) ? rawSelection[0] : rawSelection;
+        return this.pathFromNavigatorSelection(selection, new Set<object>());
+    }
+
+    protected pathFromNavigatorSelection(selection: unknown, visited: Set<object>): string | undefined {
+        if (!selection || typeof selection !== 'object' || visited.has(selection)) {
+            return undefined;
+        }
+        visited.add(selection);
+
+        const candidate = selection as Record<string, unknown>;
+        const path = candidate['path'];
+        if (path && typeof path === 'object') {
+            const fsPath = (path as { fsPath?: () => string }).fsPath;
+            if (typeof fsPath === 'function') {
+                return fsPath.call(path);
+            }
+        }
+
+        const fsPath = candidate['fsPath'];
+        if (typeof fsPath === 'string') {
+            return fsPath;
+        }
+        if (typeof fsPath === 'function') {
+            return (fsPath as () => string).call(selection);
+        }
+
+        for (const key of ['uri', 'resource', 'fileStat', 'stat']) {
+            const nestedPath = this.pathFromNavigatorSelection(candidate[key], visited);
+            if (nestedPath) {
+                return nestedPath;
+            }
+        }
+        return undefined;
+    }
+
+    protected isOperatingSystemRootSelected(): boolean {
+        const projectPath = this.currentOperatingSystemPath();
+        const selectedPath = this.selectedNavigatorPath();
+        if (!projectPath || !selectedPath) {
+            return false;
+        }
+        return projectPath.toLowerCase() === selectedPath.toLowerCase();
+    }
+
+    protected async reconfigureCurrentOperatingSystem(): Promise<void> {
+        const projectPath = this.currentOperatingSystemPath();
+        if (!projectPath) {
+            return;
+        }
+
+        // The context-menu form is intended for the OS root. Menu-bar invocation
+        // has no navigator selection requirement and always targets the open OS.
+        await this.shell.saveAll();
+        const widget = await this.widgetManager.getOrCreateWidget<NovaOrynWidget>(NovaOrynWidget.ID);
+        if (await widget.beginReconfigureOperatingSystem(projectPath)) {
+            await this.openView({ activate: true, reveal: true });
+        }
+    }
+
+    /**
+     * Inserts the NovaOryn controls into the already-created Theia shell layout.
+     * Do not replace/rebind ApplicationShell: the toolbar itself depends on the
+     * shell for saveAll(), so rebinding the shell to a class that injects the
+     * toolbar creates a circular Inversify dependency and can exhaust V8 memory.
+     */
+    protected installToolbarBelowMenu(): void {
+        if (this.toolbarInstalled || this.toolbarWidget.parent) {
+            this.toolbarInstalled = true;
+            return;
+        }
+
+        const layout = this.shell.layout;
+        if (!(layout instanceof BoxLayout)) {
+            throw new Error('NovaOryn could not install the Run toolbar: Theia root layout is not a BoxLayout.');
+        }
+
+        layout.insertWidget(1, this.toolbarWidget);
+        this.toolbarInstalled = true;
     }
 }

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NovaOrynSkipPublicApiValidation>true</NovaOrynSkipPublicApiValidation>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\NovaOryn.Memory.Contracts\NovaOryn.Memory.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\NovaOryn.Boot.Memory\NovaOryn.Boot.Memory.csproj" />
+    <ProjectReference Include="..\..\src\NovaOryn.Memory.Physical.Contracts\NovaOryn.Memory.Physical.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\NovaOryn.Memory.Physical\NovaOryn.Memory.Physical.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Documentation Authoring · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="Getting-Started.html">Guides</a><a href="../index.html">API</a></nav></header><main><h1>Documentation Authoring</h1>
+<p>Public SDK declarations use normal XML documentation plus NovaOryn-specific metadata.</p>
+<pre><code>
+/// &lt;summary&gt;Halts the current processor.&lt;/summary&gt;
+/// &lt;remarks&gt;This operation normally does not return.&lt;/remarks&gt;
+/// &lt;returns&gt;False only when the architecture implementation rejects the operation.&lt;/returns&gt;
+/// &lt;nova.when&gt;Use after final kernel output when no scheduler is active.&lt;/nova.when&gt;
+/// &lt;nova.depends&gt;The selected architecture CPU implementation.&lt;/nova.depends&gt;
+/// &lt;example&gt;return CPU.Halt();&lt;/example&gt;
+public static bool Halt()
+</code></pre>
+<p>The generator reads public declarations from `src`, records project-reference dependencies and writes `docs/site`. Release 0.0.43 establishes the generator without failing existing undocumented APIs. The 0.0.44 API audit can enable strict documentation and example enforcement.</p></main><footer>Nova Oryn OS SDK 0.0.43</footer></body></html>

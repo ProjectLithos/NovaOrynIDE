@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>NovaOryn.InterruptControllers.X64</AssemblyName>
+    <RootNamespace>NovaOryn.InterruptControllers.X64</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovaOryn.InterruptControllers.Contracts\NovaOryn.InterruptControllers.Contracts.csproj" />
+    <ProjectReference Include="..\NovaOryn.Interrupts.Contracts\NovaOryn.Interrupts.Contracts.csproj" />
+    <ProjectReference Include="..\NovaOryn.Primitives\NovaOryn.Primitives.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,8 +1,34 @@
+# JavaScript dependencies and native-module caches
 node_modules/
-lib/
-gen-webpack.config.js
-gen-webpack.node.config.js
-*.log
-.DS_Store
+**/node_modules/
+.browser_modules/
+**/.browser_modules/
 
+# Downloaded/pinned toolchains (not source)
 .toolchain/
+**/.toolchain/
+
+# Build and generated output
+Artifacts/
+**/Artifacts/
+lib/
+**/lib/
+bin/
+**/bin/
+obj/
+**/obj/
+Logs/
+**/Logs/
+applications/electron/src-gen/
+applications/electron/gen-webpack.config.js
+applications/electron/gen-webpack.node.config.js
+applications/electron/esbuild.mjs
+*.log
+NovaOryn-NpmAudit.json
+
+# IDE/user state
+.vs/
+**/.vs/
+*.user
+*.suo
+.DS_Store

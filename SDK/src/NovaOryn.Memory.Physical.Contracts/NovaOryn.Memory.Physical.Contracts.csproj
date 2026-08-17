@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>NovaOryn.Memory.Physical</RootNamespace>
+    <AssemblyName>NovaOryn.Memory.Physical.Contracts</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovaOryn.Memory.Contracts\NovaOryn.Memory.Contracts.csproj" />
+    <ProjectReference Include="..\NovaOryn.Primitives\NovaOryn.Primitives.csproj" />
+    <ProjectReference Include="..\NovaOryn.Core\NovaOryn.Core.csproj" />
+  </ItemGroup>
+</Project>

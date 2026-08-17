@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<VSTemplate xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" Version="3.0.0" Type="Project">
+  <TemplateData>
+    <Name>NovaOryn Kernel Driver</Name>
+    <Description>Create a separately compiled NovaOryn kernel driver. Place it below KernelProjects to link it into the kernel automatically.</Description>
+    <Icon>NovaOrynKernel.ico</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <LanguageTag>csharp</LanguageTag>
+    <PlatformTag>other</PlatformTag>
+    <ProjectTypeTag>other</ProjectTypeTag>
+    <TemplateID>NovaOryn.Project.KernelDriver</TemplateID>
+    <DefaultName>NovaOrynKernelDriver</DefaultName>
+    <SortOrder>10</SortOrder>
+    <CreateNewFolder>true</CreateNewFolder>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="Template.csproj" ReplaceParameters="true" TargetFileName="$safeprojectname$.csproj">
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true" TargetFileName="Driver.cs">Driver.cs</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>

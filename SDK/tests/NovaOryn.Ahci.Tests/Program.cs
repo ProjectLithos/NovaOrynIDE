@@ -1,0 +1,3 @@
+using NovaOryn.Kernel.Ahci;
+static void Ok(bool v,string s){if(!v)throw new Exception(s);Console.WriteLine("[ OK ] "+s);}
+Ok(AhciMath.IsAhciClass(0x010601U),"PCI class 01/06/01 is AHCI.");Ok(AhciMath.DecodeSignature(0x00000101U)==AhciPortType.Sata,"ATA signature identifies SATA.");Ok(AhciMath.IsDevicePresent(0x00000103U),"DET=3 and IPM=1 identifies an active SATA link.");Ok(AhciMath.DecodeLba48(1,2,3,4)==0x0004000300020001UL,"IDENTIFY LBA48 words decode in ATA order.");Ok(AhciMath.DecodeLogicalSectorSize(0,0,0)==512U,"Legacy IDENTIFY devices default to 512-byte sectors.");Console.WriteLine("[ OK ] AHCI/SATA methodology tests passed.");

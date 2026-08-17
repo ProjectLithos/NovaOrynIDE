@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <RootNamespace>NovaOryn.Console.Contracts</RootNamespace>
+    <AssemblyName>NovaOryn.Console.Contracts</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovaOryn.Boot.Contracts\NovaOryn.Boot.Contracts.csproj" />
+  </ItemGroup>
+</Project>

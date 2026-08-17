@@ -1,0 +1,31 @@
+{
+  "Name": "MinimalKernel",
+  "ProjectFile": "Sdk/NovaOryn.Kernel.Entry.X64/NovaOryn.Kernel.Entry.X64.csproj",
+  "TargetArchitecture": "x64",
+  "BootProtocol": "Uefi",
+  "KernelEntry": "KMain",
+  "RuntimePack": "NovaOryn.RuntimePack.X64.Bootstrap",
+  "OutputDirectory": "C:\\NovaOryn\\Artifacts\\MinimalKernel",
+  "KernelModel": "Monolithic",
+  "ConfigurationFile": "NovaOryn.Configuration.json",
+  "WorkAreas": [
+    "Shell",
+    "GUI",
+    "Drivers",
+    "HAL",
+    "Audio",
+    "Filesystems",
+    "Storage",
+    "Networking",
+    "USB",
+    "Input",
+    "Processes",
+    "Scheduler",
+    "System Calls",
+    "Security",
+    "Diagnostics",
+    "Tests"
+  ],
+  "ConfigurationVersion": 3,
+  "DevelopmentAreas": []
+}

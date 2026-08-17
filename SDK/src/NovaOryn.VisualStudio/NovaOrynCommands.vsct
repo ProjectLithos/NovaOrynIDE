@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable">
+ <Extern href="stdidcmd.h"/><Extern href="vsshlids.h"/>
+ <Commands package="guidPackage"><Groups><Group guid="guidCommands" id="MainGroup" priority="0x0600"><Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/></Group></Groups>
+ <Buttons><Button guid="guidCommands" id="Configure" priority="0x00F0" type="Button"><Parent guid="guidCommands" id="MainGroup"/><Strings><ButtonText>NovaOryn: Configure Project...</ButtonText></Strings></Button><Button guid="guidCommands" id="Build" priority="0x0100" type="Button"><Parent guid="guidCommands" id="MainGroup"/><Strings><ButtonText>NovaOryn: Build Kernel</ButtonText></Strings></Button>
+ <Button guid="guidCommands" id="Run" priority="0x0110" type="Button"><Parent guid="guidCommands" id="MainGroup"/><Strings><ButtonText>NovaOryn: Run Kernel</ButtonText></Strings></Button></Buttons></Commands>
+ <Symbols><GuidSymbol name="guidPackage" value="{7b274f30-bec4-4968-a8e2-b031cb57678a}"/><GuidSymbol name="guidCommands" value="{4fc64cd0-9d0f-4246-ae6d-d3b67fbc2992}"><IDSymbol name="MainGroup" value="0x1020"/><IDSymbol name="Build" value="0x0100"/><IDSymbol name="Configure" value="0x0102"/><IDSymbol name="Run" value="0x0101"/></GuidSymbol></Symbols>
+</CommandTable>

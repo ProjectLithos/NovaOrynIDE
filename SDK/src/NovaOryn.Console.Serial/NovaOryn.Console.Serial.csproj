@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <RootNamespace>NovaOryn.Console.Serial</RootNamespace>
+    <AssemblyName>NovaOryn.Console.Serial</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NovaOryn.Primitives\NovaOryn.Primitives.csproj" />
+    <ProjectReference Include="..\NovaOryn.Boot.Contracts\NovaOryn.Boot.Contracts.csproj" />
+    <ProjectReference Include="..\NovaOryn.Console.Contracts\NovaOryn.Console.Contracts.csproj" />
+    <ProjectReference Include="..\NovaOryn.Architecture.X64\NovaOryn.Architecture.X64.csproj" />
+  </ItemGroup>
+</Project>

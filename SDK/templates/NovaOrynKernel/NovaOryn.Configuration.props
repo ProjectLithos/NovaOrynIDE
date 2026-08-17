@@ -1,0 +1,30 @@
+<Project>
+  <!-- Generated default configuration. Apply Configuration Pages to regenerate. -->
+  <PropertyGroup>
+    <NovaOrynConfigurationVersion>3</NovaOrynConfigurationVersion>
+    <NovaOrynTargetArchitecture>x64</NovaOrynTargetArchitecture>
+    <NovaOrynKernelModel>Monolithic</NovaOrynKernelModel>
+    <NovaOrynBootProtocol>Uefi</NovaOrynBootProtocol>
+    <NovaOrynConfigurationCompleted>false</NovaOrynConfigurationCompleted>
+    <NovaOrynWorkAreas>Shell;GUI;Drivers;HAL;Audio;Filesystems;Storage;Networking;USB;Input;Processes;Scheduler;System Calls;Security;Diagnostics;Tests</NovaOrynWorkAreas>
+    <NovaOrynDevelopmentAreas></NovaOrynDevelopmentAreas>
+    <NovaOrynDefaultExecutionDomain>Kernel</NovaOrynDefaultExecutionDomain>
+    <NovaOrynKernelAreaShell>false</NovaOrynKernelAreaShell>
+    <NovaOrynKernelAreaGUI>false</NovaOrynKernelAreaGUI>
+    <NovaOrynKernelAreaDrivers>true</NovaOrynKernelAreaDrivers>
+    <NovaOrynKernelAreaHAL>true</NovaOrynKernelAreaHAL>
+    <NovaOrynKernelAreaAudio>false</NovaOrynKernelAreaAudio>
+    <NovaOrynKernelAreaFilesystems>true</NovaOrynKernelAreaFilesystems>
+    <NovaOrynKernelAreaStorage>true</NovaOrynKernelAreaStorage>
+    <NovaOrynKernelAreaNetworking>true</NovaOrynKernelAreaNetworking>
+    <NovaOrynKernelAreaUSB>true</NovaOrynKernelAreaUSB>
+    <NovaOrynKernelAreaInput>true</NovaOrynKernelAreaInput>
+    <NovaOrynKernelAreaProcesses>true</NovaOrynKernelAreaProcesses>
+    <NovaOrynKernelAreaScheduler>true</NovaOrynKernelAreaScheduler>
+    <NovaOrynKernelAreaSystemCalls>true</NovaOrynKernelAreaSystemCalls>
+    <NovaOrynKernelAreaSecurity>true</NovaOrynKernelAreaSecurity>
+    <NovaOrynKernelAreaDiagnostics>true</NovaOrynKernelAreaDiagnostics>
+    <NovaOrynKernelAreaTests>false</NovaOrynKernelAreaTests>
+    <DefineConstants>$(DefineConstants);NOVAORYN_ARCH_X64;NOVAORYN_KERNEL_MONOLITHIC;NOVAORYN_WORKAREA_HAL;NOVAORYN_WORKAREA_DRIVERS;NOVAORYN_WORKAREA_STORAGE;NOVAORYN_WORKAREA_FILESYSTEMS;NOVAORYN_WORKAREA_NETWORKING;NOVAORYN_WORKAREA_USB;NOVAORYN_WORKAREA_INPUT;NOVAORYN_WORKAREA_PROCESSES;NOVAORYN_WORKAREA_SCHEDULER;NOVAORYN_WORKAREA_SYSTEM_CALLS;NOVAORYN_WORKAREA_SECURITY;NOVAORYN_WORKAREA_DIAGNOSTICS;NOVAORYN_KERNELAREA_HAL;NOVAORYN_KERNELAREA_DRIVERS;NOVAORYN_KERNELAREA_STORAGE;NOVAORYN_KERNELAREA_FILESYSTEMS;NOVAORYN_KERNELAREA_NETWORKING;NOVAORYN_KERNELAREA_USB;NOVAORYN_KERNELAREA_INPUT;NOVAORYN_KERNELAREA_PROCESSES;NOVAORYN_KERNELAREA_SCHEDULER;NOVAORYN_KERNELAREA_SYSTEM_CALLS;NOVAORYN_KERNELAREA_SECURITY;NOVAORYN_KERNELAREA_DIAGNOSTICS</DefineConstants>
+  </PropertyGroup>
+</Project>
