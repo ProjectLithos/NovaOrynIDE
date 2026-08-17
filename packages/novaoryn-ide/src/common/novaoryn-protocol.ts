@@ -70,7 +70,19 @@ export interface NovaOrynDebugFrame {
     label: string;
     sourcePath?: string;
     line?: number;
+    kind?: 'managed' | 'native';
+    unwoundBy?: 'x64-unwind' | 'leaf';
 }
+
+export interface NovaOrynDebugExecutionContext {
+    id: string;
+    threadId: string;
+    processId?: string;
+    cpuIndex?: number;
+    name: string;
+    current: boolean;
+}
+
 
 export interface NovaOrynDebugVariable {
     name: string;
@@ -86,6 +98,76 @@ export interface NovaOrynMemoryReadResult {
     address?: string;
     length?: number;
     bytes?: string;
+    error?: string;
+}
+
+
+export interface NovaOrynPageTableEntry {
+    level: 'PML4' | 'PDPT' | 'PD' | 'PT';
+    index: number;
+    entryPhysicalAddress: string;
+    entryValue: string;
+    present: boolean;
+    writable: boolean;
+    user: boolean;
+    writeThrough: boolean;
+    cacheDisable: boolean;
+    accessed: boolean;
+    dirty: boolean;
+    largePage: boolean;
+    global: boolean;
+    noExecute: boolean;
+    targetPhysicalAddress?: string;
+}
+
+export interface NovaOrynPageTableInspection {
+    success: boolean;
+    expression: string;
+    virtualAddress?: string;
+    cr3?: string;
+    pageSize?: string;
+    physicalAddress?: string;
+    entries?: NovaOrynPageTableEntry[];
+    error?: string;
+}
+
+export interface NovaOrynHeapBlock {
+    index: number;
+    state: 'free' | 'allocated';
+    address: string;
+    byteCount: number;
+    token?: string;
+}
+
+export interface NovaOrynHeapSnapshot {
+    success: boolean;
+    initialized?: boolean;
+    committedBytes?: number;
+    allocatedBytes?: number;
+    freeBytes?: number;
+    peakAllocatedBytes?: number;
+    liveAllocations?: number;
+    freeBlocks?: number;
+    blocks?: NovaOrynHeapBlock[];
+    message?: string;
+    error?: string;
+}
+
+export interface NovaOrynCrashDumpSummary {
+    path: string;
+    createdUtc: string;
+    reason: string;
+    sourcePath?: string;
+    line?: number;
+}
+
+export interface NovaOrynCrashDumpResult {
+    success: boolean;
+    dump?: NovaOrynCrashDumpSummary;
+    state?: NovaOrynDebugState;
+    pageTable?: NovaOrynPageTableInspection;
+    heap?: NovaOrynHeapSnapshot;
+    memory?: { stack?: NovaOrynMemoryReadResult; code?: NovaOrynMemoryReadResult };
     error?: string;
 }
 
@@ -140,7 +222,10 @@ export interface NovaOrynDebugState {
     disassembly?: NovaOrynDisassemblyInstruction[];
     exceptionVector?: number;
     exceptionName?: string;
+    executionContexts?: NovaOrynDebugExecutionContext[];
+    selectedThreadId?: string;
 }
+
 
 
 export interface NovaOrynBreakpointResult {
@@ -192,5 +277,12 @@ export interface NovaOrynProjectService {
     updateBreakpoint(sessionId: string, breakpoint: NovaOrynBreakpointRequest): Promise<NovaOrynBreakpointResult>;
     evaluateExpression(sessionId: string, expression: string): Promise<NovaOrynExpressionResult>;
     readMemoryRange(sessionId: string, addressExpression: string, length: number): Promise<NovaOrynMemoryReadResult>;
+    inspectPageTable(sessionId: string, addressExpression: string): Promise<NovaOrynPageTableInspection>;
+    inspectHeap(sessionId: string): Promise<NovaOrynHeapSnapshot>;
+    captureCrashDump(sessionId: string, reason?: string): Promise<NovaOrynCrashDumpResult>;
+    listCrashDumps(projectPath: string): Promise<NovaOrynCrashDumpSummary[]>;
+    loadCrashDump(dumpPath: string): Promise<NovaOrynCrashDumpResult>;
     configureExceptionBreakpoints(sessionId: string, settings: NovaOrynExceptionBreakpointSettings): Promise<NovaOrynDebugState>;
+    selectExecutionContext(sessionId: string, threadId: string): Promise<NovaOrynDebugState>;
 }
+

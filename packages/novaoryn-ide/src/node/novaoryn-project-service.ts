@@ -16,12 +16,19 @@ import {
     NovaOrynDebugState,
     NovaOrynDebugFrame,
     NovaOrynDebugRegister,
+    NovaOrynDebugExecutionContext,
     NovaOrynDebugVariable,
     NovaOrynDisassemblyInstruction,
     NovaOrynExceptionBreakpointSettings,
     NovaOrynBreakpointRequest,
     NovaOrynExpressionResult,
     NovaOrynMemoryReadResult,
+    NovaOrynPageTableInspection,
+    NovaOrynPageTableEntry,
+    NovaOrynHeapSnapshot,
+    NovaOrynHeapBlock,
+    NovaOrynCrashDumpSummary,
+    NovaOrynCrashDumpResult,
     NovaOrynBreakpointResult,
     NovaOrynRunOutput,
     NovaOrynRunResult,
@@ -32,12 +39,12 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.43';
+const NOVAORYN_IDE_VERSION = '0.1.46';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
     protected buffer = Buffer.alloc(0);
-    protected pending: { resolve: (value: string) => void; reject: (error: Error) => void; timer: NodeJS.Timeout } | undefined;
+    protected pending: { resolve: (value: string) => void; reject: (error: Error) => void; timer: NodeJS.Timeout; consoleOutput: string[] } | undefined;
 
     constructor(protected readonly onStop: (packet: string) => void) {}
 
@@ -97,7 +104,7 @@ class GdbRspClient {
                     reject(new Error(`GDB command timed out: ${command}`));
                 }
             }, 2500);
-            this.pending = { resolve, reject, timer };
+            this.pending = { resolve, reject, timer, consoleOutput: [] };
             this.socket!.write(this.packet(command));
         });
     }
@@ -148,11 +155,15 @@ class GdbRspClient {
                 this.onStop(payload);
                 continue;
             }
+            if (payload.startsWith('O') && this.pending && /^[0-9a-fA-F]*$/.test(payload.slice(1)) && payload.length % 2 === 1) {
+                try { this.pending.consoleOutput.push(Buffer.from(payload.slice(1), 'hex').toString('utf8')); } catch { }
+                continue;
+            }
             if (this.pending) {
                 const pending = this.pending;
                 this.pending = undefined;
                 clearTimeout(pending.timer);
-                pending.resolve(payload);
+                pending.resolve(pending.consoleOutput.length > 0 && payload === 'OK' ? pending.consoleOutput.join('') : payload);
             }
         }
     }
@@ -359,6 +370,32 @@ interface NativeVariableLocation {
     typeName?: string;
 }
 
+
+interface NativeGlobalSymbol {
+    name: string;
+    linkedAddress: bigint;
+}
+
+interface PeSectionInfo {
+    virtualAddress: number;
+    virtualSize: number;
+    rawOffset: number;
+    rawSize: number;
+}
+
+interface PeUnwindEntry {
+    beginRva: number;
+    endRva: number;
+    unwindRva: number;
+}
+
+interface PeUnwindTable {
+    imageBase: bigint;
+    bytes: Buffer;
+    sections: PeSectionInfo[];
+    entries: PeUnwindEntry[];
+}
+
 interface PeImageLayout {
     imageBase: bigint;
     sections: Map<number, bigint>;
@@ -373,6 +410,7 @@ interface StepPlan {
 }
 
 interface RunSession {
+    sessionId: string;
     output: string;
     complete: boolean;
     exitCode?: number;
@@ -397,6 +435,11 @@ interface RunSession {
     panicBreakpointAddress?: bigint;
     nativeVariables?: NativeVariableLocation[];
     nativeVariablesMessage?: string;
+    selectedThreadId?: string;
+    unwindTable?: PeUnwindTable;
+    unwindTableLoaded?: boolean;
+    nativeGlobals?: NativeGlobalSymbol[];
+    nativeGlobalsLoaded?: boolean;
 }
 
 
@@ -450,7 +493,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             const modeArgument = mode === 'debug' ? 'Debug' : 'Run';
             const sessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
             const session: RunSession = {
-                output: '', complete: false, mode, projectRoot,
+                sessionId, output: '', complete: false, mode, projectRoot,
                 breakpoints: new Map<string, SourceBreakpoint>(),
                 requestedBreakpoints: breakpoints.map(item => ({ sourcePath: path.resolve(item.sourcePath), line: item.line, condition: item.condition?.trim() || undefined, hitCondition: item.hitCondition?.trim() || undefined })),
                 breakpointResults: [],
@@ -733,6 +776,36 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         return session.debug;
     }
 
+    async selectExecutionContext(sessionId: string, threadId: string): Promise<NovaOrynDebugState> {
+        const session = this.runSessions.get(sessionId);
+        if (!session || session.mode !== 'debug' || !session.gdb || !session.debug?.active) {
+            return { active: false, paused: false, sourceSymbols: false, message: 'No active NovaOryn debug session.' };
+        }
+        if (!session.debug.paused) {
+            return { ...session.debug, message: 'Pause the kernel before switching CPU/thread context.' };
+        }
+        const normalized = threadId.trim();
+        if (!normalized || !/^(?:p[0-9a-f]+\.)?[0-9a-f-]+$/i.test(normalized)) {
+            return { ...session.debug, message: `Invalid GDB thread id "${threadId}".` };
+        }
+        const reply = await session.gdb.command(`Hg${normalized}`);
+        if (reply !== 'OK') {
+            return { ...session.debug, message: `QEMU rejected CPU/thread selection ${normalized}: ${reply}` };
+        }
+        session.selectedThreadId = normalized;
+        const rip = await this.readRegister(session.gdb, 16);
+        const source = this.resolveRuntimeSourceLocation(session, rip);
+        session.debug = {
+            ...session.debug,
+            sourcePath: source?.sourcePath,
+            line: source?.line,
+            selectedThreadId: normalized,
+            message: `Selected CPU/thread ${normalized}${source ? ` at ${path.basename(source.sourcePath)}:${source.line}` : ''}.`
+        };
+        await this.populatePausedDebugData(session, rip);
+        return session.debug!;
+    }
+
     async evaluateExpression(sessionId: string, expression: string): Promise<NovaOrynExpressionResult> {
         const session = this.runSessions.get(sessionId);
         const trimmed = expression.trim();
@@ -783,6 +856,237 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             };
         } catch (error) {
             return { success: false, expression, error: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
+    async inspectPageTable(sessionId: string, addressExpression: string): Promise<NovaOrynPageTableInspection> {
+        const session = this.runSessions.get(sessionId);
+        const expression = addressExpression.trim();
+        if (!expression) { return { success: false, expression, error: 'Virtual-address expression is empty.' }; }
+        if (!session || session.mode !== 'debug' || !session.gdb || !session.debug?.active || !session.debug.paused) {
+            return { success: false, expression, error: 'Page tables can be inspected only while a NovaOryn kernel is paused.' };
+        }
+        try {
+            const virtualAddress = BigInt.asUintN(64, await this.evaluateExpressionValue(session, expression));
+            const monitorRegisters = await this.qemuMonitor(session.gdb, 'info registers');
+            const cr3Match = /\bCR3\s*=\s*(?:0x)?([0-9a-fA-F]+)/i.exec(monitorRegisters);
+            if (!cr3Match) {
+                return { success: false, expression, virtualAddress: this.formatAddress(virtualAddress), error: 'QEMU did not expose CR3 through its monitor.' };
+            }
+            const cr3 = BigInt(`0x${cr3Match[1]}`) & 0x000ffffffffff000n;
+            const indexes = [
+                Number((virtualAddress >> 39n) & 0x1ffn),
+                Number((virtualAddress >> 30n) & 0x1ffn),
+                Number((virtualAddress >> 21n) & 0x1ffn),
+                Number((virtualAddress >> 12n) & 0x1ffn)
+            ];
+            const levels: Array<'PML4' | 'PDPT' | 'PD' | 'PT'> = ['PML4', 'PDPT', 'PD', 'PT'];
+            const entries: NovaOrynPageTableEntry[] = [];
+            let table = cr3;
+            let physicalAddress: bigint | undefined;
+            let pageSize = '';
+            for (let depth = 0; depth < 4; depth++) {
+                const index = indexes[depth];
+                const entryPhysicalAddress = table + BigInt(index * 8);
+                const value = await this.readPhysicalU64(session.gdb, entryPhysicalAddress);
+                const present = (value & 1n) !== 0n;
+                const largePage = depth >= 1 && depth <= 2 && (value & (1n << 7n)) !== 0n;
+                let target: bigint | undefined;
+                if (present) {
+                    if (depth === 1 && largePage) target = value & 0x000fffffc0000000n;
+                    else if (depth === 2 && largePage) target = value & 0x000fffffffe00000n;
+                    else target = value & 0x000ffffffffff000n;
+                }
+                entries.push({
+                    level: levels[depth], index,
+                    entryPhysicalAddress: this.formatAddress(entryPhysicalAddress),
+                    entryValue: this.formatAddress(value),
+                    present,
+                    writable: (value & (1n << 1n)) !== 0n,
+                    user: (value & (1n << 2n)) !== 0n,
+                    writeThrough: (value & (1n << 3n)) !== 0n,
+                    cacheDisable: (value & (1n << 4n)) !== 0n,
+                    accessed: (value & (1n << 5n)) !== 0n,
+                    dirty: depth === 3 || largePage ? (value & (1n << 6n)) !== 0n : false,
+                    largePage,
+                    global: depth === 3 || largePage ? (value & (1n << 8n)) !== 0n : false,
+                    noExecute: (value & (1n << 63n)) !== 0n,
+                    targetPhysicalAddress: target !== undefined ? this.formatAddress(target) : undefined
+                });
+                if (!present || target === undefined) { break; }
+                if (depth === 1 && largePage) {
+                    physicalAddress = target + (virtualAddress & ((1n << 30n) - 1n));
+                    pageSize = '1 GiB';
+                    break;
+                }
+                if (depth === 2 && largePage) {
+                    physicalAddress = target + (virtualAddress & ((1n << 21n) - 1n));
+                    pageSize = '2 MiB';
+                    break;
+                }
+                if (depth === 3) {
+                    physicalAddress = target + (virtualAddress & 0xfffn);
+                    pageSize = '4 KiB';
+                    break;
+                }
+                table = target;
+            }
+            return {
+                success: physicalAddress !== undefined,
+                expression,
+                virtualAddress: this.formatAddress(virtualAddress),
+                cr3: this.formatAddress(cr3),
+                pageSize: physicalAddress !== undefined ? pageSize : undefined,
+                physicalAddress: physicalAddress !== undefined ? this.formatAddress(physicalAddress) : undefined,
+                entries,
+                error: physicalAddress === undefined ? 'The virtual address is not present in the active x64 page tables.' : undefined
+            };
+        } catch (error) {
+            return { success: false, expression, error: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
+    async inspectHeap(sessionId: string): Promise<NovaOrynHeapSnapshot> {
+        const session = this.runSessions.get(sessionId);
+        if (!session || session.mode !== 'debug' || !session.gdb || !session.debug?.active || !session.debug.paused) {
+            return { success: false, error: 'Kernel heap state can be inspected only while a NovaOryn kernel is paused.' };
+        }
+        try {
+            await this.ensureNativeGlobalSymbols(session);
+            const stateSymbol = this.findHeapGlobal(session, '_state');
+            if (!stateSymbol || session.relocationDelta === undefined) {
+                return { success: false, error: 'NativeAOT did not expose the KernelHeap._state global in MinimalKernel.pdb/map, so heap blocks cannot be inspected in this build.' };
+            }
+            const stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
+            const stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
+            if (stateBytes.length !== 12800) {
+                return { success: false, error: `Could not read the KernelHeap state table at ${this.formatAddress(stateAddress)}.` };
+            }
+            const blocks: NovaOrynHeapBlock[] = [];
+            let allocatedDerived = 0n;
+            let freeDerived = 0n;
+            let liveDerived = 0;
+            let freeBlocksDerived = 0;
+            for (let index = 0; index < 512; index++) {
+                const start = stateBytes.readBigUInt64LE(index * 8);
+                const length = stateBytes.readBigUInt64LE(4096 + index * 8);
+                const token = stateBytes.readBigUInt64LE(8192 + index * 8);
+                const state = stateBytes[12288 + index];
+                if ((state !== 1 && state !== 2) || length === 0n) { continue; }
+                if (state === 2) { allocatedDerived += length; liveDerived++; }
+                else { freeDerived += length; freeBlocksDerived++; }
+                blocks.push({
+                    index,
+                    state: state === 2 ? 'allocated' : 'free',
+                    address: this.formatAddress(start),
+                    byteCount: this.safeNumber(length),
+                    token: state === 2 ? `0x${token.toString(16)}` : undefined
+                });
+            }
+            const readGlobalU64 = async (suffix: string): Promise<bigint | undefined> => {
+                const symbol = this.findHeapGlobal(session, suffix);
+                if (!symbol) return undefined;
+                return this.readU64(session.gdb!, symbol.linkedAddress + session.relocationDelta!);
+            };
+            const readGlobalU32 = async (suffix: string): Promise<number | undefined> => {
+                const symbol = this.findHeapGlobal(session, suffix);
+                if (!symbol) return undefined;
+                const bytes = await this.readMemory(session.gdb!, symbol.linkedAddress + session.relocationDelta!, 4);
+                return bytes.length === 4 ? bytes.readUInt32LE(0) : undefined;
+            };
+            const committed = await readGlobalU64('_committed');
+            const allocated = await readGlobalU64('_allocated');
+            const peak = await readGlobalU64('_peak');
+            const live = await readGlobalU32('_live');
+            const initializedSymbol = this.findHeapGlobal(session, '_initialized');
+            let initialized: boolean | undefined;
+            if (initializedSymbol) {
+                const byte = await this.readMemory(session.gdb, initializedSymbol.linkedAddress + session.relocationDelta, 1);
+                if (byte.length === 1) initialized = byte[0] !== 0;
+            }
+            return {
+                success: true,
+                initialized: initialized ?? blocks.length > 0,
+                committedBytes: this.safeNumber(committed ?? (allocatedDerived + freeDerived)),
+                allocatedBytes: this.safeNumber(allocated ?? allocatedDerived),
+                freeBytes: this.safeNumber(freeDerived),
+                peakAllocatedBytes: this.safeNumber(peak ?? allocatedDerived),
+                liveAllocations: live ?? liveDerived,
+                freeBlocks: freeBlocksDerived,
+                blocks,
+                message: `KernelHeap metadata read directly from NativeAOT globals (${blocks.length} active/free block record(s)).`
+            };
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
+    async captureCrashDump(sessionId: string, reason = 'manual debugger capture'): Promise<NovaOrynCrashDumpResult> {
+        const session = this.runSessions.get(sessionId);
+        if (!session || session.mode !== 'debug' || !session.gdb || !session.debug?.active || !session.debug.paused) {
+            return { success: false, error: 'A crash/debug dump can be captured only while the NovaOryn kernel is paused.' };
+        }
+        try {
+            const rip = session.debug.registers?.find(r => r.name === 'rip')?.value ?? 'rip';
+            const rsp = session.debug.registers?.find(r => r.name === 'rsp')?.value ?? 'rsp';
+            const pageTable = await this.inspectPageTable(sessionId, rip);
+            const heap = await this.inspectHeap(sessionId);
+            const stackMemory = await this.readMemoryRange(sessionId, rsp, 512);
+            const codeMemory = await this.readMemoryRange(sessionId, rip, 128);
+            const createdUtc = new Date().toISOString();
+            const dumpRoot = path.join(session.projectRoot, '.novaoryn', 'crash-dumps');
+            await fs.mkdir(dumpRoot, { recursive: true });
+            const stamp = createdUtc.replace(/[:.]/g, '-');
+            const dumpPath = path.join(dumpRoot, `NovaOryn-${stamp}.nodump.json`);
+            const payload = {
+                schemaVersion: 1,
+                product: 'NovaOryn IDE',
+                ideVersion: NOVAORYN_IDE_VERSION,
+                createdUtc,
+                reason,
+                projectRoot: session.projectRoot,
+                debugState: session.debug,
+                pageTable,
+                heap,
+                memory: { stack: stackMemory, code: codeMemory }
+            };
+            await fs.writeFile(dumpPath, JSON.stringify(payload, null, 2), 'utf8');
+            const dump: NovaOrynCrashDumpSummary = { path: dumpPath, createdUtc, reason, sourcePath: session.debug.sourcePath, line: session.debug.line };
+            session.output += `[ OK ] NovaOryn crash/debug dump captured: ${dumpPath}\r\n`;
+            return { success: true, dump, state: { ...session.debug }, pageTable, heap, memory: { stack: stackMemory, code: codeMemory } };
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
+    async listCrashDumps(projectPath: string): Promise<NovaOrynCrashDumpSummary[]> {
+        const projectRoot = path.resolve(projectPath);
+        const dumpRoot = path.join(projectRoot, '.novaoryn', 'crash-dumps');
+        try {
+            const names = (await fs.readdir(dumpRoot)).filter(name => name.endsWith('.nodump.json')).sort().reverse();
+            const result: NovaOrynCrashDumpSummary[] = [];
+            for (const name of names.slice(0, 100)) {
+                try {
+                    const file = path.join(dumpRoot, name);
+                    const parsed = JSON.parse(await fs.readFile(file, 'utf8')) as any;
+                    result.push({ path: file, createdUtc: String(parsed.createdUtc ?? ''), reason: String(parsed.reason ?? 'crash/debug dump'), sourcePath: parsed.debugState?.sourcePath, line: parsed.debugState?.line });
+                } catch { }
+            }
+            return result;
+        } catch { return []; }
+    }
+
+    async loadCrashDump(dumpPath: string): Promise<NovaOrynCrashDumpResult> {
+        try {
+            const resolved = path.resolve(dumpPath);
+            if (!resolved.toLowerCase().endsWith('.nodump.json')) return { success: false, error: 'NovaOryn crash dumps must use the .nodump.json format.' };
+            const parsed = JSON.parse(await fs.readFile(resolved, 'utf8')) as any;
+            if (parsed.schemaVersion !== 1 || !parsed.debugState) return { success: false, error: 'The file is not a supported NovaOryn crash dump.' };
+            const state: NovaOrynDebugState = { ...parsed.debugState, active: true, paused: true, message: `Offline crash dump: ${parsed.reason ?? 'captured debugger state'}` };
+            const dump: NovaOrynCrashDumpSummary = { path: resolved, createdUtc: String(parsed.createdUtc ?? ''), reason: String(parsed.reason ?? 'crash/debug dump'), sourcePath: state.sourcePath, line: state.line };
+            return { success: true, dump, state, pageTable: parsed.pageTable, heap: parsed.heap, memory: parsed.memory };
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     }
 
@@ -1096,6 +1400,8 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     }
 
     protected async handleGdbStop(session: RunSession, packet: string): Promise<void> {
+        const stoppedThread = /(?:^|;)thread:([^;]+)/i.exec(packet)?.[1];
+        if (stoppedThread) { session.selectedThreadId = stoppedThread; }
         if (session.preparingAnchor) {
             session.anchorStopResolve?.();
             return;
@@ -1131,6 +1437,8 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                         message: `CPU exception breakpoint: ${name} (vector ${vector})${location ? ` at ${path.basename(location.sourcePath)}:${location.line}` : ` at RIP 0x${faultRip.toString(16)}`}.`
                     };
                     await this.populatePausedDebugData(session, faultRip);
+                    const dump = await this.captureCrashDump(session.sessionId, `CPU exception: ${name} (vector ${vector})`);
+                    if (!dump.success) session.output += `[WARN] Automatic exception crash dump failed: ${dump.error}\r\n`;
                     return;
                 }
                 session.gdb.run('c');
@@ -1141,6 +1449,8 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             if (session.panicBreakpointAddress && candidates.some(candidate => candidate === session.panicBreakpointAddress)) {
                 session.debug = { ...session.debug, paused: true, exceptionName: 'Kernel fatal/panic stop', message: 'Kernel fatal/panic breakpoint reached before the processor halt loop.' };
                 await this.populatePausedDebugData(session, rip);
+                const dump = await this.captureCrashDump(session.sessionId, 'Kernel fatal/panic stop');
+                if (!dump.success) session.output += `[WARN] Automatic panic crash dump failed: ${dump.error}\r\n`;
                 return;
             }
 
@@ -1425,11 +1735,12 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
 
     protected async populatePausedDebugData(session: RunSession, rip: bigint): Promise<void> {
         if (!session.gdb || !session.debug) { return; }
+        const executionContexts = await this.readExecutionContexts(session);
         const registers = await this.readRegisterSet(session.gdb);
         const registerMap = new Map(registers.map(item => [item.name, this.parseAddress(item.value)]));
         const rbp = registerMap.get('rbp') ?? 0n;
         const rsp = registerMap.get('rsp') ?? 0n;
-        const callStack = await this.readCallStack(session, rip, rbp, rsp);
+        const callStack = await this.readCallStack(session, rip, rbp, rsp, registerMap);
         const namedVariables = await this.readNamedNativeVariables(session, rip);
         const locals = namedVariables.length > 0 ? namedVariables : await this.readFrameSlots(session.gdb, rbp, rsp);
         const disassembly = await this.buildDisassembly(session, rip);
@@ -1437,12 +1748,62 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             ...session.debug,
             registers,
             callStack,
+            executionContexts,
+            selectedThreadId: session.selectedThreadId,
             locals,
             disassembly,
             localsMessage: namedVariables.length > 0
                 ? (session.nativeVariablesMessage ?? 'Named C# arguments/locals resolved from NativeAOT CodeView/PDB variable records.')
                 : (session.nativeVariablesMessage ?? 'No active named NativeAOT variable records were available at this instruction; showing native frame/stack slots instead.')
         };
+    }
+
+    protected resolveRuntimeSourceLocation(session: RunSession, runtimeAddress: bigint): NativeSourceLine | undefined {
+        if (session.relocationDelta === undefined || !session.nativeDebugMap) { return undefined; }
+        return this.resolveSourceLocation(session.nativeDebugMap, runtimeAddress - session.relocationDelta);
+    }
+
+    protected async readExecutionContexts(session: RunSession): Promise<NovaOrynDebugExecutionContext[]> {
+        if (!session.gdb) { return []; }
+        const ids: string[] = [];
+        try {
+            let reply = await session.gdb.command('qfThreadInfo');
+            while (reply.startsWith('m')) {
+                ids.push(...reply.slice(1).split(',').map(item => item.trim()).filter(Boolean));
+                reply = await session.gdb.command('qsThreadInfo');
+            }
+        } catch { }
+        let current = session.selectedThreadId;
+        if (!current) {
+            try {
+                const currentReply = await session.gdb.command('qC');
+                if (currentReply.startsWith('QC')) { current = currentReply.slice(2); }
+            } catch { }
+        }
+        if (ids.length === 0 && current) { ids.push(current); }
+        const contexts: NovaOrynDebugExecutionContext[] = [];
+        for (let index = 0; index < ids.length; index++) {
+            const id = ids[index];
+            let name = `CPU ${index} / thread ${id}`;
+            try {
+                const extra = await session.gdb.command(`qThreadExtraInfo,${id}`);
+                if (/^[0-9a-f]+$/i.test(extra) && extra.length % 2 === 0) {
+                    const decoded = Buffer.from(extra, 'hex').toString('utf8').replace(/\0/g, '').trim();
+                    if (decoded) { name = decoded; }
+                }
+            } catch { }
+            const match = /^p([0-9a-f]+)\.([0-9a-f]+)$/i.exec(id);
+            contexts.push({
+                id,
+                threadId: match ? match[2] : id,
+                processId: match ? match[1] : undefined,
+                cpuIndex: index,
+                name,
+                current: !!current && id.toLowerCase() === current.toLowerCase()
+            });
+        }
+        if (!session.selectedThreadId && current) { session.selectedThreadId = current; }
+        return contexts;
     }
 
     protected async readRegisterSet(gdb: GdbRspClient): Promise<NovaOrynDebugRegister[]> {
@@ -1455,56 +1816,211 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         return values;
     }
 
-    protected async readCallStack(session: RunSession, rip: bigint, initialRbp: bigint, rsp: bigint): Promise<NovaOrynDebugFrame[]> {
+    protected async readCallStack(session: RunSession, rip: bigint, initialRbp: bigint, rsp: bigint, registerMap: Map<string, bigint>): Promise<NovaOrynDebugFrame[]> {
         const frames: NovaOrynDebugFrame[] = [];
-        const addFrame = (address: bigint, index: number) => {
-            let location: NativeSourceLine | undefined;
-            if (session.relocationDelta !== undefined && session.nativeDebugMap) {
-                const linked = address - session.relocationDelta;
-                location = this.resolveSourceLocation(session.nativeDebugMap, linked);
-            }
+        const addFrame = (address: bigint, index: number, unwoundBy: 'x64-unwind' | 'leaf') => {
+            const location = this.resolveRuntimeSourceLocation(session, address);
             frames.push({
                 index,
                 address: `0x${address.toString(16)}`,
-                label: location ? `${path.basename(location.sourcePath)}:${location.line}` : `0x${address.toString(16)}`,
+                label: location ? `${path.basename(location.sourcePath)}:${location.line}` : `native 0x${address.toString(16)}`,
                 sourcePath: location?.sourcePath,
-                line: location?.line
+                line: location?.line,
+                kind: location ? 'managed' : 'native',
+                unwoundBy
             });
         };
-        addFrame(rip, 0);
-        if (!session.gdb) { return frames; }
-        let rbp = initialRbp;
-        const visited = new Set<string>();
-        for (let index = 1; index < 24 && rbp !== 0n; index++) {
-            const key = rbp.toString(16);
-            if (visited.has(key)) { break; }
-            visited.add(key);
-            const previousRbp = await this.readU64(session.gdb, rbp);
-            const returnAddress = await this.readU64(session.gdb, rbp + 8n);
-            if (returnAddress === 0n) { break; }
-            addFrame(returnAddress, index);
-            if (previousRbp <= rbp || previousRbp - rbp > 0x1000000n) { break; }
-            rbp = previousRbp;
+        addFrame(rip, 0, 'x64-unwind');
+        if (!session.gdb || rsp === 0n || session.relocationDelta === undefined) { return frames; }
+
+        const table = await this.ensurePeUnwindTable(session);
+        if (!table) {
+            // Do not fall back to scanning arbitrary stack words: that creates false frames.
+            return frames;
         }
 
-        // NativeAOT may use RBP as a general-purpose register even in Debug builds.
-        // If a conventional frame chain was unavailable, conservatively scan a small
-        // portion of the current stack for return addresses that map to known source.
-        if (frames.length === 1 && rsp !== 0n && session.relocationDelta !== undefined && session.nativeDebugMap) {
-            const stack = await this.readMemory(session.gdb, rsp, 0x100);
-            for (let offset = 0; offset + 8 <= stack.length && frames.length < 16; offset += 8) {
-                let candidate = 0n;
-                for (let i = 7; i >= 0; i--) { candidate = (candidate << 8n) | BigInt(stack[offset + i]); }
-                if (candidate === 0n) { continue; }
-                const linkedCandidate = candidate - session.relocationDelta;
-                if (!this.isWithinDebugMap(session.nativeDebugMap, linkedCandidate)) { continue; }
-                const location = this.resolveSourceLocation(session.nativeDebugMap, linkedCandidate);
-                if (!location) { continue; }
-                const duplicate = frames.some(frame => frame.address.toLowerCase() === `0x${candidate.toString(16)}`);
-                if (!duplicate) { addFrame(candidate, frames.length); }
+        const context = new Map(registerMap);
+        context.set('rip', rip);
+        context.set('rsp', rsp);
+        context.set('rbp', initialRbp);
+        const seen = new Set<string>();
+        for (let index = 1; index < 64; index++) {
+            const currentRip = context.get('rip') ?? 0n;
+            let currentRsp = context.get('rsp') ?? 0n;
+            if (currentRip === 0n || currentRsp === 0n) { break; }
+            const signature = `${currentRip.toString(16)}:${currentRsp.toString(16)}`;
+            if (seen.has(signature)) { break; }
+            seen.add(signature);
+
+            const linked = currentRip - session.relocationDelta;
+            const rvaBig = linked - table.imageBase;
+            if (rvaBig < 0n || rvaBig > 0xffffffffn) { break; }
+            const rva = Number(rvaBig);
+            const entry = table.entries.find(item => rva >= item.beginRva && rva < item.endRva);
+            let method: 'x64-unwind' | 'leaf' = 'leaf';
+            if (entry) {
+                method = 'x64-unwind';
+                const nextRsp = await this.applyX64UnwindInfo(session.gdb, table, entry.unwindRva, context);
+                if (nextRsp === undefined) { break; }
+                currentRsp = nextRsp;
             }
+
+            const returnAddress = await this.readU64(session.gdb, currentRsp);
+            if (returnAddress === 0n) { break; }
+            context.set('rip', returnAddress);
+            context.set('rsp', currentRsp + 8n);
+            addFrame(returnAddress, index, method);
         }
         return frames;
+    }
+
+    protected async ensurePeUnwindTable(session: RunSession): Promise<PeUnwindTable | undefined> {
+        if (session.unwindTableLoaded) { return session.unwindTable; }
+        session.unwindTableLoaded = true;
+        try {
+            const image = session.nativeDebugMap?.image ?? path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel', 'MinimalKernel.efi');
+            const bytes = await fs.readFile(image);
+            if (bytes.length < 0x100 || bytes.toString('ascii', 0, 2) !== 'MZ') { return undefined; }
+            const pe = bytes.readUInt32LE(0x3c);
+            if (pe + 0x100 >= bytes.length || bytes.toString('ascii', pe, pe + 4) !== 'PE\0\0') { return undefined; }
+            const sectionCount = bytes.readUInt16LE(pe + 6);
+            const optionalSize = bytes.readUInt16LE(pe + 20);
+            const optional = pe + 24;
+            const magic = bytes.readUInt16LE(optional);
+            if (magic !== 0x20b) { return undefined; }
+            const imageBase = bytes.readBigUInt64LE(optional + 24);
+            const exceptionRva = bytes.readUInt32LE(optional + 112 + 3 * 8);
+            const exceptionSize = bytes.readUInt32LE(optional + 112 + 3 * 8 + 4);
+            const sectionTable = optional + optionalSize;
+            const sections: PeSectionInfo[] = [];
+            for (let i = 0; i < sectionCount; i++) {
+                const o = sectionTable + i * 40;
+                sections.push({
+                    virtualSize: bytes.readUInt32LE(o + 8),
+                    virtualAddress: bytes.readUInt32LE(o + 12),
+                    rawSize: bytes.readUInt32LE(o + 16),
+                    rawOffset: bytes.readUInt32LE(o + 20)
+                });
+            }
+            const rvaToOffset = (rva: number): number | undefined => {
+                for (const section of sections) {
+                    const size = Math.max(section.virtualSize, section.rawSize);
+                    if (rva >= section.virtualAddress && rva < section.virtualAddress + size) {
+                        return section.rawOffset + (rva - section.virtualAddress);
+                    }
+                }
+                return rva < bytes.length ? rva : undefined;
+            };
+            const exceptionOffset = rvaToOffset(exceptionRva);
+            if (exceptionOffset === undefined) { return undefined; }
+            const entries: PeUnwindEntry[] = [];
+            const count = Math.floor(exceptionSize / 12);
+            for (let i = 0; i < count; i++) {
+                const o = exceptionOffset + i * 12;
+                if (o + 12 > bytes.length) { break; }
+                const beginRva = bytes.readUInt32LE(o);
+                const endRva = bytes.readUInt32LE(o + 4);
+                const unwindRva = bytes.readUInt32LE(o + 8);
+                if (beginRva && endRva > beginRva && unwindRva) { entries.push({ beginRva, endRva, unwindRva }); }
+            }
+            entries.sort((a, b) => a.beginRva - b.beginRva);
+            session.unwindTable = { imageBase, bytes, sections, entries };
+            return session.unwindTable;
+        } catch {
+            return undefined;
+        }
+    }
+
+    protected peRvaToOffset(table: PeUnwindTable, rva: number): number | undefined {
+        for (const section of table.sections) {
+            const size = Math.max(section.virtualSize, section.rawSize);
+            if (rva >= section.virtualAddress && rva < section.virtualAddress + size) {
+                const offset = section.rawOffset + (rva - section.virtualAddress);
+                return offset < table.bytes.length ? offset : undefined;
+            }
+        }
+        return rva < table.bytes.length ? rva : undefined;
+    }
+
+    protected x64UnwindRegisterName(index: number): string | undefined {
+        return ['rax','rcx','rdx','rbx','rsp','rbp','rsi','rdi','r8','r9','r10','r11','r12','r13','r14','r15'][index];
+    }
+
+    protected async applyX64UnwindInfo(gdb: GdbRspClient, table: PeUnwindTable, unwindRva: number, context: Map<string, bigint>, depth = 0): Promise<bigint | undefined> {
+        if (depth > 8) { return undefined; }
+        const offset = this.peRvaToOffset(table, unwindRva);
+        if (offset === undefined || offset + 4 > table.bytes.length) { return undefined; }
+        const versionFlags = table.bytes[offset];
+        const flags = versionFlags >> 3;
+        const countCodes = table.bytes[offset + 2];
+        const frameByte = table.bytes[offset + 3];
+        const frameRegisterIndex = frameByte & 0x0f;
+        const frameOffset = (frameByte >> 4) * 16;
+        let virtualRsp = context.get('rsp') ?? 0n;
+        let slot = 0;
+        const codeBase = offset + 4;
+        while (slot < countCodes) {
+            const co = codeBase + slot * 2;
+            if (co + 2 > table.bytes.length) { return undefined; }
+            const opByte = table.bytes[co + 1];
+            const unwindOp = opByte & 0x0f;
+            const opInfo = opByte >> 4;
+            slot++;
+            if (unwindOp === 0) { // UWOP_PUSH_NONVOL
+                const reg = this.x64UnwindRegisterName(opInfo);
+                if (reg) { context.set(reg, await this.readU64(gdb, virtualRsp)); }
+                virtualRsp += 8n;
+            } else if (unwindOp === 1) { // UWOP_ALLOC_LARGE
+                if (opInfo === 0) {
+                    const oo = codeBase + slot * 2;
+                    if (oo + 2 > table.bytes.length) { return undefined; }
+                    virtualRsp += BigInt(table.bytes.readUInt16LE(oo) * 8);
+                    slot += 1;
+                } else {
+                    const oo = codeBase + slot * 2;
+                    if (oo + 4 > table.bytes.length) { return undefined; }
+                    virtualRsp += BigInt(table.bytes.readUInt32LE(oo));
+                    slot += 2;
+                }
+            } else if (unwindOp === 2) { // UWOP_ALLOC_SMALL
+                virtualRsp += BigInt(opInfo * 8 + 8);
+            } else if (unwindOp === 3) { // UWOP_SET_FPREG
+                const reg = this.x64UnwindRegisterName(frameRegisterIndex);
+                const frameValue = reg ? context.get(reg) : undefined;
+                if (frameValue !== undefined) { virtualRsp = frameValue - BigInt(frameOffset); }
+            } else if (unwindOp === 4 || unwindOp === 8) { // SAVE_NONVOL / SAVE_XMM128
+                const oo = codeBase + slot * 2;
+                if (oo + 2 > table.bytes.length) { return undefined; }
+                if (unwindOp === 4) {
+                    const reg = this.x64UnwindRegisterName(opInfo);
+                    if (reg) { context.set(reg, await this.readU64(gdb, virtualRsp + BigInt(table.bytes.readUInt16LE(oo) * 8))); }
+                }
+                slot += 1;
+            } else if (unwindOp === 5 || unwindOp === 9) { // FAR saves
+                const oo = codeBase + slot * 2;
+                if (oo + 4 > table.bytes.length) { return undefined; }
+                if (unwindOp === 5) {
+                    const reg = this.x64UnwindRegisterName(opInfo);
+                    if (reg) { context.set(reg, await this.readU64(gdb, virtualRsp + BigInt(table.bytes.readUInt32LE(oo)))); }
+                }
+                slot += 2;
+            } else if (unwindOp === 10) { // UWOP_PUSH_MACHFRAME
+                virtualRsp += BigInt(opInfo === 0 ? 40 : 48);
+            }
+        }
+        context.set('rsp', virtualRsp);
+
+        // UNW_FLAG_CHAININFO: continue through the chained runtime function's unwind metadata.
+        if ((flags & 0x4) !== 0) {
+            const alignedSlots = (countCodes + 1) & ~1;
+            const chained = codeBase + alignedSlots * 2;
+            if (chained + 12 <= table.bytes.length) {
+                const chainedUnwindRva = table.bytes.readUInt32LE(chained + 8);
+                const chainedRsp = await this.applyX64UnwindInfo(gdb, table, chainedUnwindRva, context, depth + 1);
+                if (chainedRsp !== undefined) { virtualRsp = chainedRsp; }
+            }
+        }
+        return virtualRsp;
     }
 
     protected async readNamedNativeVariables(session: RunSession, rip: bigint): Promise<NovaOrynDebugVariable[]> {
@@ -1726,6 +2242,99 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         let value = 0n;
         for (let i = 7; i >= 0; i--) { value = (value << 8n) | BigInt(bytes[i]); }
         return value;
+    }
+
+    protected formatAddress(value: bigint): string {
+        return `0x${BigInt.asUintN(64, value).toString(16).padStart(16, '0')}`;
+    }
+
+    protected safeNumber(value: bigint): number {
+        const max = BigInt(Number.MAX_SAFE_INTEGER);
+        return Number(value > max ? max : value < 0n ? 0n : value);
+    }
+
+    protected async qemuMonitor(gdb: GdbRspClient, monitorCommand: string): Promise<string> {
+        const encoded = Buffer.from(monitorCommand, 'utf8').toString('hex');
+        const reply = await gdb.command(`qRcmd,${encoded}`);
+        if (/^E[0-9a-f]+$/i.test(reply)) throw new Error(`QEMU monitor rejected "${monitorCommand}": ${reply}`);
+        return reply;
+    }
+
+    protected async readPhysicalU64(gdb: GdbRspClient, physicalAddress: bigint): Promise<bigint> {
+        const output = await this.qemuMonitor(gdb, `xp /1gx 0x${physicalAddress.toString(16)}`);
+        const values = Array.from(output.matchAll(/0x([0-9a-fA-F]{1,16})/g)).map(match => BigInt(`0x${match[1]}`));
+        if (values.length === 0) throw new Error(`QEMU could not read physical memory at ${this.formatAddress(physicalAddress)}.`);
+        // HMP prints the requested address followed by the value. If both are prefixed with 0x,
+        // the last 64-bit value is the memory contents.
+        return values[values.length - 1];
+    }
+
+    protected async readMemoryChunked(gdb: GdbRspClient, address: bigint, length: number, chunkSize = 512): Promise<Buffer> {
+        const parts: Buffer[] = [];
+        let offset = 0;
+        while (offset < length) {
+            const count = Math.min(chunkSize, length - offset);
+            const part = await this.readMemory(gdb, address + BigInt(offset), count);
+            if (part.length !== count) break;
+            parts.push(part);
+            offset += count;
+        }
+        return Buffer.concat(parts);
+    }
+
+    protected async ensureNativeGlobalSymbols(session: RunSession): Promise<void> {
+        if (session.nativeGlobalsLoaded) return;
+        session.nativeGlobalsLoaded = true;
+        session.nativeGlobals = [];
+        const pdb = session.nativeDebugMap?.pdb ?? path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel', 'MinimalKernel.pdb');
+        const image = session.nativeDebugMap?.image ?? path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel', 'MinimalKernel.efi');
+        const pdbutil = path.join(NOVAORYN_SDK_ROOT, '.toolchain', 'LLVM', 'bin', 'llvm-pdbutil.exe');
+        if (await this.exists(pdbutil) && await this.exists(pdb) && await this.exists(image)) {
+            const layout = await this.readPeImageLayout(image);
+            if (layout) {
+                const output = await this.captureTool(pdbutil, ['dump', '--symbols', pdb]);
+                if (output.exitCode === 0) session.nativeGlobals.push(...this.parseNativeGlobalSymbols(output.text, layout));
+            }
+        }
+        // Some NativeAOT toolchain revisions omit static data from CodeView but retain it in the linker map.
+        // Supplement the PDB with any KernelHeap data symbols that can be recognized there.
+        try {
+            const mapText = await fs.readFile(path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel', 'MinimalKernel.map'), 'utf8');
+            for (const suffix of ['_state', '_committed', '_allocated', '_peak', '_live', '_initialized', '_status']) {
+                if (this.findHeapGlobal(session, suffix)) continue;
+                for (const line of mapText.split(/\r?\n/)) {
+                    if (!/KernelHeap/i.test(line) || !line.includes(suffix)) continue;
+                    const values = Array.from(line.matchAll(/(?:0x)?([0-9a-fA-F]{8,16})/g)).map(match => BigInt(`0x${match[1]}`));
+                    const linkedAddress = values.find(value => value >= 0x100000000n);
+                    if (linkedAddress !== undefined) {
+                        session.nativeGlobals.push({ name: `KernelHeap${suffix}`, linkedAddress });
+                        break;
+                    }
+                }
+            }
+        } catch { }
+    }
+
+    protected parseNativeGlobalSymbols(text: string, layout: PeImageLayout): NativeGlobalSymbol[] {
+        const records = text.split(/(?=^\s*\d+\s+\|\s+S_)/m);
+        const result: NativeGlobalSymbol[] = [];
+        for (const record of records) {
+            if (!/^\s*\d+\s+\|\s+S_(?:GDATA32|LDATA32)/m.test(record)) continue;
+            const addr = /addr\s*=\s*([0-9]+):([0-9a-fA-F]+)/i.exec(record);
+            const name = /`([^`]+)`/.exec(record)?.[1];
+            if (!addr || !name) continue;
+            const sectionBase = layout.sections.get(Number.parseInt(addr[1], 10));
+            if (sectionBase === undefined) continue;
+            result.push({ name, linkedAddress: sectionBase + BigInt(`0x${addr[2]}`) });
+        }
+        return result;
+    }
+
+    protected findHeapGlobal(session: RunSession, suffix: string): NativeGlobalSymbol | undefined {
+        const globals = session.nativeGlobals ?? [];
+        const exactish = globals.find(item => /KernelHeap/i.test(item.name) && item.name.toLowerCase().endsWith(suffix.toLowerCase()));
+        if (exactish) return exactish;
+        return globals.find(item => /KernelHeap/i.test(item.name) && item.name.toLowerCase().includes(suffix.toLowerCase()));
     }
 
     protected isWithinDebugMap(debugMap: NativeDebugMap, linkedAddress: bigint): boolean {

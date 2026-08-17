@@ -1,4 +1,4 @@
-NovaOryn IDE 0.1.43 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
+NovaOryn IDE 0.1.46 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
 
 # NovaOryn IDE
 
@@ -15,11 +15,21 @@ The Run/Debug toolbar fixes from 0.1.12 remain in place: the toolbar stays below
 
 NovaOryn IDE is the desktop development environment for the NovaOryn Operating System SDK. It is a custom Eclipse Theia desktop application with NovaOryn-specific project configuration and generation.
 
-## Current release: 0.1.43
+## Current release: 0.1.46
 
-### 0.1.43 Memory viewer and named C# locals/arguments
+### 0.1.46 Page-table/heap inspection and crash-dump debugging
 
-NovaOryn IDE 0.1.43 adds a live **Memory** inspector to NovaOryn Debug. While paused, enter an absolute address or a debugger expression such as `rsp`, `rbp-0x40`, or `rsp+0x20`; the IDE reads guest virtual memory through QEMU's GDB stub and renders address, hex bytes, and ASCII in 16-byte rows. Address/size settings persist, and Memory/Watch refreshes are serialized so the QEMU GDB transport never receives overlapping requests.
+NovaOryn IDE 0.1.46 adds an x64 **Page Tables** inspector that walks the active CR3 through PML4, PDPT, PD and PT entries using QEMU physical-memory reads. It decodes Present/Write/User/NX/Global/large-page flags and resolves the final guest physical address for 4 KiB, 2 MiB and 1 GiB mappings.
+
+The **Kernel Heap** inspector reads the NativeAOT `KernelHeap` metadata directly from the stopped kernel, showing committed, allocated, free and peak bytes together with the first-fit free/live block table and allocation tokens.
+
+The new **Crash Dump Debugging** workflow writes `.nodump.json` captures beneath the OS project's `.novaoryn\crash-dumps` directory. Dumps include debugger state, registers, named locals, x64 unwind call stack, mixed disassembly, page-table translation, heap state, and stack/code memory. Exception and panic stops automatically create a dump, and a saved dump can be reopened in NovaOryn Debug without QEMU running.
+
+## Previous release: 0.1.44
+
+### 0.1.44 Memory viewer and named C# locals/arguments
+
+NovaOryn IDE 0.1.44 adds a live **Memory** inspector to NovaOryn Debug. While paused, enter an absolute address or a debugger expression such as `rsp`, `rbp-0x40`, or `rsp+0x20`; the IDE reads guest virtual memory through QEMU's GDB stub and renders address, hex bytes, and ASCII in 16-byte rows. Address/size settings persist, and Memory/Watch refreshes are serialized so the QEMU GDB transport never receives overlapping requests.
 
 The Locals panel can now consume NativeAOT **CodeView variable live ranges** from `MinimalKernel.pdb` using the bundled LLVM `llvm-pdbutil`. Supported register, register-relative, and frame-pointer-relative locations are resolved at the current RIP, so C# argument/local names are paired with their current native value and location when the PDB provides that information. If a variable has no live location at the stop, the debugger falls back to native frame slots instead of fabricating data. Named live variables can also be used by Watch/conditional expressions.
 

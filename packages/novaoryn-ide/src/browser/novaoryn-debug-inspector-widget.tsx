@@ -3,11 +3,13 @@ import { inject, injectable, postConstruct } from 'inversify';
 import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
 import { FileUri } from '@theia/core/lib/common/file-uri';
 import { EditorManager } from '@theia/editor/lib/browser';
-import { NovaOrynDebugState, NovaOrynExceptionBreakpointSettings, NovaOrynExpressionResult, NovaOrynMemoryReadResult, NovaOrynProjectService } from '../common/novaoryn-protocol';
+import { NovaOrynCrashDumpResult, NovaOrynDebugState, NovaOrynExceptionBreakpointSettings, NovaOrynExpressionResult, NovaOrynHeapSnapshot, NovaOrynMemoryReadResult, NovaOrynPageTableInspection, NovaOrynProjectService } from '../common/novaoryn-protocol';
 
 const WATCH_STORAGE_KEY = 'novaoryn.ide.watchExpressions';
 const EXCEPTION_STORAGE_KEY = 'novaoryn.ide.exceptionBreakpoints';
 const MEMORY_STORAGE_KEY = 'novaoryn.ide.memoryViewer';
+const PAGE_TABLE_STORAGE_KEY = 'novaoryn.ide.pageTableViewer';
+const CRASH_DUMP_STORAGE_KEY = 'novaoryn.ide.lastCrashDump';
 const DEFAULT_EXCEPTION_VECTORS = [0, 2, 6, 8, 12, 13, 14, 18];
 
 @injectable()
@@ -32,24 +34,32 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
     protected memoryAddressDraft = 'rsp';
     protected memoryLength = 128;
     protected memoryResult: NovaOrynMemoryReadResult | undefined;
+    protected pageTableAddressDraft = 'rip';
+    protected pageTableResult: NovaOrynPageTableInspection | undefined;
+    protected heapResult: NovaOrynHeapSnapshot | undefined;
+    protected crashDumpResult: NovaOrynCrashDumpResult | undefined;
+    protected crashDumpPathDraft = '';
+    protected offlineDump = false;
 
 
     @postConstruct()
     protected init(): void {
         this.id = NovaOrynDebugInspectorWidget.ID;
         this.title.label = NovaOrynDebugInspectorWidget.LABEL;
-        this.title.caption = 'NovaOryn breakpoints, watches, memory, named locals, disassembly, call stack and registers';
+        this.title.caption = 'NovaOryn breakpoints, watches, memory, page tables, heap, crash dumps, CPU/thread/process contexts, x64 unwind call stack, named locals, disassembly and registers';
         this.title.closable = true;
         this.addClass('novaoryn-debug-inspector-widget');
         this.loadWatches();
         this.loadExceptionSettings();
         this.loadMemorySettings();
+        this.loadAdvancedDebugSettings();
         this.update();
     }
 
     setSession(sessionId: string | undefined): void {
         this.sessionId = sessionId;
-        if (!sessionId) {
+        if (sessionId) { this.offlineDump = false; }
+        if (!sessionId && !this.offlineDump) {
             this.watchResults.clear();
             this.memoryResult = undefined;
             this.lastPauseKey = '';
@@ -68,6 +78,12 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
         } else if (!state.paused) {
             this.lastPauseKey = '';
         }
+    }
+
+    protected async selectExecutionContext(threadId: string): Promise<void> {
+        if (!this.sessionId || !this.state.paused) { return; }
+        this.state = await this.projectService.selectExecutionContext(this.sessionId, threadId);
+        this.update();
     }
 
     protected async openFrame(sourcePath: string | undefined, line: number | undefined): Promise<void> {
@@ -133,6 +149,133 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
         this.update();
     }
 
+
+    protected loadAdvancedDebugSettings(): void {
+        try {
+            const page = window.localStorage.getItem(PAGE_TABLE_STORAGE_KEY);
+            if (page?.trim()) this.pageTableAddressDraft = page.trim();
+            const dump = window.localStorage.getItem(CRASH_DUMP_STORAGE_KEY);
+            if (dump?.trim()) this.crashDumpPathDraft = dump.trim();
+        } catch { }
+    }
+
+    protected saveAdvancedDebugSettings(): void {
+        try {
+            window.localStorage.setItem(PAGE_TABLE_STORAGE_KEY, this.pageTableAddressDraft);
+            if (this.crashDumpPathDraft.trim()) window.localStorage.setItem(CRASH_DUMP_STORAGE_KEY, this.crashDumpPathDraft.trim());
+        } catch { }
+    }
+
+    protected async refreshPageTable(): Promise<void> {
+        if (!this.sessionId || !this.state.paused || !this.pageTableAddressDraft.trim()) return;
+        this.saveAdvancedDebugSettings();
+        this.pageTableResult = await this.projectService.inspectPageTable(this.sessionId, this.pageTableAddressDraft.trim());
+        this.update();
+    }
+
+    protected async refreshHeap(): Promise<void> {
+        if (!this.sessionId || !this.state.paused) return;
+        this.heapResult = await this.projectService.inspectHeap(this.sessionId);
+        this.update();
+    }
+
+    protected async captureCrashDump(): Promise<void> {
+        if (!this.sessionId || !this.state.paused) return;
+        this.crashDumpResult = await this.projectService.captureCrashDump(this.sessionId, this.state.exceptionName ? `exception: ${this.state.exceptionName}` : 'manual debugger capture');
+        if (this.crashDumpResult.dump?.path) {
+            this.crashDumpPathDraft = this.crashDumpResult.dump.path;
+            this.saveAdvancedDebugSettings();
+        }
+        this.update();
+    }
+
+    protected async loadCrashDump(): Promise<void> {
+        const path = this.crashDumpPathDraft.trim();
+        if (!path) return;
+        const result = await this.projectService.loadCrashDump(path);
+        this.crashDumpResult = result;
+        if (result.success && result.state) {
+            this.offlineDump = true;
+            this.sessionId = undefined;
+            this.state = result.state;
+            this.pageTableResult = result.pageTable;
+            this.heapResult = result.heap;
+            this.memoryResult = result.memory?.stack;
+            this.saveAdvancedDebugSettings();
+        }
+        this.update();
+    }
+
+    protected renderPageTableSection(): React.ReactNode {
+        const result = this.pageTableResult;
+        return <section>
+            <h3>Page Tables — x64 Translation</h3>
+            <div className='novaoryn-memory-controls'>
+                <input className='theia-input' value={this.pageTableAddressDraft} disabled={!this.state.paused || this.offlineDump}
+                    placeholder='rip, rsp, 0xffff800000001000'
+                    onChange={event => { this.pageTableAddressDraft = event.target.value; this.update(); }}
+                    onKeyDown={event => { if (event.key === 'Enter') void this.refreshPageTable(); }} />
+                <button className='theia-button' disabled={!this.sessionId || !this.state.paused || !this.pageTableAddressDraft.trim()} onClick={() => void this.refreshPageTable()}>Translate</button>
+            </div>
+            <p className='novaoryn-debug-note'>Walks the active CR3 → PML4 → PDPT → PD → PT using QEMU physical-memory reads. Large 1 GiB and 2 MiB pages are recognized.</p>
+            {result && <div className={`novaoryn-debug-value ${result.success ? '' : 'error'}`}>
+                {result.success ? `${result.virtualAddress} → ${result.physicalAddress} (${result.pageSize}), CR3 ${result.cr3}` : result.error}
+            </div>}
+            <div className='novaoryn-page-table'>
+                {(result?.entries ?? []).map(entry => <div className={`novaoryn-page-table-row ${entry.present ? '' : 'not-present'}`} key={`${entry.level}:${entry.index}`}>
+                    <strong>{entry.level}[{entry.index}]</strong>
+                    <code>{entry.entryPhysicalAddress}</code>
+                    <code>{entry.entryValue}</code>
+                    <span>{entry.present ? 'P' : 'NP'} {entry.writable ? 'W' : 'R'} {entry.user ? 'U' : 'S'} {entry.noExecute ? 'NX' : 'X'}{entry.largePage ? ' LARGE' : ''}{entry.global ? ' G' : ''}</span>
+                    <code>{entry.targetPhysicalAddress ?? '—'}</code>
+                </div>)}
+            </div>
+        </section>;
+    }
+
+    protected renderHeapSection(): React.ReactNode {
+        const heap = this.heapResult;
+        return <section>
+            <h3>Kernel Heap</h3>
+            <div className='novaoryn-debug-actions'>
+                <button className='theia-button' disabled={!this.sessionId || !this.state.paused} onClick={() => void this.refreshHeap()}>Refresh Heap</button>
+            </div>
+            <p className='novaoryn-debug-note'>Reads KernelHeap's NativeAOT metadata directly, including committed/allocated/free bytes and the live/free first-fit block table.</p>
+            {heap && !heap.success && <div className='novaoryn-debug-value error'>{heap.error}</div>}
+            {heap?.success && <>
+                <div className='novaoryn-heap-summary'>
+                    <span>Initialized <strong>{heap.initialized ? 'yes' : 'no'}</strong></span>
+                    <span>Committed <strong>{heap.committedBytes?.toLocaleString()} B</strong></span>
+                    <span>Allocated <strong>{heap.allocatedBytes?.toLocaleString()} B</strong></span>
+                    <span>Free <strong>{heap.freeBytes?.toLocaleString()} B</strong></span>
+                    <span>Peak <strong>{heap.peakAllocatedBytes?.toLocaleString()} B</strong></span>
+                    <span>Live <strong>{heap.liveAllocations}</strong></span>
+                </div>
+                <div className='novaoryn-heap-blocks'>
+                    {(heap.blocks ?? []).map(block => <div className={`novaoryn-heap-block ${block.state}`} key={block.index}>
+                        <span>#{block.index} {block.state}</span><code>{block.address}</code><span>{block.byteCount.toLocaleString()} B</span><code>{block.token ?? ''}</code>
+                    </div>)}
+                </div>
+            </>}
+        </section>;
+    }
+
+    protected renderCrashDumpSection(): React.ReactNode {
+        const result = this.crashDumpResult;
+        return <section>
+            <h3>Crash Dump Debugging</h3>
+            <div className='novaoryn-crash-dump-actions'>
+                <button className='theia-button' disabled={!this.sessionId || !this.state.paused} onClick={() => void this.captureCrashDump()}>Capture Dump</button>
+                <input className='theia-input' value={this.crashDumpPathDraft} placeholder='C:\\NovaOrynOSes\\...\\.novaoryn\\crash-dumps\\*.nodump.json'
+                    onChange={event => { this.crashDumpPathDraft = event.target.value; this.update(); }} />
+                <button className='theia-button' disabled={!this.crashDumpPathDraft.trim()} onClick={() => void this.loadCrashDump()}>Open Dump</button>
+            </div>
+            <p className='novaoryn-debug-note'>Captures registers, x64 unwind stack, locals, disassembly, page-table translation, heap metadata, and code/stack memory into the OS project's <code>.novaoryn/crash-dumps</code> folder. Dumps can be reopened with QEMU stopped.</p>
+            {this.offlineDump && result?.dump && <div className='novaoryn-crash-dump-open'><strong>Offline dump:</strong> {result.dump.createdUtc} — {result.dump.reason}<br/><code>{result.dump.path}</code></div>}
+            {result && !result.success && <div className='novaoryn-debug-value error'>{result.error}</div>}
+            {!this.offlineDump && result?.success && result.dump && <div className='novaoryn-crash-dump-open'><strong>Captured:</strong> <code>{result.dump.path}</code></div>}
+        </section>;
+    }
 
     protected loadMemorySettings(): void {
         try {
@@ -289,13 +432,14 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
 
     protected render(): React.ReactNode {
         if (!this.state.active) {
-            return <div className='novaoryn-debug-inspector'><div className='novaoryn-debug-inspector-empty'>Start a NovaOryn Debug session to inspect the kernel.</div>{this.renderExceptionSection()}</div>;
+            return <div className='novaoryn-debug-inspector'><div className='novaoryn-debug-inspector-empty'>Start a NovaOryn Debug session to inspect the kernel, or open a captured dump below.</div>{this.renderExceptionSection()}{this.renderCrashDumpSection()}</div>;
         }
         if (!this.state.paused) {
             return <div className='novaoryn-debug-inspector'>
                 <div className='novaoryn-debug-inspector-empty'>Kernel running. Pause or stop at a breakpoint to inspect state.</div>
                 {this.renderExceptionSection()}
                 {this.renderWatchSection()}
+                {this.renderCrashDumpSection()}
             </div>;
         }
 
@@ -303,6 +447,9 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
             {this.renderExceptionSection()}
             {this.renderWatchSection()}
             {this.renderMemorySection()}
+            {this.renderPageTableSection()}
+            {this.renderHeapSection()}
+            {this.renderCrashDumpSection()}
             <section>
                 <h3>Mixed C# / x64 Disassembly</h3>
                 <p className='novaoryn-debug-note'>Runtime addresses include the EFI relocation. Source labels come from the exact NativeAOT sequence-point map.</p>
@@ -316,7 +463,25 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
                 </div>
             </section>
             <section>
-                <h3>Call Stack</h3>
+                <h3>CPUs / Threads / Process Contexts</h3>
+                <p className='novaoryn-debug-note'>QEMU exposes each virtual CPU as a GDB execution thread. Selecting one switches register, locals, memory-expression and call-stack inspection to that CPU. A process/inferior id is shown when QEMU uses multiprocess thread ids.</p>
+                <div className='novaoryn-debug-table'>
+                    {(this.state.executionContexts ?? []).map(context => <div
+                        className={`novaoryn-debug-row novaoryn-execution-context ${context.current ? 'current' : ''}`}
+                        key={context.id}
+                        title='Inspect this CPU/thread context'
+                        onClick={() => this.selectExecutionContext(context.id)}
+                    >
+                        <span className='novaoryn-debug-name'>{context.cpuIndex !== undefined ? `CPU ${context.cpuIndex}` : 'CPU'}{context.current ? ' • selected' : ''}</span>
+                        <span className='novaoryn-debug-value'>{context.name}</span>
+                        <code className='novaoryn-debug-address'>thread {context.threadId}{context.processId ? ` / process ${context.processId}` : ''}</code>
+                    </div>)}
+                    {(this.state.executionContexts ?? []).length === 0 && <div className='novaoryn-debug-note'>QEMU did not report execution-thread metadata for this stop.</div>}
+                </div>
+            </section>
+            <section>
+                <h3>Call Stack — x64 Unwind</h3>
+                <p className='novaoryn-debug-note'>Frames are reconstructed from the PE/COFF x64 exception/unwind table. Arbitrary stack-word scanning is no longer used.</p>
                 <div className='novaoryn-debug-table'>
                     {(this.state.callStack ?? []).map(frame => <div
                         className={`novaoryn-debug-row ${frame.sourcePath && frame.line ? 'clickable' : ''}`}
@@ -324,7 +489,7 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
                         title={frame.sourcePath && frame.line ? 'Open this stack frame source location' : undefined}
                         onClick={() => this.openFrame(frame.sourcePath, frame.line)}
                     >
-                        <span className='novaoryn-debug-name'>#{frame.index}</span>
+                        <span className='novaoryn-debug-name'>#{frame.index} <small>{frame.kind ?? 'native'} / {frame.unwoundBy ?? 'x64-unwind'}</small></span>
                         <span className='novaoryn-debug-value'>{frame.label}</span>
                         <span className='novaoryn-debug-address'>{frame.address}</span>
                     </div>)}

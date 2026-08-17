@@ -2,7 +2,7 @@
   "name": "@novaoryn/ide-electron",
   "private": true,
   "productName": "NovaOryn IDE",
-  "version": "0.1.43",
+  "version": "0.1.46",
   "main": "lib/backend/electron-main.js",
   "theia": {
     "target": "electron",
@@ -18,6 +18,9 @@
             "height": 540,
             "minDuration": 1200,
             "maxDuration": 30000
+          },
+          "windowOptions": {
+            "icon": "resources/novaoryn-ide.ico"
           }
         },
         "defaultTheme": {
@@ -37,7 +40,7 @@
     }
   },
   "dependencies": {
-    "@novaoryn/ide-extension": "0.1.43",
+    "@novaoryn/ide-extension": "0.1.46",
     "@vscode/windows-ca-certs": "0.3.4",
     "@theia/core": "1.74.0",
     "@theia/editor": "1.74.0",
