@@ -23,7 +23,9 @@
       "llvm-objcopy.exe",
       "llvm-readobj.exe",
       "llvm-nm.exe",
-      "llvm-objdump.exe"
+      "llvm-objdump.exe",
+      "llvm-symbolizer.exe",
+      "llvm-pdbutil.exe"
     ],
     "installDirectory": ".toolchain/LLVM",
     "optionalTools": [

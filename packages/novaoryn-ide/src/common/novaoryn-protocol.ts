@@ -76,6 +76,17 @@ export interface NovaOrynDebugVariable {
     name: string;
     value: string;
     kind: 'local' | 'argument' | 'stack';
+    location?: string;
+    typeName?: string;
+}
+
+export interface NovaOrynMemoryReadResult {
+    success: boolean;
+    expression: string;
+    address?: string;
+    length?: number;
+    bytes?: string;
+    error?: string;
 }
 
 export interface NovaOrynDisassemblyInstruction {
@@ -180,5 +191,6 @@ export interface NovaOrynProjectService {
     toggleBreakpoint(sessionId: string, sourcePath: string, line: number, condition?: string, hitCondition?: string): Promise<NovaOrynBreakpointResult>;
     updateBreakpoint(sessionId: string, breakpoint: NovaOrynBreakpointRequest): Promise<NovaOrynBreakpointResult>;
     evaluateExpression(sessionId: string, expression: string): Promise<NovaOrynExpressionResult>;
+    readMemoryRange(sessionId: string, addressExpression: string, length: number): Promise<NovaOrynMemoryReadResult>;
     configureExceptionBreakpoints(sessionId: string, settings: NovaOrynExceptionBreakpointSettings): Promise<NovaOrynDebugState>;
 }

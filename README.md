@@ -1,4 +1,4 @@
-NovaOryn IDE 0.1.42 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
+NovaOryn IDE 0.1.43 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
 
 # NovaOryn IDE
 
@@ -15,7 +15,15 @@ The Run/Debug toolbar fixes from 0.1.12 remain in place: the toolbar stays below
 
 NovaOryn IDE is the desktop development environment for the NovaOryn Operating System SDK. It is a custom Eclipse Theia desktop application with NovaOryn-specific project configuration and generation.
 
-## Current release: 0.1.42
+## Current release: 0.1.43
+
+### 0.1.43 Memory viewer and named C# locals/arguments
+
+NovaOryn IDE 0.1.43 adds a live **Memory** inspector to NovaOryn Debug. While paused, enter an absolute address or a debugger expression such as `rsp`, `rbp-0x40`, or `rsp+0x20`; the IDE reads guest virtual memory through QEMU's GDB stub and renders address, hex bytes, and ASCII in 16-byte rows. Address/size settings persist, and Memory/Watch refreshes are serialized so the QEMU GDB transport never receives overlapping requests.
+
+The Locals panel can now consume NativeAOT **CodeView variable live ranges** from `MinimalKernel.pdb` using the bundled LLVM `llvm-pdbutil`. Supported register, register-relative, and frame-pointer-relative locations are resolved at the current RIP, so C# argument/local names are paired with their current native value and location when the PDB provides that information. If a variable has no live location at the stop, the debugger falls back to native frame slots instead of fabricating data. Named live variables can also be used by Watch/conditional expressions.
+
+## Previous release: 0.1.42
 
 ### 0.1.42 Mixed disassembly, exception/panic breakpoints and IDE title logo
 

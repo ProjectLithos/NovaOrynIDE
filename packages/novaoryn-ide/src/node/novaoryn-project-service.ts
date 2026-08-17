@@ -21,6 +21,7 @@ import {
     NovaOrynExceptionBreakpointSettings,
     NovaOrynBreakpointRequest,
     NovaOrynExpressionResult,
+    NovaOrynMemoryReadResult,
     NovaOrynBreakpointResult,
     NovaOrynRunOutput,
     NovaOrynRunResult,
@@ -31,7 +32,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.1.42';
+const NOVAORYN_IDE_VERSION = '0.1.43';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -311,7 +312,7 @@ class NovaOrynExpressionParser {
         if (token.toLowerCase() === 'true') { return 1n; }
         if (token.toLowerCase() === 'false') { return 0n; }
         const resolved = await this.resolveIdentifier(token.replace(/^\$/, '').toLowerCase());
-        if (resolved === undefined) { throw new Error(`Unknown identifier "${token}". Current expressions support x64 registers, integer literals, operators and [address] 64-bit memory reads.`); }
+        if (resolved === undefined) { throw new Error(`Unknown identifier "${token}". Current expressions support x64 registers, active named NativeAOT locals/arguments, integer literals, operators and [address] 64-bit memory reads.`); }
         return resolved;
     }
 }
@@ -345,6 +346,24 @@ interface NativeDebugMap {
     entries: NativeSourceLine[];
 }
 
+interface NativeVariableLocation {
+    name: string;
+    kind: 'local' | 'argument';
+    functionStart: bigint;
+    functionEnd: bigint;
+    rangeStart?: bigint;
+    rangeEnd?: bigint;
+    register?: string;
+    baseRegister?: string;
+    offset?: bigint;
+    typeName?: string;
+}
+
+interface PeImageLayout {
+    imageBase: bigint;
+    sections: Map<number, bigint>;
+}
+
 interface StepPlan {
     kind: 'step-into' | 'step-over' | 'step-out';
     sourcePath?: string;
@@ -376,6 +395,8 @@ interface RunSession {
     exceptionBreakpoints: NovaOrynExceptionBreakpointSettings;
     exceptionBreakpointAddress?: bigint;
     panicBreakpointAddress?: bigint;
+    nativeVariables?: NativeVariableLocation[];
+    nativeVariablesMessage?: string;
 }
 
 
@@ -733,6 +754,35 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             };
         } catch (error) {
             return { success: false, expression: trimmed, error: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
+    async readMemoryRange(sessionId: string, addressExpression: string, length: number): Promise<NovaOrynMemoryReadResult> {
+        const session = this.runSessions.get(sessionId);
+        const expression = addressExpression.trim();
+        const boundedLength = Math.max(1, Math.min(1024, Math.trunc(length || 0)));
+        if (!expression) { return { success: false, expression, error: 'Memory address expression is empty.' }; }
+        if (!session || session.mode !== 'debug' || !session.gdb || !session.debug?.active) {
+            return { success: false, expression, error: 'No active NovaOryn debug session.' };
+        }
+        if (!session.debug.paused) {
+            return { success: false, expression, error: 'Memory can be inspected only while the kernel is paused.' };
+        }
+        try {
+            const address = BigInt.asUintN(64, await this.evaluateExpressionValue(session, expression));
+            const bytes = await this.readMemory(session.gdb, address, boundedLength);
+            if (bytes.length !== boundedLength) {
+                return { success: false, expression, address: `0x${address.toString(16)}`, error: `QEMU could not read ${boundedLength} byte(s) at 0x${address.toString(16)}.` };
+            }
+            return {
+                success: true,
+                expression,
+                address: `0x${address.toString(16).padStart(16, '0')}`,
+                length: bytes.length,
+                bytes: bytes.toString('hex')
+            };
+        } catch (error) {
+            return { success: false, expression, error: error instanceof Error ? error.message : String(error) };
         }
     }
 
@@ -1304,16 +1354,44 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             expression,
             async name => {
                 const index = registerIndexes.get(name);
-                if (index === undefined) { return undefined; }
-                const cached = cache.get(name);
-                if (cached !== undefined) { return cached; }
-                const value = await this.readRegister(session.gdb!, index);
-                cache.set(name, value);
-                return value;
+                if (index !== undefined) {
+                    const cached = cache.get(name);
+                    if (cached !== undefined) { return cached; }
+                    const value = await this.readRegister(session.gdb!, index);
+                    cache.set(name, value);
+                    return value;
+                }
+                const named = await this.resolveNamedVariableValue(session, name);
+                if (named !== undefined) { cache.set(name, named); }
+                return named;
             },
             async address => this.readU64(session.gdb!, address)
         );
         return parser.evaluate();
+    }
+
+    protected async resolveNamedVariableValue(session: RunSession, name: string): Promise<bigint | undefined> {
+        if (!session.gdb || session.relocationDelta === undefined) { return undefined; }
+        await this.ensureNativeVariableMap(session);
+        if (!session.nativeVariables?.length) { return undefined; }
+        const rip = await this.readRegister(session.gdb, 16);
+        const linkedRip = rip - session.relocationDelta;
+        const variable = session.nativeVariables.find(item => item.name.toLowerCase() === name.toLowerCase() &&
+            linkedRip >= item.functionStart && linkedRip < item.functionEnd &&
+            (item.rangeStart === undefined || linkedRip >= item.rangeStart) &&
+            (item.rangeEnd === undefined || linkedRip < item.rangeEnd));
+        if (!variable) { return undefined; }
+        if (variable.register) {
+            const index = this.x64RegisterIndex(variable.register);
+            return index === undefined ? undefined : this.readRegister(session.gdb, index);
+        }
+        if (variable.baseRegister) {
+            const index = this.x64RegisterIndex(variable.baseRegister);
+            if (index === undefined) { return undefined; }
+            const base = await this.readRegister(session.gdb, index);
+            return this.readU64(session.gdb, BigInt.asUintN(64, base + (variable.offset ?? 0n)));
+        }
+        return undefined;
     }
 
     protected normalizeSourcePath(sourcePath: string): string {
@@ -1352,7 +1430,8 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         const rbp = registerMap.get('rbp') ?? 0n;
         const rsp = registerMap.get('rsp') ?? 0n;
         const callStack = await this.readCallStack(session, rip, rbp, rsp);
-        const locals = await this.readFrameSlots(session.gdb, rbp, rsp);
+        const namedVariables = await this.readNamedNativeVariables(session, rip);
+        const locals = namedVariables.length > 0 ? namedVariables : await this.readFrameSlots(session.gdb, rbp, rsp);
         const disassembly = await this.buildDisassembly(session, rip);
         session.debug = {
             ...session.debug,
@@ -1360,7 +1439,9 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             callStack,
             locals,
             disassembly,
-            localsMessage: 'NativeAOT C# local-variable names are not exported by the current NovaOryn source map yet; Locals shows the current native frame/stack slots while Registers shows the complete x64 integer register set.'
+            localsMessage: namedVariables.length > 0
+                ? (session.nativeVariablesMessage ?? 'Named C# arguments/locals resolved from NativeAOT CodeView/PDB variable records.')
+                : (session.nativeVariablesMessage ?? 'No active named NativeAOT variable records were available at this instruction; showing native frame/stack slots instead.')
         };
     }
 
@@ -1424,6 +1505,181 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             }
         }
         return frames;
+    }
+
+    protected async readNamedNativeVariables(session: RunSession, rip: bigint): Promise<NovaOrynDebugVariable[]> {
+        if (!session.gdb || session.relocationDelta === undefined) { return []; }
+        await this.ensureNativeVariableMap(session);
+        if (!session.nativeVariables || session.nativeVariables.length === 0) { return []; }
+        const linkedRip = rip - session.relocationDelta;
+        const active = session.nativeVariables.filter(variable =>
+            linkedRip >= variable.functionStart && linkedRip < variable.functionEnd &&
+            (variable.rangeStart === undefined || linkedRip >= variable.rangeStart) &&
+            (variable.rangeEnd === undefined || linkedRip < variable.rangeEnd));
+        const result: NovaOrynDebugVariable[] = [];
+        const seen = new Set<string>();
+        for (const variable of active) {
+            const key = `${variable.kind}:${variable.name}`;
+            if (seen.has(key)) { continue; }
+            seen.add(key);
+            let value: bigint | undefined;
+            let location = '';
+            if (variable.register) {
+                const registerIndex = this.x64RegisterIndex(variable.register);
+                if (registerIndex !== undefined) {
+                    value = await this.readRegister(session.gdb, registerIndex);
+                    location = variable.register.toLowerCase();
+                }
+            } else if (variable.baseRegister) {
+                const registerIndex = this.x64RegisterIndex(variable.baseRegister);
+                if (registerIndex !== undefined) {
+                    const base = await this.readRegister(session.gdb, registerIndex);
+                    const address = BigInt.asUintN(64, base + (variable.offset ?? 0n));
+                    value = await this.readU64(session.gdb, address);
+                    const signedOffset = variable.offset ?? 0n;
+                    location = `[${variable.baseRegister.toLowerCase()}${signedOffset < 0n ? `-0x${(-signedOffset).toString(16)}` : `+0x${signedOffset.toString(16)}`}]`;
+                }
+            }
+            result.push({
+                name: variable.name,
+                kind: variable.kind,
+                value: value === undefined ? '<location unavailable>' : `0x${BigInt.asUintN(64, value).toString(16).padStart(16, '0')}`,
+                location: location || undefined,
+                typeName: variable.typeName
+            });
+        }
+        return result;
+    }
+
+    protected async ensureNativeVariableMap(session: RunSession): Promise<void> {
+        if (session.nativeVariables !== undefined) { return; }
+        session.nativeVariables = [];
+        const pdb = session.nativeDebugMap?.pdb ?? path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel', 'MinimalKernel.pdb');
+        const image = session.nativeDebugMap?.image ?? path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel', 'MinimalKernel.efi');
+        const pdbutil = path.join(NOVAORYN_SDK_ROOT, '.toolchain', 'LLVM', 'bin', 'llvm-pdbutil.exe');
+        if (!(await this.exists(pdbutil))) {
+            session.nativeVariablesMessage = 'llvm-pdbutil is not installed in the bundled LLVM toolchain, so named NativeAOT locals cannot be resolved; native frame slots are shown instead.';
+            return;
+        }
+        if (!(await this.exists(pdb)) || !(await this.exists(image))) {
+            session.nativeVariablesMessage = 'Native debug PDB/EFI image is unavailable, so named locals cannot be resolved.';
+            return;
+        }
+        const layout = await this.readPeImageLayout(image);
+        if (!layout) {
+            session.nativeVariablesMessage = 'The linked EFI image layout could not be read for NativeAOT local-variable address resolution.';
+            return;
+        }
+        const output = await this.captureTool(pdbutil, ['dump', '--symbols', pdb]);
+        if (output.exitCode !== 0) {
+            session.nativeVariablesMessage = `llvm-pdbutil could not read NativeAOT variable records: ${output.text.trim().slice(0, 240)}`;
+            return;
+        }
+        session.nativeVariables = this.parseNativeVariableRecords(output.text, layout);
+        session.nativeVariablesMessage = session.nativeVariables.length > 0
+            ? `Named NativeAOT locals/arguments enabled (${session.nativeVariables.length} live-range record(s) loaded from MinimalKernel.pdb).`
+            : 'MinimalKernel.pdb contains source lines but no usable NativeAOT local-variable live-range records; native frame slots are shown instead.';
+    }
+
+    protected async readPeImageLayout(image: string): Promise<PeImageLayout | undefined> {
+        try {
+            const bytes = await fs.readFile(image);
+            if (bytes.length < 0x100 || bytes.readUInt16LE(0) !== 0x5a4d) { return undefined; }
+            const pe = bytes.readUInt32LE(0x3c);
+            if (pe + 0x108 > bytes.length || bytes.readUInt32LE(pe) !== 0x00004550) { return undefined; }
+            const sectionCount = bytes.readUInt16LE(pe + 6);
+            const optionalSize = bytes.readUInt16LE(pe + 20);
+            const optional = pe + 24;
+            if (bytes.readUInt16LE(optional) !== 0x20b) { return undefined; }
+            const imageBase = bytes.readBigUInt64LE(optional + 24);
+            const sections = new Map<number, bigint>();
+            const sectionTable = optional + optionalSize;
+            for (let index = 0; index < sectionCount; index++) {
+                const offset = sectionTable + index * 40;
+                if (offset + 40 > bytes.length) { break; }
+                sections.set(index + 1, imageBase + BigInt(bytes.readUInt32LE(offset + 12)));
+            }
+            return { imageBase, sections };
+        } catch { return undefined; }
+    }
+
+    protected parseNativeVariableRecords(text: string, layout: PeImageLayout): NativeVariableLocation[] {
+        const records = text.split(/(?=^\s*\d+\s+\|\s+S_)/m);
+        const result: NativeVariableLocation[] = [];
+        let functionStart: bigint | undefined;
+        let functionEnd: bigint | undefined;
+        let currentLocal: { name: string; kind: 'local' | 'argument'; typeName?: string } | undefined;
+        let frameRegister = 'rbp';
+        const linkedAddress = (sectionText: string, offsetText: string): bigint | undefined => {
+            const section = Number.parseInt(sectionText, 10);
+            const base = layout.sections.get(section);
+            if (base === undefined) { return undefined; }
+            return base + BigInt(`0x${offsetText}`);
+        };
+        for (const record of records) {
+            const kindMatch = record.match(/^\s*\d+\s+\|\s+(S_[A-Z0-9_]+)/m);
+            const kind = kindMatch?.[1] ?? '';
+            if (kind === 'S_GPROC32' || kind === 'S_LPROC32' || kind === 'S_GPROC32_ID' || kind === 'S_LPROC32_ID') {
+                const proc = record.match(/addr\s*=\s*([0-9]+):([0-9a-fA-F]+),\s*code size\s*=\s*(\d+)/i);
+                functionStart = proc ? linkedAddress(proc[1], proc[2]) : undefined;
+                functionEnd = functionStart !== undefined && proc ? functionStart + BigInt(proc[3]) : undefined;
+                frameRegister = 'rbp';
+                currentLocal = undefined;
+                continue;
+            }
+            if (kind === 'S_END') {
+                currentLocal = undefined;
+                continue;
+            }
+            if (kind === 'S_FRAMEPROC') {
+                const fp = record.match(/(?:local|param) fp reg\s*=\s*([A-Za-z0-9]+)/i);
+                if (fp) { frameRegister = fp[1].toLowerCase(); }
+                continue;
+            }
+            if (kind === 'S_LOCAL') {
+                const name = record.match(/`([^`]+)`/)?.[1];
+                if (!name) { currentLocal = undefined; continue; }
+                const flagsText = record.match(/flags\s*=\s*([^\r\n]+)/i)?.[1] ?? '';
+                const typeName = record.match(/type\s*=\s*`([^`]+)`/i)?.[1];
+                currentLocal = { name, kind: /param/i.test(flagsText) ? 'argument' : 'local', typeName };
+                continue;
+            }
+            if (!currentLocal || functionStart === undefined || functionEnd === undefined) { continue; }
+            const range = record.match(/range\s*=\s*\[([0-9]+):([0-9a-fA-F]+),\s*\+?\s*(?:0x)?([0-9a-fA-F]+)\)/i);
+            const rangeStart = range ? linkedAddress(range[1], range[2]) : undefined;
+            const rangeLength = range ? BigInt(`0x${range[3]}`) : undefined;
+            const rangeEnd = rangeStart !== undefined && rangeLength !== undefined ? rangeStart + rangeLength : undefined;
+            if (kind === 'S_DEFRANGE_REGISTER' || kind === 'S_DEFRANGE_SUBFIELD_REGISTER') {
+                const register = record.match(/register\s*=\s*([A-Za-z][A-Za-z0-9]*)/i)?.[1];
+                if (register) result.push({ ...currentLocal, functionStart, functionEnd, rangeStart, rangeEnd, register: register.toLowerCase() });
+                continue;
+            }
+            if (kind === 'S_DEFRANGE_REGISTER_REL') {
+                const register = record.match(/register\s*=\s*([A-Za-z][A-Za-z0-9]*)/i)?.[1];
+                const offsetText = record.match(/offset\s*=\s*(-?(?:0x)?[0-9a-fA-F]+)/i)?.[1];
+                if (register && offsetText) result.push({ ...currentLocal, functionStart, functionEnd, rangeStart, rangeEnd, baseRegister: register.toLowerCase(), offset: this.parseSignedInteger(offsetText) });
+                continue;
+            }
+            if (kind === 'S_DEFRANGE_FRAMEPOINTER_REL' || kind === 'S_DEFRANGE_FRAMEPOINTER_REL_FULL_SCOPE') {
+                const offsetText = record.match(/offset\s*=\s*(-?(?:0x)?[0-9a-fA-F]+)/i)?.[1];
+                if (offsetText) result.push({ ...currentLocal, functionStart, functionEnd, rangeStart, rangeEnd, baseRegister: frameRegister, offset: this.parseSignedInteger(offsetText) });
+            }
+        }
+        return result;
+    }
+
+    protected parseSignedInteger(text: string): bigint {
+        const trimmed = text.trim().toLowerCase();
+        const negative = trimmed.startsWith('-');
+        const body = negative ? trimmed.slice(1) : trimmed;
+        const value = body.startsWith('0x') ? BigInt(body) : /^\d+$/.test(body) ? BigInt(body) : BigInt(`0x${body}`);
+        return negative ? -value : value;
+    }
+
+    protected x64RegisterIndex(name: string): number | undefined {
+        const names = ['rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp','r8','r9','r10','r11','r12','r13','r14','r15','rip','rflags'];
+        const index = names.indexOf(name.toLowerCase().replace(/^cv_/, ''));
+        return index >= 0 ? index : undefined;
     }
 
     protected async readFrameSlots(gdb: GdbRspClient, rbp: bigint, rsp: bigint): Promise<NovaOrynDebugVariable[]> {

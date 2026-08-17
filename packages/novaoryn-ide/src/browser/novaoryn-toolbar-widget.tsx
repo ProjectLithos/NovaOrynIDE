@@ -101,7 +101,7 @@ export class NovaOrynToolbarWidget extends ReactWidget {
                     <span className='codicon codicon-debug-breakpoint' aria-hidden='true'></span>
                 </button>
                 <span className='novaoryn-debug-separator'></span>
-                <button className='novaoryn-debug-button' disabled={!hasWorkspace} title='Show Exception Breakpoints, Watch, Mixed Disassembly, Call Stack, Locals and Registers' onClick={() => this.showDebugInspector()}>
+                <button className='novaoryn-debug-button' disabled={!hasWorkspace} title='Show Exception Breakpoints, Watch, Memory, Mixed Disassembly, Named Locals/Arguments, Call Stack and Registers' onClick={() => this.showDebugInspector()}>
                     <span className='codicon codicon-debug-alt' aria-hidden='true'></span>
                 </button>
                 <span className='novaoryn-debug-separator'></span>

@@ -3,10 +3,11 @@ import { inject, injectable, postConstruct } from 'inversify';
 import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
 import { FileUri } from '@theia/core/lib/common/file-uri';
 import { EditorManager } from '@theia/editor/lib/browser';
-import { NovaOrynDebugState, NovaOrynExceptionBreakpointSettings, NovaOrynExpressionResult, NovaOrynProjectService } from '../common/novaoryn-protocol';
+import { NovaOrynDebugState, NovaOrynExceptionBreakpointSettings, NovaOrynExpressionResult, NovaOrynMemoryReadResult, NovaOrynProjectService } from '../common/novaoryn-protocol';
 
 const WATCH_STORAGE_KEY = 'novaoryn.ide.watchExpressions';
 const EXCEPTION_STORAGE_KEY = 'novaoryn.ide.exceptionBreakpoints';
+const MEMORY_STORAGE_KEY = 'novaoryn.ide.memoryViewer';
 const DEFAULT_EXCEPTION_VECTORS = [0, 2, 6, 8, 12, 13, 14, 18];
 
 @injectable()
@@ -28,17 +29,21 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
     protected lastPauseKey = '';
     protected refreshGeneration = 0;
     protected exceptionSettings: NovaOrynExceptionBreakpointSettings = { vectors: [...DEFAULT_EXCEPTION_VECTORS], breakOnPanic: true };
+    protected memoryAddressDraft = 'rsp';
+    protected memoryLength = 128;
+    protected memoryResult: NovaOrynMemoryReadResult | undefined;
 
 
     @postConstruct()
     protected init(): void {
         this.id = NovaOrynDebugInspectorWidget.ID;
         this.title.label = NovaOrynDebugInspectorWidget.LABEL;
-        this.title.caption = 'NovaOryn watches, call stack, locals/frame values and registers';
+        this.title.caption = 'NovaOryn breakpoints, watches, memory, named locals, disassembly, call stack and registers';
         this.title.closable = true;
         this.addClass('novaoryn-debug-inspector-widget');
         this.loadWatches();
         this.loadExceptionSettings();
+        this.loadMemorySettings();
         this.update();
     }
 
@@ -46,6 +51,7 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
         this.sessionId = sessionId;
         if (!sessionId) {
             this.watchResults.clear();
+            this.memoryResult = undefined;
             this.lastPauseKey = '';
         }
         this.update();
@@ -58,7 +64,7 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
         const pauseKey = state.paused ? `${state.sourcePath ?? ''}:${state.line ?? 0}:${rip}:${state.message ?? ''}` : '';
         if (pauseKey && pauseKey !== this.lastPauseKey) {
             this.lastPauseKey = pauseKey;
-            void this.refreshWatches();
+            void this.refreshWatches().then(() => this.refreshMemory());
         } else if (!state.paused) {
             this.lastPauseKey = '';
         }
@@ -127,6 +133,66 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
         this.update();
     }
 
+
+    protected loadMemorySettings(): void {
+        try {
+            const raw = window.localStorage.getItem(MEMORY_STORAGE_KEY);
+            if (!raw) { return; }
+            const parsed = JSON.parse(raw) as { address?: string; length?: number };
+            if (typeof parsed.address === 'string' && parsed.address.trim()) { this.memoryAddressDraft = parsed.address.trim(); }
+            if (typeof parsed.length === 'number' && Number.isFinite(parsed.length)) { this.memoryLength = Math.max(16, Math.min(1024, Math.trunc(parsed.length))); }
+        } catch { }
+    }
+
+    protected saveMemorySettings(): void {
+        try { window.localStorage.setItem(MEMORY_STORAGE_KEY, JSON.stringify({ address: this.memoryAddressDraft, length: this.memoryLength })); } catch { }
+    }
+
+    protected async refreshMemory(): Promise<void> {
+        if (!this.sessionId || !this.state.active || !this.state.paused || !this.memoryAddressDraft.trim()) { return; }
+        this.saveMemorySettings();
+        this.memoryResult = await this.projectService.readMemoryRange(this.sessionId, this.memoryAddressDraft.trim(), this.memoryLength);
+        this.update();
+    }
+
+    protected renderMemorySection(): React.ReactNode {
+        const rows: React.ReactNode[] = [];
+        const result = this.memoryResult;
+        if (result?.success && result.bytes && result.address) {
+            const bytes = result.bytes.match(/../g) ?? [];
+            const base = BigInt(result.address);
+            for (let offset = 0; offset < bytes.length; offset += 16) {
+                const slice = bytes.slice(offset, offset + 16);
+                const ascii = slice.map(value => {
+                    const n = Number.parseInt(value, 16);
+                    return n >= 32 && n <= 126 ? String.fromCharCode(n) : '.';
+                }).join('');
+                rows.push(<div className='novaoryn-memory-row' key={offset}>
+                    <code className='novaoryn-memory-address'>0x{(base + BigInt(offset)).toString(16).padStart(16, '0')}</code>
+                    <code className='novaoryn-memory-hex'>{slice.join(' ')}</code>
+                    <code className='novaoryn-memory-ascii'>{ascii}</code>
+                </div>);
+            }
+        }
+        return <section>
+            <h3>Memory</h3>
+            <div className='novaoryn-memory-controls'>
+                <input className='theia-input' value={this.memoryAddressDraft} disabled={!this.state.paused}
+                    placeholder='rsp, rbp-0x40, 0x100000'
+                    title='Address expressions use the same register/arithmetic syntax as Watch.'
+                    onChange={event => { this.memoryAddressDraft = event.target.value; this.update(); }}
+                    onKeyDown={event => { if (event.key === 'Enter') { void this.refreshMemory(); } }} />
+                <select className='theia-select' value={this.memoryLength} disabled={!this.state.paused}
+                    onChange={event => { this.memoryLength = Number(event.target.value); this.saveMemorySettings(); this.update(); }}>
+                    {[64, 128, 256, 512, 1024].map(length => <option value={length} key={length}>{length} bytes</option>)}
+                </select>
+                <button className='theia-button' disabled={!this.state.paused || !this.memoryAddressDraft.trim()} onClick={() => { void this.refreshMemory(); }}>Read</button>
+            </div>
+            <p className='novaoryn-debug-note'>Reads guest virtual memory through QEMU's GDB stub. Addresses may be literals or expressions such as <code>rsp+0x20</code>.</p>
+            {result && !result.success && <div className='novaoryn-debug-value error'>{result.error}</div>}
+            {result?.success && <div className='novaoryn-memory-view'>{rows}</div>}
+        </section>;
+    }
 
     protected addWatch(): void {
         const expression = this.watchDraft.trim();
@@ -236,6 +302,7 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
         return <div className='novaoryn-debug-inspector'>
             {this.renderExceptionSection()}
             {this.renderWatchSection()}
+            {this.renderMemorySection()}
             <section>
                 <h3>Mixed C# / x64 Disassembly</h3>
                 <p className='novaoryn-debug-note'>Runtime addresses include the EFI relocation. Source labels come from the exact NativeAOT sequence-point map.</p>
@@ -267,9 +334,10 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
                 <h3>Locals / Native Frame</h3>
                 {this.state.localsMessage && <p className='novaoryn-debug-note'>{this.state.localsMessage}</p>}
                 <div className='novaoryn-debug-table'>
-                    {(this.state.locals ?? []).map(variable => <div className='novaoryn-debug-row' key={`${variable.kind}:${variable.name}`}>
-                        <span className='novaoryn-debug-name'>{variable.name}</span>
+                    {(this.state.locals ?? []).map(variable => <div className='novaoryn-debug-row novaoryn-local-row' key={`${variable.kind}:${variable.name}`}>
+                        <span className='novaoryn-debug-name'><strong>{variable.kind === 'argument' ? 'arg' : variable.kind}</strong> {variable.name}{variable.typeName ? <small> : {variable.typeName}</small> : null}</span>
                         <span className='novaoryn-debug-value'>{variable.value}</span>
+                        <code className='novaoryn-debug-address'>{variable.location ?? ''}</code>
                     </div>)}
                 </div>
             </section>
