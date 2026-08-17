@@ -14,4 +14,5 @@ must('packages/novaoryn-ide/src/node/novaoryn-project-service.ts', 'activeTarget
 must('packages/novaoryn-ide/src/browser/novaoryn-static-analyzer-widget.tsx', 'OS-specific Static Analyzers', 'static analyzer Engineering view');
 must('packages/novaoryn-ide/src/browser/novaoryn-frontend-module.ts', 'NovaOrynStaticAnalyzerWidget', 'static analyzer widget registration');
 must('packages/novaoryn-ide/src/browser/novaoryn-contribution.ts', 'NovaOrynCommands.ANALYZERS', 'static analyzer Engineering menu command');
-console.log('[ OK ] NovaOryn IDE 0.2.2 OS-specific static analyzer contract verified.');
+must('packages/novaoryn-ide/src/browser/novaoryn-static-analyzer-widget.tsx', 'this.update();', 'initial analyzer render request');
+console.log('[ OK ] NovaOryn IDE 0.2.3 OS-specific static analyzer contract verified.');

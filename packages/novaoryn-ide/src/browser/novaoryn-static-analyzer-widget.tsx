@@ -24,6 +24,10 @@ export class NovaOrynStaticAnalyzerWidget extends ReactWidget {
         this.title.closable = true;
         this.addClass('novaoryn-static-analyzer-widget');
         this.toDispose.push(this.workspaceService.onWorkspaceLocationChanged(() => { this.snapshot = undefined; this.update(); }));
+        // ReactWidget does not render until an update is requested. Unlike the other
+        // engineering widgets, the analyzer has no initial refresh call, so explicitly
+        // request its first render when the widget is constructed.
+        this.update();
     }
 
     protected root(): string | undefined { return this.workspaceService.workspace?.resource.path.fsPath(); }

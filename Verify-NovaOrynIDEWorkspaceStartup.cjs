@@ -50,4 +50,4 @@ const saveIndex = toolbar.indexOf('await this.shell.saveAll()');
 const runIndex = toolbar.indexOf('runOperatingSystem(projectPath, this.runMode, requestedBreakpoints, exceptionBreakpoints)');
 if (saveIndex < 0 || runIndex < 0 || saveIndex > runIndex) missing.push('save-all must complete before build/run dispatch');
 if (missing.length) fail(missing.join(', '));
-console.log('[ OK ] NovaOryn IDE 0.2.2 native workspace/startup policy verified.');
+console.log('[ OK ] NovaOryn IDE 0.2.3 native workspace/startup policy verified.');
