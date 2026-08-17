@@ -1,8 +1,8 @@
-# NovaOryn IDE 0.2.6
+# NovaOryn IDE 0.2.7
 
 ## 17. Memory-map Visualiser
 
-NovaOryn IDE 0.2.6 adds a runtime Memory-map Visualiser under **NovaOryn > Engineering**.
+NovaOryn IDE 0.2.7 adds a runtime Memory-map Visualiser under **NovaOryn > Engineering**.
 
 The visualiser reads the authoritative retained final UEFI memory map from a paused NovaOryn Debug kernel. It resolves the relocated `NovaOrynBootContext`, validates the boot-context ABI and `ExitBootServices` state, reads the firmware descriptor buffer through GDB, and displays:
 

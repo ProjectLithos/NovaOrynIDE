@@ -58,6 +58,9 @@ import {
     NovaOrynBinarySymbol,
     NovaOrynMemoryMapSnapshot,
     NovaOrynMemoryMapRegion,
+    NovaOrynInterruptSnapshot,
+    NovaOrynInterruptVectorInfo,
+    NovaOrynInterruptMechanism,
     NovaOrynMemoryRegionCategory,
     NovaOrynProjectService
 } from '../common/novaoryn-protocol';
@@ -66,7 +69,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.2.6';
+const NOVAORYN_IDE_VERSION = '0.2.7';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -978,6 +981,92 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         }
     }
 
+
+    async inspectInterrupts(projectPath: string): Promise<NovaOrynInterruptSnapshot> {
+        const capturedAtUtc = new Date().toISOString();
+        const empty = (message: string, active = false, paused = false, error?: string): NovaOrynInterruptSnapshot => ({
+            success: false, active, paused, capturedAtUtc, vectors: [], routes: [], ioApics: [], localApicRegisters: [], message, error
+        });
+        const projectRoot = path.resolve(projectPath);
+        if (!this.isOperatingSystemPath(projectRoot)) return empty('Open a NovaOryn operating system to inspect interrupt routing.');
+        const session = this.latestSessionForProject(projectRoot);
+        if (!session || session.mode !== 'debug' || !session.debug?.active || !session.gdb) return empty('Start the operating system in Debug mode, then pause it after interrupt initialization.');
+        if (!session.debug.paused) return empty('Pause the kernel to read interrupt-controller state safely.', true, false);
+        if (session.relocationDelta === undefined) return empty('The debugger has not resolved the relocated kernel image yet.', true, true);
+        try {
+            await this.ensureNativeGlobalSymbols(session);
+            const runtime = (component: string, suffix: string): bigint | undefined => {
+                const symbol = this.findKernelGlobal(session, component, suffix);
+                return symbol ? symbol.linkedAddress + session.relocationDelta! : undefined;
+            };
+            const readU8 = async (component: string, suffix: string): Promise<number | undefined> => {
+                const address = runtime(component, suffix); if (address === undefined) return undefined;
+                const bytes = await this.readMemory(session.gdb!, address, 1); return bytes.length === 1 ? bytes[0] : undefined;
+            };
+            const readU32 = async (component: string, suffix: string): Promise<number | undefined> => {
+                const address = runtime(component, suffix); if (address === undefined) return undefined;
+                const bytes = await this.readMemory(session.gdb!, address, 4); return bytes.length === 4 ? bytes.readUInt32LE(0) : undefined;
+            };
+            const readU64 = async (component: string, suffix: string): Promise<bigint | undefined> => {
+                const address = runtime(component, suffix); if (address === undefined) return undefined;
+                const bytes = await this.readMemory(session.gdb!, address, 8); return bytes.length === 8 ? bytes.readBigUInt64LE(0) : undefined;
+            };
+            const dispatchInitialized = (await readU8('KernelInterruptDispatch', '_initialized')) === 1;
+            const brokerInitialized = (await readU8('KernelInterruptBroker', '_initialized')) === 1;
+            const localApic = (await readU8('KernelInterruptBroker', '_localApic')) === 1;
+            const ioApic = (await readU8('KernelInterruptBroker', '_ioApic')) === 1;
+            const x2Apic = (await readU8('KernelInterruptBroker', '_x2Apic')) === 1;
+            const localApicBase = await readU64('KernelInterruptDispatch', '_localApicBase');
+            const routeCount = await readU32('KernelInterruptBroker', '_count') ?? 0;
+            const routeCapacity = await readU32('KernelInterruptBroker', '_capacity') ?? 0;
+            const ioApicCount = await readU32('KernelInterruptBroker', '_ioApicCount') ?? 0;
+            const allocatedPointer = await readU64('KernelInterruptDispatch', '_allocated');
+            const callbacksPointer = await readU64('KernelInterruptDispatch', '_callbacks');
+            const cookiesPointer = await readU64('KernelInterruptDispatch', '_cookies');
+            const allocated = allocatedPointer ? await this.readMemoryChunked(session.gdb, allocatedPointer, 256, 256) : Buffer.alloc(0);
+            const callbacks = callbacksPointer ? await this.readMemoryChunked(session.gdb, callbacksPointer, 2048, 512) : Buffer.alloc(0);
+            const cookies = cookiesPointer ? await this.readMemoryChunked(session.gdb, cookiesPointer, 2048, 512) : Buffer.alloc(0);
+            const exceptionNames = ['Divide by zero','Debug','NMI','Breakpoint','Overflow','Bound range','Invalid opcode','Device not available','Double fault','Coprocessor segment overrun','Invalid TSS','Segment not present','Stack fault','General protection','Page fault','Reserved','x87 floating point','Alignment check','Machine check','SIMD floating point','Virtualisation','Control protection','Reserved','Reserved','Reserved','Reserved','Reserved','Reserved','Hypervisor injection','VMM communication','Security','Reserved'];
+            const breakVectors = new Set(session.exceptionBreakpoints.vectors ?? []);
+            const vectors: NovaOrynInterruptVectorInfo[] = [];
+            let allocatedDynamicVectors = 0;
+            for (let vector=0; vector<256; vector++) {
+                const dynamic = vector >= 0x40 && vector <= 0xEF;
+                const isAllocated = allocated.length === 256 ? allocated[vector] !== 0 : false;
+                if (dynamic && isAllocated) allocatedDynamicVectors++;
+                let callback: string | undefined; let cookie: string | undefined;
+                if (callbacks.length === 2048) { const value=callbacks.readBigUInt64LE(vector*8); if (value) callback=this.formatAddress(value); }
+                if (cookies.length === 2048) { const value=cookies.readBigUInt64LE(vector*8); if (value) cookie=`0x${value.toString(16)}`; }
+                if (vector < 32 || isAllocated || callback) vectors.push({ vector, hex:`0x${vector.toString(16).padStart(2,'0')}`, kind:vector<32?'exception':dynamic?'dynamic':'system', allocated:isAllocated, callback, cookie, exceptionName:vector<32?exceptionNames[vector]:undefined, breakOnException:vector<32?breakVectors.has(vector):undefined });
+            }
+            const mechanism = (value: number): NovaOrynInterruptMechanism => { switch (value) { case 1:return 'io-apic'; case 2:return 'msi'; case 3:return 'msi-x'; case 4:return 'local-apic'; case 5:return 'x2apic'; default:return 'none'; } };
+            const routes: NovaOrynInterruptSnapshot['routes'] = [];
+            const routesPointer = await readU64('KernelInterruptBroker', '_routes');
+            if (routesPointer && routeCapacity > 0 && routeCapacity <= 4096) {
+                const raw = await this.readMemoryChunked(session.gdb, routesPointer, routeCapacity*48, 768);
+                for (let i=0;i<routeCapacity && i*48+48<=raw.length;i++) {
+                    const o=i*48; if (raw[o]===0) continue;
+                    const segment=raw.readUInt16LE(o+40), bus=raw[o+42], dev=raw[o+43], fn=raw[o+44];
+                    routes.push({ handle:`0x${raw.readBigUInt64LE(o+16).toString(16)}`, vector:raw[o+1], mechanism:mechanism(raw[o+2]), device:raw.readUInt32LE(o+4), source:raw.readUInt32LE(o+8), targetProcessor:raw.readUInt32LE(o+12), direct:raw[o+3]!==0, pci:(segment||bus||dev||fn)?`${segment.toString(16).padStart(4,'0')}:${bus.toString(16).padStart(2,'0')}:${dev.toString(16).padStart(2,'0')}.${fn}`:undefined, cookie:`0x${raw.readBigUInt64LE(o+24).toString(16)}` });
+                }
+            }
+            const ioApics: NovaOrynInterruptSnapshot['ioApics'] = [];
+            const ioApicsPointer = await readU64('KernelInterruptBroker', '_ioApics');
+            if (ioApicsPointer && ioApicCount <= 256) {
+                const raw = await this.readMemoryChunked(session.gdb, ioApicsPointer, ioApicCount*16, 512);
+                for (let i=0;i<ioApicCount && i*16+16<=raw.length;i++) { const o=i*16, base=raw.readUInt32LE(o+8), max=raw.readUInt32LE(o+12); ioApics.push({index:i,mappedAddress:this.formatAddress(raw.readBigUInt64LE(o)),baseGsi:base,maximumGsi:max,pinCount:max>=base?max-base+1:0}); }
+            }
+            const localApicRegisters: NovaOrynInterruptSnapshot['localApicRegisters'] = [];
+            if (localApic && !x2Apic && localApicBase) {
+                for (const [name,off] of [['APIC ID',0x20],['Version',0x30],['Task Priority',0x80],['Processor Priority',0xA0],['Spurious Vector',0xF0],['LVT Timer',0x320],['LVT LINT0',0x350],['LVT LINT1',0x360],['LVT Error',0x370],['Timer Current',0x390],['Timer Divide',0x3E0]] as Array<[string,number]>) {
+                    let value: string | undefined; try { const b=await this.readMemory(session.gdb,localApicBase+BigInt(off),4); if(b.length===4)value=`0x${b.readUInt32LE(0).toString(16).padStart(8,'0')}`; } catch { }
+                    localApicRegisters.push({name,offset:`0x${off.toString(16)}`,value});
+                }
+            }
+            return { success:true, active:true, paused:true, capturedAtUtc, dispatchInitialized, brokerInitialized, localApic, ioApic, x2Apic, msi:brokerInitialized, msiX:brokerInitialized, localApicBase:localApicBase?this.formatAddress(localApicBase):undefined, routeCount, routeCapacity, ioApicCount, allocatedDynamicVectors, vectors, routes, ioApics, localApicRegisters, message:`Read NovaOryn interrupt dispatch and broker state from paused kernel memory (${routes.length} active route(s), ${allocatedDynamicVectors} allocated dynamic vector(s)).` };
+        } catch (error) { return empty('Interrupt/APIC state could not be read from the paused kernel.', true, true, error instanceof Error ? error.message : String(error)); }
+    }
+
     protected uefiMemoryType(type: number): { name: string; category: NovaOrynMemoryRegionCategory } {
         switch (type) {
             case 0: return { name: 'Reserved', category: 'reserved' };
@@ -1757,7 +1846,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.2.6 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.2.7 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -3131,6 +3220,20 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                     }
                 }
             }
+            for (const [component, suffixes] of [
+                ['KernelInterruptDispatch', ['_initialized','_localApicBase','_callbacks','_cookies','_allocated']],
+                ['KernelInterruptBroker', ['_initialized','_localApic','_ioApic','_x2Apic','_routes','_capacity','_count','_ioApics','_ioApicCount']]
+            ] as Array<[string,string[]]>) {
+                for (const suffix of suffixes) {
+                    if (this.findKernelGlobal(session, component, suffix)) continue;
+                    for (const line of mapText.split(/\r?\n/)) {
+                        if (!line.includes(component) || !line.includes(suffix)) continue;
+                        const values = Array.from(line.matchAll(/(?:0x)?([0-9a-fA-F]{8,16})/g)).map(match => BigInt(`0x${match[1]}`));
+                        const linkedAddress = values.find(value => value >= 0x100000000n);
+                        if (linkedAddress !== undefined) { session.nativeGlobals.push({ name: `${component}${suffix}`, linkedAddress }); break; }
+                    }
+                }
+            }
         } catch { }
     }
 
@@ -3147,6 +3250,13 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             result.push({ name, linkedAddress: sectionBase + BigInt(`0x${addr[2]}`) });
         }
         return result;
+    }
+
+    protected findKernelGlobal(session: RunSession, component: string, suffix: string): NativeGlobalSymbol | undefined {
+        const globals = session.nativeGlobals ?? [];
+        const c=component.toLowerCase(), s=suffix.toLowerCase();
+        return globals.find(item => item.name.toLowerCase().includes(c) && item.name.toLowerCase().endsWith(s))
+            ?? globals.find(item => item.name.toLowerCase().includes(c) && item.name.toLowerCase().includes(s));
     }
 
     protected findHeapGlobal(session: RunSession, suffix: string): NativeGlobalSymbol | undefined {

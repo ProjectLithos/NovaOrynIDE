@@ -574,7 +574,7 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 .novaoryn-binary-address { font-family:var(--theia-code-font-family); white-space:nowrap; }.novaoryn-binary-number{white-space:nowrap;}
 @media (max-width:900px){.novaoryn-binary-layout{grid-template-columns:1fr}.novaoryn-binary-list{max-height:220px}.novaoryn-binary-symbol-header{display:block}.novaoryn-binary-symbol-header>div{margin-top:7px}.novaoryn-binary-symbol-header input{min-width:0;flex:1}}
 
-/* NovaOryn IDE 0.2.6 Memory-map Visualiser */
+/* NovaOryn IDE 0.2.7 Memory-map Visualiser */
 .novaoryn-memory-map-page section { margin: 16px 0 22px; }
 .novaoryn-memory-help,.novaoryn-memory-status { padding: 16px; border: 1px solid var(--theia-panel-border); border-radius: 4px; }
 .novaoryn-memory-facts { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 8px; }
@@ -616,3 +616,17 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 .cat-unaccepted { border-color: #795548 !important; background-color: #795548; }
 .cat-unknown { border-color: #9e9e9e !important; background-color: #9e9e9e; }
 .novaoryn-memory-category.cat-usable,.novaoryn-memory-category.cat-boot-reclaimable,.novaoryn-memory-category.cat-runtime,.novaoryn-memory-category.cat-acpi-reclaimable,.novaoryn-memory-category.cat-acpi-nvs,.novaoryn-memory-category.cat-mmio,.novaoryn-memory-category.cat-reserved,.novaoryn-memory-category.cat-unusable,.novaoryn-memory-category.cat-persistent,.novaoryn-memory-category.cat-unaccepted,.novaoryn-memory-category.cat-unknown { background: var(--theia-editorWidget-background); }
+
+
+/* NovaOryn IDE 0.2.7 Interrupt / APIC Visualiser */
+.novaoryn-interrupt-page section { margin: 16px 0 22px; }
+.novaoryn-interrupt-facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; }
+.novaoryn-interrupt-facts>div,.novaoryn-apic-topology>div { border:1px solid var(--theia-panel-border); padding:10px; display:flex; flex-direction:column; gap:4px; }
+.novaoryn-interrupt-facts span,.novaoryn-apic-topology small { opacity:.72; }
+.novaoryn-apic-topology { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px; }
+.novaoryn-apic-registers { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:6px; }
+.novaoryn-apic-registers>div { display:grid; grid-template-columns:1fr auto auto; gap:8px; border-bottom:1px solid var(--theia-panel-border); padding:6px; }
+.novaoryn-interrupt-table-wrap { overflow:auto; max-height:430px; border:1px solid var(--theia-panel-border); }
+.novaoryn-interrupt-table { width:100%; border-collapse:collapse; font-size:12px; }
+.novaoryn-interrupt-table th,.novaoryn-interrupt-table td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--theia-panel-border); white-space:nowrap; }
+.novaoryn-interrupt-table th { position:sticky; top:0; background:var(--theia-editor-background); z-index:1; }

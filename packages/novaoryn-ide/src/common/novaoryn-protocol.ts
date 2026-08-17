@@ -571,6 +571,69 @@ export interface NovaOrynMemoryMapSnapshot {
     error?: string;
 }
 
+
+
+export type NovaOrynInterruptMechanism = 'none' | 'io-apic' | 'msi' | 'msi-x' | 'local-apic' | 'x2apic';
+export type NovaOrynInterruptVectorKind = 'exception' | 'dynamic' | 'system';
+
+export interface NovaOrynInterruptVectorInfo {
+    vector: number;
+    hex: string;
+    kind: NovaOrynInterruptVectorKind;
+    allocated: boolean;
+    callback?: string;
+    cookie?: string;
+    exceptionName?: string;
+    breakOnException?: boolean;
+}
+export interface NovaOrynInterruptRouteInfo {
+    handle: string;
+    vector: number;
+    mechanism: NovaOrynInterruptMechanism;
+    device: number;
+    source: number;
+    targetProcessor: number;
+    direct: boolean;
+    pci?: string;
+    cookie?: string;
+}
+export interface NovaOrynIoApicInfo {
+    index: number;
+    mappedAddress: string;
+    baseGsi: number;
+    maximumGsi: number;
+    pinCount: number;
+}
+export interface NovaOrynLocalApicRegister {
+    name: string;
+    offset: string;
+    value?: string;
+}
+export interface NovaOrynInterruptSnapshot {
+    success: boolean;
+    active: boolean;
+    paused: boolean;
+    capturedAtUtc: string;
+    dispatchInitialized?: boolean;
+    brokerInitialized?: boolean;
+    localApic?: boolean;
+    ioApic?: boolean;
+    x2Apic?: boolean;
+    msi?: boolean;
+    msiX?: boolean;
+    localApicBase?: string;
+    routeCount?: number;
+    routeCapacity?: number;
+    ioApicCount?: number;
+    allocatedDynamicVectors?: number;
+    vectors: NovaOrynInterruptVectorInfo[];
+    routes: NovaOrynInterruptRouteInfo[];
+    ioApics: NovaOrynIoApicInfo[];
+    localApicRegisters: NovaOrynLocalApicRegister[];
+    message?: string;
+    error?: string;
+}
+
 export interface NovaOrynProjectService {
     listOperatingSystems(): Promise<NovaOrynOperatingSystem[]>;
     createProject(configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
@@ -600,6 +663,7 @@ export interface NovaOrynProjectService {
     listBinaries(projectPath: string): Promise<NovaOrynBinaryDescriptor[]>;
     inspectBinary(projectPath: string, binaryPath: string, symbolFilter?: string): Promise<NovaOrynBinaryInspection>;
     inspectMemoryMap(projectPath: string): Promise<NovaOrynMemoryMapSnapshot>;
+    inspectInterrupts(projectPath: string): Promise<NovaOrynInterruptSnapshot>;
     listTargets(projectPath: string): Promise<NovaOrynTargetState>;
     getActiveTarget(projectPath: string): Promise<NovaOrynTargetProfile | undefined>;
     saveTarget(projectPath: string, target: NovaOrynTargetProfile): Promise<NovaOrynTargetMutationResult>;

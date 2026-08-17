@@ -1,5 +1,7 @@
 Audit-NovaOrynIDE.bat
 Build-NovaOrynIDE.bat
+ChangedFiles.txt
+DeletedFiles.txt
 Install-NovaOrynIDEToolchain.ps1
 Run-NovaOrynIDE.bat
 Security-Baseline.json
@@ -8,6 +10,7 @@ Validate-NovaOrynIDEDependencies.ps1
 Verify-NovaOrynIDEAuthoritativeConfiguration.cjs
 Verify-NovaOrynIDEBinarySymbols.cjs
 Verify-NovaOrynIDEGitPublish.cjs
+Verify-NovaOrynIDEInterruptApic.cjs
 Verify-NovaOrynIDEMemoryLocals.cjs
 Verify-NovaOrynIDEMemoryMap.cjs
 Verify-NovaOrynIDEPageHeapCrash.cjs
@@ -16,11 +19,12 @@ Verify-NovaOrynIDETargetManager.cjs
 Verify-NovaOrynIDEWorkspaceStartup.cjs
 applications/electron/package.json
 docs/Release-0.2.6.md
+docs/Release-0.2.7.md
 package.json
 packages/novaoryn-ide/package.json
 packages/novaoryn-ide/src/browser/novaoryn-contribution.ts
 packages/novaoryn-ide/src/browser/novaoryn-frontend-module.ts
-packages/novaoryn-ide/src/browser/novaoryn-memory-map-visualizer-widget.tsx
+packages/novaoryn-ide/src/browser/novaoryn-interrupt-apic-visualizer-widget.tsx
 packages/novaoryn-ide/src/browser/novaoryn-widget.tsx
 packages/novaoryn-ide/src/browser/style/novaoryn.css
 packages/novaoryn-ide/src/common/novaoryn-protocol.ts

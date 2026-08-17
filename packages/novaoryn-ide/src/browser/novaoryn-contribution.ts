@@ -21,6 +21,7 @@ import { NovaOrynTargetManagerWidget } from './novaoryn-target-manager-widget';
 import { NovaOrynStaticAnalyzerWidget } from './novaoryn-static-analyzer-widget';
 import { NovaOrynBinarySymbolExplorerWidget } from './novaoryn-binary-symbol-explorer-widget';
 import { NovaOrynMemoryMapVisualizerWidget } from './novaoryn-memory-map-visualizer-widget';
+import { NovaOrynInterruptApicVisualizerWidget } from './novaoryn-interrupt-apic-visualizer-widget';
 
 export namespace NovaOrynCommands {
     export const OPEN: Command = {
@@ -63,6 +64,7 @@ export namespace NovaOrynCommands {
     export const ANALYZERS: Command = { id: 'novaoryn.engineering.analyzers', label: 'OS-specific Static Analyzers' };
     export const BINARIES: Command = { id: 'novaoryn.engineering.binarySymbols', label: 'Binary / Symbol Explorer' };
     export const MEMORY_MAP: Command = { id: 'novaoryn.engineering.memoryMap', label: 'Memory-map Visualiser' };
+    export const INTERRUPTS: Command = { id: 'novaoryn.engineering.interruptApic', label: 'Interrupt / APIC Visualiser' };
 }
 
 @injectable()
@@ -97,6 +99,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     @inject(NovaOrynStaticAnalyzerWidget) protected readonly staticAnalyzerWidget!: NovaOrynStaticAnalyzerWidget;
     @inject(NovaOrynBinarySymbolExplorerWidget) protected readonly binarySymbolExplorerWidget!: NovaOrynBinarySymbolExplorerWidget;
     @inject(NovaOrynMemoryMapVisualizerWidget) protected readonly memoryMapVisualizerWidget!: NovaOrynMemoryMapVisualizerWidget;
+    @inject(NovaOrynInterruptApicVisualizerWidget) protected readonly interruptApicVisualizerWidget!: NovaOrynInterruptApicVisualizerWidget;
 
     protected toolbarInstalled = false;
     protected titleLogoInstalled = false;
@@ -175,6 +178,13 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
             },
             isEnabled: () => !!this.currentOperatingSystemPath()
         });
+        commands.registerCommand(NovaOrynCommands.INTERRUPTS, {
+            execute: () => {
+                this.interruptApicVisualizerWidget.setProjectPath(this.currentOperatingSystemPath());
+                return this.showEngineeringWidget(this.interruptApicVisualizerWidget, 'main');
+            },
+            isEnabled: () => !!this.currentOperatingSystemPath()
+        });
     }
 
 
@@ -202,6 +212,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.ANALYZERS.id, label: 'OS-specific Static Analyzers', order: '8' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.BINARIES.id, label: 'Binary / Symbol Explorer', order: '9' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.MEMORY_MAP.id, label: 'Memory-map Visualiser', order: '10' });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.INTERRUPTS.id, label: 'Interrupt / APIC Visualiser', order: '11' });
 
         menus.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
             commandId: NovaOrynCommands.RECONFIGURE_ROOT_CONTEXT.id,
