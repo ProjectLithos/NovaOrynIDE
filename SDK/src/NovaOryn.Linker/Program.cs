@@ -169,7 +169,7 @@ static int MainEntry(string[] args)
         File.WriteAllText(sourceMap, JsonSerializer.Serialize(new
         {
             schemaVersion = 1,
-            productVersion = "0.41.0",
+            productVersion = "0.41.1",
             image = Path.GetFullPath(output),
             pdb = Path.GetFullPath(pdb),
             anchor = new
@@ -238,32 +238,41 @@ static SourceLineEntry[] BuildSourceLineMap(string llvmObjdump, string llvmSymbo
         ? "[INFO] llvm-symbolizer explicit PDB override: supported."
         : "[INFO] llvm-symbolizer explicit PDB override: unavailable; using the EFI CodeView PDB reference.");
 
-    const int SymbolizerBatchSize = 192;
-    Dictionary<string, SourceLineEntry> unique = new(StringComparer.OrdinalIgnoreCase);
-    for (int offset = 0; offset < addresses.Count; offset += SymbolizerBatchSize)
+    // Resolve the complete address set in one llvm-symbolizer process. Loading a
+    // NativeAOT PDB is the expensive part; restarting llvm-symbolizer for every
+    // address batch repeatedly reloads the same PDB and can appear to hang for
+    // minutes on Windows. A single process also avoids command-line length limits.
+    //
+    // The process wrapper reads stdout/stderr before writing stdin, uses asynchronous
+    // input, and has a hard timeout. Therefore a broken PDB/symbolizer can no longer
+    // freeze the whole NovaOryn Debug build indefinitely.
+    List<string> arguments =
+    [
+        "--output-style=JSON",
+        "--no-inlines",
+        $"--obj={image}"
+    ];
+    if (supportsExplicitPdb)
     {
-        int count = Math.Min(SymbolizerBatchSize, addresses.Count - offset);
-        List<string> arguments =
-        [
-            "--output-style=JSON",
-            "--no-inlines",
-            $"--obj={image}"
-        ];
-        if (supportsExplicitPdb)
-        {
-            arguments.Add($"--pdb={pdb}");
-        }
-        arguments.AddRange(addresses.GetRange(offset, count));
-
-        ProcessResult symbolized = Capture(llvmSymbolizer, arguments);
-        if (symbolized.ExitCode != 0)
-        {
-            throw new InvalidOperationException(
-                $"llvm-symbolizer failed while generating the source debug map (batch {offset / SymbolizerBatchSize + 1}, addresses {offset + 1}-{offset + count} of {addresses.Count}, exit {symbolized.ExitCode}): {symbolized.Output}");
-        }
-
-        AddSymbolizerJson(symbolized.Output, unique);
+        arguments.Add($"--pdb={pdb}");
     }
+
+    string symbolizerInput = string.Join(Environment.NewLine, addresses) + Environment.NewLine;
+    Console.WriteLine($"[INFO] Generating source-line debug map for {addresses.Count} native instruction address(es) in one llvm-symbolizer session (120 second timeout).");
+    ProcessResult symbolized = CaptureWithInput(llvmSymbolizer, arguments, symbolizerInput, 120000);
+    if (symbolized.TimedOut)
+    {
+        throw new InvalidOperationException(
+            $"llvm-symbolizer timed out after 120 seconds while generating the source debug map for {addresses.Count} addresses. The process was terminated so the NovaOryn build cannot stall indefinitely. Output: {symbolized.Output}");
+    }
+    if (symbolized.ExitCode != 0)
+    {
+        throw new InvalidOperationException(
+            $"llvm-symbolizer failed while generating the source debug map (exit {symbolized.ExitCode}): {symbolized.Output}");
+    }
+
+    Dictionary<string, SourceLineEntry> unique = new(StringComparer.OrdinalIgnoreCase);
+    AddSymbolizerJson(symbolized.Output, unique);
 
     return unique.Values
         .OrderBy(entry => entry.SourcePath, StringComparer.OrdinalIgnoreCase)
@@ -477,9 +486,9 @@ static ulong ParseHexAddress(string value)
 }
 
 static ProcessResult Capture(string executable, IEnumerable<string> arguments) =>
-    CaptureWithInput(executable, arguments, null);
+    CaptureWithInput(executable, arguments, null, 0);
 
-static ProcessResult CaptureWithInput(string executable, IEnumerable<string> arguments, string? standardInput)
+static ProcessResult CaptureWithInput(string executable, IEnumerable<string> arguments, string? standardInput, int timeoutMilliseconds = 0)
 {
     using Process process = new();
     process.StartInfo = new ProcessStartInfo(executable)
@@ -496,18 +505,58 @@ static ProcessResult CaptureWithInput(string executable, IEnumerable<string> arg
     }
     if (!process.Start())
     {
-        return new ProcessResult(-1, string.Empty);
+        return new ProcessResult(-1, string.Empty, false);
     }
-    if (standardInput is not null)
-    {
-        process.StandardInput.Write(standardInput);
-        process.StandardInput.Close();
-    }
+
+    // Begin draining output before sending input. This prevents a child process that
+    // emits diagnostics/results while reading stdin from deadlocking against full OS
+    // pipe buffers. It is particularly important for llvm-symbolizer + NativeAOT PDBs.
     Task<string> stdout = process.StandardOutput.ReadToEndAsync();
     Task<string> stderr = process.StandardError.ReadToEndAsync();
-    process.WaitForExit();
+    Task? input = null;
+    if (standardInput is not null)
+    {
+        input = Task.Run(async () =>
+        {
+            try
+            {
+                await process.StandardInput.WriteAsync(standardInput);
+                await process.StandardInput.FlushAsync();
+            }
+            catch (IOException)
+            {
+                // If the child exits while input is still being written, preserve its
+                // stdout/stderr and exit code instead of masking the useful diagnostic
+                // with a broken-pipe exception.
+            }
+            finally
+            {
+                try { process.StandardInput.Close(); } catch (Exception) { }
+            }
+        });
+    }
+
+    bool timedOut = false;
+    if (timeoutMilliseconds > 0)
+    {
+        if (!process.WaitForExit(timeoutMilliseconds))
+        {
+            timedOut = true;
+            try { process.Kill(entireProcessTree: true); } catch (Exception) { }
+            process.WaitForExit();
+        }
+    }
+    else
+    {
+        process.WaitForExit();
+    }
+
+    if (input is not null)
+    {
+        try { input.Wait(5000); } catch (AggregateException) { }
+    }
     Task.WaitAll(stdout, stderr);
-    return new ProcessResult(process.ExitCode, stdout.Result + stderr.Result);
+    return new ProcessResult(timedOut ? -2 : process.ExitCode, stdout.Result + stderr.Result, timedOut);
 }
 
 static bool HasOption(string[] args, string option) => args.Any(value => string.Equals(value, option, StringComparison.OrdinalIgnoreCase));
@@ -529,4 +578,4 @@ static int Fail(string message)
 }
 
 sealed record SourceLineEntry(string SourcePath, int Line, string LinkedAddress);
-readonly record struct ProcessResult(int ExitCode, string Output);
+readonly record struct ProcessResult(int ExitCode, string Output, bool TimedOut);

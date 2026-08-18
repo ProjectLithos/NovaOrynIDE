@@ -1,18 +1,18 @@
 {
-  "baseVersion": "0.40.0",
-  "version": "0.41.0",
-  "summary": "Structured kernel telemetry runtime: multi-sink event routing, live execution context, sequence/statistics, IDE-native wire sink, explicit boot stages and runtime counters.",
+  "baseVersion": "0.39.0",
+  "version": "0.41.1",
+  "summary": "Structured kernel logging runtime: active post-heap KernelLog, multi-sink routing, severity filtering, live CPU/thread/timestamp context, statistics and boot milestone migration.",
   "changedFiles": [
     "Directory.Build.props",
-    "NovaOryn.ApiContract.json",
     "NovaOryn.SdkManifest.json",
     "README.md",
     "Verify-NovaOrynSdkContract.ps1",
     "docs/NovaOryn.Documentation.json",
-    "docs/Release-0.41.0.md",
+    "docs/Release-0.41.1.md",
     "src/NovaOryn.Core/NovaOrynSdkContract.cs",
     "src/NovaOryn.Kernel.Bootstrap/Kernel.cs",
     "src/NovaOryn.Kernel.Bootstrap/KernelStructuredLogging.cs",
+    "src/NovaOryn.Kernel.Scheduler/KernelScheduler.cs",
     "src/NovaOryn.Kernel.SubsystemContracts/KernelDiagnosticsRuntime.cs",
     "src/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs",
     "toolchain/NovaOryn.Toolchain.json"
