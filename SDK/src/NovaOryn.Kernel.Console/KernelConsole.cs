@@ -317,7 +317,7 @@ public static class KernelConsole
     }
 
     /// <summary>Runs the post-boot interrupt-driven idle loop while servicing the SDK-owned input bridge before each halt.</summary>
-    public static Boolean RunInteractive()
+    public static unsafe Boolean RunInteractive()
     {
         if (!_initialized) return false;
         while (true)

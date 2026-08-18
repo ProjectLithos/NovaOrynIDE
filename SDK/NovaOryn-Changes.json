@@ -1,33 +1,25 @@
 {
-  "baseVersion": "0.41.3",
-  "version": "0.41.4",
-  "summary": "SDK-owned interactive shell input bridge with direct PS/2 servicing and Ctrl+A/Ctrl+C host clipboard transcript capture.",
-  "changedFiles": [
+  "version": "0.41.5",
+  "files": [
     "Directory.Build.props",
-    "docs/Release-0.41.4.md",
     "NovaOryn-SourceManifest.json",
     "NovaOryn.SdkManifest.json",
     "README.md",
+    "Verify-NovaOrynSdkContract.ps1",
+    "docs/Release-0.41.5.md",
     "src/NovaOryn.Core/NovaOrynSdkContract.cs",
     "src/NovaOryn.ImageBuilder/Program.cs",
-    "src/NovaOryn.Kernel.CommandLine/KernelCommandLine.cs",
-    "src/NovaOryn.Kernel.CommandLine/NovaOryn.Kernel.CommandLine.csproj",
     "src/NovaOryn.Kernel.Console/KernelConsole.cs",
     "src/NovaOryn.Linker/Program.cs",
     "src/NovaOryn.ManagedCompiler/Program.cs",
     "src/NovaOryn.QemuLauncher/Program.cs",
     "src/NovaOryn.VisualStudio/NovaOrynPackage.cs",
     "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/NovaOrynKernel.vstemplate",
-    "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.CommandLine/KernelCommandLine.cs",
-    "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.CommandLine/NovaOryn.Kernel.CommandLine.csproj",
     "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Console/KernelConsole.cs",
     "src/NovaOryn.VisualStudio/Properties/AssemblyInfo.cs",
     "src/NovaOryn.VisualStudio/source.extension.vsixmanifest",
-    "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.CommandLine/KernelCommandLine.cs",
-    "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.CommandLine/NovaOryn.Kernel.CommandLine.csproj",
     "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Console/KernelConsole.cs",
-    "toolchain/NovaOryn.Toolchain.json",
-    "Verify-NovaOrynSdkContract.ps1"
+    "toolchain/NovaOryn.Toolchain.json"
   ],
   "deletedFiles": []
 }
