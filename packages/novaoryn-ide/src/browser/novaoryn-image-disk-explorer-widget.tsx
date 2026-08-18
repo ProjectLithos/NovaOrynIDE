@@ -131,11 +131,11 @@ export class NovaOrynImageDiskExplorerWidget extends ReactWidget {
         const entries = this.visibleEntries();
         return <div className='novaoryn-image-disk-page'>
             <header className='novaoryn-engineering-header'>
-                <div><h2>Image / Disk Explorer</h2><p>Inspect NovaOryn boot images without mounting them on the host.</p></div>
+                <div><h2>Image / Disk Explorer</h2><p>Inspect NovaOryn boot images without mounting them on the host. Tiny debugger/telemetry .bin files are ignored automatically.</p></div>
                 <button className='theia-button' disabled={this.loading} onClick={() => void this.refresh()}>{this.loading ? 'Reading…' : 'Refresh Images'}</button>
             </header>
             {!this.projectPath() && <p>Open a NovaOryn OS project to inspect its disk images.</p>}
-            {this.projectPath() && !this.loading && this.images.length === 0 && <p>No .img, .raw, .iso, .vhd, .vhdx or .bin artifacts were found in the OS project or bundled SDK artifacts.</p>}
+            {this.projectPath() && !this.loading && this.images.length === 0 && <p>No disk images were found in the OS project or bundled SDK artifacts. Supported discovery includes .img, .raw, .iso, .vhd, .vhdx and disk-like .bin files.</p>}
             {this.images.length > 0 && <div className='novaoryn-disk-layout'>
                 <aside className='novaoryn-disk-images'>
                     <h3>Images <span className='novaoryn-count'>{this.images.length}</span></h3>

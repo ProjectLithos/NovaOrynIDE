@@ -78,7 +78,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.3.1';
+const NOVAORYN_IDE_VERSION = '0.3.2';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -1919,7 +1919,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.3.1 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.3.2 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -4093,16 +4093,25 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             if (seen.has(key)) return;
             try {
                 const stat = await fs.stat(resolved); if (!stat.isFile()) return;
+                const baseName = path.basename(resolved).toLowerCase();
+                // QEMU debugger rendezvous/trace payloads are binary files, not disk images.
+                // Never let them swamp the Image / Disk Explorer simply because they use .bin.
+                if (ext === '.bin' && (baseName === 'debugcon.bin' || baseName.startsWith('debugcon-') || baseName.endsWith('.debug.bin'))) return;
                 let formatHint = ext === '.iso' ? 'ISO image' : ext === '.vhd' ? 'VHD' : ext === '.vhdx' ? 'VHDX' : 'Raw disk image';
+                let diskSignatureDetected = false;
                 const handle = await fs.open(resolved, 'r');
                 try {
                     const probe = Buffer.alloc(Math.min(0x9000, stat.size));
                     await handle.read(probe, 0, probe.length, 0);
-                    if (probe.length >= 520 && probe.subarray(512, 520).toString('ascii') === 'EFI PART') formatHint = 'GPT disk image';
-                    else if (probe.length >= 512 && probe[510] === 0x55 && probe[511] === 0xaa) formatHint = 'MBR/raw disk image';
-                    if (probe.length >= 0x8006 && probe.subarray(0x8001, 0x8006).toString('ascii') === 'CD001') formatHint = 'ISO 9660 image';
-                    if (probe.length >= 8 && probe.subarray(0, 8).toString('ascii') === 'vhdxfile') formatHint = 'VHDX';
+                    if (probe.length >= 520 && probe.subarray(512, 520).toString('ascii') === 'EFI PART') { formatHint = 'GPT disk image'; diskSignatureDetected = true; }
+                    else if (probe.length >= 512 && probe[510] === 0x55 && probe[511] === 0xaa) { formatHint = 'MBR/raw disk image'; diskSignatureDetected = true; }
+                    if (probe.length >= 90 && probe.subarray(82, 90).toString('ascii').startsWith('FAT32')) { formatHint = 'FAT32 disk image'; diskSignatureDetected = true; }
+                    if (probe.length >= 0x8006 && probe.subarray(0x8001, 0x8006).toString('ascii') === 'CD001') { formatHint = 'ISO 9660 image'; diskSignatureDetected = true; }
+                    if (probe.length >= 8 && probe.subarray(0, 8).toString('ascii') === 'vhdxfile') { formatHint = 'VHDX'; diskSignatureDetected = true; }
                 } finally { await handle.close(); }
+                // A generic .bin must either look like a disk or be large enough to plausibly be one.
+                // This removes tiny debugger/telemetry payloads while retaining legitimate raw .bin images.
+                if (ext === '.bin' && !diskSignatureDetected && stat.size < 1024 * 1024) return;
                 result.push({ id: `${origin}:${key}`, name: path.basename(resolved), path: resolved, origin, sizeBytes: stat.size, modifiedUtc: stat.mtime.toISOString(), formatHint });
                 seen.add(key);
             } catch { }
@@ -4121,7 +4130,16 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         };
         await scan(projectRoot, 'os', 4);
         await scan(path.join(NOVAORYN_SDK_ROOT, 'Artifacts'), 'sdk', 5);
-        return result.sort((a,b) => Number(b.origin === 'os') - Number(a.origin === 'os') || a.name.localeCompare(b.name));
+        return result.sort((a,b) => {
+            const origin = Number(b.origin === 'os') - Number(a.origin === 'os');
+            if (origin) return origin;
+            const confidence = (value: NovaOrynDiskImageDescriptor): number => /GPT|MBR|FAT32|ISO 9660|VHDX/.test(value.formatHint) ? 2 : /\.(img|raw|iso|vhd|vhdx)$/i.test(value.name) ? 1 : 0;
+            const confidenceOrder = confidence(b) - confidence(a);
+            if (confidenceOrder) return confidenceOrder;
+            const modifiedOrder = Date.parse(b.modifiedUtc) - Date.parse(a.modifiedUtc);
+            if (modifiedOrder) return modifiedOrder;
+            return b.sizeBytes - a.sizeBytes || a.name.localeCompare(b.name);
+        });
     }
 
     protected diskImageAllowed(projectRoot: string, imagePath: string): boolean {
