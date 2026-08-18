@@ -17,4 +17,4 @@ const checks=[
  ['engineering menu',contrib.includes('NovaOrynCommands.IMAGES')&&contrib.includes("order: '13'")],
  ['widget factory',front.includes('NovaOrynImageDiskExplorerWidget')]
 ];
-let bad=false;for(const[c,ok]of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${c}`);if(!ok)bad=true;}if(bad)process.exit(1);console.log('[ OK ] NovaOryn IDE 0.3.2 Image / Disk Explorer contract verified.');
+let bad=false;for(const[c,ok]of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${c}`);if(!ok)bad=true;}if(bad)process.exit(1);console.log('[ OK ] NovaOryn IDE 0.3.4 Image / Disk Explorer contract verified.');

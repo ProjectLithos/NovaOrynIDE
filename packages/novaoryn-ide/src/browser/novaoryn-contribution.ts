@@ -25,6 +25,7 @@ import { NovaOrynInterruptApicVisualizerWidget } from './novaoryn-interrupt-apic
 import { NovaOrynSyscallExplorerWidget } from './novaoryn-syscall-explorer-widget';
 import { NovaOrynSdkApiWidget } from './novaoryn-sdk-api-widget';
 import { NovaOrynImageDiskExplorerWidget } from './novaoryn-image-disk-explorer-widget';
+import { NovaOrynPhysicalDebuggerWidget } from './novaoryn-physical-debugger-widget';
 
 export namespace NovaOrynCommands {
     export const OPEN: Command = {
@@ -70,6 +71,7 @@ export namespace NovaOrynCommands {
     export const INTERRUPTS: Command = { id: 'novaoryn.engineering.interruptApic', label: 'Interrupt / APIC Visualiser' };
     export const SYSCALLS: Command = { id: 'novaoryn.engineering.syscalls', label: 'Syscall Explorer' };
     export const IMAGES: Command = { id: 'novaoryn.engineering.imageDiskExplorer', label: 'Image / Disk Explorer' };
+    export const PHYSICAL_DEBUGGER: Command = { id: 'novaoryn.engineering.physicalDebugger', label: 'Physical-machine Debugger Transport' };
     export const SDK_API: Command = { id: 'novaoryn.help.sdkApi', label: 'SDK API' };
 }
 
@@ -109,6 +111,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     @inject(NovaOrynSyscallExplorerWidget) protected readonly syscallExplorerWidget!: NovaOrynSyscallExplorerWidget;
     @inject(NovaOrynSdkApiWidget) protected readonly sdkApiWidget!: NovaOrynSdkApiWidget;
     @inject(NovaOrynImageDiskExplorerWidget) protected readonly imageDiskExplorerWidget!: NovaOrynImageDiskExplorerWidget;
+    @inject(NovaOrynPhysicalDebuggerWidget) protected readonly physicalDebuggerWidget!: NovaOrynPhysicalDebuggerWidget;
 
     protected toolbarInstalled = false;
     protected titleLogoInstalled = false;
@@ -202,6 +205,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
             isEnabled: () => !!this.currentOperatingSystemPath()
         });
         commands.registerCommand(NovaOrynCommands.IMAGES, { execute: async () => { await this.showEngineeringWidget(this.imageDiskExplorerWidget, 'main'); await this.imageDiskExplorerWidget.refresh(); }, isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.PHYSICAL_DEBUGGER, { execute: async () => { await this.showEngineeringWidget(this.physicalDebuggerWidget, 'main'); await this.physicalDebuggerWidget.refresh(); }, isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.SDK_API, { execute: () => this.showEngineeringWidget(this.sdkApiWidget, 'main') });
     }
 
@@ -233,6 +237,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.INTERRUPTS.id, label: 'Interrupt / APIC Visualiser', order: '11' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.SYSCALLS.id, label: 'Syscall Explorer', order: '12' });
         menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.IMAGES.id, label: 'Image / Disk Explorer', order: '13' });
+        menus.registerMenuAction([...novaOrynMenu, '2_engineering'], { commandId: NovaOrynCommands.PHYSICAL_DEBUGGER.id, label: 'Physical-machine Debugger Transport', order: '14' });
         menus.registerMenuAction(CommonMenus.HELP, { commandId: NovaOrynCommands.SDK_API.id, label: 'SDK API', order: 'a20' });
 
         menus.registerMenuAction(NavigatorContextMenu.NAVIGATION, {

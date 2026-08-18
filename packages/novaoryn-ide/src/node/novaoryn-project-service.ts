@@ -48,6 +48,7 @@ import {
     NovaOrynTestRunResult,
     NovaOrynTestOutput,
     NovaOrynTargetProfile,
+    NovaOrynPhysicalDebuggerProbe,
     NovaOrynTargetState,
     NovaOrynTargetMutationResult,
     NovaOrynAnalyzerSnapshot,
@@ -78,7 +79,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.3.2';
+const NOVAORYN_IDE_VERSION = '0.3.4';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -87,13 +88,13 @@ class GdbRspClient {
 
     constructor(protected readonly onStop: (packet: string) => void) {}
 
-    async connect(port: number, timeoutMs = 15000): Promise<void> {
+    async connect(host: string, port: number, timeoutMs = 15000): Promise<void> {
         const until = Date.now() + timeoutMs;
         let lastError: Error | undefined;
         while (Date.now() < until) {
             try {
                 const socket = await new Promise<net.Socket>((resolve, reject) => {
-                    const candidate = net.createConnection({ host: '127.0.0.1', port });
+                    const candidate = net.createConnection({ host, port });
                     const fail = (error: Error) => {
                         candidate.destroy();
                         reject(error);
@@ -121,7 +122,7 @@ class GdbRspClient {
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
         }
-        throw new Error(`QEMU GDB endpoint 127.0.0.1:${port} did not accept the debugger connection within ${timeoutMs}ms${lastError ? `: ${lastError.message}` : '.'}`);
+        throw new Error(`GDB endpoint ${host}:${port} did not accept the debugger connection within ${timeoutMs}ms${lastError ? `: ${lastError.message}` : '.'}`);
     }
 
     close(): void {
@@ -131,7 +132,7 @@ class GdbRspClient {
 
     async command(command: string): Promise<string> {
         if (!this.socket) {
-            throw new Error('NovaOryn debugger is not connected to QEMU.');
+            throw new Error('NovaOryn debugger transport is not connected.');
         }
         if (this.pending) {
             throw new Error('NovaOryn debugger already has a pending GDB command.');
@@ -150,14 +151,14 @@ class GdbRspClient {
 
     run(command: string): void {
         if (!this.socket) {
-            throw new Error('NovaOryn debugger is not connected to QEMU.');
+            throw new Error('NovaOryn debugger transport is not connected.');
         }
         this.socket.write(this.packet(command));
     }
 
     interrupt(): void {
         if (!this.socket) {
-            throw new Error('NovaOryn debugger is not connected to QEMU.');
+            throw new Error('NovaOryn debugger transport is not connected.');
         }
         this.socket.write(Buffer.from([0x03]));
     }
@@ -457,6 +458,8 @@ interface RunSession {
     mode: NovaOrynRunMode;
     projectRoot: string;
     qemu?: ChildProcess;
+    physicalSerial?: ChildProcess;
+    target?: NovaOrynTargetProfile;
     gdb?: GdbRspClient;
     debug?: NovaOrynDebugState;
     breakpoints: Map<string, SourceBreakpoint>;
@@ -642,6 +645,12 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             if (!target.qemu) return 'QEMU settings are required.';
             if (!Number.isInteger(target.qemu.cpuCount) || target.qemu.cpuCount < 1 || target.qemu.cpuCount > 256) return 'QEMU CPU count must be between 1 and 256.';
             if (!Number.isInteger(target.qemu.memoryMiB) || target.qemu.memoryMiB < 64 || target.qemu.memoryMiB > 1048576) return 'QEMU RAM must be between 64 MiB and 1 TiB.';
+        }
+        if (target.kind === 'physical') {
+            if (!target.physical) return 'Physical debugger settings are required.';
+            if (!(target.physical.gdbHost || '').trim()) return 'Physical GDB host is required.';
+            if (!Number.isInteger(target.physical.gdbPort) || target.physical.gdbPort < 1 || target.physical.gdbPort > 65535) return 'Physical GDB port must be between 1 and 65535.';
+            if (target.physical.baudRate !== undefined && (!Number.isInteger(target.physical.baudRate) || target.physical.baudRate < 1200 || target.physical.baudRate > 4000000)) return 'Physical serial baud rate must be between 1200 and 4000000.';
         }
         return undefined;
     }
@@ -1197,6 +1206,24 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         return state.targets.find(item => item.id === state.activeTargetId);
     }
 
+    async probePhysicalDebugger(projectPath: string, targetId?: string): Promise<NovaOrynPhysicalDebuggerProbe> {
+        try {
+            const state = await this.listTargets(projectPath);
+            const target = targetId ? state.targets.find(item => item.id === targetId) : state.targets.find(item => item.id === state.activeTargetId);
+            if (!target) return { success: false, connected: false, error: 'NovaOryn target was not found.' };
+            if (target.kind !== 'physical' || !target.physical) return { success: false, connected: false, targetId: target.id, targetName: target.name, error: 'Select a Physical machine target first.' };
+            const { gdbHost: host, gdbPort: port, serialPort, baudRate } = target.physical;
+            const gdb = new GdbRspClient(() => undefined);
+            await gdb.connect(host, port, 3000);
+            let stopReply: string | undefined;
+            try { stopReply = await gdb.command('?'); } catch { stopReply = undefined; }
+            gdb.close();
+            return { success: true, connected: true, targetId: target.id, targetName: target.name, host, port, serialPort, baudRate, stopReply, message: `GDB Remote Serial Protocol endpoint ${host}:${port} accepted a connection${stopReply ? ` (stop reply ${stopReply})` : ''}.` };
+        } catch (error) {
+            return { success: false, connected: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
     async saveTarget(projectPath: string, target: NovaOrynTargetProfile): Promise<NovaOrynTargetMutationResult> {
         try {
             const root = path.resolve(projectPath);
@@ -1348,8 +1375,9 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind !== 'qemu') return { success: false, error: `${activeTarget.name} is a ${activeTarget.kind} target. Physical/remote execution is reserved for NovaOryn IDE item 22; the target is retained and can already be configured.` };
-            if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/boot pipeline is x86_64; the Target Manager will retain this target until that architecture backend is installed.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.3.4 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
+            if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
             const runPath = path.join(projectRoot, 'Run.bat');
             await fs.access(runPath);
@@ -1357,7 +1385,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             const modeArgument = mode === 'debug' ? 'Debug' : 'Run';
             const sessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
             const session: RunSession = {
-                sessionId, output: `[INFO] NovaOryn target: ${activeTarget.name} (${activeTarget.kind}/${activeTarget.architecture})\r\n`, complete: false, mode, projectRoot,
+                sessionId, output: `[INFO] NovaOryn target: ${activeTarget.name} (${activeTarget.kind}/${activeTarget.architecture})\r\n`, complete: false, mode, projectRoot, target: activeTarget,
                 breakpoints: new Map<string, SourceBreakpoint>(),
                 requestedBreakpoints: breakpoints.map(item => ({ sourcePath: path.resolve(item.sourcePath), line: item.line, condition: item.condition?.trim() || undefined, hitCondition: item.hitCondition?.trim() || undefined })),
                 breakpointResults: [],
@@ -1401,9 +1429,13 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                     return;
                 }
                 if (mode === 'debug' && code === 0) {
-                    void this.launchDebugQemu(session).catch(error => {
+                    const launcher = activeTarget.kind === 'physical'
+                        ? this.launchPhysicalDebugger(session, activeTarget)
+                        : this.launchDebugQemu(session);
+                    void launcher.catch(error => {
                         session.error = error instanceof Error ? error.message : String(error);
                         session.output += `\r\n[FAIL] ${session.error}\r\n`;
+                        session.physicalSerial?.kill();
                         session.complete = true;
                         session.exitCode = 1;
                     });
@@ -1526,6 +1558,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             session.stepPlan = undefined;
             session.gdb?.close();
             session.qemu?.kill();
+            session.physicalSerial?.kill();
             session.debug = { ...session.debug, active: false, paused: false, message: 'Debug session stopped.' };
             session.complete = true;
             session.exitCode = 0;
@@ -1534,11 +1567,14 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         if (command === 'restart') {
             session.gdb?.close();
             session.qemu?.kill();
+            session.physicalSerial?.kill();
             session.breakpoints.clear();
             session.lastBreakpoint = undefined;
             session.stepPlan = undefined;
-            session.debug = { active: false, paused: false, sourceSymbols: session.debug.sourceSymbols, message: 'Restarting QEMU debugger…' };
-            await this.launchDebugQemu(session);
+            const physical = session.target?.kind === 'physical';
+            session.debug = { active: false, paused: false, sourceSymbols: session.debug.sourceSymbols, message: physical ? 'Reattaching physical-machine debugger…' : 'Restarting QEMU debugger…' };
+            if (physical && session.target) await this.launchPhysicalDebugger(session, session.target);
+            else await this.launchDebugQemu(session);
             return session.debug!;
         }
         if (!session.gdb || !session.debug.active) {
@@ -1919,7 +1955,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.3.2 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.3.4 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -2063,21 +2099,10 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         }
     }
 
-    protected async launchDebugQemu(session: RunSession): Promise<void> {
-        const artifactRoot = path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel');
-        const imagePath = path.join(artifactRoot, 'MinimalKernel.img');
-        const debugMapPath = path.join(artifactRoot, 'NovaOryn.DebugSymbols.json');
-        const qemuPath = 'C:\\Program Files\\qemu\\qemu-system-x86_64.exe';
-        const ovmfCode = 'C:\\Program Files\\qemu\\share\\edk2-x86_64-code.fd';
-        const ovmfVars = 'C:\\Program Files\\qemu\\share\\edk2-i386-vars.fd';
-        await Promise.all([fs.access(imagePath), fs.access(debugMapPath), fs.access(qemuPath), fs.access(ovmfCode), fs.access(ovmfVars)]);
-
+    protected async loadDebugMapForSession(session: RunSession, debugMapPath: string): Promise<void> {
         const rawDebugMap = JSON.parse(await fs.readFile(debugMapPath, 'utf8')) as { image?: string; pdb?: string; anchor?: NativeDebugMap['anchor']; entries?: Array<Record<string, unknown>> };
         const normalizedEntries: NativeSourceLine[] = Array.isArray(rawDebugMap.entries)
             ? rawDebugMap.entries.flatMap(entry => {
-                // System.Text.Json serializes the SDK's SourceLineEntry record using
-                // PascalCase property names, while older IDE builds expected camelCase.
-                // Accept both schemas and discard malformed rows before path handling.
                 const sourcePath = typeof entry.sourcePath === 'string' ? entry.sourcePath
                     : typeof entry.SourcePath === 'string' ? entry.SourcePath : undefined;
                 const lineValue = typeof entry.line === 'number' ? entry.line
@@ -2090,9 +2115,128 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             })
             : [];
         session.nativeDebugMap = { image: rawDebugMap.image, pdb: rawDebugMap.pdb, anchor: rawDebugMap.anchor!, entries: normalizedEntries };
-        if (session.nativeDebugMap.anchor?.symbol !== 'NovaOrynDebugImageAnchor' || !session.nativeDebugMap.anchor.linkedAddress || !session.nativeDebugMap.anchor.resumeLinkedAddress || session.nativeDebugMap.anchor.transport !== 'qemu-debugcon-0xe9-binary-v1' || session.nativeDebugMap.entries.length === 0) {
-            throw new Error('NovaOryn.DebugSymbols.json is incomplete or does not contain the NovaOryn 0.37.4 debug rendezvous metadata. Rebuild the SDK/kernel in Debug mode.');
+        if (session.nativeDebugMap.anchor?.symbol !== 'NovaOrynDebugImageAnchor' || !session.nativeDebugMap.anchor.linkedAddress || !session.nativeDebugMap.anchor.resumeLinkedAddress || session.nativeDebugMap.entries.length === 0) {
+            throw new Error('NovaOryn.DebugSymbols.json is incomplete or does not contain the NovaOryn debug rendezvous metadata. Rebuild the SDK/kernel in Debug mode.');
         }
+    }
+
+    protected startPhysicalSerialCapture(session: RunSession, target: NovaOrynTargetProfile): void {
+        const serialPort = target.physical?.serialPort?.trim();
+        const baudRate = Math.max(1200, Math.trunc(target.physical?.baudRate ?? 115200));
+        if (!serialPort) return;
+        if (!/^(?:COM[1-9][0-9]*|\\\\\.\\COM[1-9][0-9]*)$/i.test(serialPort)) {
+            session.output += `[WARN] Physical serial port "${serialPort}" is not a supported Windows COM port name. Serial capture was skipped.\r\n`;
+            return;
+        }
+        const script = [
+            '$ErrorActionPreference="Stop"',
+            '$p=[System.IO.Ports.SerialPort]::new($env:NOVAORYN_SERIAL_PORT,[int]$env:NOVAORYN_SERIAL_BAUD,[System.IO.Ports.Parity]::None,8,[System.IO.Ports.StopBits]::One)',
+            '$p.ReadTimeout=200',
+            '$p.Open()',
+            'try { while ($true) { $s=$p.ReadExisting(); if ($s) { [Console]::Out.Write($s); [Console]::Out.Flush() }; Start-Sleep -Milliseconds 25 } } finally { if ($p.IsOpen) { $p.Close() } }'
+        ].join('; ');
+        const child = spawn('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script], {
+            cwd: session.projectRoot,
+            windowsHide: true,
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: { ...process.env, NOVAORYN_SERIAL_PORT: serialPort, NOVAORYN_SERIAL_BAUD: String(baudRate) }
+        });
+        child.stdout?.setEncoding('utf8');
+        child.stderr?.setEncoding('utf8');
+        child.stdout?.on('data', data => {
+            const text = String(data);
+            this.ingestTelemetry(session, text);
+            session.output += text.split(/\r?\n/).filter(Boolean).map(line => `[SERIAL] ${line}\r\n`).join('');
+        });
+        child.stderr?.once('data', data => { session.output += `[WARN] Physical serial capture ${serialPort}@${baudRate}: ${String(data).trim()}\r\n`; });
+        child.on('error', error => { session.output += `[WARN] Could not start physical serial capture: ${error.message}\r\n`; });
+        session.physicalSerial = child;
+        session.output += `[INFO] Physical serial capture requested on ${serialPort} at ${baudRate} baud.\r\n`;
+    }
+
+    protected async launchPhysicalDebugger(session: RunSession, target: NovaOrynTargetProfile): Promise<void> {
+        if (target.kind !== 'physical' || !target.physical) throw new Error('The selected NovaOryn target does not contain physical debugger settings.');
+        const artifactRoot = path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel');
+        const imagePath = path.join(artifactRoot, 'MinimalKernel.img');
+        const debugMapPath = path.join(artifactRoot, 'NovaOryn.DebugSymbols.json');
+        await Promise.all([fs.access(imagePath), fs.access(debugMapPath)]);
+        await this.loadDebugMapForSession(session, debugMapPath);
+        const debugMap = session.nativeDebugMap;
+        if (!debugMap) throw new Error('NovaOryn NativeAOT debug map could not be loaded for the physical debugging session.');
+
+        const host = target.physical.gdbHost.trim();
+        const port = target.physical.gdbPort;
+        session.output += `\r\n[INFO] Physical debug transport: GDB RSP ${host}:${port}.\r\n`;
+        session.output += `[INFO] Boot the freshly-built ${imagePath} on the target machine. A Debug build waits at NovaOrynDebugImageAnchor before KMain.\r\n`;
+        this.startPhysicalSerialCapture(session, target);
+
+        const gdb = new GdbRspClient(packet => { void this.handleGdbStop(session, packet); });
+        await gdb.connect(host, port, 30000);
+        session.gdb = gdb;
+        session.debug = { active: false, paused: false, sourceSymbols: true, gdbPort: port, message: `Physical debugger attached to ${host}:${port}. Locating NovaOryn rendezvous…` };
+        session.output += `[ OK ] NovaOryn physical debugger attached to ${host}:${port}.\r\n`;
+        session.output += `[ OK ] Exact source-line map loaded: ${debugMap.entries.length} line mapping(s).\r\n`;
+
+        // A real target may already be stopped by its probe, or the remote stub may report it running.
+        // Ctrl-C is standard GDB RSP and gives us a consistent register snapshot.
+        session.internalPause = true;
+        try { gdb.interrupt(); } catch { }
+        await this.waitForPause(session, 5000).catch(() => undefined);
+
+        const runtimeAnchor = await this.readRegister(gdb, 9); // r9 is deliberately loaded with NovaOrynDebugImageAnchor by Entry.asm.
+        if (runtimeAnchor < 0x10000n) {
+            throw new Error(`Physical target did not expose the NovaOryn debug rendezvous in R9 (read 0x${runtimeAnchor.toString(16)}). Boot the freshly-built Debug image and ensure the hardware GDB stub can read x64 registers.`);
+        }
+        const linkedAnchor = this.parseAddress(debugMap.anchor.linkedAddress);
+        session.relocationDelta = runtimeAnchor - linkedAnchor;
+        session.output += `[ OK ] Physical rendezvous located: runtime anchor 0x${runtimeAnchor.toString(16)}, linked anchor ${debugMap.anchor.linkedAddress}, delta ${this.formatSignedHex(session.relocationDelta)}.\r\n`;
+
+        session.breakpointResults = [];
+        for (const requested of session.requestedBreakpoints) {
+            const result = await this.armSourceBreakpoint(session, requested);
+            session.breakpointResults.push(result);
+            session.output += `[DEBUG] ${result.sourcePath}:${result.line}: ${result.message}\r\n`;
+        }
+        await this.armExceptionBreakpoints(session, artifactRoot);
+
+        const linkedResume = this.parseAddress(debugMap.anchor.resumeLinkedAddress!);
+        const runtimeResume = linkedResume + session.relocationDelta;
+        await this.writeRip(gdb, runtimeResume);
+        session.internalPause = false;
+
+        const unresolved = session.breakpointResults.filter(item => !item.verified);
+        if (unresolved.length > 0) {
+            session.debug = {
+                active: true, paused: true, sourceSymbols: true, gdbPort: port,
+                breakpoints: session.breakpointResults.map(item => ({ ...item })),
+                message: `${unresolved.length} requested breakpoint(s) could not be verified. Physical kernel held before KMain; fix/remove them, then Continue.`
+            };
+            session.output += `[WARN] Physical kernel held before KMain because ${unresolved.length} source breakpoint(s) are unresolved.\r\n`;
+            return;
+        }
+
+        session.debug = {
+            active: true, paused: false, sourceSymbols: true, gdbPort: port,
+            breakpoints: session.breakpointResults.map(item => ({ ...item })),
+            message: `Physical kernel running through ${host}:${port}. Waiting for breakpoint.`
+        };
+        gdb.run('c');
+        session.output += `[ OK ] ${session.breakpointResults.filter(item => item.verified).length}/${session.breakpointResults.length} requested source breakpoint(s) armed before KMain.\r\n`;
+        session.output += '[INFO] Physical kernel released. It will stop only at a verified breakpoint, Pause, exception or panic.\r\n';
+    }
+
+    protected async launchDebugQemu(session: RunSession): Promise<void> {
+        const artifactRoot = path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel');
+        const imagePath = path.join(artifactRoot, 'MinimalKernel.img');
+        const debugMapPath = path.join(artifactRoot, 'NovaOryn.DebugSymbols.json');
+        const qemuPath = 'C:\\Program Files\\qemu\\qemu-system-x86_64.exe';
+        const ovmfCode = 'C:\\Program Files\\qemu\\share\\edk2-x86_64-code.fd';
+        const ovmfVars = 'C:\\Program Files\\qemu\\share\\edk2-i386-vars.fd';
+        await Promise.all([fs.access(imagePath), fs.access(debugMapPath), fs.access(qemuPath), fs.access(ovmfCode), fs.access(ovmfVars)]);
+
+        await this.loadDebugMapForSession(session, debugMapPath);
+        const debugMap = session.nativeDebugMap;
+        if (!debugMap) throw new Error('NovaOryn NativeAOT debug map could not be loaded for the QEMU debugging session.');
 
         const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 17);
         const runDirectory = path.join(artifactRoot, 'Runs', `debug-${stamp}`);
@@ -2142,11 +2286,11 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         });
 
         const gdb = new GdbRspClient(packet => { void this.handleGdbStop(session, packet); });
-        await gdb.connect(gdbPort, 15000);
+        await gdb.connect('127.0.0.1', gdbPort, 15000);
         session.gdb = gdb;
         session.debug = { active: false, paused: false, sourceSymbols: true, gdbPort, message: 'Debugger attached. Preparing source breakpoints…' };
         session.output += `[ OK ] NovaOryn debugger attached to QEMU on port ${gdbPort}.\r\n`;
-        session.output += `[ OK ] Exact source-line map loaded: ${session.nativeDebugMap.entries.length} line mapping(s).\r\n`;
+        session.output += `[ OK ] Exact source-line map loaded: ${debugMap.entries.length} line mapping(s).\r\n`;
 
         gdb.run('c');
         const runtimeAnchor = await this.waitForDebugRendezvous(debugConLog, 30000);
@@ -2156,9 +2300,9 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         gdb.interrupt();
         await this.waitForPause(session, 3000);
 
-        const linkedAnchor = this.parseAddress(session.nativeDebugMap.anchor.linkedAddress);
+        const linkedAnchor = this.parseAddress(debugMap.anchor.linkedAddress);
         session.relocationDelta = runtimeAnchor - linkedAnchor;
-        session.output += `[ OK ] EFI runtime relocation resolved: linked anchor ${session.nativeDebugMap.anchor.linkedAddress}, runtime anchor 0x${runtimeAnchor.toString(16)}, delta ${this.formatSignedHex(session.relocationDelta)}.\r\n`;
+        session.output += `[ OK ] EFI runtime relocation resolved: linked anchor ${debugMap.anchor.linkedAddress}, runtime anchor 0x${runtimeAnchor.toString(16)}, delta ${this.formatSignedHex(session.relocationDelta)}.\r\n`;
 
         session.breakpointResults = [];
         for (const requested of session.requestedBreakpoints) {
@@ -2168,7 +2312,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         }
         await this.armExceptionBreakpoints(session, artifactRoot);
 
-        const linkedResume = this.parseAddress(session.nativeDebugMap.anchor.resumeLinkedAddress!);
+        const linkedResume = this.parseAddress(debugMap.anchor.resumeLinkedAddress!);
         const runtimeResume = linkedResume + session.relocationDelta;
         await this.writeRip(gdb, runtimeResume);
         session.internalPause = false;
@@ -3411,7 +3555,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             if (session.debug?.paused) { return; }
             await new Promise(resolve => setTimeout(resolve, 25));
         }
-        throw new Error('QEMU did not acknowledge the debugger pause request.');
+        throw new Error('Debugger transport did not acknowledge the pause request.');
     }
 
     protected async findFreePort(start: number, end: number): Promise<number> {
@@ -4068,7 +4212,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             '  )',
             ')',
             'if /I "%NOVAORYN_CONFIGURATION%"=="Debug" (',
-            '  echo [INFO] Debug build completed by the SDK; NovaOryn IDE will launch QEMU and attach its debugger.',
+            '  echo [INFO] Debug build completed by the SDK; NovaOryn IDE will attach the debugger transport for the active target.',
             `  call "%NOVAORYN_SDK%\\Build-NovaOryn.bat" "%NOVAORYN_MANIFEST%" -Configuration Debug`,
             '  exit /b !ERRORLEVEL!',
             ')',

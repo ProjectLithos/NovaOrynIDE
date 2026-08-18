@@ -27,4 +27,4 @@ requireText(service, 'readNamedNativeVariables', 'Paused debugger does not resol
 requireText(service, 'resolveNamedVariableValue', 'Watch/condition evaluator cannot resolve named NativeAOT variables.');
 requireText(inspector, "variable.location", 'Locals UI does not show native variable locations.');
 
-console.log('[ OK ] NovaOryn IDE 0.3.2 Memory viewer and named NativeAOT locals/arguments contract verified.');
+console.log('[ OK ] NovaOryn IDE 0.3.4 Memory viewer and named NativeAOT locals/arguments contract verified.');

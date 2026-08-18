@@ -28,7 +28,7 @@ requireText(contribution, "menus.registerSubmenu(editorDebugMenu, 'Debug')", 'Ed
 requireText(contribution, 'EDITOR_LINENUMBER_CONTEXT_MENU', 'The line-number/glyph context menu must be supported.');
 requireText(contribution, "label: 'Toggle Breakpoint'", 'Debug context submenu must contain Toggle Breakpoint.');
 rejectText(contribution, "keybinding: 'f9'", 'NovaOryn must not compete with Theia native F9 breakpoint keybinding.');
-requireText(service, 'await gdb.connect(gdbPort, 15000);', 'Debugger attach retry is required.');
+requireText(service, "await gdb.connect('127.0.0.1', gdbPort, 15000);", 'Debugger attach retry is required.');
 requireText(service, 'NovaOryn.DebugSymbols.json', 'Exact source-line debug manifest is required.');
 requireText(service, 'requested line ${line} -> executable line ${resolved.resolvedLine}', 'Breakpoint binding must report requested and resolved executable lines.');
 requireText(service, 'Kernel is held before KMain because', 'Unverified requested breakpoints must hold the kernel before KMain.');

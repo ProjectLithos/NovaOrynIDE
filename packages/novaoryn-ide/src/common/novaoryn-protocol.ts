@@ -432,6 +432,7 @@ export interface NovaOrynQemuTargetSettings {
     display: NovaOrynQemuDisplay;
 }
 export interface NovaOrynPhysicalTargetSettings { gdbHost: string; gdbPort: number; serialPort?: string; baudRate?: number; }
+export interface NovaOrynPhysicalDebuggerProbe { success: boolean; targetId?: string; targetName?: string; host?: string; port?: number; connected: boolean; stopReply?: string; serialPort?: string; baudRate?: number; message?: string; error?: string; }
 export interface NovaOrynRemoteTargetSettings { host: string; port: number; }
 export interface NovaOrynTargetProfile {
     schemaVersion: 1;
@@ -789,6 +790,7 @@ export interface NovaOrynProjectService {
     readDiskImageEntry(projectPath: string, imagePath: string, entryPath: string, offset: number, length: number): Promise<NovaOrynDiskReadResult>;
     listTargets(projectPath: string): Promise<NovaOrynTargetState>;
     getActiveTarget(projectPath: string): Promise<NovaOrynTargetProfile | undefined>;
+    probePhysicalDebugger(projectPath: string, targetId?: string): Promise<NovaOrynPhysicalDebuggerProbe>;
     saveTarget(projectPath: string, target: NovaOrynTargetProfile): Promise<NovaOrynTargetMutationResult>;
     deleteTarget(projectPath: string, targetId: string): Promise<NovaOrynTargetMutationResult>;
     setActiveTarget(projectPath: string, targetId: string): Promise<NovaOrynTargetMutationResult>;
