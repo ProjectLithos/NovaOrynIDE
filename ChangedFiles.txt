@@ -1,12 +1,18 @@
-NovaOryn IDE 0.3.4 changed files
+NovaOryn IDE 0.4.0 changed files
 
-Corrective release for the 0.3.3 Physical-machine debugger transport TypeScript build errors.
-
+.gitignore
 Audit-NovaOrynIDE.bat
 Build-NovaOrynIDE.bat
-ChangedFiles.txt
 Install-NovaOrynIDEToolchain.ps1
 Run-NovaOrynIDE.bat
+SDK/NovaOryn-SourceManifest.json
+SDK/NovaOryn.SdkManifest.json
+SDK/NovaOryn.SubsystemContracts.json
+SDK/NovaOryn.sln
+SDK/docs/Kernel-Subsystem-Contracts.md
+SDK/docs/site/guides/Kernel-Subsystem-Contracts.html
+SDK/src/NovaOryn.Kernel.SubsystemContracts/NovaOryn.Kernel.SubsystemContracts.csproj
+SDK/src/NovaOryn.Kernel.SubsystemContracts/SubsystemContracts.cs
 Security-Baseline.json
 VERSION
 Validate-NovaOrynIDEDependencies.ps1
@@ -20,14 +26,14 @@ Verify-NovaOrynIDEMemoryMap.cjs
 Verify-NovaOrynIDEPageHeapCrash.cjs
 Verify-NovaOrynIDEPhysicalDebugger.cjs
 Verify-NovaOrynIDEStaticAnalyzers.cjs
+Verify-NovaOrynIDESubsystemContracts.cjs
 Verify-NovaOrynIDESyscalls.cjs
 Verify-NovaOrynIDETargetManager.cjs
 Verify-NovaOrynIDEWorkspaceStartup.cjs
 applications/electron/package.json
-docs/Release-0.3.4.md
+docs/Release-0.4.0.md
 package.json
 packages/novaoryn-ide/package.json
-packages/novaoryn-ide/src/browser/novaoryn-physical-debugger-widget.tsx
 packages/novaoryn-ide/src/browser/novaoryn-target-manager-widget.tsx
 packages/novaoryn-ide/src/browser/novaoryn-widget.tsx
 packages/novaoryn-ide/src/node/novaoryn-project-service.ts

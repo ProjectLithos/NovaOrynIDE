@@ -264,7 +264,7 @@ function Ensure-Msvc($Config) {
 }
 
 try {
-    if ($env:OS -ne 'Windows_NT') { throw 'NovaOryn IDE 0.3.4 toolchain bootstrap currently supports Windows only.' }
+    if ($env:OS -ne 'Windows_NT') { throw 'NovaOryn IDE 0.4.0 toolchain bootstrap currently supports Windows only.' }
     if (-not [Environment]::Is64BitOperatingSystem) { throw 'NovaOryn IDE requires 64-bit Windows.' }
     if (-not (Test-Path -LiteralPath $ManifestPath)) { throw "Missing toolchain manifest: $ManifestPath" }
 

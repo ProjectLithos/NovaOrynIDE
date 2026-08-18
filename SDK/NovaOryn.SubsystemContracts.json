@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0",
+  "policy": "All cross-subsystem consumers target NovaOryn.Kernel.SubsystemContracts. Implementations remain replaceable and architecture-specific details stay below the boundary.",
+  "subsystems": [
+    {"id":"Memory","interface":"IKernelMemoryContract","implementation":"NovaOryn.Kernel.Memory"},
+    {"id":"Interrupts","interface":"IKernelInterruptContract","implementation":"NovaOryn.Kernel.InterruptBroker"},
+    {"id":"Scheduler","interface":"IKernelSchedulerContract","implementation":"NovaOryn.Kernel.Scheduler"},
+    {"id":"Processes","interface":"IKernelProcessContract","implementation":"NovaOryn.Kernel.Processes"},
+    {"id":"Syscalls","interface":"IKernelSyscallContract","implementation":"NovaOryn.Kernel.SystemCalls"},
+    {"id":"Drivers","interface":"IKernelDriverContract","implementation":"NovaOryn.Kernel.Drivers"},
+    {"id":"Filesystem","interface":"IKernelFilesystemContract","implementation":"NovaOryn.Kernel.Storage"},
+    {"id":"Networking","interface":"IKernelNetworkingContract","implementation":"NovaOryn.Kernel.Networking"},
+    {"id":"Graphics","interface":"IKernelGraphicsContract","implementation":"NovaOryn.Kernel.Graphics"},
+    {"id":"Input","interface":"IKernelInputContract","implementation":"NovaOryn.Kernel.Ps2"},
+    {"id":"Time","interface":"IKernelTimeContract","implementation":"NovaOryn.Kernel.Time"},
+    {"id":"Power","interface":"IKernelPowerContract","implementation":"NovaOryn.Kernel.Acpi"},
+    {"id":"Smp","interface":"IKernelSmpContract","implementation":"NovaOryn.Kernel.Smp"}
+  ]
+}

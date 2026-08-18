@@ -210,6 +210,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Userland.Drivers",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Filesystem.FatFs", "src\NovaOryn.Filesystem.FatFs\NovaOryn.Filesystem.FatFs.csproj", "{35000000-0000-4000-8000-000000000007}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.SubsystemContracts", "src\NovaOryn.Kernel.SubsystemContracts\NovaOryn.Kernel.SubsystemContracts.csproj", "{E02478EF-D8F0-4999-BF0E-E6861187A732}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -649,6 +651,11 @@ Global
 		{35000000-0000-4000-8000-000000000007}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{35000000-0000-4000-8000-000000000007}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{35000000-0000-4000-8000-000000000007}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E02478EF-D8F0-4999-BF0E-E6861187A732}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E02478EF-D8F0-4999-BF0E-E6861187A732}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E02478EF-D8F0-4999-BF0E-E6861187A732}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E02478EF-D8F0-4999-BF0E-E6861187A732}.Release|Any CPU.Build.0 = Release|Any CPU
+
 	EndGlobalSection
 EndGlobal
 
