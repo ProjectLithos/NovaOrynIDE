@@ -202,7 +202,14 @@ public static unsafe class Kernel
         if (!KernelConsole.WriteHex(earlyAddress)) return false;
         if (!KernelConsole.WriteLine("")) return false;
         Boolean heapReady = KernelHeap.Initialize();
-        if (heapReady && !KernelLog.Configure(new KernelConsoleLogSink(), new KernelLogContextProvider(), KernelLogLevel.Info)) return false;
+        KernelLogContextProvider diagnosticsContext = heapReady ? new KernelLogContextProvider() : null;
+        if (heapReady && !KernelLog.Configure(new KernelConsoleLogSink(), diagnosticsContext, KernelLogLevel.Info)) return false;
+        if (heapReady && !KernelTelemetry.Configure(new KernelConsoleTelemetrySink(), diagnosticsContext)) return false;
+        if (heapReady)
+        {
+            KernelTelemetry.KernelBootEnd("Kernel heap", 0UL, "Structured diagnostics are now allocation-safe.");
+            KernelTelemetry.KernelDiagnosticEvent("diagnostic", "telemetry-online", 0UL, "KernelTelemetry runtime v1.1 online.");
+        }
         if (!KernelConsole.Write("Kernel heap status: ")) return false;
         if (!KernelConsole.WriteLine(KernelHeap.GetLastStatusName())) return false;
         if (!heapReady) return false;
@@ -231,7 +238,10 @@ public static unsafe class Kernel
         if (!KernelConsole.WriteHex(heapSample.Address)) return false;
         if (!KernelConsole.WriteLine("")) return false;
         if (!KernelHeap.TryRelease(heapSample)) return false;
+        KernelTelemetry.KernelBootBegin("SMP / per-CPU");
         if (!KernelSmp.Initialize(boot)) return false;
+        KernelTelemetry.KernelBootEnd("SMP / per-CPU", 0UL);
+        KernelTelemetry.KernelCounter("smp", "online-cpus", KernelSmp.GetOnlineProcessorCount());
         if (!KernelConsole.Write("SMP status: ")) return false;
         if (!KernelConsole.WriteLine(KernelSmp.GetLastStatusName())) return false;
         if (!KernelConsole.Write("Processors online/total: ")) return false;
@@ -246,7 +256,9 @@ public static unsafe class Kernel
         if (!KernelConsole.WriteHex(KernelSmp.GetCapabilities().TrampolineAddress)) return false;
         if (!KernelConsole.WriteLine("")) return false;
         if (!KernelLog.Info("kernel","Kernel.KMain","SMP and per-CPU state online.")) return false;
+        KernelTelemetry.KernelBootBegin("Scheduler");
         if (!KernelScheduler.Initialize()) return false;
+        KernelTelemetry.KernelBootEnd("Scheduler", 0UL);
         if (!KernelConsole.Write("Scheduler threads active: ")) return false;
         if (!KernelConsole.WriteUInt64(KernelScheduler.GetActiveThreadCount())) return false;
         if (!KernelConsole.WriteLine("")) return false;
@@ -256,7 +268,9 @@ public static unsafe class Kernel
         if (!KernelConsole.Write("Timer preemption: ")) return false;
         if (!KernelConsole.WriteLine(KernelScheduler.GetCapabilities().HasTimerPreemption ? "available" : "cooperative only")) return false;
         if (!KernelLog.Info("kernel","Kernel.KMain","Scheduler and threads online.")) return false;
+        KernelTelemetry.KernelBootBegin("Protection");
         if (!KernelProtection.Initialize()) return false;
+        KernelTelemetry.KernelBootEnd("Protection", 0UL);
         KernelProtectionCapabilities protection = KernelProtection.GetCapabilities();
         if (!KernelConsole.Write("User range: ")) return false;
         if (!KernelConsole.WriteHex(protection.MinimumUserAddress)) return false;
@@ -275,12 +289,14 @@ public static unsafe class Kernel
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteLine(protection.SmapSupported ? "available for syscall copy guards" : "unsupported")) return false;
         if (!KernelLog.Info("kernel","Kernel.KMain","User/kernel separation online.")) return false;
+        KernelTelemetry.KernelBootBegin("System calls");
         if (!KernelSystemCalls.Initialize()) return false;
         if (!KernelSystemCalls.RegisterGet(33U, &GetFontPresetSyscall)) return false;
         if (!KernelSystemCalls.RegisterSet(33U, &SetFontPresetSyscall)) return false;
         if (!KernelSystemCalls.RegisterGet(34U, &GetBufferingPresetSyscall)) return false;
         if (!KernelSystemCalls.RegisterSet(34U, &SetBufferingPresetSyscall)) return false;
         KernelSystemCallCapabilities systemCalls = KernelSystemCalls.GetCapabilities();
+        KernelTelemetry.KernelBootEnd("System calls", 0UL);
         if (!KernelConsole.Write("System calls: Get/Set/Event + Linux-style + NT-style; syscall stack: ")) return false;
         if (!KernelConsole.WriteByteSize(systemCalls.SyscallStackBytes)) return false;
         if (!KernelConsole.WriteLine("")) return false;
@@ -300,7 +316,9 @@ public static unsafe class Kernel
         if (!KernelConsole.WriteLine(KeyboardLayouts.GetName(ps2.Layout))) return false;
         if (!KernelLog.Info("kernel","Kernel.KMain","Keyboard layouts loaded: English_UK, English_USA.")) return false;
         if (!KernelLog.Info("kernel","Kernel.KMain","Keyboard repeat: software controlled; 300 ms delay, 40 ms interval; key-up cancels immediately.")) return false;
+        KernelTelemetry.KernelBootBegin("Processes");
         if (!KernelProcesses.Initialize()) return false;
+        KernelTelemetry.KernelBootEnd("Processes", 0UL);
         KernelProcessCapabilities processes = KernelProcesses.GetCapabilities();
         if (!KernelConsole.Write("Processes ready/max: ")) return false;
         if (!KernelConsole.WriteUInt64(processes.ActiveProcessCount)) return false;
@@ -313,6 +331,7 @@ public static unsafe class Kernel
         if (!KernelTimerDispatch.Register(1000000UL, &ServiceConsoleInput, 0UL, out _)) return false;
         if (!KernelTimerDispatch.Register(2000000UL, &ServiceNetworkAdapters, 0UL, out _)) return false;
         if (!KernelLog.Info("kernel","Kernel.KMain","Interrupt and timer dispatch online; background polling disabled.")) return false;
+        KernelTelemetry.KernelBootBegin("Driver framework");
         if (!KernelDrivers.Initialize()) return false;
         if (!KernelPci.Initialize()) return false;
         if (!KernelXhci.Initialize()) return false;
@@ -342,6 +361,9 @@ public static unsafe class Kernel
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteLine(interruptBroker.MsiX ? "on" : "off")) return false;
         KernelDriverCapabilities drivers = KernelDrivers.GetCapabilities();
+        KernelTelemetry.KernelBootEnd("Driver framework", 0UL);
+        KernelTelemetry.KernelCounter("driver", "registered-drivers", drivers.RegisteredDrivers);
+        KernelTelemetry.KernelCounter("driver", "registered-devices", drivers.RegisteredDevices);
         PciCapabilities pci = KernelPci.GetCapabilities();
         if (!KernelConsole.Write("Driver framework drivers/devices: ")) return false;
         if (!KernelConsole.WriteUInt64(drivers.RegisteredDrivers)) return false;

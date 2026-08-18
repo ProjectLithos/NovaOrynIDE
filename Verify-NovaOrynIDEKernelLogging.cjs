@@ -21,7 +21,7 @@ const manifest=read('SDK/NovaOryn.SdkManifest.json');
  [sink,'record.Subsystem','subsystem emitted'],
  [sink,'record.Source','source emitted'],
  [scheduler,'TryGetCurrentThreadId','live scheduler thread context'],
- [boot,'KernelLog.Configure(new KernelConsoleLogSink(), new KernelLogContextProvider(), KernelLogLevel.Info)','boot logging configured'],
+ [boot,'KernelLog.Configure(new KernelConsoleLogSink(), diagnosticsContext, KernelLogLevel.Info)','boot logging configured'],
  [boot,'KernelLog.Info("kernel","Kernel.KMain","SMP and per-CPU state online.")','boot milestones use structured log'],
  [manifest,'"structuredLogging": "1.1"','SDK manifest logging contract 1.1']
 ].forEach(x=>requireText(x[0],x[1],x[2]));

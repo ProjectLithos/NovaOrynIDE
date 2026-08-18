@@ -66,14 +66,77 @@ public static class KernelLog
 
 public static class KernelTelemetry
 {
-    private static IKernelTelemetrySink _sink; private static UInt64 _sequence=1;
-    public static Boolean Configure(IKernelTelemetrySink sink){_sink=sink;return sink!=null;}
-    public static Boolean Emit(KernelTelemetryKind kind,String subsystem,String name,UInt64 timestamp,UInt64 value0=0,UInt64 value1=0,String detail=""){if(_sink==null)return false;return _sink.TryEmit(new KernelTelemetryEvent(kind,subsystem??String.Empty,name??String.Empty,timestamp,value0,value1,_sequence++,detail??String.Empty));}
-    public static Boolean KernelTrace(String subsystem,String name,UInt64 timestamp,String detail="")=>Emit(KernelTelemetryKind.Trace,subsystem,name,timestamp,0,0,detail);
-    public static Boolean KernelProfile(String subsystem,String name,UInt64 timestamp,UInt64 samples,UInt64 duration)=>Emit(KernelTelemetryKind.Profile,subsystem,name,timestamp,samples,duration,String.Empty);
-    public static Boolean KernelBootEvent(String name,UInt64 timestamp,UInt64 stage)=>Emit(KernelTelemetryKind.BootEvent,"boot",name,timestamp,stage,0,String.Empty);
-    public static Boolean KernelCounter(String subsystem,String name,UInt64 timestamp,UInt64 value)=>Emit(KernelTelemetryKind.Counter,subsystem,name,timestamp,value,0,String.Empty);
-    public static Boolean KernelDiagnosticEvent(String subsystem,String name,UInt64 timestamp,UInt64 code,String detail)=>Emit(KernelTelemetryKind.DiagnosticEvent,subsystem,name,timestamp,code,0,detail);
+    private const Int32 MaximumSinks=4;
+    private static readonly IKernelTelemetrySink[] _sinks=new IKernelTelemetrySink[MaximumSinks];
+    private static IKernelTelemetryContextProvider _context;
+    private static UInt64 _sequence=1;
+    private static UInt64 _trace,_profile,_boot,_counter,_diagnostic,_dropped;
+
+    public static Boolean Configure(IKernelTelemetrySink sink)
+    {
+        return Configure(sink,null);
+    }
+    public static Boolean Configure(IKernelTelemetrySink sink,IKernelTelemetryContextProvider context)
+    {
+        if(sink==null)return false;
+        RemoveAllSinks();
+        _sinks[0]=sink;
+        _context=context;
+        return true;
+    }
+    public static Boolean AddSink(IKernelTelemetrySink sink)
+    {
+        if(sink==null)return false;
+        for(Int32 i=0;i<MaximumSinks;i++)
+        {
+            if(_sinks[i]==sink)return true;
+            if(_sinks[i]==null){_sinks[i]=sink;return true;}
+        }
+        return false;
+    }
+    public static Boolean RemoveAllSinks(){for(Int32 i=0;i<MaximumSinks;i++)_sinks[i]=null;return true;}
+    public static Boolean SetContextProvider(IKernelTelemetryContextProvider context){_context=context;return true;}
+    public static KernelTelemetryStatistics GetStatistics()=>new KernelTelemetryStatistics(_trace,_profile,_boot,_counter,_diagnostic,_dropped,_sequence);
+
+    public static Boolean Emit(KernelTelemetryKind kind,String subsystem,String name,UInt64 timestamp,UInt64 value0=0,UInt64 value1=0,String detail="")
+        =>Emit(kind,subsystem,name,timestamp,value0,value1,detail,KernelTelemetryPhase.Instant);
+
+    public static Boolean Emit(KernelTelemetryKind kind,String subsystem,String name,UInt64 timestamp,UInt64 value0,UInt64 value1,String detail,KernelTelemetryPhase phase)
+    {
+        UInt32 cpu=0;UInt64 thread=0,process=0,contextTime=0;
+        if(_context!=null)_context.TryGetContext(out cpu,out thread,out process,out contextTime);
+        if(timestamp==0)timestamp=contextTime;
+        UInt64 sequence=_sequence++;
+        KernelTelemetryEvent telemetryEvent=new KernelTelemetryEvent(kind,subsystem??String.Empty,name??String.Empty,timestamp,value0,value1,sequence,detail??String.Empty,cpu,thread,process,phase);
+        Boolean any=false,ok=true;
+        for(Int32 i=0;i<MaximumSinks;i++)
+        {
+            IKernelTelemetrySink sink=_sinks[i];
+            if(sink==null)continue;
+            any=true;
+            if(!sink.TryEmit(telemetryEvent))ok=false;
+        }
+        Count(kind);
+        if(!any||!ok)_dropped++;
+        return any&&ok;
+    }
+    private static Boolean Count(KernelTelemetryKind kind)
+    {
+        switch(kind){case KernelTelemetryKind.Trace:_trace++;break;case KernelTelemetryKind.Profile:_profile++;break;case KernelTelemetryKind.BootEvent:_boot++;break;case KernelTelemetryKind.Counter:_counter++;break;case KernelTelemetryKind.DiagnosticEvent:_diagnostic++;break;default:return false;}return true;
+    }
+    public static Boolean KernelTrace(String subsystem,String name,UInt64 timestamp,String detail="")=>Emit(KernelTelemetryKind.Trace,subsystem,name,timestamp,0,0,detail,KernelTelemetryPhase.Instant);
+    public static Boolean KernelTrace(String subsystem,String name,String detail="")=>KernelTrace(subsystem,name,0,detail);
+    public static Boolean KernelTraceBegin(String subsystem,String name,String detail="")=>Emit(KernelTelemetryKind.Trace,subsystem,name,0,0,0,detail,KernelTelemetryPhase.Begin);
+    public static Boolean KernelTraceEnd(String subsystem,String name,UInt64 durationNanoseconds,String detail="")=>Emit(KernelTelemetryKind.Trace,subsystem,name,0,durationNanoseconds,0,detail,KernelTelemetryPhase.End);
+    public static Boolean KernelProfile(String subsystem,String name,UInt64 timestamp,UInt64 samples,UInt64 duration)=>Emit(KernelTelemetryKind.Profile,subsystem,name,timestamp,samples,duration,String.Empty,KernelTelemetryPhase.Instant);
+    public static Boolean KernelProfile(String subsystem,String name,UInt64 samples,UInt64 duration)=>KernelProfile(subsystem,name,0,samples,duration);
+    public static Boolean KernelBootEvent(String name,UInt64 timestamp,UInt64 stage)=>Emit(KernelTelemetryKind.BootEvent,"boot",name,timestamp,stage,0,String.Empty,KernelTelemetryPhase.Instant);
+    public static Boolean KernelBootBegin(String name,String detail="")=>Emit(KernelTelemetryKind.BootEvent,"boot",name,0,0,0,detail,KernelTelemetryPhase.Begin);
+    public static Boolean KernelBootEnd(String name,UInt64 durationNanoseconds,String detail="")=>Emit(KernelTelemetryKind.BootEvent,"boot",name,0,durationNanoseconds,0,detail,KernelTelemetryPhase.End);
+    public static Boolean KernelCounter(String subsystem,String name,UInt64 timestamp,UInt64 value)=>Emit(KernelTelemetryKind.Counter,subsystem,name,timestamp,value,0,String.Empty,KernelTelemetryPhase.Instant);
+    public static Boolean KernelCounter(String subsystem,String name,UInt64 value)=>KernelCounter(subsystem,name,0,value);
+    public static Boolean KernelDiagnosticEvent(String subsystem,String name,UInt64 timestamp,UInt64 code,String detail)=>Emit(KernelTelemetryKind.DiagnosticEvent,subsystem,name,timestamp,code,0,detail,KernelTelemetryPhase.Instant);
+    public static Boolean KernelDiagnosticEvent(String subsystem,String name,UInt64 code,String detail)=>KernelDiagnosticEvent(subsystem,name,0,code,detail);
 }
 
 public static class KernelPanic
