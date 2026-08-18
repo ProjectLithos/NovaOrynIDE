@@ -1,0 +1,237 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Interrupts.Contracts/InterruptContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Interrupts.Contracts/InterruptContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Architecture;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using System.Runtime.InteropServices;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>namespace NovaOryn.Interrupts;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a></span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;summary&gt;Defines the result returned by an interrupt handler.&lt;/summary&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>public enum InterruptResult : byte</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>{</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    /// &lt;summary&gt;The handler did not claim the vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    Unhandled = 0,</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    /// &lt;summary&gt;The interrupt was handled and execution may resume.&lt;/summary&gt;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    Handled = 1,</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;summary&gt;The interrupt was handled and scheduling should occur.&lt;/summary&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    Reschedule = 2,</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    /// &lt;summary&gt;The processor must stop because execution cannot safely resume.&lt;/summary&gt;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    Fatal = 3</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>}</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a></span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>/// &lt;summary&gt;Defines the x64 gate type installed in an IDT entry.&lt;/summary&gt;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>public enum InterruptGateType : byte</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>{</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    /// &lt;summary&gt;Clears IF while the handler runs.&lt;/summary&gt;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    Interrupt = 0xE,</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    /// &lt;summary&gt;Preserves IF while the handler runs.&lt;/summary&gt;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    Trap = 0xF</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>}</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a></span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>/// &lt;summary&gt;Identifies the architectural CPU exception vectors.&lt;/summary&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>public enum CpuExceptionVector : byte</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>{</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;summary&gt;Identifies the divide error vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    DivideError = 0,</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    /// &lt;summary&gt;Identifies the debug vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    Debug = 1,</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    /// &lt;summary&gt;Identifies the non-maskable interrupt vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    NonMaskableInterrupt = 2,</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    /// &lt;summary&gt;Identifies the breakpoint vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    Breakpoint = 3,</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    /// &lt;summary&gt;Identifies the overflow vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    Overflow = 4,</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    /// &lt;summary&gt;Identifies the bound-range exceeded vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    BoundRangeExceeded = 5,</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    /// &lt;summary&gt;Identifies the invalid opcode vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    InvalidOpcode = 6,</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    /// &lt;summary&gt;Identifies the device not available vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    DeviceNotAvailable = 7,</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    /// &lt;summary&gt;Identifies the double fault vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    DoubleFault = 8,</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    /// &lt;summary&gt;Identifies the legacy coprocessor segment overrun vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    CoprocessorSegmentOverrun = 9,</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    /// &lt;summary&gt;Identifies the invalid task-state segment vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    InvalidTaskStateSegment = 10,</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;summary&gt;Identifies the segment not present vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    SegmentNotPresent = 11,</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;summary&gt;Identifies the stack-segment fault vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    StackSegmentFault = 12,</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    /// &lt;summary&gt;Identifies the general protection fault vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    GeneralProtectionFault = 13,</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    /// &lt;summary&gt;Identifies the page fault vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    PageFault = 14,</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    /// &lt;summary&gt;Identifies the reserved vector 15 vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    Reserved15 = 15,</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    /// &lt;summary&gt;Identifies the x87 floating-point exception vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    X87FloatingPoint = 16,</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    /// &lt;summary&gt;Identifies the alignment check vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    AlignmentCheck = 17,</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    /// &lt;summary&gt;Identifies the machine check vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    MachineCheck = 18,</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    /// &lt;summary&gt;Identifies the SIMD floating-point exception vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    SimdFloatingPoint = 19,</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    /// &lt;summary&gt;Identifies the virtualization exception vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    Virtualization = 20,</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    /// &lt;summary&gt;Identifies the control-protection exception vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    ControlProtection = 21,</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    /// &lt;summary&gt;Identifies the reserved vector 22 vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    Reserved22 = 22,</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    /// &lt;summary&gt;Identifies the reserved vector 23 vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    Reserved23 = 23,</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>    /// &lt;summary&gt;Identifies the reserved vector 24 vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    Reserved24 = 24,</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>    /// &lt;summary&gt;Identifies the reserved vector 25 vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    Reserved25 = 25,</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>    /// &lt;summary&gt;Identifies the reserved vector 26 vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    Reserved26 = 26,</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>    /// &lt;summary&gt;Identifies the reserved vector 27 vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    Reserved27 = 27,</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>    /// &lt;summary&gt;Identifies the hypervisor-injection exception vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>    HypervisorInjection = 28,</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>    /// &lt;summary&gt;Identifies the VMM communication exception vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>    VmmCommunication = 29,</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    /// &lt;summary&gt;Identifies the security exception vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>    SecurityException = 30,</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>    /// &lt;summary&gt;Identifies the reserved vector 31 vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>    Reserved31 = 31</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>}</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a></span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>/// &lt;summary&gt;Provides the stable managed/native x64 interrupt frame.&lt;/summary&gt;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>[StructLayout(LayoutKind.Sequential, Pack = 8)]</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>public struct InterruptContext</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>{</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    /// &lt;summary&gt;Gets or sets the vector number.&lt;/summary&gt;</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    public ulong Vector;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    /// &lt;summary&gt;Gets or sets the normalised architectural error code.&lt;/summary&gt;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    public ulong ErrorCode;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    /// &lt;summary&gt;Gets or sets the interrupted RIP.&lt;/summary&gt;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    public ulong InstructionPointer;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    /// &lt;summary&gt;Gets or sets the interrupted CS.&lt;/summary&gt;</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    public ulong CodeSegment;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>    /// &lt;summary&gt;Gets or sets the interrupted RFLAGS.&lt;/summary&gt;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>    public ulong Flags;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>    /// &lt;summary&gt;Gets or sets the interrupted RSP.&lt;/summary&gt;</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>    public ulong StackPointer;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>    /// &lt;summary&gt;Gets or sets the interrupted SS.&lt;/summary&gt;</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>    public ulong StackSegment;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>    /// &lt;summary&gt;Gets or sets the captured CR0.&lt;/summary&gt;</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>    public ulong ControlRegister0;</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>    /// &lt;summary&gt;Gets or sets the captured CR2 fault address.&lt;/summary&gt;</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>    public ulong ControlRegister2;</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>    /// &lt;summary&gt;Gets or sets the captured CR3.&lt;/summary&gt;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>    public ulong ControlRegister3;</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>    /// &lt;summary&gt;Gets or sets the captured CR4.&lt;/summary&gt;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>    public ulong ControlRegister4;</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    /// &lt;summary&gt;Gets or sets the current processor identifier.&lt;/summary&gt;</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>    public ulong ProcessorId;</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>    /// &lt;summary&gt;Gets or sets the one when hardware changed privilege levels.&lt;/summary&gt;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>    public ulong PrivilegeTransition;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>    /// &lt;summary&gt;Gets or sets the RAX.&lt;/summary&gt;</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>    public ulong Rax;</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>    /// &lt;summary&gt;Gets or sets the RBX.&lt;/summary&gt;</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>    public ulong Rbx;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>    /// &lt;summary&gt;Gets or sets the RCX.&lt;/summary&gt;</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>    public ulong Rcx;</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>    /// &lt;summary&gt;Gets or sets the RDX.&lt;/summary&gt;</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>    public ulong Rdx;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>    /// &lt;summary&gt;Gets or sets the RSI.&lt;/summary&gt;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>    public ulong Rsi;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>    /// &lt;summary&gt;Gets or sets the RDI.&lt;/summary&gt;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>    public ulong Rdi;</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>    /// &lt;summary&gt;Gets or sets the RBP.&lt;/summary&gt;</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>    public ulong Rbp;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>    /// &lt;summary&gt;Gets or sets the R8.&lt;/summary&gt;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>    public ulong R8;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>    /// &lt;summary&gt;Gets or sets the R9.&lt;/summary&gt;</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>    public ulong R9;</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>    /// &lt;summary&gt;Gets or sets the R10.&lt;/summary&gt;</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>    public ulong R10;</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>    /// &lt;summary&gt;Gets or sets the R11.&lt;/summary&gt;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>    public ulong R11;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>    /// &lt;summary&gt;Gets or sets the R12.&lt;/summary&gt;</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>    public ulong R12;</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>    /// &lt;summary&gt;Gets or sets the R13.&lt;/summary&gt;</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>    public ulong R13;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>    /// &lt;summary&gt;Gets or sets the R14.&lt;/summary&gt;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>    public ulong R14;</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>    /// &lt;summary&gt;Gets or sets the R15.&lt;/summary&gt;</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>    public ulong R15;</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a></span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>    /// &lt;summary&gt;Gets whether the interrupt crossed a privilege boundary.&lt;/summary&gt;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>    public readonly bool HasPrivilegeTransition() =&gt; (PrivilegeTransition &amp; 1) != 0;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a></span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>    /// &lt;summary&gt;Gets whether hardware switched stacks because of privilege or IST policy.&lt;/summary&gt;</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>    public readonly bool HasStackSwitch() =&gt; (PrivilegeTransition &amp; 2) != 0;</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a></span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>    /// &lt;summary&gt;Gets whether this frame describes a page fault.&lt;/summary&gt;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>    public readonly bool IsPageFault() =&gt; Vector == (byte)CpuExceptionVector.PageFault;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>}</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a></span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>/// &lt;summary&gt;Handles one normalised interrupt frame.&lt;/summary&gt;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>/// &lt;param name=&quot;context&quot;&gt;The writable processor context.&lt;/param&gt;</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>/// &lt;returns&gt;The action required after dispatch.&lt;/returns&gt;</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>public delegate InterruptResult InterruptHandler(ref InterruptContext context);</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a></span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>/// &lt;summary&gt;Controls how one IDT gate and managed registration are installed.&lt;/summary&gt;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>public readonly record struct InterruptRegistrationOptions(</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>    DescriptorPrivilegeLevel PrivilegeLevel,</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>    InterruptGateType GateType,</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>    byte InterruptStackTable,</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>    bool ReplaceExisting);</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a></span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>/// &lt;summary&gt;Identifies a successful registration for later removal.&lt;/summary&gt;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>public readonly record struct InterruptRegistrationHandle(byte Vector, ulong Generation);</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a></span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>/// &lt;summary&gt;Reports the outcome of a registration request.&lt;/summary&gt;</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>public readonly record struct InterruptRegistrationResult(</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>    bool Succeeded,</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>    InterruptRegistrationHandle Handle,</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>    string Error);</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a></span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>/// &lt;summary&gt;Describes caller-owned storage and selectors for one processor&#39;s IDT.&lt;/summary&gt;</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>public readonly record struct InterruptDescriptorTableConfiguration(</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>    ProcessorId ProcessorId,</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>    Address TableAddress,</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>    uint TableCapacity,</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>    SegmentSelector KernelCodeSelector,</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>    byte DoubleFaultInterruptStack,</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>    byte NonMaskableInterruptStack,</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>    byte MachineCheckInterruptStack);</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a></span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>/// &lt;summary&gt;Allocates driver vectors without colliding with exceptions or reserved ranges.&lt;/summary&gt;</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>public interface IInterruptVectorAllocator</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>{</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>    /// &lt;summary&gt;Allocates one vector from the configured driver range.&lt;/summary&gt;</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>    byte Allocate();</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>    /// &lt;summary&gt;Releases a previously allocated driver vector.&lt;/summary&gt;</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>    bool Release(byte vector);</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>    /// &lt;summary&gt;Gets whether a vector is currently allocated.&lt;/summary&gt;</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>    bool IsAllocated(byte vector);</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>}</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a></span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>/// &lt;summary&gt;Builds, installs and dispatches one processor-local IDT.&lt;/summary&gt;</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>public interface IInterruptDescriptorTable</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>{</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>    /// &lt;summary&gt;Builds all 256 entries in caller-owned memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>    bool Configure(InterruptDescriptorTableConfiguration configuration);</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a>    /// &lt;summary&gt;Loads the configured IDT and native dispatcher.&lt;/summary&gt;</span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>    bool Install();</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>    /// &lt;summary&gt;Registers a handler and applies its gate policy.&lt;/summary&gt;</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>    InterruptRegistrationResult Register(byte vector, InterruptHandler handler, InterruptRegistrationOptions options);</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>    /// &lt;summary&gt;Removes a registration identified by its generation-safe handle.&lt;/summary&gt;</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>    bool Remove(InterruptRegistrationHandle handle);</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>    /// &lt;summary&gt;Gets whether a vector currently has a managed handler.&lt;/summary&gt;</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a>    bool IsRegistered(byte vector);</span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>    /// &lt;summary&gt;Dispatches a context through the registered/default policy.&lt;/summary&gt;</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>    InterruptResult Dispatch(ref InterruptContext context);</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>}</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a></span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>/// &lt;summary&gt;Receives fatal exception diagnostics without prescribing a console implementation.&lt;/summary&gt;</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>public interface IExceptionDiagnosticSink</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>{</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>    /// &lt;summary&gt;Writes one diagnostic line.&lt;/summary&gt;</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>    bool WriteLine(string text);</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>    /// &lt;summary&gt;Stops the current processor safely and does not resume corrupted execution.&lt;/summary&gt;</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>    bool StopProcessor();</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>}</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

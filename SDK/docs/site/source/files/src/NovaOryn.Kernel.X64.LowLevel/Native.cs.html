@@ -1,0 +1,209 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.X64.LowLevel/Native.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.X64.LowLevel/Native.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using System.Runtime.InteropServices;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Kernel.Internal.X64;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;summary&gt;Contains the private x64 native ABI used by managed kernel services.&lt;/summary&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>public static class Native</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>{</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    /// &lt;summary&gt;Initializes the x64 COM1 serial device used by the managed console.&lt;/summary&gt;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    public static Boolean InitializeSerial()</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    {</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>        if (!WritePort8(0x3F9, 0x00)) return false;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>        if (!WritePort8(0x3FB, 0x80)) return false;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>        if (!WritePort8(0x3F8, 0x01)) return false;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>        if (!WritePort8(0x3F9, 0x00)) return false;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>        if (!WritePort8(0x3FB, 0x03)) return false;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>        if (!WritePort8(0x3FA, 0xC7)) return false;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>        return WritePort8(0x3FC, 0x0B);</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    }</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a></span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    /// &lt;summary&gt;Writes one byte to the initialized x64 COM1 serial device.&lt;/summary&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    public static Boolean WriteSerial(Byte value) =&gt; WritePort8(0x3F8, value);</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a></span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    /// &lt;summary&gt;Installs the bootstrap processor GDT and TSS.&lt;/summary&gt;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64InitializeBootstrapDescriptors&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    public static extern Boolean InitializeBootstrapDescriptors();</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a></span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    /// &lt;summary&gt;Installs the bootstrap processor IDT.&lt;/summary&gt;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64InitializeBootstrapInterrupts&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    public static extern Boolean InitializeBootstrapInterrupts();</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a></span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;summary&gt;Masks the two legacy 8259 PIC controllers.&lt;/summary&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64DisableLegacyPic&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    public static extern Boolean DisableLegacyPic();</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a></span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a></span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    /// &lt;summary&gt;Reads the active x64 CR3 page-table root physical address.&lt;/summary&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64ReadPageTableRoot&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    public static extern UInt64 ReadPageTableRoot();</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a></span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;summary&gt;Loads one 4 KiB-aligned physical page-table root into x64 CR3.&lt;/summary&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64WritePageTableRoot&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    public static extern Boolean WritePageTableRoot(UInt64 physicalAddress);</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a></span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    /// &lt;summary&gt;Invalidates the current processor translation for one virtual address.&lt;/summary&gt;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64InvalidatePage&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    public static extern Boolean InvalidatePage(UInt64 virtualAddress);</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a></span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    /// &lt;summary&gt;Enables the x64 EFER.NXE facility when the processor reports execute-disable support.&lt;/summary&gt;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64EnableExecuteDisable&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    public static extern Boolean EnableExecuteDisable();</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a></span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;summary&gt;Determines whether the processor supports 1 GiB x64 page-table leaves.&lt;/summary&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64Supports1GiBPages&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    public static extern Boolean Supports1GiBPages();</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a></span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a></span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a></span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    /// &lt;summary&gt;Reads one x64 model-specific register.&lt;/summary&gt;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64ReadMsr&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    public static extern UInt64 ReadModelSpecificRegister(UInt32 register);</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a></span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    /// &lt;summary&gt;Gets the APIC identifier of the processor executing the current code.&lt;/summary&gt;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64GetCurrentApicId&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    public static extern UInt32 GetCurrentApicId();</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a></span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    /// &lt;summary&gt;Copies and patches the relocatable x64 application-processor startup trampoline.&lt;/summary&gt;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64PrepareApplicationProcessorTrampoline&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    public static extern Boolean PrepareApplicationProcessorTrampoline(UInt64 trampolineAddress, UInt64 pageTableRoot, UInt64 stackTop);</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a></span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    /// &lt;summary&gt;Gets the AP startup handshake state stored by the low-memory trampoline.&lt;/summary&gt;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64GetApplicationProcessorStartupStatus&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    public static extern UInt32 GetApplicationProcessorStartupStatus(UInt64 trampolineAddress);</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a></span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    /// &lt;summary&gt;Gets the APIC identifier observed by the application processor in the startup trampoline.&lt;/summary&gt;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64GetApplicationProcessorObservedApicId&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    public static extern UInt32 GetApplicationProcessorObservedApicId(UInt64 trampolineAddress);</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a></span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    /// &lt;summary&gt;Reads the invariant-capable x64 timestamp counter.&lt;/summary&gt;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64ReadTimestampCounter&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    public static extern UInt64 ReadTimestampCounter();</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a></span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    /// &lt;summary&gt;Determines whether CPUID advertises a timestamp counter.&lt;/summary&gt;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64SupportsTsc&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    public static extern Boolean SupportsTsc();</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a></span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    /// &lt;summary&gt;Gets whether CPUID advertises an invariant timestamp counter.&lt;/summary&gt;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64SupportsInvariantTsc&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>    public static extern Boolean SupportsInvariantTsc();</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a></span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>    /// &lt;summary&gt;Reads one 32-bit memory-mapped I/O register.&lt;/summary&gt;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64ReadMmio32&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>    public static extern UInt32 ReadMmio32(UInt64 address);</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a></span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>    /// &lt;summary&gt;Writes one 32-bit memory-mapped I/O register.&lt;/summary&gt;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64WriteMmio32&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>    public static extern Boolean WriteMmio32(UInt64 address, UInt32 value);</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a></span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    /// &lt;summary&gt;Reads one 64-bit memory-mapped I/O register.&lt;/summary&gt;</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64ReadMmio64&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    public static extern UInt64 ReadMmio64(UInt64 address);</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a></span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    /// &lt;summary&gt;Writes one 64-bit memory-mapped I/O register.&lt;/summary&gt;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64WriteMmio64&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    public static extern Boolean WriteMmio64(UInt64 address, UInt64 value);</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a></span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    /// &lt;summary&gt;Initializes a fresh x64 kernel-thread context.&lt;/summary&gt;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64InitializeThreadContext&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    public static extern Boolean InitializeThreadContext(UInt64 contextAddress, UInt64 stackTop, UInt64 entryPoint, UInt64 argument);</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a></span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>    /// &lt;summary&gt;Saves the current x64 thread context and transfers execution to another saved context.&lt;/summary&gt;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64SwitchThreadContext&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>    public static extern Boolean SwitchThreadContext(UInt64 currentContextAddress, UInt64 nextContextAddress);</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a></span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>    /// &lt;summary&gt;Gets whether EFER.NXE is enabled for execute-disable page protections.&lt;/summary&gt;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64IsExecuteDisableEnabled&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>    public static extern Boolean IsExecuteDisableEnabled();</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a></span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>    /// &lt;summary&gt;Enables CR0.WP so supervisor writes obey read-only page protections.&lt;/summary&gt;</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64EnableKernelWriteProtect&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>    public static extern Boolean EnableKernelWriteProtect();</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a></span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>    /// &lt;summary&gt;Gets whether CR0.WP is enabled.&lt;/summary&gt;</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64IsKernelWriteProtectEnabled&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>    public static extern Boolean IsKernelWriteProtectEnabled();</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a></span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>    /// &lt;summary&gt;Gets whether CPUID reports supervisor-mode execution prevention.&lt;/summary&gt;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64SupportsSmep&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>    public static extern Boolean SupportsSmep();</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a></span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>    /// &lt;summary&gt;Enables CR4.SMEP when supported.&lt;/summary&gt;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64EnableSmep&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>    public static extern Boolean EnableSmep();</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a></span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>    /// &lt;summary&gt;Gets whether CPUID reports supervisor-mode access prevention.&lt;/summary&gt;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64SupportsSmap&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>    public static extern Boolean SupportsSmap();</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a></span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>    /// &lt;summary&gt;Configures x64 SYSCALL/SYSRET and the current processor syscall stack state.&lt;/summary&gt;</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64ConfigureSystemCalls&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>    public static extern Boolean ConfigureSystemCalls(UInt64 stateAddress, UInt64 kernelStackTop);</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a></span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>    /// &lt;summary&gt;Enables CR4.SMAP when the processor supports supervisor-mode access prevention.&lt;/summary&gt;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64EnableSmap&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>    public static extern Boolean EnableSmap();</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a></span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>    /// &lt;summary&gt;Gets whether CR4.SMAP is enabled.&lt;/summary&gt;</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64IsSmapEnabled&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>    public static extern Boolean IsSmapEnabled();</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a></span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>    /// &lt;summary&gt;Temporarily permits supervisor access to validated user pages when SMAP is active.&lt;/summary&gt;</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64BeginUserMemoryAccess&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>    public static extern Boolean BeginUserMemoryAccess();</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a></span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>    /// &lt;summary&gt;Restores SMAP protection after a guarded user-memory copy.&lt;/summary&gt;</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64EndUserMemoryAccess&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>    public static extern Boolean EndUserMemoryAccess();</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a></span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>    /// &lt;summary&gt;Enters x64 ring 3 using a validated user RIP, stack pointer, and first argument.&lt;/summary&gt;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64EnterUserMode&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>    public static extern Boolean EnterUserMode(UInt64 entryPoint, UInt64 stackTop, UInt64 argument);</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a></span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a></span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>    /// &lt;summary&gt;Installs NovaOryn&#39;s freestanding managed interrupt dispatcher.&lt;/summary&gt;</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64InstallManagedInterruptDispatcher&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>    public static extern Boolean InstallManagedInterruptDispatcher();</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a></span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>    /// &lt;summary&gt;Enables maskable x64 interrupts.&lt;/summary&gt;</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64EnableInterrupts&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>    public static extern Boolean EnableInterrupts();</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a></span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>    /// &lt;summary&gt;Halts until one interrupt arrives, then returns to managed code.&lt;/summary&gt;</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64WaitForInterrupt&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>    public static extern Boolean WaitForInterrupt();</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a></span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>    /// &lt;summary&gt;Executes one x64 PAUSE hint and returns to managed code.&lt;/summary&gt;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64Pause&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>    public static extern Boolean Pause();</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a></span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>    /// &lt;summary&gt;Stops the current processor permanently.&lt;/summary&gt;</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64Halt&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>    public static extern Boolean Halt();</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a></span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>    /// &lt;summary&gt;Writes one byte to an x64 I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64WritePort8&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>    public static extern Boolean WritePort8(UInt16 port, Byte value);</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a></span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>    /// &lt;summary&gt;Reads one byte from an x64 I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64ReadPort8&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>    public static extern Boolean ReadPort8(UInt16 port, out Byte value);</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a></span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>    /// &lt;summary&gt;Writes one 16-bit value to an x64 I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64WritePort16&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>    public static extern Boolean WritePort16(UInt16 port, UInt16 value);</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a></span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>    /// &lt;summary&gt;Reads one 16-bit value from an x64 I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64ReadPort16&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>    public static extern Boolean ReadPort16(UInt16 port, out UInt16 value);</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a></span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>    /// &lt;summary&gt;Writes one 32-bit value to an x64 I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64WritePort32&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>    public static extern Boolean WritePort32(UInt16 port, UInt32 value);</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a></span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>    /// &lt;summary&gt;Reads one 32-bit value from an x64 I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>    [DllImport(&quot;*&quot;, EntryPoint = &quot;NovaOrynX64ReadPort32&quot;, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>    public static extern Boolean ReadPort32(UInt16 port, out UInt32 value);</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>}</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

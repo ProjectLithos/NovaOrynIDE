@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Console.Serial/SerialConsole.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Console.Serial/SerialConsole.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Architecture.X64;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Boot.Contracts;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Console.Contracts;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>namespace NovaOryn.Console.Serial;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a></span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>public readonly record struct SerialConfiguration(ushort Port, uint BaudRate)</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>{</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    public static SerialConfiguration Com1(uint baudRate = 115200) =&gt; new(0x3F8, baudRate);</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>}</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a></span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>public sealed class SerialConsole : IConsole</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>{</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    private SerialConfiguration _configuration;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    private bool _initialized;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a></span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    public bool Configure(SerialConfiguration configuration)</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    {</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>        if (configuration.Port == 0 || configuration.BaudRate == 0)</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>            throw new ArgumentOutOfRangeException(nameof(configuration));</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>        _configuration = configuration;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>        return true;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    }</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a></span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    public bool Initialize(BootContext boot)</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    {</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>        _ = boot;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>        if (_configuration.Port == 0 &amp;&amp; !Configure(SerialConfiguration.Com1())) return false;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>        ushort divisor = checked((ushort)(115200 / _configuration.BaudRate));</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>        ushort port = _configuration.Port;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>        if (!Port.Write8((ushort)(port + 1), 0x00)) return false;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>        if (!Port.Write8((ushort)(port + 3), 0x80)) return false;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>        if (!Port.Write8(port, (byte)(divisor &amp; 0xFF))) return false;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>        if (!Port.Write8((ushort)(port + 1), (byte)(divisor &gt;&gt; 8))) return false;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>        if (!Port.Write8((ushort)(port + 3), 0x03)) return false;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>        if (!Port.Write8((ushort)(port + 2), 0xC7)) return false;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>        if (!Port.Write8((ushort)(port + 4), 0x0B)) return false;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>        _initialized = true;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>        return true;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    }</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a></span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    public bool Write(ReadOnlySpan&lt;char&gt; text)</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    {</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>        if (!_initialized) return false;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>        foreach (char character in text)</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>        {</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>            if (character &gt; 0x7F || !WriteByte((byte)character)) return false;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        }</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>        return true;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    }</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a></span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    public bool WriteLine(ReadOnlySpan&lt;char&gt; text) =&gt; Write(text) &amp;&amp; WriteLine();</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    public bool WriteLine() =&gt; Write(&quot;\r\n&quot;);</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a></span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    private bool WriteByte(byte value)</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    {</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>        for (uint attempt = 0; attempt &lt; 1_000_000; attempt++)</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>        {</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>            if (!Port.TryRead8((ushort)(_configuration.Port + 5), out byte status)) return false;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>            if ((status &amp; 0x20) != 0) return Port.Write8(_configuration.Port, value);</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>        }</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>        return false;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    }</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>}</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

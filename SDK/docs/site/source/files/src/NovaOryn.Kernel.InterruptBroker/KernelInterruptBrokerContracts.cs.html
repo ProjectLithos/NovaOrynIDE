@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.InterruptBroker/KernelInterruptBrokerContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.InterruptBroker/KernelInterruptBrokerContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>namespace NovaOryn.Kernel.InterruptBroker;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>/// &lt;summary&gt;Identifies the hardware delivery mechanism selected internally by the opaque interrupt broker.&lt;/summary&gt;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>public enum KernelInterruptDeliveryMechanism : Byte { None=0,IoApic=1,Msi=2,MsiX=3,LocalApic=4,X2Apic=5 }</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Reports the platform mechanisms and current opaque interrupt routes owned by the broker.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>public readonly struct KernelInterruptBrokerCapabilities</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>{</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>    public KernelInterruptBrokerCapabilities(Boolean initialized,Boolean localApic,Boolean ioApic,Boolean x2Apic,Boolean msi,Boolean msiX,UInt32 activeRoutes)</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    {Initialized=initialized;LocalApic=localApic;IoApic=ioApic;X2Apic=x2Apic;Msi=msi;MsiX=msiX;ActiveRoutes=activeRoutes;}</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    public Boolean Initialized { get; }</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    public Boolean LocalApic { get; }</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    public Boolean IoApic { get; }</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    public Boolean X2Apic { get; }</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    public Boolean Msi { get; }</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    public Boolean MsiX { get; }</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    public UInt32 ActiveRoutes { get; }</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>}</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>/// &lt;summary&gt;Provides diagnostic information about an opaque route without requiring device drivers to know its mechanism.&lt;/summary&gt;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>public readonly struct KernelInterruptRouteInfo</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>{</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    public KernelInterruptRouteInfo(UInt64 handle,UInt32 device,Byte vector,KernelInterruptDeliveryMechanism mechanism,UInt32 source,UInt32 targetProcessor)</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    {Handle=handle;Device=device;Vector=vector;Mechanism=mechanism;Source=source;TargetProcessor=targetProcessor;}</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    public UInt64 Handle { get; }</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    public UInt32 Device { get; }</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    public Byte Vector { get; }</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    public KernelInterruptDeliveryMechanism Mechanism { get; }</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    public UInt32 Source { get; }</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    public UInt32 TargetProcessor { get; }</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>}</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

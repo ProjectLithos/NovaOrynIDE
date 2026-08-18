@@ -1,0 +1,395 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Architecture.X64/X64Architecture.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Architecture.X64/X64Architecture.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Core;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Architecture.X64;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Identifies x64 control registers exposed through the architecture boundary.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;nova.when&gt;Use with &lt;see cref=&quot;X64Operations.ReadControlRegister&quot;/&gt; and &lt;see cref=&quot;X64Operations.WriteControlRegister&quot;/&gt;.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;nova.depends&gt;NovaOryn.Architecture.X64 native bindings&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>public enum X64ControlRegister : uint</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>{</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    /// &lt;summary&gt;System control flags.&lt;/summary&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    Cr0 = 0,</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    /// &lt;summary&gt;Page-fault linear address.&lt;/summary&gt;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    Cr2 = 2,</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;summary&gt;Page-table root address.&lt;/summary&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    Cr3 = 3,</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    /// &lt;summary&gt;Extended processor control flags.&lt;/summary&gt;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    Cr4 = 4,</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    /// &lt;summary&gt;Extended control register selected by XCR index zero.&lt;/summary&gt;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    Xcr0 = 0x100</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>}</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a></span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>/// &lt;summary&gt;Identifies common x64 CPU features without exposing CPUID leaf mechanics to callers.&lt;/summary&gt;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>/// &lt;nova.when&gt;Use to select optional x64 facilities after early initialisation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>/// &lt;nova.depends&gt;CPUID native binding&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>public enum X64CpuFeature : uint</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>{</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    /// &lt;summary&gt;APIC support.&lt;/summary&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    Apic = 1,</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    /// &lt;summary&gt;x2APIC support.&lt;/summary&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    X2Apic = 2,</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    /// &lt;summary&gt;NX execute-disable support.&lt;/summary&gt;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    ExecuteDisable = 3,</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    /// &lt;summary&gt;SYSCALL and SYSRET support.&lt;/summary&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    Syscall = 4,</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;summary&gt;FSGSBASE instruction support.&lt;/summary&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    FsGsBase = 5,</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    /// &lt;summary&gt;XSAVE processor-state support.&lt;/summary&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    XSave = 6,</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;summary&gt;Supervisor mode execution prevention.&lt;/summary&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    Smep = 7,</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;summary&gt;Supervisor mode access prevention.&lt;/summary&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    Smap = 8,</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    /// &lt;summary&gt;Invariant timestamp-counter support.&lt;/summary&gt;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    InvariantTimestamp = 9</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>}</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a></span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>/// &lt;summary&gt;Contains the native function pointers required by the x64 static operation API.&lt;/summary&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>/// &lt;nova.when&gt;Create once during native-to-managed bootstrap and bind before any x64 operation is called.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>/// &lt;nova.depends&gt;NovaOryn x64 assembly implementation&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>public unsafe readonly struct X64NativeBindings</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>{</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    /// &lt;summary&gt;Creates a complete x64 native binding table.&lt;/summary&gt;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;nova.when&gt;Use at bootstrap after native symbols have been resolved.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;nova.depends&gt;NovaOryn x64 assembly implementation&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;returns&gt;A binding table suitable for &lt;see cref=&quot;X64Operations.Bind&quot;/&gt;.&lt;/returns&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;example&gt;&lt;code&gt;X64NativeBindings bindings = new(enable, disable, halt, pause, timestamp, readCr, writeCr, readMsr, writeMsr, in8, in16, in32, out8, out16, out32, barrier, atomicCompareExchange, encodePage, switchContext, detectFeature);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    public X64NativeBindings(</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>        delegate* unmanaged&lt;byte&gt; enableInterrupts,</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>        delegate* unmanaged&lt;byte&gt; disableInterrupts,</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>        delegate* unmanaged&lt;byte&gt; halt,</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>        delegate* unmanaged&lt;byte&gt; pause,</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>        delegate* unmanaged&lt;ulong&gt; readTimestamp,</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>        delegate* unmanaged&lt;uint, ulong*, byte&gt; readControlRegister,</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>        delegate* unmanaged&lt;uint, ulong, byte&gt; writeControlRegister,</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>        delegate* unmanaged&lt;uint, ulong*, byte&gt; readModelSpecificRegister,</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>        delegate* unmanaged&lt;uint, ulong, byte&gt; writeModelSpecificRegister,</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>        delegate* unmanaged&lt;ushort, byte*, byte&gt; input8,</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        delegate* unmanaged&lt;ushort, ushort*, byte&gt; input16,</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>        delegate* unmanaged&lt;ushort, uint*, byte&gt; input32,</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>        delegate* unmanaged&lt;ushort, byte, byte&gt; output8,</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>        delegate* unmanaged&lt;ushort, ushort, byte&gt; output16,</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>        delegate* unmanaged&lt;ushort, uint, byte&gt; output32,</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>        delegate* unmanaged&lt;uint, byte&gt; memoryBarrier,</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>        delegate* unmanaged&lt;ulong*, ulong, ulong, ulong*, byte&gt; atomicCompareExchange,</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>        delegate* unmanaged&lt;ulong, ulong, ulong*, byte&gt; encodePageTableEntry,</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>        delegate* unmanaged&lt;nuint, nuint, byte&gt; switchContext,</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>        delegate* unmanaged&lt;uint, ulong*, byte&gt; detectFeature)</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    {</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>        EnableInterrupts = enableInterrupts;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        DisableInterrupts = disableInterrupts;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>        Halt = halt;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>        Pause = pause;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>        ReadTimestamp = readTimestamp;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>        ReadControlRegister = readControlRegister;</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>        WriteControlRegister = writeControlRegister;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>        ReadModelSpecificRegister = readModelSpecificRegister;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>        WriteModelSpecificRegister = writeModelSpecificRegister;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>        Input8 = input8;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>        Input16 = input16;</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>        Input32 = input32;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>        Output8 = output8;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>        Output16 = output16;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>        Output32 = output32;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>        MemoryBarrier = memoryBarrier;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>        AtomicCompareExchange = atomicCompareExchange;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>        EncodePageTableEntry = encodePageTableEntry;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>        SwitchContext = switchContext;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>        DetectFeature = detectFeature;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    }</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a></span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    internal delegate* unmanaged&lt;byte&gt; EnableInterrupts { get; }</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    internal delegate* unmanaged&lt;byte&gt; DisableInterrupts { get; }</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    internal delegate* unmanaged&lt;byte&gt; Halt { get; }</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    internal delegate* unmanaged&lt;byte&gt; Pause { get; }</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    internal delegate* unmanaged&lt;ulong&gt; ReadTimestamp { get; }</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    internal delegate* unmanaged&lt;uint, ulong*, byte&gt; ReadControlRegister { get; }</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    internal delegate* unmanaged&lt;uint, ulong, byte&gt; WriteControlRegister { get; }</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    internal delegate* unmanaged&lt;uint, ulong*, byte&gt; ReadModelSpecificRegister { get; }</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    internal delegate* unmanaged&lt;uint, ulong, byte&gt; WriteModelSpecificRegister { get; }</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>    internal delegate* unmanaged&lt;ushort, byte*, byte&gt; Input8 { get; }</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>    internal delegate* unmanaged&lt;ushort, ushort*, byte&gt; Input16 { get; }</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>    internal delegate* unmanaged&lt;ushort, uint*, byte&gt; Input32 { get; }</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>    internal delegate* unmanaged&lt;ushort, byte, byte&gt; Output8 { get; }</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>    internal delegate* unmanaged&lt;ushort, ushort, byte&gt; Output16 { get; }</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>    internal delegate* unmanaged&lt;ushort, uint, byte&gt; Output32 { get; }</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>    internal delegate* unmanaged&lt;uint, byte&gt; MemoryBarrier { get; }</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>    internal delegate* unmanaged&lt;ulong*, ulong, ulong, ulong*, byte&gt; AtomicCompareExchange { get; }</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>    internal delegate* unmanaged&lt;ulong, ulong, ulong*, byte&gt; EncodePageTableEntry { get; }</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>    internal delegate* unmanaged&lt;nuint, nuint, byte&gt; SwitchContext { get; }</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>    internal delegate* unmanaged&lt;uint, ulong*, byte&gt; DetectFeature { get; }</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a></span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>    internal bool IsComplete =&gt; EnableInterrupts != null &amp;&amp; DisableInterrupts != null &amp;&amp; Halt != null &amp;&amp; Pause != null &amp;&amp;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>        ReadTimestamp != null &amp;&amp; ReadControlRegister != null &amp;&amp; WriteControlRegister != null &amp;&amp;</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>        ReadModelSpecificRegister != null &amp;&amp; WriteModelSpecificRegister != null &amp;&amp; Input8 != null &amp;&amp; Input16 != null &amp;&amp;</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>        Input32 != null &amp;&amp; Output8 != null &amp;&amp; Output16 != null &amp;&amp; Output32 != null &amp;&amp; MemoryBarrier != null &amp;&amp;</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>        AtomicCompareExchange != null &amp;&amp; EncodePageTableEntry != null &amp;&amp; SwitchContext != null &amp;&amp; DetectFeature != null;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>}</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a></span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>/// &lt;summary&gt;Provides zero-allocation static x64 operations backed by native assembly function pointers.&lt;/summary&gt;</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>/// &lt;nova.when&gt;Use in performance-critical kernel paths after &lt;see cref=&quot;Bind&quot;/&gt; succeeds.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>/// &lt;nova.depends&gt;X64NativeBindings&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>[SupportedArchitecture(SupportedArchitecture.X64)]</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>public static unsafe class X64Operations</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>{</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>    private static X64NativeBindings _bindings;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>    private static bool _isBound;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a></span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>    /// &lt;summary&gt;Gets whether a complete native x64 operation table has been bound.&lt;/summary&gt;</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>    /// &lt;nova.when&gt;Check before invoking x64 static operations during bootstrap.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>    /// &lt;nova.depends&gt;X64NativeBindings&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>    public static bool IsBound =&gt; _isBound;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a></span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>    /// &lt;summary&gt;Binds the static API to architecture assembly entry points.&lt;/summary&gt;</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>    /// &lt;nova.when&gt;Call once during bootstrap before architecture services are exposed.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>    /// &lt;nova.depends&gt;X64NativeBindings&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when every required function pointer is present.&lt;/returns&gt;</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>    /// &lt;example&gt;&lt;code&gt;bool bound = X64Operations.Bind(bindings);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>    public static bool Bind(X64NativeBindings bindings)</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>    {</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>        if (!bindings.IsComplete) return false;</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>        _bindings = bindings;</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>        _isBound = true;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>        return true;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>    }</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a></span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>    /// &lt;summary&gt;Enables maskable interrupts.&lt;/summary&gt;</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>    /// &lt;nova.when&gt;Use after IDT and interrupt-controller initialisation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>    /// &lt;nova.depends&gt;Bound x64 STI wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the native operation succeeds.&lt;/returns&gt;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>    /// &lt;example&gt;&lt;code&gt;bool enabled = X64Operations.EnableInterrupts();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>    public static bool EnableInterrupts() =&gt; _isBound &amp;&amp; _bindings.EnableInterrupts() != 0;</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a></span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>    /// &lt;summary&gt;Disables maskable interrupts.&lt;/summary&gt;</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>    /// &lt;nova.when&gt;Use for short critical regions and terminal processor shutdown.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>    /// &lt;nova.depends&gt;Bound x64 CLI wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the native operation succeeds.&lt;/returns&gt;</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>    /// &lt;example&gt;&lt;code&gt;bool disabled = X64Operations.DisableInterrupts();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>    public static bool DisableInterrupts() =&gt; _isBound &amp;&amp; _bindings.DisableInterrupts() != 0;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a></span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>    /// &lt;summary&gt;Executes the processor halt operation.&lt;/summary&gt;</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>    /// &lt;nova.when&gt;Use in idle or terminal loops according to interrupt policy.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>    /// &lt;nova.depends&gt;Bound x64 HLT wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; if the call returns successfully.&lt;/returns&gt;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>    /// &lt;example&gt;&lt;code&gt;bool resumed = X64Operations.Halt();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>    public static bool Halt() =&gt; _isBound &amp;&amp; _bindings.Halt() != 0;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a></span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>    /// &lt;summary&gt;Executes the processor pause hint.&lt;/summary&gt;</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>    /// &lt;nova.when&gt;Use inside bounded spin-wait loops.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>    /// &lt;nova.depends&gt;Bound x64 PAUSE wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the hint was issued.&lt;/returns&gt;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>    /// &lt;example&gt;&lt;code&gt;bool paused = X64Operations.Pause();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>    public static bool Pause() =&gt; _isBound &amp;&amp; _bindings.Pause() != 0;</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a></span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>    /// &lt;summary&gt;Reads the x64 timestamp counter.&lt;/summary&gt;</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>    /// &lt;nova.when&gt;Use after invariant-counter capability and synchronisation policy are established.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>    /// &lt;nova.depends&gt;Bound RDTSC or RDTSCP wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>    /// &lt;returns&gt;The timestamp value, or zero when unbound.&lt;/returns&gt;</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>    /// &lt;example&gt;&lt;code&gt;ulong ticks = X64Operations.ReadTimestamp();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>    public static ulong ReadTimestamp() =&gt; _isBound ? _bindings.ReadTimestamp() : 0;</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a></span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>    /// &lt;summary&gt;Reads an x64 control register.&lt;/summary&gt;</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>    /// &lt;nova.when&gt;Use only inside privileged architecture and memory-management code.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>    /// &lt;nova.depends&gt;Bound control-register wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>    /// &lt;returns&gt;The operation result and register value.&lt;/returns&gt;</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>    /// &lt;example&gt;&lt;code&gt;ArchitectureValueResult cr3 = X64Operations.ReadControlRegister(X64ControlRegister.Cr3);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>    public static ArchitectureValueResult ReadControlRegister(X64ControlRegister register)</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>    {</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>        ulong value = 0;</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>        bool ok = _isBound &amp;&amp; _bindings.ReadControlRegister((uint)register, &amp;value) != 0;</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>        return new(ok, value);</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>    }</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a></span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>    /// &lt;summary&gt;Writes an x64 control register.&lt;/summary&gt;</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>    /// &lt;nova.when&gt;Use only after validating reserved bits and required serialisation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>    /// &lt;nova.depends&gt;Bound control-register wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the register was written.&lt;/returns&gt;</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>    /// &lt;example&gt;&lt;code&gt;bool written = X64Operations.WriteControlRegister(X64ControlRegister.Cr3, root);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>    public static bool WriteControlRegister(X64ControlRegister register, ulong value) =&gt;</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>        _isBound &amp;&amp; _bindings.WriteControlRegister((uint)register, value) != 0;</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a></span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>    /// &lt;summary&gt;Reads a model-specific register.&lt;/summary&gt;</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>    /// &lt;nova.when&gt;Use after feature detection confirms that the selected MSR exists.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>    /// &lt;nova.depends&gt;Bound RDMSR wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>    /// &lt;returns&gt;The operation result and MSR value.&lt;/returns&gt;</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a>    /// &lt;example&gt;&lt;code&gt;ArchitectureValueResult efer = X64Operations.ReadModelSpecificRegister(0xC0000080);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>    public static ArchitectureValueResult ReadModelSpecificRegister(uint register)</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>    {</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>        ulong value = 0;</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>        bool ok = _isBound &amp;&amp; _bindings.ReadModelSpecificRegister(register, &amp;value) != 0;</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>        return new(ok, value);</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>    }</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a></span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>    /// &lt;summary&gt;Writes a model-specific register.&lt;/summary&gt;</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>    /// &lt;nova.when&gt;Use after validating feature support, reserved bits and processor scope.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>    /// &lt;nova.depends&gt;Bound WRMSR wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the MSR was written.&lt;/returns&gt;</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>    /// &lt;example&gt;&lt;code&gt;bool written = X64Operations.WriteModelSpecificRegister(0xC0000080, value);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>    public static bool WriteModelSpecificRegister(uint register, ulong value) =&gt;</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>        _isBound &amp;&amp; _bindings.WriteModelSpecificRegister(register, value) != 0;</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a></span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>    /// &lt;summary&gt;Reads an 8-bit x64 I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>    /// &lt;nova.when&gt;Use for legacy port-mapped device access.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>    /// &lt;nova.depends&gt;Bound IN instruction wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>    /// &lt;returns&gt;The operation result and byte value.&lt;/returns&gt;</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>    /// &lt;example&gt;&lt;code&gt;ArchitectureValueResult status = X64Operations.Input8(0x3FD);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a>    public static ArchitectureValueResult Input8(ushort port)</span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a>    {</span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a>        byte value = 0;</span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a>        bool ok = _isBound &amp;&amp; _bindings.Input8(port, &amp;value) != 0;</span>
+<span class="source-line" id="L241"><a class="line-number" href="#L241">241</a>        return new(ok, value);</span>
+<span class="source-line" id="L242"><a class="line-number" href="#L242">242</a>    }</span>
+<span class="source-line" id="L243"><a class="line-number" href="#L243">243</a></span>
+<span class="source-line" id="L244"><a class="line-number" href="#L244">244</a>    /// &lt;summary&gt;Reads a 16-bit x64 I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L245"><a class="line-number" href="#L245">245</a>    /// &lt;nova.when&gt;Use for legacy port-mapped device access requiring a word transfer.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L246"><a class="line-number" href="#L246">246</a>    /// &lt;nova.depends&gt;Bound IN instruction wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L247"><a class="line-number" href="#L247">247</a>    /// &lt;returns&gt;The operation result and word value.&lt;/returns&gt;</span>
+<span class="source-line" id="L248"><a class="line-number" href="#L248">248</a>    /// &lt;example&gt;&lt;code&gt;ArchitectureValueResult value = X64Operations.Input16(port);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L249"><a class="line-number" href="#L249">249</a>    public static ArchitectureValueResult Input16(ushort port)</span>
+<span class="source-line" id="L250"><a class="line-number" href="#L250">250</a>    {</span>
+<span class="source-line" id="L251"><a class="line-number" href="#L251">251</a>        ushort value = 0;</span>
+<span class="source-line" id="L252"><a class="line-number" href="#L252">252</a>        bool ok = _isBound &amp;&amp; _bindings.Input16(port, &amp;value) != 0;</span>
+<span class="source-line" id="L253"><a class="line-number" href="#L253">253</a>        return new(ok, value);</span>
+<span class="source-line" id="L254"><a class="line-number" href="#L254">254</a>    }</span>
+<span class="source-line" id="L255"><a class="line-number" href="#L255">255</a></span>
+<span class="source-line" id="L256"><a class="line-number" href="#L256">256</a>    /// &lt;summary&gt;Reads a 32-bit x64 I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L257"><a class="line-number" href="#L257">257</a>    /// &lt;nova.when&gt;Use for legacy port-mapped device access requiring a double-word transfer.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L258"><a class="line-number" href="#L258">258</a>    /// &lt;nova.depends&gt;Bound IN instruction wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L259"><a class="line-number" href="#L259">259</a>    /// &lt;returns&gt;The operation result and double-word value.&lt;/returns&gt;</span>
+<span class="source-line" id="L260"><a class="line-number" href="#L260">260</a>    /// &lt;example&gt;&lt;code&gt;ArchitectureValueResult value = X64Operations.Input32(port);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L261"><a class="line-number" href="#L261">261</a>    public static ArchitectureValueResult Input32(ushort port)</span>
+<span class="source-line" id="L262"><a class="line-number" href="#L262">262</a>    {</span>
+<span class="source-line" id="L263"><a class="line-number" href="#L263">263</a>        uint value = 0;</span>
+<span class="source-line" id="L264"><a class="line-number" href="#L264">264</a>        bool ok = _isBound &amp;&amp; _bindings.Input32(port, &amp;value) != 0;</span>
+<span class="source-line" id="L265"><a class="line-number" href="#L265">265</a>        return new(ok, value);</span>
+<span class="source-line" id="L266"><a class="line-number" href="#L266">266</a>    }</span>
+<span class="source-line" id="L267"><a class="line-number" href="#L267">267</a></span>
+<span class="source-line" id="L268"><a class="line-number" href="#L268">268</a>    /// &lt;summary&gt;Writes an 8-bit x64 I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L269"><a class="line-number" href="#L269">269</a>    /// &lt;nova.when&gt;Use for legacy port-mapped device control.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L270"><a class="line-number" href="#L270">270</a>    /// &lt;nova.depends&gt;Bound OUT instruction wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L271"><a class="line-number" href="#L271">271</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the byte was written.&lt;/returns&gt;</span>
+<span class="source-line" id="L272"><a class="line-number" href="#L272">272</a>    /// &lt;example&gt;&lt;code&gt;bool written = X64Operations.Output8(0x3F8, value);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L273"><a class="line-number" href="#L273">273</a>    public static bool Output8(ushort port, byte value) =&gt; _isBound &amp;&amp; _bindings.Output8(port, value) != 0;</span>
+<span class="source-line" id="L274"><a class="line-number" href="#L274">274</a></span>
+<span class="source-line" id="L275"><a class="line-number" href="#L275">275</a>    /// &lt;summary&gt;Writes a 16-bit x64 I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L276"><a class="line-number" href="#L276">276</a>    /// &lt;nova.when&gt;Use for legacy port-mapped device control requiring a word transfer.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L277"><a class="line-number" href="#L277">277</a>    /// &lt;nova.depends&gt;Bound OUT instruction wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L278"><a class="line-number" href="#L278">278</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the word was written.&lt;/returns&gt;</span>
+<span class="source-line" id="L279"><a class="line-number" href="#L279">279</a>    /// &lt;example&gt;&lt;code&gt;bool written = X64Operations.Output16(port, value);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L280"><a class="line-number" href="#L280">280</a>    public static bool Output16(ushort port, ushort value) =&gt; _isBound &amp;&amp; _bindings.Output16(port, value) != 0;</span>
+<span class="source-line" id="L281"><a class="line-number" href="#L281">281</a></span>
+<span class="source-line" id="L282"><a class="line-number" href="#L282">282</a>    /// &lt;summary&gt;Writes a 32-bit x64 I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L283"><a class="line-number" href="#L283">283</a>    /// &lt;nova.when&gt;Use for legacy port-mapped device control requiring a double-word transfer.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L284"><a class="line-number" href="#L284">284</a>    /// &lt;nova.depends&gt;Bound OUT instruction wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L285"><a class="line-number" href="#L285">285</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the double word was written.&lt;/returns&gt;</span>
+<span class="source-line" id="L286"><a class="line-number" href="#L286">286</a>    /// &lt;example&gt;&lt;code&gt;bool written = X64Operations.Output32(port, value);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L287"><a class="line-number" href="#L287">287</a>    public static bool Output32(ushort port, uint value) =&gt; _isBound &amp;&amp; _bindings.Output32(port, value) != 0;</span>
+<span class="source-line" id="L288"><a class="line-number" href="#L288">288</a></span>
+<span class="source-line" id="L289"><a class="line-number" href="#L289">289</a>    /// &lt;summary&gt;Issues an architecture memory barrier.&lt;/summary&gt;</span>
+<span class="source-line" id="L290"><a class="line-number" href="#L290">290</a>    /// &lt;nova.when&gt;Use to enforce processor or device memory ordering.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L291"><a class="line-number" href="#L291">291</a>    /// &lt;nova.depends&gt;Bound x64 fence wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L292"><a class="line-number" href="#L292">292</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the barrier was issued.&lt;/returns&gt;</span>
+<span class="source-line" id="L293"><a class="line-number" href="#L293">293</a>    /// &lt;example&gt;&lt;code&gt;bool ordered = X64Operations.MemoryBarrier(MemoryBarrierKind.Full);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L294"><a class="line-number" href="#L294">294</a>    public static bool MemoryBarrier(MemoryBarrierKind kind) =&gt; _isBound &amp;&amp; _bindings.MemoryBarrier((uint)kind) != 0;</span>
+<span class="source-line" id="L295"><a class="line-number" href="#L295">295</a></span>
+<span class="source-line" id="L296"><a class="line-number" href="#L296">296</a>    /// &lt;summary&gt;Atomically compares and exchanges a 64-bit value.&lt;/summary&gt;</span>
+<span class="source-line" id="L297"><a class="line-number" href="#L297">297</a>    /// &lt;nova.when&gt;Use to build lock-free architecture services and synchronisation primitives.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L298"><a class="line-number" href="#L298">298</a>    /// &lt;nova.depends&gt;Bound LOCK CMPXCHG wrapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L299"><a class="line-number" href="#L299">299</a>    /// &lt;returns&gt;The operation result and value observed before exchange.&lt;/returns&gt;</span>
+<span class="source-line" id="L300"><a class="line-number" href="#L300">300</a>    /// &lt;example&gt;&lt;code&gt;ArchitectureValueResult observed = X64Operations.CompareExchange64(location, expected, replacement);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L301"><a class="line-number" href="#L301">301</a>    public static ArchitectureValueResult CompareExchange64(ulong* location, ulong expected, ulong replacement)</span>
+<span class="source-line" id="L302"><a class="line-number" href="#L302">302</a>    {</span>
+<span class="source-line" id="L303"><a class="line-number" href="#L303">303</a>        ulong observed = 0;</span>
+<span class="source-line" id="L304"><a class="line-number" href="#L304">304</a>        bool ok = _isBound &amp;&amp; location != null &amp;&amp; _bindings.AtomicCompareExchange(location, expected, replacement, &amp;observed) != 0;</span>
+<span class="source-line" id="L305"><a class="line-number" href="#L305">305</a>        return new(ok, observed);</span>
+<span class="source-line" id="L306"><a class="line-number" href="#L306">306</a>    }</span>
+<span class="source-line" id="L307"><a class="line-number" href="#L307">307</a></span>
+<span class="source-line" id="L308"><a class="line-number" href="#L308">308</a>    /// &lt;summary&gt;Encodes an architecture-neutral descriptor as an x64 page-table entry.&lt;/summary&gt;</span>
+<span class="source-line" id="L309"><a class="line-number" href="#L309">309</a>    /// &lt;nova.when&gt;Use in the x64 page-table builder after physical-address validation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L310"><a class="line-number" href="#L310">310</a>    /// &lt;nova.depends&gt;Bound x64 page-table encoder&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L311"><a class="line-number" href="#L311">311</a>    /// &lt;returns&gt;The operation result and encoded entry.&lt;/returns&gt;</span>
+<span class="source-line" id="L312"><a class="line-number" href="#L312">312</a>    /// &lt;example&gt;&lt;code&gt;ArchitectureValueResult entry = X64Operations.EncodePageTableEntry(descriptor);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L313"><a class="line-number" href="#L313">313</a>    public static ArchitectureValueResult EncodePageTableEntry(PageTableEntryDescriptor descriptor)</span>
+<span class="source-line" id="L314"><a class="line-number" href="#L314">314</a>    {</span>
+<span class="source-line" id="L315"><a class="line-number" href="#L315">315</a>        ulong encoded = 0;</span>
+<span class="source-line" id="L316"><a class="line-number" href="#L316">316</a>        bool ok = _isBound &amp;&amp; _bindings.EncodePageTableEntry(descriptor.PhysicalAddress, (ulong)descriptor.Flags, &amp;encoded) != 0;</span>
+<span class="source-line" id="L317"><a class="line-number" href="#L317">317</a>        return new(ok, encoded);</span>
+<span class="source-line" id="L318"><a class="line-number" href="#L318">318</a>    }</span>
+<span class="source-line" id="L319"><a class="line-number" href="#L319">319</a></span>
+<span class="source-line" id="L320"><a class="line-number" href="#L320">320</a>    /// &lt;summary&gt;Switches from one architecture context frame to another.&lt;/summary&gt;</span>
+<span class="source-line" id="L321"><a class="line-number" href="#L321">321</a>    /// &lt;nova.when&gt;Use only from the scheduler with architecture-owned context frame addresses.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L322"><a class="line-number" href="#L322">322</a>    /// &lt;nova.depends&gt;Bound x64 context-switch assembly&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L323"><a class="line-number" href="#L323">323</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when control later returns to the outgoing context.&lt;/returns&gt;</span>
+<span class="source-line" id="L324"><a class="line-number" href="#L324">324</a>    /// &lt;example&gt;&lt;code&gt;bool switched = X64Operations.SwitchContext(oldFrame, newFrame);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L325"><a class="line-number" href="#L325">325</a>    public static bool SwitchContext(nuint outgoingContext, nuint incomingContext) =&gt;</span>
+<span class="source-line" id="L326"><a class="line-number" href="#L326">326</a>        _isBound &amp;&amp; outgoingContext != 0 &amp;&amp; incomingContext != 0 &amp;&amp; _bindings.SwitchContext(outgoingContext, incomingContext) != 0;</span>
+<span class="source-line" id="L327"><a class="line-number" href="#L327">327</a></span>
+<span class="source-line" id="L328"><a class="line-number" href="#L328">328</a>    /// &lt;summary&gt;Queries a named x64 CPU feature.&lt;/summary&gt;</span>
+<span class="source-line" id="L329"><a class="line-number" href="#L329">329</a>    /// &lt;nova.when&gt;Use before enabling optional processor facilities.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L330"><a class="line-number" href="#L330">330</a>    /// &lt;nova.depends&gt;Bound CPUID feature detector&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L331"><a class="line-number" href="#L331">331</a>    /// &lt;returns&gt;A feature result containing support and architecture-specific detail.&lt;/returns&gt;</span>
+<span class="source-line" id="L332"><a class="line-number" href="#L332">332</a>    /// &lt;example&gt;&lt;code&gt;CpuFeatureResult nx = X64Operations.DetectFeature(X64CpuFeature.ExecuteDisable);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L333"><a class="line-number" href="#L333">333</a>    public static CpuFeatureResult DetectFeature(X64CpuFeature feature)</span>
+<span class="source-line" id="L334"><a class="line-number" href="#L334">334</a>    {</span>
+<span class="source-line" id="L335"><a class="line-number" href="#L335">335</a>        ulong value = 0;</span>
+<span class="source-line" id="L336"><a class="line-number" href="#L336">336</a>        bool supported = _isBound &amp;&amp; _bindings.DetectFeature((uint)feature, &amp;value) != 0;</span>
+<span class="source-line" id="L337"><a class="line-number" href="#L337">337</a>        return new((uint)feature, supported, value);</span>
+<span class="source-line" id="L338"><a class="line-number" href="#L338">338</a>    }</span>
+<span class="source-line" id="L339"><a class="line-number" href="#L339">339</a>}</span>
+<span class="source-line" id="L340"><a class="line-number" href="#L340">340</a></span>
+<span class="source-line" id="L341"><a class="line-number" href="#L341">341</a>/// &lt;summary&gt;Implements the architecture lifecycle contract for x64 while delegating hot operations to static bindings.&lt;/summary&gt;</span>
+<span class="source-line" id="L342"><a class="line-number" href="#L342">342</a>/// &lt;nova.when&gt;Use as the selected architecture service on an x64 kernel.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L343"><a class="line-number" href="#L343">343</a>/// &lt;nova.depends&gt;X64Operations&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L344"><a class="line-number" href="#L344">344</a>[SupportedArchitecture(SupportedArchitecture.X64)]</span>
+<span class="source-line" id="L345"><a class="line-number" href="#L345">345</a>public sealed class X64CpuArchitecture : ICpuArchitecture</span>
+<span class="source-line" id="L346"><a class="line-number" href="#L346">346</a>{</span>
+<span class="source-line" id="L347"><a class="line-number" href="#L347">347</a>    /// &lt;summary&gt;Gets the x64 architecture identifier.&lt;/summary&gt;</span>
+<span class="source-line" id="L348"><a class="line-number" href="#L348">348</a>    /// &lt;nova.when&gt;Use to validate architecture selection.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L349"><a class="line-number" href="#L349">349</a>    /// &lt;nova.depends&gt;NovaOryn.Core&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L350"><a class="line-number" href="#L350">350</a>    public SupportedArchitecture Architecture =&gt; SupportedArchitecture.X64;</span>
+<span class="source-line" id="L351"><a class="line-number" href="#L351">351</a></span>
+<span class="source-line" id="L352"><a class="line-number" href="#L352">352</a>    /// &lt;summary&gt;Validates that the x64 operation table is ready.&lt;/summary&gt;</span>
+<span class="source-line" id="L353"><a class="line-number" href="#L353">353</a>    /// &lt;nova.when&gt;Call during bootstrap after binding native operations.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L354"><a class="line-number" href="#L354">354</a>    /// &lt;nova.depends&gt;X64Operations.Bind&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L355"><a class="line-number" href="#L355">355</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when x64 operations are bound.&lt;/returns&gt;</span>
+<span class="source-line" id="L356"><a class="line-number" href="#L356">356</a>    /// &lt;example&gt;&lt;code&gt;bool ready = architecture.InitialiseEarly();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L357"><a class="line-number" href="#L357">357</a>    public bool InitialiseEarly() =&gt; X64Operations.IsBound;</span>
+<span class="source-line" id="L358"><a class="line-number" href="#L358">358</a></span>
+<span class="source-line" id="L359"><a class="line-number" href="#L359">359</a>    /// &lt;summary&gt;Initialises one x64 processor at the contract boundary.&lt;/summary&gt;</span>
+<span class="source-line" id="L360"><a class="line-number" href="#L360">360</a>    /// &lt;nova.when&gt;Call on each logical processor after its native entry path is established.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L361"><a class="line-number" href="#L361">361</a>    /// &lt;nova.depends&gt;Native per-CPU GDT, TSS, IDT and APIC setup&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L362"><a class="line-number" href="#L362">362</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the operation table is available for the processor.&lt;/returns&gt;</span>
+<span class="source-line" id="L363"><a class="line-number" href="#L363">363</a>    /// &lt;example&gt;&lt;code&gt;bool ready = architecture.InitialiseProcessor(processorId);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L364"><a class="line-number" href="#L364">364</a>    public bool InitialiseProcessor(uint processorId) =&gt; X64Operations.IsBound;</span>
+<span class="source-line" id="L365"><a class="line-number" href="#L365">365</a></span>
+<span class="source-line" id="L366"><a class="line-number" href="#L366">366</a>    /// &lt;summary&gt;Enables maskable interrupts through the static x64 operation API.&lt;/summary&gt;</span>
+<span class="source-line" id="L367"><a class="line-number" href="#L367">367</a>    /// &lt;nova.when&gt;Call after the IDT and interrupt controller are initialised.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L368"><a class="line-number" href="#L368">368</a>    /// &lt;nova.depends&gt;X64Operations.EnableInterrupts&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L369"><a class="line-number" href="#L369">369</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when interrupts are enabled.&lt;/returns&gt;</span>
+<span class="source-line" id="L370"><a class="line-number" href="#L370">370</a>    /// &lt;example&gt;&lt;code&gt;bool enabled = architecture.EnableInterrupts();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L371"><a class="line-number" href="#L371">371</a>    public bool EnableInterrupts() =&gt; X64Operations.EnableInterrupts();</span>
+<span class="source-line" id="L372"><a class="line-number" href="#L372">372</a></span>
+<span class="source-line" id="L373"><a class="line-number" href="#L373">373</a>    /// &lt;summary&gt;Disables maskable interrupts through the static x64 operation API.&lt;/summary&gt;</span>
+<span class="source-line" id="L374"><a class="line-number" href="#L374">374</a>    /// &lt;nova.when&gt;Use for critical regions or terminal processor shutdown.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L375"><a class="line-number" href="#L375">375</a>    /// &lt;nova.depends&gt;X64Operations.DisableInterrupts&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L376"><a class="line-number" href="#L376">376</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when interrupts are disabled.&lt;/returns&gt;</span>
+<span class="source-line" id="L377"><a class="line-number" href="#L377">377</a>    /// &lt;example&gt;&lt;code&gt;bool disabled = architecture.DisableInterrupts();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L378"><a class="line-number" href="#L378">378</a>    public bool DisableInterrupts() =&gt; X64Operations.DisableInterrupts();</span>
+<span class="source-line" id="L379"><a class="line-number" href="#L379">379</a></span>
+<span class="source-line" id="L380"><a class="line-number" href="#L380">380</a>    /// &lt;summary&gt;Halts the current processor through the static x64 operation API.&lt;/summary&gt;</span>
+<span class="source-line" id="L381"><a class="line-number" href="#L381">381</a>    /// &lt;nova.when&gt;Use in idle or terminal halt loops.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L382"><a class="line-number" href="#L382">382</a>    /// &lt;nova.depends&gt;X64Operations.Halt&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L383"><a class="line-number" href="#L383">383</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; if execution resumes and the wrapper succeeds.&lt;/returns&gt;</span>
+<span class="source-line" id="L384"><a class="line-number" href="#L384">384</a>    /// &lt;example&gt;&lt;code&gt;bool resumed = architecture.Halt();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L385"><a class="line-number" href="#L385">385</a>    public bool Halt() =&gt; X64Operations.Halt();</span>
+<span class="source-line" id="L386"><a class="line-number" href="#L386">386</a></span>
+<span class="source-line" id="L387"><a class="line-number" href="#L387">387</a>    /// &lt;summary&gt;Reads the x64 timestamp counter through the static operation API.&lt;/summary&gt;</span>
+<span class="source-line" id="L388"><a class="line-number" href="#L388">388</a>    /// &lt;nova.when&gt;Use after timestamp feature and synchronisation checks.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L389"><a class="line-number" href="#L389">389</a>    /// &lt;nova.depends&gt;X64Operations.ReadTimestamp&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L390"><a class="line-number" href="#L390">390</a>    /// &lt;returns&gt;The current timestamp, or zero when operations are unbound.&lt;/returns&gt;</span>
+<span class="source-line" id="L391"><a class="line-number" href="#L391">391</a>    /// &lt;example&gt;&lt;code&gt;ulong ticks = architecture.ReadTimestamp();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L392"><a class="line-number" href="#L392">392</a>    public ulong ReadTimestamp() =&gt; X64Operations.ReadTimestamp();</span>
+<span class="source-line" id="L393"><a class="line-number" href="#L393">393</a>}</span>
+<span class="source-line" id="L394"><a class="line-number" href="#L394">394</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

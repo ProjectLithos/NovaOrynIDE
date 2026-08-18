@@ -1,0 +1,180 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Memory.Contracts/MemoryMapContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Memory.Contracts/MemoryMapContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>namespace NovaOryn.Memory;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>/// &lt;summary&gt;Provides immutable indexed and cursor-based diagnostics over a normalised memory map.&lt;/summary&gt;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>/// &lt;nova.when&gt;Use after normalisation and before constructing a physical allocator.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;nova.depends&gt;MemoryDescriptor&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>public sealed class NormalisedMemoryMap</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>{</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>    private readonly MemoryDescriptor[] _descriptors;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a></span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    internal NormalisedMemoryMap(MemoryDescriptor[] descriptors, int count, MemoryMapNormalisationMethod method)</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    {</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>        _descriptors = new MemoryDescriptor[count];</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>        Array.Copy(descriptors, _descriptors, count);</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>        Method = method;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>        ulong total = 0;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>        ulong usable = 0;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>        for (int index = 0; index &lt; count; index++)</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>        {</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>            total += _descriptors[index].Length;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>            if (_descriptors[index].Availability == MemoryAvailability.AvailableAfterExitBootServices) usable += _descriptors[index].Length;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>        }</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>        TotalBytes = total;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>        UsableBytes = usable;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    }</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a></span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    /// &lt;summary&gt;Gets the number of immutable descriptors.&lt;/summary&gt;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    /// &lt;nova.when&gt;Use to bound indexed diagnostics and allocator scans.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    public int Count =&gt; _descriptors.Length;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    /// &lt;summary&gt;Gets the normalisation implementation that produced the map.&lt;/summary&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    /// &lt;nova.when&gt;Use when reporting or auditing the selected overlap policy.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    public MemoryMapNormalisationMethod Method { get; }</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;summary&gt;Gets the total represented byte count.&lt;/summary&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    /// &lt;nova.when&gt;Use for boot diagnostics and physical-memory accounting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    public ulong TotalBytes { get; }</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;summary&gt;Gets the total immediately allocatable byte count.&lt;/summary&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    /// &lt;nova.when&gt;Use to estimate memory available to the first physical allocator.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    public ulong UsableBytes { get; }</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a></span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;summary&gt;Attempts to read one descriptor by index.&lt;/summary&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    /// &lt;nova.when&gt;Use for allocation scans and deterministic diagnostics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;nova.depends&gt;Count&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the index exists.&lt;/returns&gt;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    /// &lt;example&gt;&lt;code&gt;bool found = map.TryGetDescriptor(0, out MemoryDescriptor descriptor);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    public bool TryGetDescriptor(int index, out MemoryDescriptor descriptor)</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    {</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>        descriptor = default;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>        if ((uint)index &gt;= (uint)_descriptors.Length) return false;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        descriptor = _descriptors[index];</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>        return true;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    }</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a></span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    /// &lt;summary&gt;Creates a forward-only diagnostic cursor without exposing the backing array.&lt;/summary&gt;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;nova.when&gt;Use when printing or auditing every descriptor.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;nova.depends&gt;MemoryMapDiagnosticCursor&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;returns&gt;A cursor positioned before the first descriptor.&lt;/returns&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;example&gt;&lt;code&gt;MemoryMapDiagnosticCursor cursor = map.CreateDiagnosticCursor();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    public MemoryMapDiagnosticCursor CreateDiagnosticCursor() =&gt; new(_descriptors);</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>}</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a></span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>/// &lt;summary&gt;Provides immutable forward enumeration without implementing mutable collection interfaces.&lt;/summary&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>/// &lt;nova.when&gt;Use for boot diagnostics where exposing an array would permit mutation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>/// &lt;nova.depends&gt;NormalisedMemoryMap&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>public struct MemoryMapDiagnosticCursor</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>{</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    private readonly MemoryDescriptor[] _descriptors;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    private int _index;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a></span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    internal MemoryMapDiagnosticCursor(MemoryDescriptor[] descriptors)</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    {</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>        _descriptors = descriptors;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>        _index = -1;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>        Current = default;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    }</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a></span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    /// &lt;summary&gt;Gets the current descriptor after a successful move.&lt;/summary&gt;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    /// &lt;nova.when&gt;Read only after MoveNext returns true.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    public MemoryDescriptor Current { get; private set; }</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a></span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    /// &lt;summary&gt;Advances to the next diagnostic descriptor.&lt;/summary&gt;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>    /// &lt;nova.when&gt;Call until it returns &lt;see langword=&quot;false&quot;/&gt;.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    /// &lt;nova.depends&gt;CreateDiagnosticCursor&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when another descriptor is available.&lt;/returns&gt;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    /// &lt;example&gt;&lt;code&gt;while (cursor.MoveNext()) { MemoryDescriptor descriptor = cursor.Current; }&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>    public bool MoveNext()</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    {</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>        int next = _index + 1;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>        if ((uint)next &gt;= (uint)_descriptors.Length) return false;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>        _index = next;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>        Current = _descriptors[next];</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>        return true;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>    }</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>}</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a></span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>/// &lt;summary&gt;Reports normalisation status and diagnostic counters.&lt;/summary&gt;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>/// &lt;nova.when&gt;Use to identify rejected inputs and policy-specific overlap handling.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>/// &lt;nova.depends&gt;MemoryMapNormalisationStatus&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>public readonly record struct MemoryMapNormalisationResult(</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>    MemoryMapNormalisationStatus Status,</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    int InputDescriptorCount,</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>    int ReservationCount,</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    int OutputDescriptorCount,</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    int SplitCount,</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    int MergeCount,</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    int ResolvedOverlapCount)</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>{</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    /// &lt;summary&gt;Gets whether normalisation completed successfully.&lt;/summary&gt;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    /// &lt;nova.when&gt;Use before consuming the output map.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    /// &lt;nova.depends&gt;Status&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; only for a successful result.&lt;/returns&gt;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>    /// &lt;example&gt;&lt;code&gt;bool ready = result.Succeeded();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>    public bool Succeeded() =&gt; Status == MemoryMapNormalisationStatus.Success;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>}</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a></span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>/// &lt;summary&gt;Defines a replaceable memory-map normalisation implementation.&lt;/summary&gt;</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>/// &lt;nova.when&gt;Use when an SDK consumer selects strict, priority, or conservative overlap semantics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>/// &lt;nova.depends&gt;FinalUefiMemoryMapSnapshot supplied by NovaOryn.Boot.Memory&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>public interface IMemoryMapNormaliser</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>{</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>    /// &lt;summary&gt;Gets the overlap-resolution implementation.&lt;/summary&gt;</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>    MemoryMapNormalisationMethod Method { get; }</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a></span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>    /// &lt;summary&gt;Normalises a final boot map and overlays explicit reservations.&lt;/summary&gt;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>    /// &lt;nova.when&gt;Call only with the map captured immediately before successful ExitBootServices.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    /// &lt;nova.depends&gt;MemoryMapNormalisationWorkspace&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>    /// &lt;returns&gt;A status and diagnostic counter set.&lt;/returns&gt;</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>    /// &lt;example&gt;&lt;code&gt;MemoryMapNormalisationResult result = normaliser.Normalise(source, reservations, workspace, out NormalisedMemoryMap? map);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>    MemoryMapNormalisationResult Normalise(IMemoryMapSource source, MemoryReservation[] reservations, MemoryMapNormalisationWorkspace workspace, out NormalisedMemoryMap? map);</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>}</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a></span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>/// &lt;summary&gt;Exposes an immutable final boot map to normaliser implementations.&lt;/summary&gt;</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>/// &lt;nova.when&gt;Implemented by final UEFI snapshots and future boot-protocol adapters.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>/// &lt;nova.depends&gt;MemoryDescriptor&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>public interface IMemoryMapSource</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>{</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>    /// &lt;summary&gt;Gets whether this source represents the final post-ExitBootServices map.&lt;/summary&gt;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>    bool IsFinal { get; }</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>    /// &lt;summary&gt;Gets the source descriptor count.&lt;/summary&gt;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>    int Count { get; }</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>    /// &lt;summary&gt;Attempts to translate one source descriptor.&lt;/summary&gt;</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>    /// &lt;nova.when&gt;Used by a normaliser to read source ranges without exposing mutable storage.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>    /// &lt;nova.depends&gt;Count&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the descriptor is valid and translatable.&lt;/returns&gt;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>    /// &lt;example&gt;&lt;code&gt;bool read = source.TryGetDescriptor(0, out MemoryDescriptor descriptor);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>    bool TryGetDescriptor(int index, out MemoryDescriptor descriptor);</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>}</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a></span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>/// &lt;summary&gt;Provides caller-owned scratch storage so boot normalisation has bounded memory use.&lt;/summary&gt;</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>/// &lt;nova.when&gt;Allocate before obtaining the final firmware map, then reuse for all implementations.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>/// &lt;nova.depends&gt;Maximum expected descriptor and reservation counts&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>public sealed class MemoryMapNormalisationWorkspace</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>{</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>    internal readonly MemoryDescriptor[] Inputs;</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>    internal readonly ulong[] Boundaries;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>    internal readonly MemoryDescriptor[] Outputs;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a></span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>    /// &lt;summary&gt;Creates bounded scratch storage.&lt;/summary&gt;</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>    /// &lt;nova.when&gt;Create before final-map capture so normalisation requires no unbounded allocation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>    /// &lt;nova.depends&gt;Validated capacity limits&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>    /// &lt;returns&gt;A reusable bounded normalisation workspace.&lt;/returns&gt;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>    /// &lt;example&gt;&lt;code&gt;MemoryMapNormalisationWorkspace workspace = new(256, 512);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>    /// &lt;param name=&quot;descriptorCapacity&quot;&gt;Maximum source plus reservation descriptors.&lt;/param&gt;</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>    /// &lt;param name=&quot;outputCapacity&quot;&gt;Maximum split output descriptors.&lt;/param&gt;</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>    public MemoryMapNormalisationWorkspace(int descriptorCapacity, int outputCapacity)</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>    {</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>        if (descriptorCapacity &lt; 1) throw new ArgumentOutOfRangeException(nameof(descriptorCapacity));</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>        if (outputCapacity &lt; 1) throw new ArgumentOutOfRangeException(nameof(outputCapacity));</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>        Inputs = new MemoryDescriptor[descriptorCapacity];</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>        Boundaries = new ulong[checked(descriptorCapacity * 2)];</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>        Outputs = new MemoryDescriptor[outputCapacity];</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>    }</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a></span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>    /// &lt;summary&gt;Gets the maximum source plus reservation count.&lt;/summary&gt;</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>    /// &lt;nova.when&gt;Use to verify workspace headroom before normalisation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>    public int DescriptorCapacity =&gt; Inputs.Length;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>    /// &lt;summary&gt;Gets the maximum normalised output count.&lt;/summary&gt;</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>    /// &lt;nova.when&gt;Use to verify split-range headroom before normalisation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>    public int OutputCapacity =&gt; Outputs.Length;</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>}</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

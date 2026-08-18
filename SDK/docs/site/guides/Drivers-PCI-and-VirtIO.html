@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Drivers, PCI and VirtIO · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"><script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../guides/Getting-Started.html">Guides</a><a href="../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../" placeholder="Type a public item"><div id="search-results"></div></label></header><main>
+<h1>Drivers, PCI and VirtIO</h1>
+<h2>Generic driver framework</h2>
+<p>The driver framework owns device and driver registries, device identifiers/resources, matching and lifecycle callbacks. Registry storage can grow from the kernel heap by default, while fixed-capacity options remain available for deterministic configurations.</p>
+<h2>Interrupts stay opaque to drivers</h2>
+<p>Drivers request an interrupt through the broker. The broker decides whether the physical route uses MSI-X, MSI or I/O APIC delivery, so ordinary drivers do not contain controller-specific policy.</p>
+<h2>PCI and PCIe</h2>
+<p><code>KernelPci</code> enumerates PCI/PCIe functions, reads and writes configuration space, discovers and sizes BARs, maps MMIO and walks capabilities. ACPI MCFG/ECAM is used where available, with conventional x64 configuration access available for compatible systems.</p>
+<h2>VirtIO</h2>
+<p><code>KernelVirtio</code> implements modern VirtIO PCI transport and built-in block, network, console and entropy-source devices. The transport integrates with the generic driver framework, memory, storage, networking and time facilities.</p>
+<h2>Physical storage and network devices</h2>
+<p>The current SDK also exposes NVMe, AHCI/SATA, Intel E1000/E1000e and Realtek RTL8168/RTL8111-class driver assemblies.</p>
+<h2>Relevant API assemblies</h2>
+<ul><li><a href="../assemblies/novaoryn-kernel-drivers.html">Driver framework</a></li><li><a href="../assemblies/novaoryn-kernel-pci.html">PCI/PCIe</a></li><li><a href="../assemblies/novaoryn-kernel-virtio.html">VirtIO</a></li><li><a href="../assemblies/novaoryn-kernel-nvme.html">NVMe</a></li><li><a href="../assemblies/novaoryn-kernel-ahci.html">AHCI</a></li><li><a href="../assemblies/novaoryn-kernel-e1000.html">Intel E1000</a></li><li><a href="../assemblies/novaoryn-kernel-rtl8168.html">Realtek RTL8168</a></li></ul></main><footer>Updated documentation for NovaOryn 0.29.0 SDK source.</footer></body></html>

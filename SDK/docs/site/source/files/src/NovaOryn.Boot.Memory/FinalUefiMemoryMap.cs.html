@@ -1,0 +1,145 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Boot.Memory/FinalUefiMemoryMap.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Boot.Memory/FinalUefiMemoryMap.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Memory;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Boot.Memory;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Owns all storage needed before the final GetMemoryMap and ExitBootServices sequence.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;nova.when&gt;Create with headroom before the final firmware call so no allocation is required between map capture and exit.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;nova.depends&gt;IUefiMemoryMapProvider&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>public sealed class UefiMemoryMapWorkspace</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>{</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    private readonly UefiMemoryDescriptor[] _captureDescriptors;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    private readonly UefiMemoryDescriptor[] _snapshotDescriptors;</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    private readonly FinalUefiMemoryMapSnapshot _snapshot;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a></span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;summary&gt;Creates a fixed-capacity final-map workspace.&lt;/summary&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    /// &lt;nova.when&gt;Create before the last firmware allocations and retain through ExitBootServices.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    /// &lt;nova.depends&gt;Caller-selected UEFI descriptor headroom&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    /// &lt;returns&gt;A workspace with separate capture and immutable snapshot storage.&lt;/returns&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    /// &lt;example&gt;&lt;code&gt;UefiMemoryMapWorkspace workspace = new(256);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    /// &lt;param name=&quot;descriptorCapacity&quot;&gt;Maximum retained UEFI descriptor count.&lt;/param&gt;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    public UefiMemoryMapWorkspace(int descriptorCapacity)</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    {</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>        if (descriptorCapacity &lt; 1) throw new ArgumentOutOfRangeException(nameof(descriptorCapacity));</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>        _captureDescriptors = new UefiMemoryDescriptor[descriptorCapacity];</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>        _snapshotDescriptors = new UefiMemoryDescriptor[descriptorCapacity];</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>        _snapshot = new FinalUefiMemoryMapSnapshot(_snapshotDescriptors);</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    }</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a></span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    /// &lt;summary&gt;Gets the preallocated descriptor capacity.&lt;/summary&gt;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    /// &lt;nova.when&gt;Use to verify final-map capture headroom before firmware exit.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    public int DescriptorCapacity =&gt; _captureDescriptors.Length;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a></span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    internal UefiMemoryDescriptor[] Descriptors =&gt; _captureDescriptors;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    internal FinalUefiMemoryMapSnapshot Snapshot =&gt; _snapshot;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>}</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a></span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>/// &lt;summary&gt;Retains the exact typed UEFI map whose key succeeded in ExitBootServices.&lt;/summary&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>/// &lt;nova.when&gt;Use as the sole firmware source for memory-map normalisation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>/// &lt;nova.depends&gt;FinalUefiMemoryMapAcquirer&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>public sealed class FinalUefiMemoryMapSnapshot : IMemoryMapSource</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>{</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    private readonly UefiMemoryDescriptor[] _storage;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    private int _count;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a></span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    internal FinalUefiMemoryMapSnapshot(UefiMemoryDescriptor[] storage) =&gt; _storage = storage;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a></span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    /// &lt;summary&gt;Gets whether ExitBootServices succeeded with this exact map key.&lt;/summary&gt;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    /// &lt;nova.when&gt;Check before normalisation or diagnostic enumeration.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    public bool IsFinal { get; private set; }</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    /// &lt;summary&gt;Gets the retained descriptor count.&lt;/summary&gt;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    /// &lt;nova.when&gt;Use to bound immutable final-map diagnostics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    public int Count =&gt; _count;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    /// &lt;summary&gt;Gets the map key accepted by ExitBootServices.&lt;/summary&gt;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;nova.when&gt;Use to audit the exact final firmware hand-off.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    public ulong MapKey { get; private set; }</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;summary&gt;Gets the firmware descriptor version.&lt;/summary&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;nova.when&gt;Use when diagnosing firmware map format compatibility.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    public uint DescriptorVersion { get; private set; }</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    /// &lt;summary&gt;Gets the number of GetMemoryMap/ExitBootServices attempts.&lt;/summary&gt;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    /// &lt;nova.when&gt;Use to report stale-key retries.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    public int CaptureAttempts { get; private set; }</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a></span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    /// &lt;summary&gt;Attempts to translate one retained UEFI descriptor.&lt;/summary&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    /// &lt;nova.when&gt;Used by all normaliser implementations and diagnostic tools.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    /// &lt;nova.depends&gt;UefiMemoryDescriptorMapper&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the index and descriptor are valid.&lt;/returns&gt;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    /// &lt;example&gt;&lt;code&gt;bool found = snapshot.TryGetDescriptor(0, out MemoryDescriptor descriptor);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    public bool TryGetDescriptor(int index, out MemoryDescriptor descriptor)</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    {</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>        descriptor = default;</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>        if (!IsFinal || (uint)index &gt;= (uint)_count) return false;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>        return UefiMemoryDescriptorMapper.TryMap(_storage[index], out descriptor);</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    }</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a></span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    /// &lt;summary&gt;Attempts to read the unmodified typed UEFI descriptor.&lt;/summary&gt;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    /// &lt;nova.when&gt;Use for firmware diagnostics that need original UEFI type and attribute values.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    /// &lt;nova.depends&gt;Count&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the index exists in the final snapshot.&lt;/returns&gt;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    /// &lt;example&gt;&lt;code&gt;bool found = snapshot.TryGetUefiDescriptor(0, out UefiMemoryDescriptor descriptor);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    public bool TryGetUefiDescriptor(int index, out UefiMemoryDescriptor descriptor)</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>    {</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>        descriptor = default;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>        if (!IsFinal || (uint)index &gt;= (uint)_count) return false;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>        descriptor = _storage[index];</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>        return true;</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    }</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a></span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    internal bool Seal(UefiMemoryDescriptor[] source, int count, ulong mapKey, uint descriptorVersion, int captureAttempts)</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>    {</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>        if (IsFinal || source is null || count &lt; 1 || count &gt; source.Length || count &gt; _storage.Length) return false;</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>        Array.Copy(source, _storage, count);</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>        _count = count;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>        MapKey = mapKey;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>        DescriptorVersion = descriptorVersion;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>        CaptureAttempts = captureAttempts;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>        IsFinal = true;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>        return true;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>    }</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>}</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a></span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>/// &lt;summary&gt;Performs the required final-map retry sequence without allocating between firmware calls.&lt;/summary&gt;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>/// &lt;nova.when&gt;Call once after all boot-services allocations and immediately before managed post-UEFI boot.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>/// &lt;nova.depends&gt;IUefiMemoryMapProvider and UefiMemoryMapWorkspace&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>public static class FinalUefiMemoryMapAcquirer</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>{</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    /// &lt;summary&gt;Captures the final UEFI map and exits boot services with its exact key.&lt;/summary&gt;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    /// &lt;nova.when&gt;Use after the framebuffer, loaded image, and all NovaOryn boot structures are final.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    /// &lt;nova.depends&gt;No allocation or firmware call between provider methods&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when ExitBootServices accepted the retained map key.&lt;/returns&gt;</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    /// &lt;example&gt;&lt;code&gt;bool exited = FinalUefiMemoryMapAcquirer.TryCaptureAndExit(provider, imageHandle, workspace, 8, out FinalUefiMemoryMapSnapshot? snapshot, out UefiMemoryMapStatus mapStatus, out UefiExitBootServicesStatus exitStatus);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>    public static bool TryCaptureAndExit(</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>        IUefiMemoryMapProvider provider,</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>        ulong imageHandle,</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>        UefiMemoryMapWorkspace workspace,</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>        int maximumAttempts,</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>        out FinalUefiMemoryMapSnapshot? snapshot,</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>        out UefiMemoryMapStatus mapStatus,</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>        out UefiExitBootServicesStatus exitStatus)</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>    {</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>        snapshot = null;</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>        mapStatus = UefiMemoryMapStatus.InvalidParameter;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>        exitStatus = UefiExitBootServicesStatus.FirmwareError;</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>        if (provider is null || workspace is null || imageHandle == 0 || maximumAttempts &lt; 1 || workspace.Snapshot.IsFinal) return false;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a></span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>        for (int attempt = 1; attempt &lt;= maximumAttempts; attempt++)</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>        {</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>            mapStatus = provider.GetMemoryMap(workspace.Descriptors, out int count, out ulong mapKey, out uint descriptorVersion);</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>            if (mapStatus != UefiMemoryMapStatus.Success) return false;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>            if (count &lt; 1 || count &gt; workspace.DescriptorCapacity)</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>            {</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>                mapStatus = UefiMemoryMapStatus.InvalidParameter;</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>                return false;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>            }</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a></span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>            exitStatus = provider.ExitBootServices(imageHandle, mapKey);</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>            if (exitStatus == UefiExitBootServicesStatus.InvalidMapKey) continue;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>            if (exitStatus != UefiExitBootServicesStatus.Success) return false;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>            if (!workspace.Snapshot.Seal(workspace.Descriptors, count, mapKey, descriptorVersion, attempt)) return false;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>            snapshot = workspace.Snapshot;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>            return true;</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>        }</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>        return false;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>    }</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>}</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

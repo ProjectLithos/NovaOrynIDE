@@ -1,0 +1,15 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>USB · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"><script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../guides/Getting-Started.html">Guides</a><a href="../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../" placeholder="Type a public item"><div id="search-results"></div></label></header><main>
+<h1>USB</h1>
+<p>NovaOryn 0.29.0 contains a reusable USB bus layer plus xHCI, hub, HID and mass-storage assemblies.</p>
+<h2>USB bus layer</h2>
+<p><code>KernelUsbBus</code> owns host registration, port enumeration, device/interface discovery and the common control, bulk and interrupt transfer contracts.</p>
+<h2>xHCI</h2>
+<p><code>KernelXhci</code> is the PCI xHCI host-controller implementation and provides command, event and endpoint transfer rings. Root-port scanning feeds devices into the common USB bus layer.</p>
+<h2>Hubs</h2>
+<p>The hub assembly discovers USB hubs and can enumerate downstream ports through the same bus abstraction rather than hard-coding a one-controller/one-device model.</p>
+<h2>HID</h2>
+<p>The HID assembly exposes keyboard events, mouse state, discovery/service operations and boot-keyboard usage translation.</p>
+<h2>Mass storage</h2>
+<p>The USB mass-storage assembly integrates discovered USB storage with <code>KernelStorage</code>, allowing it to participate in the same block-device and volume path as other storage drivers.</p>
+<h2>Relevant API assemblies</h2>
+<ul><li><a href="../assemblies/novaoryn-bus-usb.html">USB bus</a></li><li><a href="../assemblies/novaoryn-usb-xhci.html">xHCI</a></li><li><a href="../assemblies/novaoryn-usb-hub.html">USB hubs</a></li><li><a href="../assemblies/novaoryn-usb-hid.html">USB HID</a></li><li><a href="../assemblies/novaoryn-usb-massstorage.html">USB mass storage</a></li></ul></main><footer>Updated documentation for NovaOryn 0.29.0 SDK source.</footer></body></html>

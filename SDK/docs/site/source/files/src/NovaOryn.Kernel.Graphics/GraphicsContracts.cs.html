@@ -1,0 +1,62 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Graphics/GraphicsContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Graphics/GraphicsContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Kernel.Drivers;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Kernel.Graphics;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;summary&gt;Identifies the implementation that owns a graphics display target.&lt;/summary&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>public enum KernelGraphicsTargetKind : Byte { Unknown=0, FirmwareFramebuffer=1, VirtioGpu=2, SimpleFramebuffer=3 }</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>/// &lt;summary&gt;Identifies the packed pixel layout used by a graphics framebuffer.&lt;/summary&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>public enum KernelGraphicsPixelFormat : Byte { Unknown=0, BlueGreenRedReserved8=1, RedGreenBlueReserved8=2, DirectBitMask32=3 }</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>/// &lt;summary&gt;Opaque handle for a registered kernel graphics display.&lt;/summary&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>public readonly struct KernelGraphicsDisplayHandle { public KernelGraphicsDisplayHandle(UInt32 value){Value=value;} public UInt32 Value { get; } }</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>/// &lt;summary&gt;Describes one display mode in pixels.&lt;/summary&gt;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>public readonly struct KernelGraphicsMode</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>{</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    public KernelGraphicsMode(UInt32 width,UInt32 height,UInt32 pixelsPerScanLine,KernelGraphicsPixelFormat pixelFormat){Width=width;Height=height;PixelsPerScanLine=pixelsPerScanLine;PixelFormat=pixelFormat;}</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    public UInt32 Width { get; }</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    public UInt32 Height { get; }</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    public UInt32 PixelsPerScanLine { get; }</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    public KernelGraphicsPixelFormat PixelFormat { get; }</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    public UInt64 RequiredBytes =&gt; (UInt64)PixelsPerScanLine*Height*4UL;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    public Boolean IsValid =&gt; Width!=0U&amp;&amp;Height!=0U&amp;&amp;PixelsPerScanLine&gt;=Width&amp;&amp;PixelFormat!=KernelGraphicsPixelFormat.Unknown&amp;&amp;RequiredBytes/4UL/PixelsPerScanLine==Height;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>}</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>/// &lt;summary&gt;Describes the CPU-visible storage behind a display framebuffer.&lt;/summary&gt;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>public readonly struct KernelGraphicsFramebuffer</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>{</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    public KernelGraphicsFramebuffer(UInt64 physicalAddress,UInt64 virtualAddress,UInt64 byteLength,KernelGraphicsMode mode){PhysicalAddress=physicalAddress;VirtualAddress=virtualAddress;ByteLength=byteLength;Mode=mode;}</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    public UInt64 PhysicalAddress { get; }</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    public UInt64 VirtualAddress { get; }</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    public UInt64 ByteLength { get; }</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    public KernelGraphicsMode Mode { get; }</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    public Boolean IsValid =&gt; VirtualAddress!=0UL&amp;&amp;ByteLength&gt;=Mode.RequiredBytes&amp;&amp;Mode.IsValid;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>}</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>/// &lt;summary&gt;Reports one registered display and its current scan-out framebuffer.&lt;/summary&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>public readonly struct KernelGraphicsDisplayInfo</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>{</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    public KernelGraphicsDisplayInfo(KernelGraphicsDisplayHandle handle,KernelDeviceHandle device,KernelGraphicsTargetKind kind,KernelGraphicsFramebuffer framebuffer,Boolean canSetMode,Boolean primary){Handle=handle;Device=device;Kind=kind;Framebuffer=framebuffer;CanSetMode=canSetMode;Primary=primary;}</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    public KernelGraphicsDisplayHandle Handle { get; }</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    public KernelDeviceHandle Device { get; }</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    public KernelGraphicsTargetKind Kind { get; }</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    public KernelGraphicsFramebuffer Framebuffer { get; }</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    public Boolean CanSetMode { get; }</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    public Boolean Primary { get; }</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>}</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>/// &lt;summary&gt;Summarizes the generic graphics subsystem.&lt;/summary&gt;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>public readonly struct KernelGraphicsCapabilities</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>{</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    public KernelGraphicsCapabilities(Boolean initialized,UInt32 displays,UInt32 firmwareFramebuffers,UInt32 virtioGpus,KernelGraphicsDisplayHandle primary){Initialized=initialized;Displays=displays;FirmwareFramebuffers=firmwareFramebuffers;VirtioGpus=virtioGpus;Primary=primary;}</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    public Boolean Initialized { get; }</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    public UInt32 Displays { get; }</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    public UInt32 FirmwareFramebuffers { get; }</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    public UInt32 VirtioGpus { get; }</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    public KernelGraphicsDisplayHandle Primary { get; }</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>}</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>/// &lt;summary&gt;Driver callbacks used by the graphics core for presentation and mode changes.&lt;/summary&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>public readonly unsafe struct KernelGraphicsCallbacks</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>{</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    public readonly delegate*&lt;KernelGraphicsDisplayHandle,UInt32,UInt32,UInt32,UInt32,Boolean&gt; Present;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    public readonly delegate*&lt;KernelGraphicsDisplayHandle,KernelGraphicsMode,Boolean&gt; SetMode;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    public KernelGraphicsCallbacks(delegate*&lt;KernelGraphicsDisplayHandle,UInt32,UInt32,UInt32,UInt32,Boolean&gt; present,delegate*&lt;KernelGraphicsDisplayHandle,KernelGraphicsMode,Boolean&gt; setMode){Present=present;SetMode=setMode;}</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>}</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

@@ -1,0 +1,499 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Kernel.Internal.X64;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Kernel.Memory;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>namespace NovaOryn.Kernel.VirtualMemory;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a></span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;summary&gt;Reports the result of a freestanding virtual-memory operation.&lt;/summary&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>public enum KernelVirtualMemoryStatus</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>{</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    /// &lt;summary&gt;The operation completed successfully.&lt;/summary&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    Success = 0,</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    /// &lt;summary&gt;The supplied address, page size, or protection was invalid.&lt;/summary&gt;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    InvalidParameter = 1,</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;summary&gt;The virtual-memory manager has not been initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    NotInitialized = 2,</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    /// &lt;summary&gt;The virtual-memory manager was already initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    AlreadyInitialized = 3,</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    /// &lt;summary&gt;The supplied virtual address is not canonical for four-level x64 paging.&lt;/summary&gt;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    NonCanonicalAddress = 4,</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    /// &lt;summary&gt;A leaf mapping already occupies the requested address.&lt;/summary&gt;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    AlreadyMapped = 5,</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    /// &lt;summary&gt;No present leaf mapping covers the requested address.&lt;/summary&gt;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    NotMapped = 6,</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    /// &lt;summary&gt;The physical-memory manager could not supply a page-table page.&lt;/summary&gt;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    PhysicalAllocationFailed = 7,</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    /// &lt;summary&gt;The bounded bootstrap page-table discovery table is full.&lt;/summary&gt;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    PageTableCapacityExhausted = 8,</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    /// &lt;summary&gt;A required x64 control-register or TLB invalidation operation failed.&lt;/summary&gt;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    ArchitectureOperationFailed = 9,</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    /// &lt;summary&gt;The requested page size is not supported by this bootstrap manager.&lt;/summary&gt;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    UnsupportedPageSize = 10,</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;summary&gt;The requested permissions cannot be represented without widening an existing ancestor entry.&lt;/summary&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    UnsupportedProtection = 11</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>}</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a></span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>/// &lt;summary&gt;Identifies a leaf page size supported by the freestanding x64 virtual-memory manager.&lt;/summary&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>public enum KernelVirtualPageSize : ulong</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>{</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;summary&gt;A standard 4 KiB page.&lt;/summary&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    Page4KiB = 4096UL,</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;summary&gt;A 2 MiB large page.&lt;/summary&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    Page2MiB = 2097152UL,</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    /// &lt;summary&gt;A 1 GiB large page.&lt;/summary&gt;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    Page1GiB = 1073741824UL</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>}</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a></span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>/// &lt;summary&gt;Defines bit-combinable access and cache intent for a freestanding virtual mapping.&lt;/summary&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>public enum KernelVirtualMemoryProtection : ulong</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>{</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    /// &lt;summary&gt;No access permission is selected.&lt;/summary&gt;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    None = 0UL,</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    /// &lt;summary&gt;The mapping may be read.&lt;/summary&gt;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    Read = 1UL &lt;&lt; 0,</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;summary&gt;The mapping may be written.&lt;/summary&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    Write = 1UL &lt;&lt; 1,</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;summary&gt;Instructions may execute from the mapping.&lt;/summary&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    Execute = 1UL &lt;&lt; 2,</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    /// &lt;summary&gt;User mode may access the mapping subject to its other permissions.&lt;/summary&gt;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    User = 1UL &lt;&lt; 3,</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    /// &lt;summary&gt;The translation may remain global across address-space switches.&lt;/summary&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    Global = 1UL &lt;&lt; 4,</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    /// &lt;summary&gt;The mapping requests uncached device-memory semantics.&lt;/summary&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    Device = 1UL &lt;&lt; 5,</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    /// &lt;summary&gt;The mapping requests write-through caching.&lt;/summary&gt;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    WriteThrough = 1UL &lt;&lt; 6</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>}</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a></span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>/// &lt;summary&gt;Reports one exact freestanding virtual-to-physical translation.&lt;/summary&gt;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>public readonly struct KernelVirtualTranslation</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>{</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    internal KernelVirtualTranslation(UInt64 virtualAddress, UInt64 physicalAddress, KernelVirtualPageSize pageSize, KernelVirtualMemoryProtection protection)</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    {</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>        VirtualAddress = virtualAddress;</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>        PhysicalAddress = physicalAddress;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>        PageSize = pageSize;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>        Protection = protection;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    }</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a></span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    /// &lt;summary&gt;Gets the queried virtual byte address.&lt;/summary&gt;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>    public UInt64 VirtualAddress { get; }</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    /// &lt;summary&gt;Gets the translated physical byte address including the leaf offset.&lt;/summary&gt;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>    public UInt64 PhysicalAddress { get; }</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    /// &lt;summary&gt;Gets the page size of the leaf that supplied the translation.&lt;/summary&gt;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>    public KernelVirtualPageSize PageSize { get; }</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    /// &lt;summary&gt;Gets the decoded leaf permissions and cache intent.&lt;/summary&gt;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>    public KernelVirtualMemoryProtection Protection { get; }</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>}</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a></span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>/// &lt;summary&gt;Provides a snapshot of bootstrap x64 virtual-memory accounting.&lt;/summary&gt;</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>public readonly struct KernelVirtualMemoryStatistics</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>{</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    internal KernelVirtualMemoryStatistics(UInt64 protectedBootTables, UInt64 createdTables, UInt64 mapped4KiB, UInt64 mapped2MiB, UInt64 mapped1GiB)</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>    {</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>        ProtectedBootPageTables = protectedBootTables;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>        CreatedPageTables = createdTables;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>        MappedPages4KiB = mapped4KiB;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>        MappedPages2MiB = mapped2MiB;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>        MappedPages1GiB = mapped1GiB;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    }</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a></span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    /// &lt;summary&gt;Gets the number of inherited active page-table pages protected from physical allocation.&lt;/summary&gt;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    public UInt64 ProtectedBootPageTables { get; }</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    /// &lt;summary&gt;Gets the number of new page-table pages allocated by this manager.&lt;/summary&gt;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    public UInt64 CreatedPageTables { get; }</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    /// &lt;summary&gt;Gets the number of 4 KiB leaf mappings installed through this manager.&lt;/summary&gt;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    public UInt64 MappedPages4KiB { get; }</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    /// &lt;summary&gt;Gets the number of 2 MiB leaf mappings installed through this manager.&lt;/summary&gt;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    public UInt64 MappedPages2MiB { get; }</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    /// &lt;summary&gt;Gets the number of 1 GiB leaf mappings installed through this manager.&lt;/summary&gt;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>    public UInt64 MappedPages1GiB { get; }</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>}</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a></span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>/// &lt;summary&gt;Provides the default no-heap x64 virtual-memory manager used by the editable kernel template.&lt;/summary&gt;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>/// &lt;remarks&gt;</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>/// Version 0.2.0 attaches to the active UEFI-created four-level address space, protects every discovered</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>/// page-table page from the physical allocator, and supports 4 KiB, 2 MiB, and 1 GiB leaf operations.</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>/// Until kernel address-space design is introduced, page-table physical pages must remain identity-accessible.</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>/// &lt;/remarks&gt;</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>public static unsafe partial class KernelVirtualMemory</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>{</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>    private const UInt64 Present = 1UL &lt;&lt; 0;</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>    private const UInt64 Writable = 1UL &lt;&lt; 1;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>    private const UInt64 User = 1UL &lt;&lt; 2;</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    private const UInt64 WriteThrough = 1UL &lt;&lt; 3;</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>    private const UInt64 CacheDisable = 1UL &lt;&lt; 4;</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>    private const UInt64 LargePage = 1UL &lt;&lt; 7;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>    private const UInt64 Global = 1UL &lt;&lt; 8;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>    private const UInt64 NoExecute = 1UL &lt;&lt; 63;</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>    private const UInt64 AddressMask4KiB = 0x000FFFFFFFFFF000UL;</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>    private const UInt64 AddressMask2MiB = 0x000FFFFFFFE00000UL;</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>    private const UInt64 AddressMask1GiB = 0x000FFFFFC0000000UL;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>    private const Int32 MaximumProtectedTables = 4096;</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a></span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>    private unsafe struct State</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>    {</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>        internal fixed UInt64 ProtectedTables[MaximumProtectedTables];</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>    }</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a></span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>#pragma warning disable CS0169 // Fixed-buffer member access is not counted as use of the containing freestanding state field.</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>    private static State _state;</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>#pragma warning restore CS0169</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>    private static Int32 _protectedTableCount;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>    private static UInt64 _rootPhysicalAddress;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>    private static UInt64 _createdPageTables;</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>    private static UInt64 _mapped4KiB;</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>    private static UInt64 _mapped2MiB;</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>    private static UInt64 _mapped1GiB;</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>    private static Boolean _executeDisableEnabled;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>    private static Boolean _page1GiBSupported;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>    private static Boolean _initialized;</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>    private static KernelVirtualMemoryStatus _lastStatus;</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a></span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>    /// &lt;summary&gt;Gets whether the bootstrap virtual-memory manager is initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>    public static Boolean IsInitialized() =&gt; _initialized;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a></span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>    /// &lt;summary&gt;Gets the status produced by the most recent virtual-memory operation.&lt;/summary&gt;</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>    public static KernelVirtualMemoryStatus GetLastStatus() =&gt; _lastStatus;</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a></span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>    /// &lt;summary&gt;Gets a freestanding-safe symbolic name for the latest virtual-memory status.&lt;/summary&gt;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>    /// &lt;returns&gt;A stable status name that requires no enum formatting support.&lt;/returns&gt;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>    public static String GetLastStatusName()</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>    {</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>        if (_lastStatus == KernelVirtualMemoryStatus.Success) return &quot;Success&quot;;</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>        if (_lastStatus == KernelVirtualMemoryStatus.InvalidParameter) return &quot;InvalidParameter&quot;;</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>        if (_lastStatus == KernelVirtualMemoryStatus.NotInitialized) return &quot;NotInitialized&quot;;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>        if (_lastStatus == KernelVirtualMemoryStatus.AlreadyInitialized) return &quot;AlreadyInitialized&quot;;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>        if (_lastStatus == KernelVirtualMemoryStatus.NonCanonicalAddress) return &quot;NonCanonicalAddress&quot;;</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>        if (_lastStatus == KernelVirtualMemoryStatus.AlreadyMapped) return &quot;AlreadyMapped&quot;;</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>        if (_lastStatus == KernelVirtualMemoryStatus.NotMapped) return &quot;NotMapped&quot;;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>        if (_lastStatus == KernelVirtualMemoryStatus.PhysicalAllocationFailed) return &quot;PhysicalAllocationFailed&quot;;</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>        if (_lastStatus == KernelVirtualMemoryStatus.PageTableCapacityExhausted) return &quot;PageTableCapacityExhausted&quot;;</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>        if (_lastStatus == KernelVirtualMemoryStatus.ArchitectureOperationFailed) return &quot;ArchitectureOperationFailed&quot;;</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>        if (_lastStatus == KernelVirtualMemoryStatus.UnsupportedPageSize) return &quot;UnsupportedPageSize&quot;;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>        if (_lastStatus == KernelVirtualMemoryStatus.UnsupportedProtection) return &quot;UnsupportedProtection&quot;;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>        return &quot;Unknown&quot;;</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>    }</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a></span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>    /// &lt;summary&gt;Gets the current x64 root page-table physical address.&lt;/summary&gt;</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>    public static UInt64 GetRootPhysicalAddress() =&gt; _rootPhysicalAddress;</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a></span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>    /// &lt;summary&gt;Initializes virtual memory by attaching to and protecting the active x64 page-table hierarchy.&lt;/summary&gt;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the active root and all reachable page-table pages were accepted.&lt;/returns&gt;</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>    public static Boolean Initialize()</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>    {</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>        if (_initialized) return SetFailure(KernelVirtualMemoryStatus.AlreadyInitialized);</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>        if (!KernelPhysicalMemory.IsInitialized()) return SetFailure(KernelVirtualMemoryStatus.InvalidParameter);</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>        KernelPhysicalMemoryStatistics physicalStatistics = KernelPhysicalMemory.GetStatistics();</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>        if (physicalStatistics.LiveAllocationCount != 0) return SetFailure(KernelVirtualMemoryStatus.InvalidParameter);</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>        UInt64 root = Native.ReadPageTableRoot() &amp; AddressMask4KiB;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>        if (root == 0UL || (root &amp; 0xFFFUL) != 0UL) return SetFailure(KernelVirtualMemoryStatus.ArchitectureOperationFailed);</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>        ResetState();</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>        _rootPhysicalAddress = root;</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>        if (!CaptureDirectMapPlan()) return false;</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>        _executeDisableEnabled = Native.EnableExecuteDisable();</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>        _page1GiBSupported = Native.Supports1GiBPages();</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>        if (!ProtectTableHierarchy(root, 4)) return false;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>        _initialized = true;</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>        _lastStatus = KernelVirtualMemoryStatus.Success;</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>        return true;</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>    }</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a></span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>    /// &lt;summary&gt;Installs one physical-to-virtual leaf mapping into the active x64 address space.&lt;/summary&gt;</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the leaf was installed and its translation invalidated.&lt;/returns&gt;</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>    public static Boolean TryMap(UInt64 virtualAddress, UInt64 physicalAddress, KernelVirtualPageSize pageSize, KernelVirtualMemoryProtection protection)</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>    {</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>        if (!_initialized) return SetFailure(KernelVirtualMemoryStatus.NotInitialized);</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>        UInt64 size = (UInt64)pageSize;</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>        if (!IsSupportedPageSize(size)) return SetFailure(KernelVirtualMemoryStatus.UnsupportedPageSize);</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>        if (pageSize == KernelVirtualPageSize.Page1GiB &amp;&amp; !_page1GiBSupported) return SetFailure(KernelVirtualMemoryStatus.UnsupportedPageSize);</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>        if (!HasProtection(protection, KernelVirtualMemoryProtection.Execute) &amp;&amp; !_executeDisableEnabled) return SetFailure(KernelVirtualMemoryStatus.UnsupportedProtection);</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>        if (!IsCanonical(virtualAddress)) return SetFailure(KernelVirtualMemoryStatus.NonCanonicalAddress);</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>        if ((virtualAddress &amp; (size - 1UL)) != 0UL || (physicalAddress &amp; (size - 1UL)) != 0UL)</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>            return SetFailure(KernelVirtualMemoryStatus.InvalidParameter);</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>        if ((physicalAddress &amp; ~LeafAddressMask(pageSize)) != 0UL) return SetFailure(KernelVirtualMemoryStatus.InvalidParameter);</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>        if (!HasProtection(protection, KernelVirtualMemoryProtection.Read)) return SetFailure(KernelVirtualMemoryStatus.UnsupportedProtection);</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a></span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>        if (!IsTableWritableBeforeDirectMap(_rootPhysicalAddress)) return SetFailure(KernelVirtualMemoryStatus.ArchitectureOperationFailed);</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>        UInt64* pml4 = TablePointer(_rootPhysicalAddress);</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>        Int32 pml4Index = (Int32)((virtualAddress &gt;&gt; 39) &amp; 0x1FFUL);</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>        Int32 pdptIndex = (Int32)((virtualAddress &gt;&gt; 30) &amp; 0x1FFUL);</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>        Int32 pdIndex = (Int32)((virtualAddress &gt;&gt; 21) &amp; 0x1FFUL);</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>        Int32 ptIndex = (Int32)((virtualAddress &gt;&gt; 12) &amp; 0x1FFUL);</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a></span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>        if (!TryGetOrCreateChild(pml4, pml4Index, protection, out UInt64* pdpt)) return false;</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>        if (pageSize == KernelVirtualPageSize.Page1GiB)</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>            return TryInstallLeaf(pdpt, pdptIndex, virtualAddress, physicalAddress, pageSize, protection);</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>        if (IsLarge(pdpt[pdptIndex])) return SetFailure(KernelVirtualMemoryStatus.AlreadyMapped);</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>        if (!TryGetOrCreateChild(pdpt, pdptIndex, protection, out UInt64* pd)) return false;</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>        if (pageSize == KernelVirtualPageSize.Page2MiB)</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>            return TryInstallLeaf(pd, pdIndex, virtualAddress, physicalAddress, pageSize, protection);</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>        if (IsLarge(pd[pdIndex])) return SetFailure(KernelVirtualMemoryStatus.AlreadyMapped);</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>        if (!TryGetOrCreateChild(pd, pdIndex, protection, out UInt64* pt)) return false;</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>        return TryInstallLeaf(pt, ptIndex, virtualAddress, physicalAddress, pageSize, protection);</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>    }</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a></span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>    /// &lt;summary&gt;Removes the present leaf mapping covering one canonical virtual address.&lt;/summary&gt;</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when a leaf was cleared and its translation invalidated.&lt;/returns&gt;</span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a>    public static Boolean TryUnmap(UInt64 virtualAddress)</span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a>    {</span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a>        if (!_initialized) return SetFailure(KernelVirtualMemoryStatus.NotInitialized);</span>
+<span class="source-line" id="L241"><a class="line-number" href="#L241">241</a>        if (!TryFindLeaf(virtualAddress, out UInt64* table, out Int32 index, out KernelVirtualPageSize pageSize)) return false;</span>
+<span class="source-line" id="L242"><a class="line-number" href="#L242">242</a>        table[index] = 0UL;</span>
+<span class="source-line" id="L243"><a class="line-number" href="#L243">243</a>        DecrementMapped(pageSize);</span>
+<span class="source-line" id="L244"><a class="line-number" href="#L244">244</a>        if (!Native.InvalidatePage(virtualAddress)) return SetFailure(KernelVirtualMemoryStatus.ArchitectureOperationFailed);</span>
+<span class="source-line" id="L245"><a class="line-number" href="#L245">245</a>        _lastStatus = KernelVirtualMemoryStatus.Success;</span>
+<span class="source-line" id="L246"><a class="line-number" href="#L246">246</a>        return true;</span>
+<span class="source-line" id="L247"><a class="line-number" href="#L247">247</a>    }</span>
+<span class="source-line" id="L248"><a class="line-number" href="#L248">248</a></span>
+<span class="source-line" id="L249"><a class="line-number" href="#L249">249</a>    /// &lt;summary&gt;Replaces access and cache protection on the present leaf mapping covering one virtual address.&lt;/summary&gt;</span>
+<span class="source-line" id="L250"><a class="line-number" href="#L250">250</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the leaf was rewritten without changing its physical target.&lt;/returns&gt;</span>
+<span class="source-line" id="L251"><a class="line-number" href="#L251">251</a>    public static Boolean TryProtect(UInt64 virtualAddress, KernelVirtualMemoryProtection protection)</span>
+<span class="source-line" id="L252"><a class="line-number" href="#L252">252</a>    {</span>
+<span class="source-line" id="L253"><a class="line-number" href="#L253">253</a>        if (!_initialized) return SetFailure(KernelVirtualMemoryStatus.NotInitialized);</span>
+<span class="source-line" id="L254"><a class="line-number" href="#L254">254</a>        if (!HasProtection(protection, KernelVirtualMemoryProtection.Read)) return SetFailure(KernelVirtualMemoryStatus.UnsupportedProtection);</span>
+<span class="source-line" id="L255"><a class="line-number" href="#L255">255</a>        if (!HasProtection(protection, KernelVirtualMemoryProtection.Execute) &amp;&amp; !_executeDisableEnabled) return SetFailure(KernelVirtualMemoryStatus.UnsupportedProtection);</span>
+<span class="source-line" id="L256"><a class="line-number" href="#L256">256</a>        if (!TryFindLeaf(virtualAddress, out UInt64* table, out Int32 index, out KernelVirtualPageSize pageSize)) return false;</span>
+<span class="source-line" id="L257"><a class="line-number" href="#L257">257</a>        UInt64 current = table[index];</span>
+<span class="source-line" id="L258"><a class="line-number" href="#L258">258</a>        UInt64 physicalAddress = current &amp; LeafAddressMask(pageSize);</span>
+<span class="source-line" id="L259"><a class="line-number" href="#L259">259</a>        if (!TryEncodeLeaf(physicalAddress, pageSize, protection, out UInt64 replacement))</span>
+<span class="source-line" id="L260"><a class="line-number" href="#L260">260</a>            return SetFailure(KernelVirtualMemoryStatus.InvalidParameter);</span>
+<span class="source-line" id="L261"><a class="line-number" href="#L261">261</a>        table[index] = replacement;</span>
+<span class="source-line" id="L262"><a class="line-number" href="#L262">262</a>        if (!Native.InvalidatePage(virtualAddress)) return SetFailure(KernelVirtualMemoryStatus.ArchitectureOperationFailed);</span>
+<span class="source-line" id="L263"><a class="line-number" href="#L263">263</a>        _lastStatus = KernelVirtualMemoryStatus.Success;</span>
+<span class="source-line" id="L264"><a class="line-number" href="#L264">264</a>        return true;</span>
+<span class="source-line" id="L265"><a class="line-number" href="#L265">265</a>    }</span>
+<span class="source-line" id="L266"><a class="line-number" href="#L266">266</a></span>
+<span class="source-line" id="L267"><a class="line-number" href="#L267">267</a>    /// &lt;summary&gt;Resolves one canonical virtual byte address through the active x64 page tables.&lt;/summary&gt;</span>
+<span class="source-line" id="L268"><a class="line-number" href="#L268">268</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when a present leaf covers the queried address.&lt;/returns&gt;</span>
+<span class="source-line" id="L269"><a class="line-number" href="#L269">269</a>    public static Boolean TryTranslate(UInt64 virtualAddress, out KernelVirtualTranslation translation)</span>
+<span class="source-line" id="L270"><a class="line-number" href="#L270">270</a>    {</span>
+<span class="source-line" id="L271"><a class="line-number" href="#L271">271</a>        translation = default;</span>
+<span class="source-line" id="L272"><a class="line-number" href="#L272">272</a>        if (!_initialized) return SetFailure(KernelVirtualMemoryStatus.NotInitialized);</span>
+<span class="source-line" id="L273"><a class="line-number" href="#L273">273</a>        if (!TryFindLeaf(virtualAddress, out UInt64* table, out Int32 index, out KernelVirtualPageSize pageSize)) return false;</span>
+<span class="source-line" id="L274"><a class="line-number" href="#L274">274</a>        UInt64 entry = table[index];</span>
+<span class="source-line" id="L275"><a class="line-number" href="#L275">275</a>        UInt64 size = (UInt64)pageSize;</span>
+<span class="source-line" id="L276"><a class="line-number" href="#L276">276</a>        UInt64 physicalBase = entry &amp; LeafAddressMask(pageSize);</span>
+<span class="source-line" id="L277"><a class="line-number" href="#L277">277</a>        UInt64 physicalAddress = physicalBase + (virtualAddress &amp; (size - 1UL));</span>
+<span class="source-line" id="L278"><a class="line-number" href="#L278">278</a>        translation = new KernelVirtualTranslation(virtualAddress, physicalAddress, pageSize, DecodeProtection(entry));</span>
+<span class="source-line" id="L279"><a class="line-number" href="#L279">279</a>        _lastStatus = KernelVirtualMemoryStatus.Success;</span>
+<span class="source-line" id="L280"><a class="line-number" href="#L280">280</a>        return true;</span>
+<span class="source-line" id="L281"><a class="line-number" href="#L281">281</a>    }</span>
+<span class="source-line" id="L282"><a class="line-number" href="#L282">282</a></span>
+<span class="source-line" id="L283"><a class="line-number" href="#L283">283</a>    /// &lt;summary&gt;Gets current inherited page-table protection and manager-created mapping accounting.&lt;/summary&gt;</span>
+<span class="source-line" id="L284"><a class="line-number" href="#L284">284</a>    public static KernelVirtualMemoryStatistics GetStatistics() =&gt; new((UInt64)_protectedTableCount, _createdPageTables, _mapped4KiB, _mapped2MiB, _mapped1GiB);</span>
+<span class="source-line" id="L285"><a class="line-number" href="#L285">285</a></span>
+<span class="source-line" id="L286"><a class="line-number" href="#L286">286</a>    private static Boolean TryGetOrCreateChild(UInt64* table, Int32 index, KernelVirtualMemoryProtection protection, out UInt64* child)</span>
+<span class="source-line" id="L287"><a class="line-number" href="#L287">287</a>    {</span>
+<span class="source-line" id="L288"><a class="line-number" href="#L288">288</a>        child = (UInt64*)0;</span>
+<span class="source-line" id="L289"><a class="line-number" href="#L289">289</a>        UInt64 entry = table[index];</span>
+<span class="source-line" id="L290"><a class="line-number" href="#L290">290</a>        if (IsPresent(entry))</span>
+<span class="source-line" id="L291"><a class="line-number" href="#L291">291</a>        {</span>
+<span class="source-line" id="L292"><a class="line-number" href="#L292">292</a>            if (IsLarge(entry)) return SetFailure(KernelVirtualMemoryStatus.AlreadyMapped);</span>
+<span class="source-line" id="L293"><a class="line-number" href="#L293">293</a>            if (HasProtection(protection, KernelVirtualMemoryProtection.Write) &amp;&amp; (entry &amp; Writable) == 0UL)</span>
+<span class="source-line" id="L294"><a class="line-number" href="#L294">294</a>                return SetFailure(KernelVirtualMemoryStatus.UnsupportedProtection);</span>
+<span class="source-line" id="L295"><a class="line-number" href="#L295">295</a>            if (HasProtection(protection, KernelVirtualMemoryProtection.User) &amp;&amp; (entry &amp; User) == 0UL)</span>
+<span class="source-line" id="L296"><a class="line-number" href="#L296">296</a>                return SetFailure(KernelVirtualMemoryStatus.UnsupportedProtection);</span>
+<span class="source-line" id="L297"><a class="line-number" href="#L297">297</a>            if (HasProtection(protection, KernelVirtualMemoryProtection.Execute) &amp;&amp; (entry &amp; NoExecute) != 0UL)</span>
+<span class="source-line" id="L298"><a class="line-number" href="#L298">298</a>                return SetFailure(KernelVirtualMemoryStatus.UnsupportedProtection);</span>
+<span class="source-line" id="L299"><a class="line-number" href="#L299">299</a>            UInt64 childPhysicalAddress = entry &amp; AddressMask4KiB;</span>
+<span class="source-line" id="L300"><a class="line-number" href="#L300">300</a>            if (!IsTableWritableBeforeDirectMap(childPhysicalAddress))</span>
+<span class="source-line" id="L301"><a class="line-number" href="#L301">301</a>                return SetFailure(KernelVirtualMemoryStatus.ArchitectureOperationFailed);</span>
+<span class="source-line" id="L302"><a class="line-number" href="#L302">302</a>            child = TablePointer(childPhysicalAddress);</span>
+<span class="source-line" id="L303"><a class="line-number" href="#L303">303</a>            return true;</span>
+<span class="source-line" id="L304"><a class="line-number" href="#L304">304</a>        }</span>
+<span class="source-line" id="L305"><a class="line-number" href="#L305">305</a></span>
+<span class="source-line" id="L306"><a class="line-number" href="#L306">306</a>        if (!TryAllocatePageTable(out UInt64 createdPhysicalAddress))</span>
+<span class="source-line" id="L307"><a class="line-number" href="#L307">307</a>            return SetFailure(KernelVirtualMemoryStatus.PhysicalAllocationFailed);</span>
+<span class="source-line" id="L308"><a class="line-number" href="#L308">308</a>        UInt64* created = TablePointer(createdPhysicalAddress);</span>
+<span class="source-line" id="L309"><a class="line-number" href="#L309">309</a>        for (Int32 i = 0; i &lt; 512; i++) created[i] = 0UL;</span>
+<span class="source-line" id="L310"><a class="line-number" href="#L310">310</a>        table[index] = (createdPhysicalAddress &amp; AddressMask4KiB) | Present | Writable | User;</span>
+<span class="source-line" id="L311"><a class="line-number" href="#L311">311</a>        _createdPageTables++;</span>
+<span class="source-line" id="L312"><a class="line-number" href="#L312">312</a>        child = created;</span>
+<span class="source-line" id="L313"><a class="line-number" href="#L313">313</a>        return true;</span>
+<span class="source-line" id="L314"><a class="line-number" href="#L314">314</a>    }</span>
+<span class="source-line" id="L315"><a class="line-number" href="#L315">315</a></span>
+<span class="source-line" id="L316"><a class="line-number" href="#L316">316</a>    private static Boolean TryInstallLeaf(UInt64* table, Int32 index, UInt64 virtualAddress, UInt64 physicalAddress, KernelVirtualPageSize pageSize, KernelVirtualMemoryProtection protection)</span>
+<span class="source-line" id="L317"><a class="line-number" href="#L317">317</a>    {</span>
+<span class="source-line" id="L318"><a class="line-number" href="#L318">318</a>        if (IsPresent(table[index])) return SetFailure(KernelVirtualMemoryStatus.AlreadyMapped);</span>
+<span class="source-line" id="L319"><a class="line-number" href="#L319">319</a>        if (!TryEncodeLeaf(physicalAddress, pageSize, protection, out UInt64 entry))</span>
+<span class="source-line" id="L320"><a class="line-number" href="#L320">320</a>            return SetFailure(KernelVirtualMemoryStatus.InvalidParameter);</span>
+<span class="source-line" id="L321"><a class="line-number" href="#L321">321</a>        table[index] = entry;</span>
+<span class="source-line" id="L322"><a class="line-number" href="#L322">322</a>        IncrementMapped(pageSize);</span>
+<span class="source-line" id="L323"><a class="line-number" href="#L323">323</a>        if (!Native.InvalidatePage(virtualAddress)) return SetFailure(KernelVirtualMemoryStatus.ArchitectureOperationFailed);</span>
+<span class="source-line" id="L324"><a class="line-number" href="#L324">324</a>        _lastStatus = KernelVirtualMemoryStatus.Success;</span>
+<span class="source-line" id="L325"><a class="line-number" href="#L325">325</a>        return true;</span>
+<span class="source-line" id="L326"><a class="line-number" href="#L326">326</a>    }</span>
+<span class="source-line" id="L327"><a class="line-number" href="#L327">327</a></span>
+<span class="source-line" id="L328"><a class="line-number" href="#L328">328</a>    private static Boolean TryFindLeaf(UInt64 virtualAddress, out UInt64* table, out Int32 index, out KernelVirtualPageSize pageSize)</span>
+<span class="source-line" id="L329"><a class="line-number" href="#L329">329</a>    {</span>
+<span class="source-line" id="L330"><a class="line-number" href="#L330">330</a>        table = (UInt64*)0;</span>
+<span class="source-line" id="L331"><a class="line-number" href="#L331">331</a>        index = 0;</span>
+<span class="source-line" id="L332"><a class="line-number" href="#L332">332</a>        pageSize = KernelVirtualPageSize.Page4KiB;</span>
+<span class="source-line" id="L333"><a class="line-number" href="#L333">333</a>        if (!IsCanonical(virtualAddress)) return SetFailure(KernelVirtualMemoryStatus.NonCanonicalAddress);</span>
+<span class="source-line" id="L334"><a class="line-number" href="#L334">334</a>        UInt64* pml4 = TablePointer(_rootPhysicalAddress);</span>
+<span class="source-line" id="L335"><a class="line-number" href="#L335">335</a>        UInt64 pml4Entry = pml4[(Int32)((virtualAddress &gt;&gt; 39) &amp; 0x1FFUL)];</span>
+<span class="source-line" id="L336"><a class="line-number" href="#L336">336</a>        if (!IsPresent(pml4Entry) || IsLarge(pml4Entry)) return SetFailure(KernelVirtualMemoryStatus.NotMapped);</span>
+<span class="source-line" id="L337"><a class="line-number" href="#L337">337</a>        UInt64* pdpt = TablePointer(pml4Entry &amp; AddressMask4KiB);</span>
+<span class="source-line" id="L338"><a class="line-number" href="#L338">338</a>        Int32 pdptIndex = (Int32)((virtualAddress &gt;&gt; 30) &amp; 0x1FFUL);</span>
+<span class="source-line" id="L339"><a class="line-number" href="#L339">339</a>        UInt64 pdptEntry = pdpt[pdptIndex];</span>
+<span class="source-line" id="L340"><a class="line-number" href="#L340">340</a>        if (!IsPresent(pdptEntry)) return SetFailure(KernelVirtualMemoryStatus.NotMapped);</span>
+<span class="source-line" id="L341"><a class="line-number" href="#L341">341</a>        if (IsLarge(pdptEntry))</span>
+<span class="source-line" id="L342"><a class="line-number" href="#L342">342</a>        {</span>
+<span class="source-line" id="L343"><a class="line-number" href="#L343">343</a>            table = pdpt;</span>
+<span class="source-line" id="L344"><a class="line-number" href="#L344">344</a>            index = pdptIndex;</span>
+<span class="source-line" id="L345"><a class="line-number" href="#L345">345</a>            pageSize = KernelVirtualPageSize.Page1GiB;</span>
+<span class="source-line" id="L346"><a class="line-number" href="#L346">346</a>            return true;</span>
+<span class="source-line" id="L347"><a class="line-number" href="#L347">347</a>        }</span>
+<span class="source-line" id="L348"><a class="line-number" href="#L348">348</a>        UInt64* pd = TablePointer(pdptEntry &amp; AddressMask4KiB);</span>
+<span class="source-line" id="L349"><a class="line-number" href="#L349">349</a>        Int32 pdIndex = (Int32)((virtualAddress &gt;&gt; 21) &amp; 0x1FFUL);</span>
+<span class="source-line" id="L350"><a class="line-number" href="#L350">350</a>        UInt64 pdEntry = pd[pdIndex];</span>
+<span class="source-line" id="L351"><a class="line-number" href="#L351">351</a>        if (!IsPresent(pdEntry)) return SetFailure(KernelVirtualMemoryStatus.NotMapped);</span>
+<span class="source-line" id="L352"><a class="line-number" href="#L352">352</a>        if (IsLarge(pdEntry))</span>
+<span class="source-line" id="L353"><a class="line-number" href="#L353">353</a>        {</span>
+<span class="source-line" id="L354"><a class="line-number" href="#L354">354</a>            table = pd;</span>
+<span class="source-line" id="L355"><a class="line-number" href="#L355">355</a>            index = pdIndex;</span>
+<span class="source-line" id="L356"><a class="line-number" href="#L356">356</a>            pageSize = KernelVirtualPageSize.Page2MiB;</span>
+<span class="source-line" id="L357"><a class="line-number" href="#L357">357</a>            return true;</span>
+<span class="source-line" id="L358"><a class="line-number" href="#L358">358</a>        }</span>
+<span class="source-line" id="L359"><a class="line-number" href="#L359">359</a>        UInt64* pt = TablePointer(pdEntry &amp; AddressMask4KiB);</span>
+<span class="source-line" id="L360"><a class="line-number" href="#L360">360</a>        Int32 ptIndex = (Int32)((virtualAddress &gt;&gt; 12) &amp; 0x1FFUL);</span>
+<span class="source-line" id="L361"><a class="line-number" href="#L361">361</a>        if (!IsPresent(pt[ptIndex])) return SetFailure(KernelVirtualMemoryStatus.NotMapped);</span>
+<span class="source-line" id="L362"><a class="line-number" href="#L362">362</a>        table = pt;</span>
+<span class="source-line" id="L363"><a class="line-number" href="#L363">363</a>        index = ptIndex;</span>
+<span class="source-line" id="L364"><a class="line-number" href="#L364">364</a>        pageSize = KernelVirtualPageSize.Page4KiB;</span>
+<span class="source-line" id="L365"><a class="line-number" href="#L365">365</a>        return true;</span>
+<span class="source-line" id="L366"><a class="line-number" href="#L366">366</a>    }</span>
+<span class="source-line" id="L367"><a class="line-number" href="#L367">367</a></span>
+<span class="source-line" id="L368"><a class="line-number" href="#L368">368</a>    private static Boolean ProtectTableHierarchy(UInt64 physicalAddress, Int32 level)</span>
+<span class="source-line" id="L369"><a class="line-number" href="#L369">369</a>    {</span>
+<span class="source-line" id="L370"><a class="line-number" href="#L370">370</a>        if (WasProtected(physicalAddress)) return true;</span>
+<span class="source-line" id="L371"><a class="line-number" href="#L371">371</a>        if (_protectedTableCount &gt;= MaximumProtectedTables) return SetFailure(KernelVirtualMemoryStatus.PageTableCapacityExhausted);</span>
+<span class="source-line" id="L372"><a class="line-number" href="#L372">372</a>        if (!KernelPhysicalMemory.TryExcludePage(physicalAddress)) return SetFailure(KernelVirtualMemoryStatus.PhysicalAllocationFailed);</span>
+<span class="source-line" id="L373"><a class="line-number" href="#L373">373</a>        fixed (UInt64* protectedTables = _state.ProtectedTables)</span>
+<span class="source-line" id="L374"><a class="line-number" href="#L374">374</a>        {</span>
+<span class="source-line" id="L375"><a class="line-number" href="#L375">375</a>            protectedTables[_protectedTableCount] = physicalAddress;</span>
+<span class="source-line" id="L376"><a class="line-number" href="#L376">376</a>            _protectedTableCount++;</span>
+<span class="source-line" id="L377"><a class="line-number" href="#L377">377</a>        }</span>
+<span class="source-line" id="L378"><a class="line-number" href="#L378">378</a>        if (level &lt;= 1) return true;</span>
+<span class="source-line" id="L379"><a class="line-number" href="#L379">379</a>        UInt64* table = TablePointer(physicalAddress);</span>
+<span class="source-line" id="L380"><a class="line-number" href="#L380">380</a>        for (Int32 index = 0; index &lt; 512; index++)</span>
+<span class="source-line" id="L381"><a class="line-number" href="#L381">381</a>        {</span>
+<span class="source-line" id="L382"><a class="line-number" href="#L382">382</a>            UInt64 entry = table[index];</span>
+<span class="source-line" id="L383"><a class="line-number" href="#L383">383</a>            if (!IsPresent(entry)) continue;</span>
+<span class="source-line" id="L384"><a class="line-number" href="#L384">384</a>            if ((level == 3 || level == 2) &amp;&amp; IsLarge(entry)) continue;</span>
+<span class="source-line" id="L385"><a class="line-number" href="#L385">385</a>            UInt64 child = entry &amp; AddressMask4KiB;</span>
+<span class="source-line" id="L386"><a class="line-number" href="#L386">386</a>            if (child == 0UL) return SetFailure(KernelVirtualMemoryStatus.InvalidParameter);</span>
+<span class="source-line" id="L387"><a class="line-number" href="#L387">387</a>            if (!ProtectTableHierarchy(child, level - 1)) return false;</span>
+<span class="source-line" id="L388"><a class="line-number" href="#L388">388</a>        }</span>
+<span class="source-line" id="L389"><a class="line-number" href="#L389">389</a>        return true;</span>
+<span class="source-line" id="L390"><a class="line-number" href="#L390">390</a>    }</span>
+<span class="source-line" id="L391"><a class="line-number" href="#L391">391</a></span>
+<span class="source-line" id="L392"><a class="line-number" href="#L392">392</a>    private static Boolean WasProtected(UInt64 physicalAddress)</span>
+<span class="source-line" id="L393"><a class="line-number" href="#L393">393</a>    {</span>
+<span class="source-line" id="L394"><a class="line-number" href="#L394">394</a>        fixed (UInt64* protectedTables = _state.ProtectedTables)</span>
+<span class="source-line" id="L395"><a class="line-number" href="#L395">395</a>        {</span>
+<span class="source-line" id="L396"><a class="line-number" href="#L396">396</a>            for (Int32 index = 0; index &lt; _protectedTableCount; index++)</span>
+<span class="source-line" id="L397"><a class="line-number" href="#L397">397</a>                if (protectedTables[index] == physicalAddress) return true;</span>
+<span class="source-line" id="L398"><a class="line-number" href="#L398">398</a>        }</span>
+<span class="source-line" id="L399"><a class="line-number" href="#L399">399</a>        return false;</span>
+<span class="source-line" id="L400"><a class="line-number" href="#L400">400</a>    }</span>
+<span class="source-line" id="L401"><a class="line-number" href="#L401">401</a></span>
+<span class="source-line" id="L402"><a class="line-number" href="#L402">402</a>    private static Boolean TryEncodeLeaf(UInt64 physicalAddress, KernelVirtualPageSize pageSize, KernelVirtualMemoryProtection protection, out UInt64 entry)</span>
+<span class="source-line" id="L403"><a class="line-number" href="#L403">403</a>    {</span>
+<span class="source-line" id="L404"><a class="line-number" href="#L404">404</a>        entry = 0UL;</span>
+<span class="source-line" id="L405"><a class="line-number" href="#L405">405</a>        UInt64 mask = LeafAddressMask(pageSize);</span>
+<span class="source-line" id="L406"><a class="line-number" href="#L406">406</a>        UInt64 size = (UInt64)pageSize;</span>
+<span class="source-line" id="L407"><a class="line-number" href="#L407">407</a>        if (mask == 0UL || (physicalAddress &amp; (size - 1UL)) != 0UL || (physicalAddress &amp; ~mask) != 0UL) return false;</span>
+<span class="source-line" id="L408"><a class="line-number" href="#L408">408</a>        UInt64 flags = Present;</span>
+<span class="source-line" id="L409"><a class="line-number" href="#L409">409</a>        if (HasProtection(protection, KernelVirtualMemoryProtection.Write)) flags |= Writable;</span>
+<span class="source-line" id="L410"><a class="line-number" href="#L410">410</a>        if (HasProtection(protection, KernelVirtualMemoryProtection.User)) flags |= User;</span>
+<span class="source-line" id="L411"><a class="line-number" href="#L411">411</a>        if (HasProtection(protection, KernelVirtualMemoryProtection.Global)) flags |= Global;</span>
+<span class="source-line" id="L412"><a class="line-number" href="#L412">412</a>        if (HasProtection(protection, KernelVirtualMemoryProtection.Device)) flags |= CacheDisable;</span>
+<span class="source-line" id="L413"><a class="line-number" href="#L413">413</a>        if (HasProtection(protection, KernelVirtualMemoryProtection.WriteThrough)) flags |= WriteThrough;</span>
+<span class="source-line" id="L414"><a class="line-number" href="#L414">414</a>        if (!HasProtection(protection, KernelVirtualMemoryProtection.Execute)) flags |= NoExecute;</span>
+<span class="source-line" id="L415"><a class="line-number" href="#L415">415</a>        if (pageSize != KernelVirtualPageSize.Page4KiB) flags |= LargePage;</span>
+<span class="source-line" id="L416"><a class="line-number" href="#L416">416</a>        entry = (physicalAddress &amp; mask) | flags;</span>
+<span class="source-line" id="L417"><a class="line-number" href="#L417">417</a>        return true;</span>
+<span class="source-line" id="L418"><a class="line-number" href="#L418">418</a>    }</span>
+<span class="source-line" id="L419"><a class="line-number" href="#L419">419</a></span>
+<span class="source-line" id="L420"><a class="line-number" href="#L420">420</a>    private static KernelVirtualMemoryProtection DecodeProtection(UInt64 entry)</span>
+<span class="source-line" id="L421"><a class="line-number" href="#L421">421</a>    {</span>
+<span class="source-line" id="L422"><a class="line-number" href="#L422">422</a>        KernelVirtualMemoryProtection protection = KernelVirtualMemoryProtection.Read;</span>
+<span class="source-line" id="L423"><a class="line-number" href="#L423">423</a>        if ((entry &amp; Writable) != 0UL) protection = protection | KernelVirtualMemoryProtection.Write;</span>
+<span class="source-line" id="L424"><a class="line-number" href="#L424">424</a>        if ((entry &amp; User) != 0UL) protection = protection | KernelVirtualMemoryProtection.User;</span>
+<span class="source-line" id="L425"><a class="line-number" href="#L425">425</a>        if ((entry &amp; Global) != 0UL) protection = protection | KernelVirtualMemoryProtection.Global;</span>
+<span class="source-line" id="L426"><a class="line-number" href="#L426">426</a>        if ((entry &amp; CacheDisable) != 0UL) protection = protection | KernelVirtualMemoryProtection.Device;</span>
+<span class="source-line" id="L427"><a class="line-number" href="#L427">427</a>        if ((entry &amp; WriteThrough) != 0UL) protection = protection | KernelVirtualMemoryProtection.WriteThrough;</span>
+<span class="source-line" id="L428"><a class="line-number" href="#L428">428</a>        if ((entry &amp; NoExecute) == 0UL) protection = protection | KernelVirtualMemoryProtection.Execute;</span>
+<span class="source-line" id="L429"><a class="line-number" href="#L429">429</a>        return protection;</span>
+<span class="source-line" id="L430"><a class="line-number" href="#L430">430</a>    }</span>
+<span class="source-line" id="L431"><a class="line-number" href="#L431">431</a></span>
+<span class="source-line" id="L432"><a class="line-number" href="#L432">432</a>    private static UInt64 LeafAddressMask(KernelVirtualPageSize pageSize)</span>
+<span class="source-line" id="L433"><a class="line-number" href="#L433">433</a>    {</span>
+<span class="source-line" id="L434"><a class="line-number" href="#L434">434</a>        if (pageSize == KernelVirtualPageSize.Page4KiB) return AddressMask4KiB;</span>
+<span class="source-line" id="L435"><a class="line-number" href="#L435">435</a>        if (pageSize == KernelVirtualPageSize.Page2MiB) return AddressMask2MiB;</span>
+<span class="source-line" id="L436"><a class="line-number" href="#L436">436</a>        if (pageSize == KernelVirtualPageSize.Page1GiB) return AddressMask1GiB;</span>
+<span class="source-line" id="L437"><a class="line-number" href="#L437">437</a>        return 0UL;</span>
+<span class="source-line" id="L438"><a class="line-number" href="#L438">438</a>    }</span>
+<span class="source-line" id="L439"><a class="line-number" href="#L439">439</a></span>
+<span class="source-line" id="L440"><a class="line-number" href="#L440">440</a>    private static Boolean IsSupportedPageSize(UInt64 size) =&gt; size == 4096UL || size == 2097152UL || size == 1073741824UL;</span>
+<span class="source-line" id="L441"><a class="line-number" href="#L441">441</a>    private static Boolean IsPresent(UInt64 entry) =&gt; (entry &amp; Present) != 0UL;</span>
+<span class="source-line" id="L442"><a class="line-number" href="#L442">442</a>    private static Boolean IsLarge(UInt64 entry) =&gt; (entry &amp; LargePage) != 0UL;</span>
+<span class="source-line" id="L443"><a class="line-number" href="#L443">443</a>    private static Boolean HasProtection(KernelVirtualMemoryProtection value, KernelVirtualMemoryProtection flag) =&gt; (((UInt64)value &amp; (UInt64)flag) != 0UL);</span>
+<span class="source-line" id="L444"><a class="line-number" href="#L444">444</a>    private static UInt64* TablePointer(UInt64 physicalAddress)</span>
+<span class="source-line" id="L445"><a class="line-number" href="#L445">445</a>    {</span>
+<span class="source-line" id="L446"><a class="line-number" href="#L446">446</a>        if (_directMapReady &amp;&amp; !WasProtected(physicalAddress))</span>
+<span class="source-line" id="L447"><a class="line-number" href="#L447">447</a>            return (UInt64*)(nuint)(_directMapBase + physicalAddress);</span>
+<span class="source-line" id="L448"><a class="line-number" href="#L448">448</a>        return (UInt64*)(nuint)physicalAddress;</span>
+<span class="source-line" id="L449"><a class="line-number" href="#L449">449</a>    }</span>
+<span class="source-line" id="L450"><a class="line-number" href="#L450">450</a></span>
+<span class="source-line" id="L451"><a class="line-number" href="#L451">451</a>    private static Boolean IsCanonical(UInt64 address)</span>
+<span class="source-line" id="L452"><a class="line-number" href="#L452">452</a>    {</span>
+<span class="source-line" id="L453"><a class="line-number" href="#L453">453</a>        UInt64 upper = address &gt;&gt; 48;</span>
+<span class="source-line" id="L454"><a class="line-number" href="#L454">454</a>        Boolean high = ((address &gt;&gt; 47) &amp; 1UL) != 0UL;</span>
+<span class="source-line" id="L455"><a class="line-number" href="#L455">455</a>        return high ? upper == 0xFFFFUL : upper == 0UL;</span>
+<span class="source-line" id="L456"><a class="line-number" href="#L456">456</a>    }</span>
+<span class="source-line" id="L457"><a class="line-number" href="#L457">457</a></span>
+<span class="source-line" id="L458"><a class="line-number" href="#L458">458</a>    private static Boolean IncrementMapped(KernelVirtualPageSize pageSize)</span>
+<span class="source-line" id="L459"><a class="line-number" href="#L459">459</a>    {</span>
+<span class="source-line" id="L460"><a class="line-number" href="#L460">460</a>        if (pageSize == KernelVirtualPageSize.Page4KiB) _mapped4KiB++;</span>
+<span class="source-line" id="L461"><a class="line-number" href="#L461">461</a>        else if (pageSize == KernelVirtualPageSize.Page2MiB) _mapped2MiB++;</span>
+<span class="source-line" id="L462"><a class="line-number" href="#L462">462</a>        else _mapped1GiB++;</span>
+<span class="source-line" id="L463"><a class="line-number" href="#L463">463</a>        return true;</span>
+<span class="source-line" id="L464"><a class="line-number" href="#L464">464</a>    }</span>
+<span class="source-line" id="L465"><a class="line-number" href="#L465">465</a></span>
+<span class="source-line" id="L466"><a class="line-number" href="#L466">466</a>    private static Boolean DecrementMapped(KernelVirtualPageSize pageSize)</span>
+<span class="source-line" id="L467"><a class="line-number" href="#L467">467</a>    {</span>
+<span class="source-line" id="L468"><a class="line-number" href="#L468">468</a>        if (pageSize == KernelVirtualPageSize.Page4KiB &amp;&amp; _mapped4KiB != 0UL) _mapped4KiB--;</span>
+<span class="source-line" id="L469"><a class="line-number" href="#L469">469</a>        else if (pageSize == KernelVirtualPageSize.Page2MiB &amp;&amp; _mapped2MiB != 0UL) _mapped2MiB--;</span>
+<span class="source-line" id="L470"><a class="line-number" href="#L470">470</a>        else if (pageSize == KernelVirtualPageSize.Page1GiB &amp;&amp; _mapped1GiB != 0UL) _mapped1GiB--;</span>
+<span class="source-line" id="L471"><a class="line-number" href="#L471">471</a>        return true;</span>
+<span class="source-line" id="L472"><a class="line-number" href="#L472">472</a>    }</span>
+<span class="source-line" id="L473"><a class="line-number" href="#L473">473</a></span>
+<span class="source-line" id="L474"><a class="line-number" href="#L474">474</a>    private static Boolean ResetState()</span>
+<span class="source-line" id="L475"><a class="line-number" href="#L475">475</a>    {</span>
+<span class="source-line" id="L476"><a class="line-number" href="#L476">476</a>        _protectedTableCount = 0;</span>
+<span class="source-line" id="L477"><a class="line-number" href="#L477">477</a>        _rootPhysicalAddress = 0UL;</span>
+<span class="source-line" id="L478"><a class="line-number" href="#L478">478</a>        _createdPageTables = 0UL;</span>
+<span class="source-line" id="L479"><a class="line-number" href="#L479">479</a>        _mapped4KiB = 0UL;</span>
+<span class="source-line" id="L480"><a class="line-number" href="#L480">480</a>        _mapped2MiB = 0UL;</span>
+<span class="source-line" id="L481"><a class="line-number" href="#L481">481</a>        _mapped1GiB = 0UL;</span>
+<span class="source-line" id="L482"><a class="line-number" href="#L482">482</a>        _executeDisableEnabled = false;</span>
+<span class="source-line" id="L483"><a class="line-number" href="#L483">483</a>        _page1GiBSupported = false;</span>
+<span class="source-line" id="L484"><a class="line-number" href="#L484">484</a>        ResetDirectMapState();</span>
+<span class="source-line" id="L485"><a class="line-number" href="#L485">485</a>        fixed (UInt64* protectedTables = _state.ProtectedTables)</span>
+<span class="source-line" id="L486"><a class="line-number" href="#L486">486</a>        {</span>
+<span class="source-line" id="L487"><a class="line-number" href="#L487">487</a>            for (Int32 index = 0; index &lt; MaximumProtectedTables; index++) protectedTables[index] = 0UL;</span>
+<span class="source-line" id="L488"><a class="line-number" href="#L488">488</a>        }</span>
+<span class="source-line" id="L489"><a class="line-number" href="#L489">489</a>        return true;</span>
+<span class="source-line" id="L490"><a class="line-number" href="#L490">490</a>    }</span>
+<span class="source-line" id="L491"><a class="line-number" href="#L491">491</a></span>
+<span class="source-line" id="L492"><a class="line-number" href="#L492">492</a>    private static Boolean SetFailure(KernelVirtualMemoryStatus status)</span>
+<span class="source-line" id="L493"><a class="line-number" href="#L493">493</a>    {</span>
+<span class="source-line" id="L494"><a class="line-number" href="#L494">494</a>        _lastStatus = status;</span>
+<span class="source-line" id="L495"><a class="line-number" href="#L495">495</a>        return false;</span>
+<span class="source-line" id="L496"><a class="line-number" href="#L496">496</a>    }</span>
+<span class="source-line" id="L497"><a class="line-number" href="#L497">497</a>}</span>
+<span class="source-line" id="L498"><a class="line-number" href="#L498">498</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

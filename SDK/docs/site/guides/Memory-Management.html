@@ -1,0 +1,15 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Memory Management · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"><script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../guides/Getting-Started.html">Guides</a><a href="../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../" placeholder="Type a public item"><div id="search-results"></div></label></header><main>
+<h1>Memory management</h1>
+<p>NovaOryn treats boot-map normalization, physical frames, virtual mappings, kernel address-space policy and heap allocation as separate layers. Higher layers should not need to understand UEFI descriptor formats or x64 page-table bit layouts.</p>
+<h2>Boot memory map</h2>
+<p>The boot layer retains the final firmware memory map and normalizes ranges before they are consumed by the physical allocator. Kernel image pages, boot structures, framebuffer/MMIO regions, page tables and allocator metadata must remain reserved rather than being returned as ordinary free frames.</p>
+<h2>Physical allocation</h2>
+<p>The SDK exposes <code>IPhysicalMemoryManager</code> and built-in bitmap, buddy and extent methodologies. Allocation requests can express page count, power-of-two alignment, minimum address and an optional maximum address, allowing constraints such as DMA memory below 4 GiB.</p>
+<h2>Virtual memory</h2>
+<p>The x64 virtual-memory layer works with the active CR3 hierarchy and supports 4 KiB, 2 MiB and 1 GiB leaves, mapping, unmapping, protection replacement, translation, canonical-address checks and TLB invalidation.</p>
+<h2>Kernel address space and heap</h2>
+<p>The address-space layer owns policy for reserved kernel virtual regions. The early allocator is used before the normal heap is ready; the page-backed heap then obtains physical backing through the PMM/VMM path instead of bypassing memory ownership.</p>
+<h2>Detailed guides</h2>
+<ul><li><a href="Physical-Memory.html">Physical memory</a></li><li><a href="Virtual-Memory.html">Virtual memory</a></li></ul>
+<h2>Relevant API assemblies</h2>
+<ul><li><a href="../assemblies/novaoryn-boot-memory.html">Boot memory</a></li><li><a href="../assemblies/novaoryn-memory-physical-contracts.html">Physical contracts</a></li><li><a href="../assemblies/novaoryn-memory-physical.html">Physical implementations</a></li><li><a href="../assemblies/novaoryn-memory-virtual-contracts.html">Virtual contracts</a></li><li><a href="../assemblies/novaoryn-memory-virtual-x64.html">x64 virtual memory</a></li><li><a href="../assemblies/novaoryn-kernel-addressspace.html">Kernel address space</a></li><li><a href="../assemblies/novaoryn-kernel-heap.html">Kernel heap</a></li></ul></main><footer>Updated documentation for NovaOryn 0.29.0 SDK source.</footer></body></html>

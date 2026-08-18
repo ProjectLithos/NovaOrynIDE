@@ -1,0 +1,144 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Memory.Contracts/MemoryDescriptor.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Memory.Contracts/MemoryDescriptor.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Memory;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Describes one validated, page-aligned physical-memory range.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;nova.when&gt;Use as the platform-independent unit of boot memory-map diagnostics and allocation policy.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;nova.depends&gt;NovaOryn.Primitives.PhysicalAddress&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>public readonly struct MemoryDescriptor</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>{</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    private MemoryDescriptor(</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>        PhysicalAddress physicalStart,</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>        ulong pageCount,</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>        ulong length,</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>        MemoryType memoryType,</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>        MemoryCacheAttributes cacheAttributes,</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>        MemoryRuntimeStatus runtimeStatus,</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>        MemoryAvailability availability,</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>        bool hasNumaNode,</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>        uint numaNode)</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    {</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>        PhysicalStart = physicalStart;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>        PageCount = pageCount;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>        Length = length;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>        MemoryType = memoryType;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>        CacheAttributes = cacheAttributes;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>        RuntimeStatus = runtimeStatus;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>        Availability = availability;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>        HasNumaNode = hasNumaNode;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>        NumaNode = numaNode;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    }</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a></span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;summary&gt;Gets the inclusive physical start address.&lt;/summary&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    /// &lt;nova.when&gt;Use to locate the first page represented by this descriptor.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    public PhysicalAddress PhysicalStart { get; }</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;summary&gt;Gets the number of 4 KiB pages.&lt;/summary&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    /// &lt;nova.when&gt;Use for page-granular reservation and allocation calculations.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    public ulong PageCount { get; }</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    /// &lt;summary&gt;Gets the range length in bytes.&lt;/summary&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;nova.when&gt;Use for byte totals and diagnostic output.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    public ulong Length { get; }</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;summary&gt;Gets the normalised ownership type.&lt;/summary&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    /// &lt;nova.when&gt;Use to select ownership-specific allocation policy.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    public MemoryType MemoryType { get; }</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    /// &lt;summary&gt;Gets portable cache and protection attributes.&lt;/summary&gt;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    /// &lt;nova.when&gt;Use when constructing safe page-table mappings.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    public MemoryCacheAttributes CacheAttributes { get; }</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    /// &lt;summary&gt;Gets firmware runtime ownership.&lt;/summary&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    /// &lt;nova.when&gt;Use to retain ranges required after ExitBootServices.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    public MemoryRuntimeStatus RuntimeStatus { get; }</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    /// &lt;summary&gt;Gets the lifecycle point at which the range is allocatable.&lt;/summary&gt;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    /// &lt;nova.when&gt;Use when filtering allocator candidates by boot stage.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    public MemoryAvailability Availability { get; }</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;summary&gt;Gets whether a NUMA node has been assigned.&lt;/summary&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;nova.when&gt;Check before reading NumaNode.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    public bool HasNumaNode { get; }</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;summary&gt;Gets the NUMA node, reserved for later topology discovery.&lt;/summary&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    /// &lt;nova.when&gt;Use after HasNumaNode reports that topology data is available.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    public uint NumaNode { get; }</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    /// &lt;summary&gt;Gets the exclusive physical end address.&lt;/summary&gt;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    /// &lt;nova.when&gt;Use for overlap, slicing, and adjacency checks.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    public ulong EndExclusive =&gt; PhysicalStart.Value + Length;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a></span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    /// &lt;summary&gt;Creates a validated descriptor without permitting arithmetic overflow.&lt;/summary&gt;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    /// &lt;nova.when&gt;Use for firmware translation, explicit reservations, and split output ranges.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    /// &lt;nova.depends&gt;4 KiB page alignment&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the range is non-empty, aligned, and representable.&lt;/returns&gt;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    /// &lt;example&gt;&lt;code&gt;bool valid = MemoryDescriptor.TryCreate(new PhysicalAddress(0x100000), 256, MemoryType.UsableConventional, MemoryCacheAttributes.WriteBack, MemoryRuntimeStatus.NotRuntime, MemoryAvailability.AvailableAfterExitBootServices, false, 0, out MemoryDescriptor descriptor);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    public static bool TryCreate(</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>        PhysicalAddress physicalStart,</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>        ulong pageCount,</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>        MemoryType memoryType,</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>        MemoryCacheAttributes cacheAttributes,</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>        MemoryRuntimeStatus runtimeStatus,</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>        MemoryAvailability availability,</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>        bool hasNumaNode,</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>        uint numaNode,</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>        out MemoryDescriptor descriptor)</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    {</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>        descriptor = default;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        if (pageCount == 0 || (physicalStart.Value &amp; 0xFFFUL) != 0) return false;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>        if (pageCount &gt; ulong.MaxValue / 4096UL) return false;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>        ulong length = pageCount * 4096UL;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>        if (physicalStart.Value &gt; ulong.MaxValue - length) return false;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>        descriptor = new MemoryDescriptor(physicalStart, pageCount, length, memoryType, cacheAttributes, runtimeStatus, availability, hasNumaNode, numaNode);</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>        return true;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>    }</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a></span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>    /// &lt;summary&gt;Creates a page-aligned split of an existing descriptor.&lt;/summary&gt;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>    /// &lt;nova.when&gt;Use within a normaliser after selecting interval boundaries.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>    /// &lt;nova.depends&gt;TryCreate&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the requested subrange lies inside this descriptor.&lt;/returns&gt;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    /// &lt;example&gt;&lt;code&gt;bool split = descriptor.TrySlice(0x100000, 0x110000, out MemoryDescriptor part);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>    public bool TrySlice(ulong start, ulong endExclusive, out MemoryDescriptor descriptor)</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>    {</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>        descriptor = default;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>        if (start &lt; PhysicalStart.Value || endExclusive &gt; EndExclusive || start &gt;= endExclusive) return false;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>        if ((start &amp; 0xFFFUL) != 0 || (endExclusive &amp; 0xFFFUL) != 0) return false;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>        return TryCreate(new PhysicalAddress(start), (endExclusive - start) / 4096UL, MemoryType, CacheAttributes, RuntimeStatus, Availability, HasNumaNode, NumaNode, out descriptor);</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    }</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a></span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    /// &lt;summary&gt;Determines whether two adjacent ranges have identical metadata.&lt;/summary&gt;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    /// &lt;nova.when&gt;Use before merging compatible adjacent output ranges.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    /// &lt;nova.depends&gt;Validated descriptors&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the descriptors can be coalesced without losing information.&lt;/returns&gt;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    /// &lt;example&gt;&lt;code&gt;bool compatible = first.IsMergeCompatible(second);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    public bool IsMergeCompatible(MemoryDescriptor other)</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    {</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>        return EndExclusive == other.PhysicalStart.Value &amp;&amp;</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>            MemoryType == other.MemoryType &amp;&amp; CacheAttributes == other.CacheAttributes &amp;&amp;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>            RuntimeStatus == other.RuntimeStatus &amp;&amp; Availability == other.Availability &amp;&amp;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>            HasNumaNode == other.HasNumaNode &amp;&amp; (!HasNumaNode || NumaNode == other.NumaNode);</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>    }</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>}</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a></span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>/// &lt;summary&gt;Defines a NovaOryn-owned range that must override firmware availability.&lt;/summary&gt;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>/// &lt;nova.when&gt;Use to reserve the kernel image, boot structures, framebuffer, MMIO, page tables, or early allocations.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>/// &lt;nova.depends&gt;MemoryDescriptor.TryCreate&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>public readonly struct MemoryReservation</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>{</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>    private MemoryReservation(MemoryDescriptor descriptor) =&gt; Descriptor = descriptor;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a></span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>    /// &lt;summary&gt;Gets the validated reservation descriptor.&lt;/summary&gt;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>    /// &lt;nova.when&gt;Use when overlaying this reservation during normalisation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    public MemoryDescriptor Descriptor { get; }</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a></span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>    /// &lt;summary&gt;Creates a validated reservation with permanently unavailable ownership.&lt;/summary&gt;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>    /// &lt;nova.when&gt;Use before normalisation to overlay NovaOryn-owned physical ranges.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>    /// &lt;nova.depends&gt;4 KiB alignment&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the reservation type and range are valid.&lt;/returns&gt;</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>    /// &lt;example&gt;&lt;code&gt;bool reserved = MemoryReservation.TryCreate(new PhysicalAddress(0x200000), 32, MemoryType.PageTables, MemoryCacheAttributes.WriteBack, out MemoryReservation reservation);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>    public static bool TryCreate(PhysicalAddress start, ulong pageCount, MemoryType type, MemoryCacheAttributes attributes, out MemoryReservation reservation)</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>    {</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>        reservation = default;</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>        if (type is not (MemoryType.LoaderKernelImage or MemoryType.BootStructures or MemoryType.Framebuffer or MemoryType.MemoryMappedIo or MemoryType.PageTables or MemoryType.EarlyAllocatorAllocations or MemoryType.FirmwareReserved)) return false;</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>        MemoryAvailability availability = type == MemoryType.MemoryMappedIo || type == MemoryType.Framebuffer || type == MemoryType.FirmwareReserved</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>            ? MemoryAvailability.PermanentlyReserved</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>            : MemoryAvailability.Unavailable;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>        if (!MemoryDescriptor.TryCreate(start, pageCount, type, attributes, MemoryRuntimeStatus.NotRuntime, availability, false, 0, out MemoryDescriptor descriptor)) return false;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>        reservation = new MemoryReservation(descriptor);</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>        return true;</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>    }</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>}</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

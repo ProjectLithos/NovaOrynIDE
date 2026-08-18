@@ -1,0 +1,118 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Architecture.Contracts/ArchitectureContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Architecture.Contracts/ArchitectureContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Core;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Architecture;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Defines lifecycle and discovery services implemented by a processor architecture.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;nova.when&gt;Use this contract when kernel code selects or initialises an architecture implementation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;nova.depends&gt;NovaOryn.Core&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>public interface ICpuArchitecture</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>{</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    /// &lt;summary&gt;Gets the architecture implemented by this instance.&lt;/summary&gt;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    /// &lt;nova.when&gt;Use this value to validate architecture selection before initialisation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;nova.depends&gt;NovaOryn.Core.SupportedArchitecture&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    SupportedArchitecture Architecture { get; }</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a></span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    /// &lt;summary&gt;Initialises architecture state required before memory and interrupt services.&lt;/summary&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    /// &lt;nova.when&gt;Call once on the bootstrap processor during managed bootstrap.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    /// &lt;nova.depends&gt;Architecture-specific native entry support&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when early initialisation completed.&lt;/returns&gt;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    /// &lt;example&gt;&lt;code&gt;bool ready = architecture.InitialiseEarly();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    bool InitialiseEarly();</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a></span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    /// &lt;summary&gt;Initialises architecture state for one logical processor.&lt;/summary&gt;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    /// &lt;nova.when&gt;Call on each processor before enabling interrupts or scheduling work.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    /// &lt;nova.depends&gt;InitialiseEarly&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the processor was initialised.&lt;/returns&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    /// &lt;example&gt;&lt;code&gt;bool ready = architecture.InitialiseProcessor(0);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    bool InitialiseProcessor(uint processorId);</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a></span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    /// &lt;summary&gt;Enables maskable interrupts on the current processor.&lt;/summary&gt;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;nova.when&gt;Call only after the interrupt tables and controller are ready.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    /// &lt;nova.depends&gt;Architecture interrupt-entry stubs&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when interrupts are enabled.&lt;/returns&gt;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;example&gt;&lt;code&gt;bool enabled = architecture.EnableInterrupts();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    bool EnableInterrupts();</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a></span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    /// &lt;summary&gt;Disables maskable interrupts on the current processor.&lt;/summary&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;nova.when&gt;Use around short critical regions or before terminal halt.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    /// &lt;nova.depends&gt;Architecture instruction binding&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when interrupts are disabled.&lt;/returns&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    /// &lt;example&gt;&lt;code&gt;bool disabled = architecture.DisableInterrupts();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    bool DisableInterrupts();</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a></span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    /// &lt;summary&gt;Halts the current processor according to architecture policy.&lt;/summary&gt;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    /// &lt;nova.when&gt;Use when the current processor has no executable work or has reached a terminal state.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    /// &lt;nova.depends&gt;Architecture instruction binding&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; if control resumes after a non-terminal halt.&lt;/returns&gt;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    /// &lt;example&gt;&lt;code&gt;bool resumed = architecture.Halt();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    bool Halt();</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a></span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    /// &lt;summary&gt;Reads the architecture timestamp counter.&lt;/summary&gt;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;nova.when&gt;Use for monotonic low-level timing after feature validation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;nova.depends&gt;Architecture timestamp source&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;returns&gt;The current architecture timestamp value.&lt;/returns&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;example&gt;&lt;code&gt;ulong ticks = architecture.ReadTimestamp();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    ulong ReadTimestamp();</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>}</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a></span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>/// &lt;summary&gt;Identifies architecture-independent memory barrier strengths.&lt;/summary&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>/// &lt;nova.when&gt;Use when ordering memory operations shared with processors or devices.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>/// &lt;nova.depends&gt;Architecture-specific barrier implementation&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>public enum MemoryBarrierKind</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>{</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    /// &lt;summary&gt;Orders preceding loads before subsequent loads.&lt;/summary&gt;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    Load = 0,</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    /// &lt;summary&gt;Orders preceding stores before subsequent stores.&lt;/summary&gt;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    Store = 1,</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    /// &lt;summary&gt;Orders all preceding memory operations before subsequent operations.&lt;/summary&gt;</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    Full = 2,</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    /// &lt;summary&gt;Orders instruction fetching after code or translation changes.&lt;/summary&gt;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    Instruction = 3</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>}</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a></span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>/// &lt;summary&gt;Describes an architecture-neutral CPU feature query result.&lt;/summary&gt;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>/// &lt;nova.when&gt;Use when optional architecture capabilities affect kernel policy.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>/// &lt;nova.depends&gt;Architecture-specific feature detector&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>public readonly record struct CpuFeatureResult(uint FeatureId, bool IsSupported, ulong Value);</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a></span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>/// &lt;summary&gt;Describes a page-table entry without exposing an architecture encoding.&lt;/summary&gt;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>/// &lt;nova.when&gt;Use in architecture-neutral memory-management code before requesting native encoding.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>/// &lt;nova.depends&gt;Architecture-specific page-table encoder&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>public readonly record struct PageTableEntryDescriptor(ulong PhysicalAddress, PageTableEntryFlags Flags);</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a></span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>/// &lt;summary&gt;Defines architecture-neutral page-table permissions and attributes.&lt;/summary&gt;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>/// &lt;nova.when&gt;Use to describe mappings independently of x64 or ARM64 bit layouts.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>/// &lt;nova.depends&gt;Architecture-specific page-table encoder&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>[Flags]</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>public enum PageTableEntryFlags : ulong</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>{</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>    /// &lt;summary&gt;No mapping attributes are selected.&lt;/summary&gt;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    None = 0,</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>    /// &lt;summary&gt;The mapping is present and valid.&lt;/summary&gt;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>    Present = 1UL &lt;&lt; 0,</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>    /// &lt;summary&gt;The mapping may be written.&lt;/summary&gt;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>    Writable = 1UL &lt;&lt; 1,</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>    /// &lt;summary&gt;The mapping may be accessed from user mode.&lt;/summary&gt;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>    User = 1UL &lt;&lt; 2,</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    /// &lt;summary&gt;The mapping represents a large page.&lt;/summary&gt;</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>    LargePage = 1UL &lt;&lt; 3,</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    /// &lt;summary&gt;The mapping is global across address spaces.&lt;/summary&gt;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    Global = 1UL &lt;&lt; 4,</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    /// &lt;summary&gt;Instruction execution is prohibited.&lt;/summary&gt;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    NoExecute = 1UL &lt;&lt; 5,</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    /// &lt;summary&gt;Device or strongly ordered memory semantics are requested.&lt;/summary&gt;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    Device = 1UL &lt;&lt; 6,</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    /// &lt;summary&gt;Write-through caching is requested.&lt;/summary&gt;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    WriteThrough = 1UL &lt;&lt; 7,</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    /// &lt;summary&gt;Caching is disabled.&lt;/summary&gt;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>    CacheDisable = 1UL &lt;&lt; 8</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>}</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a></span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>/// &lt;summary&gt;Provides a common result for architecture operations that also return a machine value.&lt;/summary&gt;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>/// &lt;nova.when&gt;Use when an operation must report success separately from a zero-valued result.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>/// &lt;nova.depends&gt;None&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>public readonly record struct ArchitectureValueResult(bool Succeeded, ulong Value);</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

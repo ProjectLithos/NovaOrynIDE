@@ -671,6 +671,86 @@ export interface NovaOrynSyscallSnapshot {
     error?: string;
 }
 
+
+export type NovaOrynDiskImageOrigin = 'os' | 'sdk';
+export type NovaOrynPartitionScheme = 'gpt' | 'mbr' | 'none' | 'unknown';
+
+export interface NovaOrynDiskImageDescriptor {
+    id: string;
+    name: string;
+    path: string;
+    origin: NovaOrynDiskImageOrigin;
+    sizeBytes: number;
+    modifiedUtc: string;
+    formatHint: string;
+}
+
+export interface NovaOrynDiskPartition {
+    index: number;
+    scheme: 'gpt' | 'mbr';
+    name: string;
+    type: string;
+    typeGuid?: string;
+    uniqueGuid?: string;
+    firstLba: string;
+    lastLba: string;
+    offsetBytes: number;
+    sizeBytes: number;
+    bootable: boolean;
+}
+
+export interface NovaOrynDiskVolume {
+    partitionIndex: number;
+    fileSystem: string;
+    label?: string;
+    bytesPerSector?: number;
+    sectorsPerCluster?: number;
+    totalSectors?: number;
+    fatCount?: number;
+    sectorsPerFat?: number;
+    rootCluster?: number;
+    freeClusters?: number;
+}
+
+export interface NovaOrynDiskEntry {
+    path: string;
+    parentPath: string;
+    name: string;
+    directory: boolean;
+    sizeBytes: number;
+    firstCluster: number;
+    partitionIndex: number;
+    attributes: string[];
+}
+
+export interface NovaOrynDiskImageInspection {
+    success: boolean;
+    image?: NovaOrynDiskImageDescriptor;
+    scheme: NovaOrynPartitionScheme;
+    sectorSize: number;
+    protectiveMbr: boolean;
+    diskGuid?: string;
+    partitions: NovaOrynDiskPartition[];
+    volumes: NovaOrynDiskVolume[];
+    entries: NovaOrynDiskEntry[];
+    entryCount: number;
+    truncated: boolean;
+    message?: string;
+    error?: string;
+}
+
+export interface NovaOrynDiskReadResult {
+    success: boolean;
+    imagePath: string;
+    source: 'disk' | 'file';
+    entryPath?: string;
+    offset: number;
+    length: number;
+    totalLength?: number;
+    bytes: number[];
+    error?: string;
+}
+
 export interface NovaOrynProjectService {
     getSdkApiSiteUrl(): Promise<string>;
     listOperatingSystems(): Promise<NovaOrynOperatingSystem[]>;
@@ -703,6 +783,10 @@ export interface NovaOrynProjectService {
     inspectMemoryMap(projectPath: string): Promise<NovaOrynMemoryMapSnapshot>;
     inspectInterrupts(projectPath: string): Promise<NovaOrynInterruptSnapshot>;
     inspectSyscalls(projectPath: string): Promise<NovaOrynSyscallSnapshot>;
+    listDiskImages(projectPath: string): Promise<NovaOrynDiskImageDescriptor[]>;
+    inspectDiskImage(projectPath: string, imagePath: string): Promise<NovaOrynDiskImageInspection>;
+    readDiskImage(projectPath: string, imagePath: string, offset: number, length: number): Promise<NovaOrynDiskReadResult>;
+    readDiskImageEntry(projectPath: string, imagePath: string, entryPath: string, offset: number, length: number): Promise<NovaOrynDiskReadResult>;
     listTargets(projectPath: string): Promise<NovaOrynTargetState>;
     getActiveTarget(projectPath: string): Promise<NovaOrynTargetProfile | undefined>;
     saveTarget(projectPath: string, target: NovaOrynTargetProfile): Promise<NovaOrynTargetMutationResult>;

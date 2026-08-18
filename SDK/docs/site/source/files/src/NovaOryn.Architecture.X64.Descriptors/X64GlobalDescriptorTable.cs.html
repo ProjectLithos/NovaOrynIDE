@@ -1,0 +1,71 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Architecture.X64.Descriptors/X64GlobalDescriptorTable.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Architecture.X64.Descriptors/X64GlobalDescriptorTable.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Architecture;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Architecture.X64.Descriptors;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;summary&gt;Builds and installs one processor-local x64 GDT.&lt;/summary&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>public sealed unsafe class X64GlobalDescriptorTable : IGlobalDescriptorTable</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>{</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    private const uint RequiredBytes = 7 * 8;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    private GlobalDescriptorTableConfiguration configuration;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    private ITaskStateSegment? taskStateSegment;</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    private bool configured;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a></span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;inheritdoc /&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    public ProcessorId GetProcessorId() =&gt; configuration.ProcessorId;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a></span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    /// &lt;inheritdoc /&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    public bool Configure(GlobalDescriptorTableConfiguration value, ITaskStateSegment taskState)</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    {</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>        if (value.TableAddress.Value == 0 || value.TableCapacity &lt; RequiredBytes || taskState.GetAddress().Value == 0 || taskState.GetLimit() == 0)</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>            return false;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>        if (value.KernelCodeSelector.Index != 1 || value.KernelDataSelector.Index != 2 ||</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>            value.UserDataSelector.Index != 3 || value.UserCodeSelector.Index != 4 || value.TaskStateSelector.Index != 5)</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>            return false;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a></span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>        configuration = value;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>        taskStateSegment = taskState;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>        ulong* table = (ulong*)value.TableAddress.Value;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>        table[0] = 0;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>        table[1] = 0x00AF9A000000FFFFUL; // kernel 64-bit code</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>        table[2] = 0x00CF92000000FFFFUL; // kernel data</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>        table[3] = 0x00CFF2000000FFFFUL; // user data</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>        table[4] = 0x00AFFA000000FFFFUL; // user 64-bit code</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>        WriteTaskStateDescriptor(table, 5, taskState.GetAddress().Value, taskState.GetLimit());</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>        configured = true;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>        return true;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    }</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a></span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;inheritdoc /&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    public bool Install()</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    {</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>        if (!configured || taskStateSegment is null) return false;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>        bool loaded = NativeMethods.LoadGlobalDescriptorTable(configuration.TableAddress.Value, (ushort)(RequiredBytes - 1),</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>            configuration.KernelCodeSelector.Value, configuration.KernelDataSelector.Value);</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>        return loaded &amp;&amp; taskStateSegment.Install(configuration.TaskStateSelector);</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    }</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a></span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    /// &lt;inheritdoc /&gt;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    public SegmentSelector GetSelector(ushort descriptorIndex) =&gt; descriptorIndex switch</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    {</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>        1 =&gt; configuration.KernelCodeSelector,</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>        2 =&gt; configuration.KernelDataSelector,</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>        3 =&gt; configuration.UserDataSelector,</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>        4 =&gt; configuration.UserCodeSelector,</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>        5 =&gt; configuration.TaskStateSelector,</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>        _ =&gt; new SegmentSelector(0)</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    };</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a></span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    private static void WriteTaskStateDescriptor(ulong* table, int index, ulong address, uint limit)</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    {</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>        ulong low = (limit &amp; 0xFFFFUL) |</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>                    ((address &amp; 0xFFFFFFUL) &lt;&lt; 16) |</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>                    (0x89UL &lt;&lt; 40) |</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>                    (((ulong)limit &amp; 0xF0000UL) &lt;&lt; 32) |</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>                    (((address &gt;&gt; 24) &amp; 0xFFUL) &lt;&lt; 56);</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>        table[index] = low;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>        table[index + 1] = address &gt;&gt; 32;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    }</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>}</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

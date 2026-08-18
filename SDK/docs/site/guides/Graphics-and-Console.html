@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Graphics and Console · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"><script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../guides/Getting-Started.html">Guides</a><a href="../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../" placeholder="Type a public item"><div id="search-results"></div></label></header><main>
+<h1>Graphics and console</h1>
+<h2>Firmware framebuffer</h2>
+<p>NovaOryn can register a firmware-provided GOP/VESA-like linear framebuffer as a generic graphics target. CPU writes are already visible to scan-out, so presentation for this target is a validated no-op.</p>
+<h2>VirtIO GPU</h2>
+<p><code>KernelVirtioGpu</code> is NovaOryn's first driver-owned graphics adapter. It implements the modern VirtIO GPU 2D command set, creates scan-out resources, supports mode changes and presents rectangular regions.</p>
+<h2>Framebuffer buffering</h2>
+<p>The kernel console supports single, double and triple buffering. Triple buffering uses two software backbuffers plus the firmware scan-out buffer. Userland service 34 exposes presets 1–3.</p>
+<h2>Font presets</h2>
+<p>The framebuffer console uses the embedded NovaOryn Mono bitmap typeface. Kernel preset 1 is 8 px, preset 2 is 16 px and preset 3 is 24 px; the current source default is preset 3 / 24 px. The <code>font</code> userland command exposes the same presets through service 33.</p>
+<h2>Keyboard layouts</h2>
+<p>The current kernel source loads <code>English_UK</code> and <code>English_USA</code>. The userland <code>keyboard</code> command can query, list and select the installed layout through NovaOryn Get/Set services.</p>
+<h2>Interactive QEMU console</h2>
+<p>The bootstrap kernel handles the number keys 1, 2 and 3 as font-preset selectors. The console also retains framebuffer output for redraw and scrollback behavior.</p>
+<h2>Relevant API assemblies</h2>
+<ul><li><a href="../assemblies/novaoryn-kernel-graphics.html">Kernel graphics</a></li><li><a href="../assemblies/novaoryn-kernel-virtio-gpu.html">VirtIO GPU</a></li><li><a href="../assemblies/novaoryn-kernel-console.html">Kernel console</a></li><li><a href="../assemblies/novaoryn-console-framebuffer.html">Framebuffer console</a></li><li><a href="../assemblies/font.html">Font command</a></li><li><a href="../assemblies/buffering.html">Buffering command</a></li><li><a href="../assemblies/keyboard.html">Keyboard command</a></li></ul></main><footer>Updated documentation for NovaOryn 0.29.0 SDK source.</footer></body></html>

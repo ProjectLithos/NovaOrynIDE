@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Userland.Keyboard/KeyboardCommand.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Userland.Keyboard/KeyboardCommand.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Userland.Keyboard;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Userland keyboard-layout command grammar and syscall service contract.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>public static class KeyboardCommand</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>{</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>    /// &lt;summary&gt;NovaOryn Get/Set/Event service number reserved for keyboard layout.&lt;/summary&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    public const UInt32 KeyboardLayoutService = 32U;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    /// &lt;summary&gt;Parses an installed layout name exactly as accepted by the keyboard command.&lt;/summary&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    public static Boolean TryParseLayout(String value,out UInt32 layout)</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    {</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>        if(String.Equals(value,&quot;English_UK&quot;,StringComparison.OrdinalIgnoreCase)){layout=1U;return true;}</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>        if(String.Equals(value,&quot;English_USA&quot;,StringComparison.OrdinalIgnoreCase)){layout=2U;return true;}</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>        layout=0U;return false;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    }</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    /// &lt;summary&gt;Returns the canonical installed-layout name for a kernel layout identifier.&lt;/summary&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    public static String GetLayoutName(UInt32 layout)=&gt;layout==1U?&quot;English_UK&quot;:layout==2U?&quot;English_USA&quot;:&quot;Unknown&quot;;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    /// &lt;summary&gt;Gets command usage for a shell or executable loader.&lt;/summary&gt;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    public static String GetUsage()=&gt;&quot;keyboard get | keyboard set English_UK | keyboard set English_USA | keyboard list&quot;;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    /// &lt;summary&gt;Gets the installed layout list printed by `keyboard list`.&lt;/summary&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    public static String GetInstalledLayouts()=&gt;&quot;English_UK\nEnglish_USA&quot;;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    /// &lt;summary&gt;Executes the keyboard command through supplied NovaOryn Get/Set syscall invokers.&lt;/summary&gt;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    public static Int32 Run(String[] args, Func&lt;UInt32,Int64&gt; get, Func&lt;UInt32,UInt64,Int64&gt; set, Action&lt;String&gt; write)</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    {</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>        if(args==null||get==null||set==null||write==null){return 2;}</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>        if(args.Length==1&amp;&amp;String.Equals(args[0],&quot;get&quot;,StringComparison.OrdinalIgnoreCase)){Int64 value=get(KeyboardLayoutService);if(value&lt;0)return 1;write(GetLayoutName((UInt32)value));return 0;}</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>        if(args.Length==1&amp;&amp;String.Equals(args[0],&quot;list&quot;,StringComparison.OrdinalIgnoreCase)){write(GetInstalledLayouts());return 0;}</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>        if(args.Length==2&amp;&amp;String.Equals(args[0],&quot;set&quot;,StringComparison.OrdinalIgnoreCase)&amp;&amp;TryParseLayout(args[1],out UInt32 layout)){Int64 result=set(KeyboardLayoutService,layout);if(result!=0)return 1;write(GetLayoutName(layout));return 0;}</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>        write(GetUsage());return 2;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    }</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a></span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>}</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

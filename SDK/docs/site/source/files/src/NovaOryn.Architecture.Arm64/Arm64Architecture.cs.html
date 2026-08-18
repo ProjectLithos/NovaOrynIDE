@@ -1,0 +1,75 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Architecture.Arm64/Arm64Architecture.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Architecture.Arm64/Arm64Architecture.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Core;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Architecture.Arm64;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Defines the explicit readiness state of the ARM64 architecture implementation.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;nova.when&gt;Use to distinguish the present contract scaffold from a bound native ARM64 implementation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;nova.depends&gt;Future NovaOryn ARM64 native bindings&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>public enum Arm64ArchitectureState</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>{</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    /// &lt;summary&gt;No ARM64 native operation table is available.&lt;/summary&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    Unavailable = 0,</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    /// &lt;summary&gt;The ARM64 native operation table is bound and ready.&lt;/summary&gt;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    Ready = 1</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>}</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a></span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>/// &lt;summary&gt;Provides the ARM64 architecture lifecycle scaffold without pretending native operations exist.&lt;/summary&gt;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>/// &lt;nova.when&gt;Use for architecture selection and capability reporting while the ARM64 native backend is developed.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>/// &lt;nova.depends&gt;NovaOryn.Architecture.Contracts&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>[SupportedArchitecture(SupportedArchitecture.Arm64)]</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>public sealed class Arm64CpuArchitecture : ICpuArchitecture</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>{</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    /// &lt;summary&gt;Gets the current native backend readiness state.&lt;/summary&gt;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    /// &lt;nova.when&gt;Check before attempting to initialise an ARM64 kernel.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    /// &lt;nova.depends&gt;Future ARM64 native binding table&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    public Arm64ArchitectureState State =&gt; Arm64ArchitectureState.Unavailable;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a></span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    /// &lt;summary&gt;Gets the ARM64 architecture identifier.&lt;/summary&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    /// &lt;nova.when&gt;Use to validate architecture selection.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    /// &lt;nova.depends&gt;NovaOryn.Core&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    public SupportedArchitecture Architecture =&gt; SupportedArchitecture.Arm64;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a></span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;summary&gt;Reports that the ARM64 native backend is not yet bound.&lt;/summary&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    /// &lt;nova.when&gt;Call during architecture selection; a false result prevents unsupported boot.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    /// &lt;nova.depends&gt;Future ARM64 native binding table&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;returns&gt;&lt;see langword=&quot;false&quot;/&gt; until the ARM64 native backend is implemented.&lt;/returns&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    /// &lt;example&gt;&lt;code&gt;bool ready = architecture.InitialiseEarly();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    public bool InitialiseEarly() =&gt; false;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a></span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;summary&gt;Reports that per-processor ARM64 initialisation is unavailable.&lt;/summary&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    /// &lt;nova.when&gt;Call only after early initialisation succeeds.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;nova.depends&gt;Future ARM64 exception-vector and per-CPU implementation&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    /// &lt;returns&gt;&lt;see langword=&quot;false&quot;/&gt; until the ARM64 native backend is implemented.&lt;/returns&gt;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    /// &lt;example&gt;&lt;code&gt;bool ready = architecture.InitialiseProcessor(0);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    public bool InitialiseProcessor(uint processorId) =&gt; false;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a></span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    /// &lt;summary&gt;Reports that ARM64 interrupt enable is unavailable.&lt;/summary&gt;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    /// &lt;nova.when&gt;Call only after the ARM64 native backend becomes ready.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    /// &lt;nova.depends&gt;Future DAIF native operation&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    /// &lt;returns&gt;&lt;see langword=&quot;false&quot;/&gt; until implemented.&lt;/returns&gt;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    /// &lt;example&gt;&lt;code&gt;bool enabled = architecture.EnableInterrupts();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    public bool EnableInterrupts() =&gt; false;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a></span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;summary&gt;Reports that ARM64 interrupt disable is unavailable.&lt;/summary&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;nova.when&gt;Call only after the ARM64 native backend becomes ready.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;nova.depends&gt;Future DAIF native operation&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;returns&gt;&lt;see langword=&quot;false&quot;/&gt; until implemented.&lt;/returns&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    /// &lt;example&gt;&lt;code&gt;bool disabled = architecture.DisableInterrupts();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    public bool DisableInterrupts() =&gt; false;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a></span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    /// &lt;summary&gt;Reports that ARM64 wait-for-interrupt halt is unavailable.&lt;/summary&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    /// &lt;nova.when&gt;Call only after the ARM64 native backend becomes ready.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    /// &lt;nova.depends&gt;Future WFI native operation&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    /// &lt;returns&gt;&lt;see langword=&quot;false&quot;/&gt; until implemented.&lt;/returns&gt;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    /// &lt;example&gt;&lt;code&gt;bool halted = architecture.Halt();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    public bool Halt() =&gt; false;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a></span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    /// &lt;summary&gt;Returns no timestamp until the ARM64 counter backend is implemented.&lt;/summary&gt;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    /// &lt;nova.when&gt;Call only after feature discovery confirms a system counter.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    /// &lt;nova.depends&gt;Future CNTVCT_EL0 native operation&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    /// &lt;returns&gt;Zero until implemented.&lt;/returns&gt;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    /// &lt;example&gt;&lt;code&gt;ulong ticks = architecture.ReadTimestamp();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    public ulong ReadTimestamp() =&gt; 0;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>}</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

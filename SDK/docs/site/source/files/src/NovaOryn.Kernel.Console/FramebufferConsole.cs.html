@@ -1,0 +1,620 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Console/FramebufferConsole.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Console/FramebufferConsole.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Kernel.Console;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>internal unsafe struct FramebufferConsole</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>{</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>    internal const UInt32 SmallFontSize = 8U;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>    internal const UInt32 MediumFontSize = 16U;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    internal const UInt32 LargeFontSize = 24U;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    internal const UInt32 ScrollbackCapacity = 262144U;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a></span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    private UInt64 _address;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    private UInt64 _size;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    private UInt32 _width;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    private UInt32 _height;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    private UInt32 _pitch;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    private UInt32 _pixelFormat;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    private UInt32 _redMask;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    private UInt32 _greenMask;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    private UInt32 _blueMask;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    private UInt32 _cursorX;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    private UInt32 _cursorY;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    private UInt32 _fontSize;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    private UInt32 _glyphWidth;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    private UInt32 _characterAdvance;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    private UInt32 _lineHeight;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    private UInt32 _margin;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    private UInt32 _foreground;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    private UInt32 _background;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    private UInt32 _historyStart;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    private UInt32 _historyLength;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    private UInt32 _scrollLinesFromBottom;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    private UInt64 _backBufferA;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    private UInt64 _backBufferB;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    private UInt64 _drawBuffer;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    private UInt64 _frameByteCount;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    private UInt32 _availableBufferCount;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    private UInt32 _bufferCount;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    private Boolean _dirty;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    private UInt32 _dirtyLeft;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    private UInt32 _dirtyTop;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    private UInt32 _dirtyRight;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    private UInt32 _dirtyBottom;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    private fixed Byte _history[(Int32)ScrollbackCapacity];</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a></span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    internal UInt32 FontSize</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    {</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        get { return _fontSize; }</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    }</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a></span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    internal UInt32 ScrollLinesFromBottom</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    {</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>        get { return _scrollLinesFromBottom; }</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    }</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a></span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    internal UInt64 FrameByteCount</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    {</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>        get { return _frameByteCount; }</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    }</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a></span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    internal UInt32 BufferCount</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    {</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>        get { return _bufferCount; }</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    }</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a></span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    internal UInt32 AvailableBufferCount</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    {</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        get { return _availableBufferCount; }</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    }</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a></span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    internal Boolean Initialize(BootContext boot, UInt32 fontSize)</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    {</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>        NativeBootContext* context = boot.GetNativeContext();</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>        if (context == null || context-&gt;Signature != 0x4E59524F41564F4EUL) return false;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>        if (context-&gt;FramebufferAddress == 0 || (context-&gt;FramebufferAddress &amp; 3UL) != 0) return false;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>        if (context-&gt;FramebufferSize == 0 || context-&gt;Width == 0 || context-&gt;Height == 0) return false;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>        if (context-&gt;PixelsPerScanLine &lt; context-&gt;Width) return false;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>        if (context-&gt;PixelFormat &gt; 2U) return false;</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a></span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        UInt64 bytesPerScanLine = (UInt64)context-&gt;PixelsPerScanLine * 4UL;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>        if (bytesPerScanLine == 0 || (UInt64)context-&gt;Height &gt; context-&gt;FramebufferSize / bytesPerScanLine) return false;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>        if (context-&gt;PixelFormat == 2U)</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>        {</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>            if (context-&gt;RedMask == 0 || context-&gt;GreenMask == 0 || context-&gt;BlueMask == 0) return false;</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>            if ((context-&gt;RedMask &amp; context-&gt;GreenMask) != 0) return false;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>            if ((context-&gt;RedMask &amp; context-&gt;BlueMask) != 0) return false;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>            if ((context-&gt;GreenMask &amp; context-&gt;BlueMask) != 0) return false;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>            if (context-&gt;ReservedMask != 0U)</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>            {</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>                if ((context-&gt;ReservedMask &amp; context-&gt;RedMask) != 0) return false;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>                if ((context-&gt;ReservedMask &amp; context-&gt;GreenMask) != 0) return false;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>                if ((context-&gt;ReservedMask &amp; context-&gt;BlueMask) != 0) return false;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>            }</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>            if (!IsContiguousMask(context-&gt;RedMask)) return false;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>            if (!IsContiguousMask(context-&gt;GreenMask)) return false;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>            if (!IsContiguousMask(context-&gt;BlueMask)) return false;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>        }</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a></span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>        _address = context-&gt;FramebufferAddress;</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>        _size = context-&gt;FramebufferSize;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>        _width = context-&gt;Width;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>        _height = context-&gt;Height;</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>        _pitch = context-&gt;PixelsPerScanLine;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>        _pixelFormat = context-&gt;PixelFormat;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>        _redMask = context-&gt;RedMask;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>        _greenMask = context-&gt;GreenMask;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>        _blueMask = context-&gt;BlueMask;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>        _foreground = PackColor(232, 240, 248);</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>        _background = PackColor(9, 16, 24);</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>        _historyStart = 0U;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>        _historyLength = 0U;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>        _scrollLinesFromBottom = 0U;</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>        _frameByteCount = bytesPerScanLine * (UInt64)context-&gt;Height;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>        _backBufferA = 0UL;</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>        _backBufferB = 0UL;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>        _drawBuffer = _address;</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>        _availableBufferCount = 1U;</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>        _bufferCount = 1U;</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>        ResetDirty();</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>        return ConfigureFont(fontSize);</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>    }</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a></span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>    internal Boolean Clear()</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    {</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>        if (!ClearPixels()) return false;</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>        _cursorX = _margin;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>        _cursorY = _margin;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>        return Present();</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>    }</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a></span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>    internal Boolean Write(Byte value)</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>    {</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>        if (value == (Byte)&#39;\r&#39;) return true;</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>        UInt32 linesBefore = _scrollLinesFromBottom == 0U ? 0U : CountVisualLines();</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>        AppendHistory(value);</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>        if (_scrollLinesFromBottom != 0U)</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>        {</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>            UInt32 linesAfter = CountVisualLines();</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>            if (linesAfter &gt; linesBefore) _scrollLinesFromBottom += linesAfter - linesBefore;</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>            return true;</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>        }</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>        if (!RenderLive(value)) return false;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>        return Present();</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>    }</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a></span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>    internal Boolean ConfigureBuffers(UInt64 backBufferA, UInt64 backBufferB, UInt64 bufferByteCount)</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>    {</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>        if (_address == 0UL || _frameByteCount == 0UL) return false;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>        if (backBufferA == 0UL || backBufferB == 0UL || backBufferA == backBufferB) return false;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>        if ((backBufferA &amp; 3UL) != 0UL || (backBufferB &amp; 3UL) != 0UL) return false;</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>        if (backBufferA == _address || backBufferB == _address) return false;</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>        if (bufferByteCount &lt; _frameByteCount) return false;</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>        _backBufferA = backBufferA;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>        _backBufferB = backBufferB;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>        _availableBufferCount = 3U;</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>        if (!CopyFrame(_address, _backBufferA)) return false;</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>        if (!CopyFrame(_address, _backBufferB)) return false;</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>        return SetBufferCount(3U);</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>    }</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a></span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>    internal Boolean SetBufferCount(UInt32 bufferCount)</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>    {</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>        if (bufferCount &lt; 1U || bufferCount &gt; 3U) return false;</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>        if (bufferCount &gt; _availableBufferCount) return false;</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>        if (_bufferCount &gt; 1U &amp;&amp; !Present()) return false;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>        if (bufferCount == 1U)</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>        {</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>            _bufferCount = 1U;</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>            _drawBuffer = _address;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>            return true;</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>        }</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>        if (_backBufferA == 0UL) return false;</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>        if (!CopyFrame(_address, _backBufferA)) return false;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>        if (bufferCount == 3U)</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>        {</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>            if (_backBufferB == 0UL) return false;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>            if (!CopyFrame(_address, _backBufferB)) return false;</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>        }</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>        _bufferCount = bufferCount;</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>        _drawBuffer = _backBufferA;</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>        return true;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>    }</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a></span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>    internal Boolean ScrollUp()</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>    {</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>        UInt32 totalLines = CountVisualLines();</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>        UInt32 visibleLines = GetVisibleLineCount();</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>        UInt32 maximumOffset = totalLines &gt; visibleLines ? totalLines - visibleLines : 0U;</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>        if (_scrollLinesFromBottom &lt; maximumOffset) _scrollLinesFromBottom++;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>        if (!RedrawHistory()) return false;</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>        return Present();</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>    }</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a></span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>    internal Boolean ScrollDown()</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>    {</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>        if (_scrollLinesFromBottom != 0U) _scrollLinesFromBottom--;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>        if (!RedrawHistory()) return false;</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>        return Present();</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>    }</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a></span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>    internal Boolean SetFontPreset(UInt32 preset)</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>    {</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>        UInt32 size;</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>        if (preset == 1U) size = SmallFontSize;</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>        else if (preset == 2U) size = MediumFontSize;</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>        else if (preset == 3U) size = LargeFontSize;</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>        else return false;</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>        if (!ConfigureFont(size)) return false;</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>        UInt32 totalLines = CountVisualLines();</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>        UInt32 visibleLines = GetVisibleLineCount();</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>        UInt32 maximumOffset = totalLines &gt; visibleLines ? totalLines - visibleLines : 0U;</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>        if (_scrollLinesFromBottom &gt; maximumOffset) _scrollLinesFromBottom = maximumOffset;</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>        if (!RedrawHistory()) return false;</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>        return Present();</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>    }</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a></span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>    private Boolean ConfigureFont(UInt32 fontSize)</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>    {</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>        if (BitmapFont.GetFontContractVersion() != 2U) return false;</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>        if (fontSize &lt; BitmapFont.MinimumFontSize || fontSize &gt; BitmapFont.MaximumFontSize) return false;</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>        UInt32 glyphWidth = BitmapFont.GetRenderedGlyphWidth(fontSize);</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>        UInt32 characterAdvance = BitmapFont.GetRenderedCharacterAdvance(fontSize);</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a>        UInt32 lineHeight = BitmapFont.GetRenderedLineHeight(fontSize);</span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>        UInt32 margin = fontSize / 2U;</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>        if (margin == 0U) margin = 1U;</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>        if (glyphWidth == 0U || characterAdvance &lt; glyphWidth || lineHeight &lt; fontSize) return false;</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>        if (margin &gt;= _width || margin &gt;= _height) return false;</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>        if (glyphWidth &gt; _width - margin || fontSize &gt; _height - margin) return false;</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>        _fontSize = fontSize;</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>        _glyphWidth = glyphWidth;</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>        _characterAdvance = characterAdvance;</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>        _lineHeight = lineHeight;</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>        _margin = margin;</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>        _cursorX = margin;</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>        _cursorY = margin;</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>        return true;</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a>    }</span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a></span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a>    private Boolean RenderLive(Byte value)</span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a>    {</span>
+<span class="source-line" id="L241"><a class="line-number" href="#L241">241</a>        if (value == (Byte)&#39;\n&#39;) return MoveToNextLine();</span>
+<span class="source-line" id="L242"><a class="line-number" href="#L242">242</a>        if (_cursorX &gt; _width - _glyphWidth &amp;&amp; !MoveToNextLine()) return false;</span>
+<span class="source-line" id="L243"><a class="line-number" href="#L243">243</a>        if (_cursorY &gt; _height - _fontSize) return false;</span>
+<span class="source-line" id="L244"><a class="line-number" href="#L244">244</a>        if (!DrawGlyph(value, _cursorX, _cursorY)) return false;</span>
+<span class="source-line" id="L245"><a class="line-number" href="#L245">245</a>        _cursorX += _characterAdvance;</span>
+<span class="source-line" id="L246"><a class="line-number" href="#L246">246</a>        return true;</span>
+<span class="source-line" id="L247"><a class="line-number" href="#L247">247</a>    }</span>
+<span class="source-line" id="L248"><a class="line-number" href="#L248">248</a></span>
+<span class="source-line" id="L249"><a class="line-number" href="#L249">249</a>    private void AppendHistory(Byte value)</span>
+<span class="source-line" id="L250"><a class="line-number" href="#L250">250</a>    {</span>
+<span class="source-line" id="L251"><a class="line-number" href="#L251">251</a>        fixed (Byte* history = _history)</span>
+<span class="source-line" id="L252"><a class="line-number" href="#L252">252</a>        {</span>
+<span class="source-line" id="L253"><a class="line-number" href="#L253">253</a>            if (_historyLength &lt; ScrollbackCapacity)</span>
+<span class="source-line" id="L254"><a class="line-number" href="#L254">254</a>            {</span>
+<span class="source-line" id="L255"><a class="line-number" href="#L255">255</a>                UInt32 index = (_historyStart + _historyLength) % ScrollbackCapacity;</span>
+<span class="source-line" id="L256"><a class="line-number" href="#L256">256</a>                history[index] = value;</span>
+<span class="source-line" id="L257"><a class="line-number" href="#L257">257</a>                _historyLength++;</span>
+<span class="source-line" id="L258"><a class="line-number" href="#L258">258</a>                return;</span>
+<span class="source-line" id="L259"><a class="line-number" href="#L259">259</a>            }</span>
+<span class="source-line" id="L260"><a class="line-number" href="#L260">260</a>            history[_historyStart] = value;</span>
+<span class="source-line" id="L261"><a class="line-number" href="#L261">261</a>            _historyStart++;</span>
+<span class="source-line" id="L262"><a class="line-number" href="#L262">262</a>            if (_historyStart == ScrollbackCapacity) _historyStart = 0U;</span>
+<span class="source-line" id="L263"><a class="line-number" href="#L263">263</a>        }</span>
+<span class="source-line" id="L264"><a class="line-number" href="#L264">264</a>    }</span>
+<span class="source-line" id="L265"><a class="line-number" href="#L265">265</a></span>
+<span class="source-line" id="L266"><a class="line-number" href="#L266">266</a>    private Byte GetHistoryByte(UInt32 logicalIndex)</span>
+<span class="source-line" id="L267"><a class="line-number" href="#L267">267</a>    {</span>
+<span class="source-line" id="L268"><a class="line-number" href="#L268">268</a>        fixed (Byte* history = _history)</span>
+<span class="source-line" id="L269"><a class="line-number" href="#L269">269</a>        {</span>
+<span class="source-line" id="L270"><a class="line-number" href="#L270">270</a>            UInt32 index = (_historyStart + logicalIndex) % ScrollbackCapacity;</span>
+<span class="source-line" id="L271"><a class="line-number" href="#L271">271</a>            return history[index];</span>
+<span class="source-line" id="L272"><a class="line-number" href="#L272">272</a>        }</span>
+<span class="source-line" id="L273"><a class="line-number" href="#L273">273</a>    }</span>
+<span class="source-line" id="L274"><a class="line-number" href="#L274">274</a></span>
+<span class="source-line" id="L275"><a class="line-number" href="#L275">275</a>    private UInt32 GetColumnCount()</span>
+<span class="source-line" id="L276"><a class="line-number" href="#L276">276</a>    {</span>
+<span class="source-line" id="L277"><a class="line-number" href="#L277">277</a>        if (_characterAdvance == 0U || _glyphWidth == 0U || _margin &gt; _width - _glyphWidth) return 1U;</span>
+<span class="source-line" id="L278"><a class="line-number" href="#L278">278</a>        return ((_width - _glyphWidth - _margin) / _characterAdvance) + 1U;</span>
+<span class="source-line" id="L279"><a class="line-number" href="#L279">279</a>    }</span>
+<span class="source-line" id="L280"><a class="line-number" href="#L280">280</a></span>
+<span class="source-line" id="L281"><a class="line-number" href="#L281">281</a>    private UInt32 GetVisibleLineCount()</span>
+<span class="source-line" id="L282"><a class="line-number" href="#L282">282</a>    {</span>
+<span class="source-line" id="L283"><a class="line-number" href="#L283">283</a>        if (_lineHeight == 0U || _margin &gt; _height - _fontSize) return 1U;</span>
+<span class="source-line" id="L284"><a class="line-number" href="#L284">284</a>        return ((_height - _fontSize - _margin) / _lineHeight) + 1U;</span>
+<span class="source-line" id="L285"><a class="line-number" href="#L285">285</a>    }</span>
+<span class="source-line" id="L286"><a class="line-number" href="#L286">286</a></span>
+<span class="source-line" id="L287"><a class="line-number" href="#L287">287</a>    private UInt32 CountVisualLines()</span>
+<span class="source-line" id="L288"><a class="line-number" href="#L288">288</a>    {</span>
+<span class="source-line" id="L289"><a class="line-number" href="#L289">289</a>        UInt32 columns = GetColumnCount();</span>
+<span class="source-line" id="L290"><a class="line-number" href="#L290">290</a>        UInt32 lineCount = 1U;</span>
+<span class="source-line" id="L291"><a class="line-number" href="#L291">291</a>        UInt32 column = 0U;</span>
+<span class="source-line" id="L292"><a class="line-number" href="#L292">292</a>        UInt32 index = 0U;</span>
+<span class="source-line" id="L293"><a class="line-number" href="#L293">293</a>        while (index &lt; _historyLength)</span>
+<span class="source-line" id="L294"><a class="line-number" href="#L294">294</a>        {</span>
+<span class="source-line" id="L295"><a class="line-number" href="#L295">295</a>            Byte value = GetHistoryByte(index);</span>
+<span class="source-line" id="L296"><a class="line-number" href="#L296">296</a>            if (value == (Byte)&#39;\n&#39;)</span>
+<span class="source-line" id="L297"><a class="line-number" href="#L297">297</a>            {</span>
+<span class="source-line" id="L298"><a class="line-number" href="#L298">298</a>                lineCount++;</span>
+<span class="source-line" id="L299"><a class="line-number" href="#L299">299</a>                column = 0U;</span>
+<span class="source-line" id="L300"><a class="line-number" href="#L300">300</a>            }</span>
+<span class="source-line" id="L301"><a class="line-number" href="#L301">301</a>            else</span>
+<span class="source-line" id="L302"><a class="line-number" href="#L302">302</a>            {</span>
+<span class="source-line" id="L303"><a class="line-number" href="#L303">303</a>                if (column &gt;= columns)</span>
+<span class="source-line" id="L304"><a class="line-number" href="#L304">304</a>                {</span>
+<span class="source-line" id="L305"><a class="line-number" href="#L305">305</a>                    lineCount++;</span>
+<span class="source-line" id="L306"><a class="line-number" href="#L306">306</a>                    column = 0U;</span>
+<span class="source-line" id="L307"><a class="line-number" href="#L307">307</a>                }</span>
+<span class="source-line" id="L308"><a class="line-number" href="#L308">308</a>                column++;</span>
+<span class="source-line" id="L309"><a class="line-number" href="#L309">309</a>            }</span>
+<span class="source-line" id="L310"><a class="line-number" href="#L310">310</a>            index++;</span>
+<span class="source-line" id="L311"><a class="line-number" href="#L311">311</a>        }</span>
+<span class="source-line" id="L312"><a class="line-number" href="#L312">312</a>        return lineCount;</span>
+<span class="source-line" id="L313"><a class="line-number" href="#L313">313</a>    }</span>
+<span class="source-line" id="L314"><a class="line-number" href="#L314">314</a></span>
+<span class="source-line" id="L315"><a class="line-number" href="#L315">315</a>    private UInt32 FindVisualLineStart(UInt32 targetLine)</span>
+<span class="source-line" id="L316"><a class="line-number" href="#L316">316</a>    {</span>
+<span class="source-line" id="L317"><a class="line-number" href="#L317">317</a>        if (targetLine == 0U) return 0U;</span>
+<span class="source-line" id="L318"><a class="line-number" href="#L318">318</a>        UInt32 columns = GetColumnCount();</span>
+<span class="source-line" id="L319"><a class="line-number" href="#L319">319</a>        UInt32 line = 0U;</span>
+<span class="source-line" id="L320"><a class="line-number" href="#L320">320</a>        UInt32 column = 0U;</span>
+<span class="source-line" id="L321"><a class="line-number" href="#L321">321</a>        UInt32 index = 0U;</span>
+<span class="source-line" id="L322"><a class="line-number" href="#L322">322</a>        while (index &lt; _historyLength)</span>
+<span class="source-line" id="L323"><a class="line-number" href="#L323">323</a>        {</span>
+<span class="source-line" id="L324"><a class="line-number" href="#L324">324</a>            Byte value = GetHistoryByte(index);</span>
+<span class="source-line" id="L325"><a class="line-number" href="#L325">325</a>            if (value == (Byte)&#39;\n&#39;)</span>
+<span class="source-line" id="L326"><a class="line-number" href="#L326">326</a>            {</span>
+<span class="source-line" id="L327"><a class="line-number" href="#L327">327</a>                line++;</span>
+<span class="source-line" id="L328"><a class="line-number" href="#L328">328</a>                column = 0U;</span>
+<span class="source-line" id="L329"><a class="line-number" href="#L329">329</a>                index++;</span>
+<span class="source-line" id="L330"><a class="line-number" href="#L330">330</a>                if (line == targetLine) return index;</span>
+<span class="source-line" id="L331"><a class="line-number" href="#L331">331</a>                continue;</span>
+<span class="source-line" id="L332"><a class="line-number" href="#L332">332</a>            }</span>
+<span class="source-line" id="L333"><a class="line-number" href="#L333">333</a>            if (column &gt;= columns)</span>
+<span class="source-line" id="L334"><a class="line-number" href="#L334">334</a>            {</span>
+<span class="source-line" id="L335"><a class="line-number" href="#L335">335</a>                line++;</span>
+<span class="source-line" id="L336"><a class="line-number" href="#L336">336</a>                column = 0U;</span>
+<span class="source-line" id="L337"><a class="line-number" href="#L337">337</a>                if (line == targetLine) return index;</span>
+<span class="source-line" id="L338"><a class="line-number" href="#L338">338</a>            }</span>
+<span class="source-line" id="L339"><a class="line-number" href="#L339">339</a>            column++;</span>
+<span class="source-line" id="L340"><a class="line-number" href="#L340">340</a>            index++;</span>
+<span class="source-line" id="L341"><a class="line-number" href="#L341">341</a>        }</span>
+<span class="source-line" id="L342"><a class="line-number" href="#L342">342</a>        return _historyLength;</span>
+<span class="source-line" id="L343"><a class="line-number" href="#L343">343</a>    }</span>
+<span class="source-line" id="L344"><a class="line-number" href="#L344">344</a></span>
+<span class="source-line" id="L345"><a class="line-number" href="#L345">345</a>    private Boolean RedrawHistory()</span>
+<span class="source-line" id="L346"><a class="line-number" href="#L346">346</a>    {</span>
+<span class="source-line" id="L347"><a class="line-number" href="#L347">347</a>        if (!ClearPixels()) return false;</span>
+<span class="source-line" id="L348"><a class="line-number" href="#L348">348</a>        UInt32 totalLines = CountVisualLines();</span>
+<span class="source-line" id="L349"><a class="line-number" href="#L349">349</a>        UInt32 visibleLines = GetVisibleLineCount();</span>
+<span class="source-line" id="L350"><a class="line-number" href="#L350">350</a>        UInt32 maximumOffset = totalLines &gt; visibleLines ? totalLines - visibleLines : 0U;</span>
+<span class="source-line" id="L351"><a class="line-number" href="#L351">351</a>        if (_scrollLinesFromBottom &gt; maximumOffset) _scrollLinesFromBottom = maximumOffset;</span>
+<span class="source-line" id="L352"><a class="line-number" href="#L352">352</a>        UInt32 firstLine = totalLines &gt; visibleLines + _scrollLinesFromBottom</span>
+<span class="source-line" id="L353"><a class="line-number" href="#L353">353</a>            ? totalLines - visibleLines - _scrollLinesFromBottom</span>
+<span class="source-line" id="L354"><a class="line-number" href="#L354">354</a>            : 0U;</span>
+<span class="source-line" id="L355"><a class="line-number" href="#L355">355</a>        UInt32 index = FindVisualLineStart(firstLine);</span>
+<span class="source-line" id="L356"><a class="line-number" href="#L356">356</a>        UInt32 x = _margin;</span>
+<span class="source-line" id="L357"><a class="line-number" href="#L357">357</a>        UInt32 y = _margin;</span>
+<span class="source-line" id="L358"><a class="line-number" href="#L358">358</a>        while (index &lt; _historyLength)</span>
+<span class="source-line" id="L359"><a class="line-number" href="#L359">359</a>        {</span>
+<span class="source-line" id="L360"><a class="line-number" href="#L360">360</a>            Byte value = GetHistoryByte(index);</span>
+<span class="source-line" id="L361"><a class="line-number" href="#L361">361</a>            if (value == (Byte)&#39;\n&#39;)</span>
+<span class="source-line" id="L362"><a class="line-number" href="#L362">362</a>            {</span>
+<span class="source-line" id="L363"><a class="line-number" href="#L363">363</a>                x = _margin;</span>
+<span class="source-line" id="L364"><a class="line-number" href="#L364">364</a>                if (y &gt; _height - _fontSize || _lineHeight &gt; (_height - _fontSize) - y) break;</span>
+<span class="source-line" id="L365"><a class="line-number" href="#L365">365</a>                y += _lineHeight;</span>
+<span class="source-line" id="L366"><a class="line-number" href="#L366">366</a>                index++;</span>
+<span class="source-line" id="L367"><a class="line-number" href="#L367">367</a>                continue;</span>
+<span class="source-line" id="L368"><a class="line-number" href="#L368">368</a>            }</span>
+<span class="source-line" id="L369"><a class="line-number" href="#L369">369</a>            if (x &gt; _width - _glyphWidth)</span>
+<span class="source-line" id="L370"><a class="line-number" href="#L370">370</a>            {</span>
+<span class="source-line" id="L371"><a class="line-number" href="#L371">371</a>                x = _margin;</span>
+<span class="source-line" id="L372"><a class="line-number" href="#L372">372</a>                if (y &gt; _height - _fontSize || _lineHeight &gt; (_height - _fontSize) - y) break;</span>
+<span class="source-line" id="L373"><a class="line-number" href="#L373">373</a>                y += _lineHeight;</span>
+<span class="source-line" id="L374"><a class="line-number" href="#L374">374</a>            }</span>
+<span class="source-line" id="L375"><a class="line-number" href="#L375">375</a>            if (y &gt; _height - _fontSize) break;</span>
+<span class="source-line" id="L376"><a class="line-number" href="#L376">376</a>            if (!DrawGlyph(value, x, y)) return false;</span>
+<span class="source-line" id="L377"><a class="line-number" href="#L377">377</a>            x += _characterAdvance;</span>
+<span class="source-line" id="L378"><a class="line-number" href="#L378">378</a>            index++;</span>
+<span class="source-line" id="L379"><a class="line-number" href="#L379">379</a>        }</span>
+<span class="source-line" id="L380"><a class="line-number" href="#L380">380</a>        if (_scrollLinesFromBottom == 0U)</span>
+<span class="source-line" id="L381"><a class="line-number" href="#L381">381</a>        {</span>
+<span class="source-line" id="L382"><a class="line-number" href="#L382">382</a>            _cursorX = x;</span>
+<span class="source-line" id="L383"><a class="line-number" href="#L383">383</a>            _cursorY = y;</span>
+<span class="source-line" id="L384"><a class="line-number" href="#L384">384</a>        }</span>
+<span class="source-line" id="L385"><a class="line-number" href="#L385">385</a>        return true;</span>
+<span class="source-line" id="L386"><a class="line-number" href="#L386">386</a>    }</span>
+<span class="source-line" id="L387"><a class="line-number" href="#L387">387</a></span>
+<span class="source-line" id="L388"><a class="line-number" href="#L388">388</a>    private Boolean ClearPixels()</span>
+<span class="source-line" id="L389"><a class="line-number" href="#L389">389</a>    {</span>
+<span class="source-line" id="L390"><a class="line-number" href="#L390">390</a>        UInt64 pixelCount = (UInt64)_pitch * (UInt64)_height;</span>
+<span class="source-line" id="L391"><a class="line-number" href="#L391">391</a>        if (pixelCount &gt; _size / 4UL) return false;</span>
+<span class="source-line" id="L392"><a class="line-number" href="#L392">392</a>        UInt32* pixel = (UInt32*)GetRenderAddress();</span>
+<span class="source-line" id="L393"><a class="line-number" href="#L393">393</a>        while (pixelCount != 0UL)</span>
+<span class="source-line" id="L394"><a class="line-number" href="#L394">394</a>        {</span>
+<span class="source-line" id="L395"><a class="line-number" href="#L395">395</a>            *pixel = _background;</span>
+<span class="source-line" id="L396"><a class="line-number" href="#L396">396</a>            pixel++;</span>
+<span class="source-line" id="L397"><a class="line-number" href="#L397">397</a>            pixelCount--;</span>
+<span class="source-line" id="L398"><a class="line-number" href="#L398">398</a>        }</span>
+<span class="source-line" id="L399"><a class="line-number" href="#L399">399</a>        MarkDirtyRectangle(0U, 0U, _width, _height);</span>
+<span class="source-line" id="L400"><a class="line-number" href="#L400">400</a>        return true;</span>
+<span class="source-line" id="L401"><a class="line-number" href="#L401">401</a>    }</span>
+<span class="source-line" id="L402"><a class="line-number" href="#L402">402</a></span>
+<span class="source-line" id="L403"><a class="line-number" href="#L403">403</a>    private Boolean MoveToNextLine()</span>
+<span class="source-line" id="L404"><a class="line-number" href="#L404">404</a>    {</span>
+<span class="source-line" id="L405"><a class="line-number" href="#L405">405</a>        _cursorX = _margin;</span>
+<span class="source-line" id="L406"><a class="line-number" href="#L406">406</a>        if (_cursorY &lt;= _height - _fontSize &amp;&amp; _lineHeight &lt;= (_height - _fontSize) - _cursorY)</span>
+<span class="source-line" id="L407"><a class="line-number" href="#L407">407</a>        {</span>
+<span class="source-line" id="L408"><a class="line-number" href="#L408">408</a>            _cursorY += _lineHeight;</span>
+<span class="source-line" id="L409"><a class="line-number" href="#L409">409</a>            return true;</span>
+<span class="source-line" id="L410"><a class="line-number" href="#L410">410</a>        }</span>
+<span class="source-line" id="L411"><a class="line-number" href="#L411">411</a>        return ScrollUpOneLinePixels();</span>
+<span class="source-line" id="L412"><a class="line-number" href="#L412">412</a>    }</span>
+<span class="source-line" id="L413"><a class="line-number" href="#L413">413</a></span>
+<span class="source-line" id="L414"><a class="line-number" href="#L414">414</a>    private Boolean ScrollUpOneLinePixels()</span>
+<span class="source-line" id="L415"><a class="line-number" href="#L415">415</a>    {</span>
+<span class="source-line" id="L416"><a class="line-number" href="#L416">416</a>        if (_lineHeight == 0U || _margin &gt;= _height || _lineHeight &gt;= _height - _margin) return false;</span>
+<span class="source-line" id="L417"><a class="line-number" href="#L417">417</a>        UInt32 sourceY = _margin + _lineHeight;</span>
+<span class="source-line" id="L418"><a class="line-number" href="#L418">418</a>        UInt32 destinationY = _margin;</span>
+<span class="source-line" id="L419"><a class="line-number" href="#L419">419</a>        UInt32 rowsToMove = _height - sourceY;</span>
+<span class="source-line" id="L420"><a class="line-number" href="#L420">420</a>        UInt64 framebufferPixels = _size / 4UL;</span>
+<span class="source-line" id="L421"><a class="line-number" href="#L421">421</a>        UInt32* pixels = (UInt32*)GetRenderAddress();</span>
+<span class="source-line" id="L422"><a class="line-number" href="#L422">422</a></span>
+<span class="source-line" id="L423"><a class="line-number" href="#L423">423</a>        UInt32 row = 0U;</span>
+<span class="source-line" id="L424"><a class="line-number" href="#L424">424</a>        while (row &lt; rowsToMove)</span>
+<span class="source-line" id="L425"><a class="line-number" href="#L425">425</a>        {</span>
+<span class="source-line" id="L426"><a class="line-number" href="#L426">426</a>            UInt64 sourceIndex = ((UInt64)(sourceY + row) * (UInt64)_pitch);</span>
+<span class="source-line" id="L427"><a class="line-number" href="#L427">427</a>            UInt64 destinationIndex = ((UInt64)(destinationY + row) * (UInt64)_pitch);</span>
+<span class="source-line" id="L428"><a class="line-number" href="#L428">428</a>            if (sourceIndex + _pitch &gt; framebufferPixels || destinationIndex + _pitch &gt; framebufferPixels) return false;</span>
+<span class="source-line" id="L429"><a class="line-number" href="#L429">429</a>            UInt32 column = 0U;</span>
+<span class="source-line" id="L430"><a class="line-number" href="#L430">430</a>            while (column &lt; _pitch)</span>
+<span class="source-line" id="L431"><a class="line-number" href="#L431">431</a>            {</span>
+<span class="source-line" id="L432"><a class="line-number" href="#L432">432</a>                pixels[destinationIndex + column] = pixels[sourceIndex + column];</span>
+<span class="source-line" id="L433"><a class="line-number" href="#L433">433</a>                column++;</span>
+<span class="source-line" id="L434"><a class="line-number" href="#L434">434</a>            }</span>
+<span class="source-line" id="L435"><a class="line-number" href="#L435">435</a>            row++;</span>
+<span class="source-line" id="L436"><a class="line-number" href="#L436">436</a>        }</span>
+<span class="source-line" id="L437"><a class="line-number" href="#L437">437</a></span>
+<span class="source-line" id="L438"><a class="line-number" href="#L438">438</a>        UInt32 clearStartY = _height - _lineHeight;</span>
+<span class="source-line" id="L439"><a class="line-number" href="#L439">439</a>        row = clearStartY;</span>
+<span class="source-line" id="L440"><a class="line-number" href="#L440">440</a>        while (row &lt; _height)</span>
+<span class="source-line" id="L441"><a class="line-number" href="#L441">441</a>        {</span>
+<span class="source-line" id="L442"><a class="line-number" href="#L442">442</a>            UInt64 destinationIndex = ((UInt64)row * (UInt64)_pitch);</span>
+<span class="source-line" id="L443"><a class="line-number" href="#L443">443</a>            if (destinationIndex + _pitch &gt; framebufferPixels) return false;</span>
+<span class="source-line" id="L444"><a class="line-number" href="#L444">444</a>            UInt32 column = 0U;</span>
+<span class="source-line" id="L445"><a class="line-number" href="#L445">445</a>            while (column &lt; _pitch)</span>
+<span class="source-line" id="L446"><a class="line-number" href="#L446">446</a>            {</span>
+<span class="source-line" id="L447"><a class="line-number" href="#L447">447</a>                pixels[destinationIndex + column] = _background;</span>
+<span class="source-line" id="L448"><a class="line-number" href="#L448">448</a>                column++;</span>
+<span class="source-line" id="L449"><a class="line-number" href="#L449">449</a>            }</span>
+<span class="source-line" id="L450"><a class="line-number" href="#L450">450</a>            row++;</span>
+<span class="source-line" id="L451"><a class="line-number" href="#L451">451</a>        }</span>
+<span class="source-line" id="L452"><a class="line-number" href="#L452">452</a>        MarkDirtyRectangle(0U, _margin, _width, _height - _margin);</span>
+<span class="source-line" id="L453"><a class="line-number" href="#L453">453</a>        return _cursorY &lt;= _height - _fontSize;</span>
+<span class="source-line" id="L454"><a class="line-number" href="#L454">454</a>    }</span>
+<span class="source-line" id="L455"><a class="line-number" href="#L455">455</a></span>
+<span class="source-line" id="L456"><a class="line-number" href="#L456">456</a>    private Boolean DrawGlyph(Byte value, UInt32 originX, UInt32 originY)</span>
+<span class="source-line" id="L457"><a class="line-number" href="#L457">457</a>    {</span>
+<span class="source-line" id="L458"><a class="line-number" href="#L458">458</a>        UInt32 renderedRow = 0U;</span>
+<span class="source-line" id="L459"><a class="line-number" href="#L459">459</a>        while (renderedRow &lt; _fontSize)</span>
+<span class="source-line" id="L460"><a class="line-number" href="#L460">460</a>        {</span>
+<span class="source-line" id="L461"><a class="line-number" href="#L461">461</a>            UInt32 sourceRow = BitmapFont.GetSourceRow(renderedRow, _fontSize);</span>
+<span class="source-line" id="L462"><a class="line-number" href="#L462">462</a>            UInt32 bits = BitmapFont.GetGlyphRow(value, sourceRow);</span>
+<span class="source-line" id="L463"><a class="line-number" href="#L463">463</a>            UInt32 renderedColumn = 0U;</span>
+<span class="source-line" id="L464"><a class="line-number" href="#L464">464</a>            while (renderedColumn &lt; _glyphWidth)</span>
+<span class="source-line" id="L465"><a class="line-number" href="#L465">465</a>            {</span>
+<span class="source-line" id="L466"><a class="line-number" href="#L466">466</a>                UInt32 sourceColumn = BitmapFont.GetSourceColumn(renderedColumn, _glyphWidth);</span>
+<span class="source-line" id="L467"><a class="line-number" href="#L467">467</a>                UInt32 mask = 1U &lt;&lt; (Int32)((BitmapFont.GlyphWidth - 1U) - sourceColumn);</span>
+<span class="source-line" id="L468"><a class="line-number" href="#L468">468</a>                if ((bits &amp; mask) != 0U)</span>
+<span class="source-line" id="L469"><a class="line-number" href="#L469">469</a>                {</span>
+<span class="source-line" id="L470"><a class="line-number" href="#L470">470</a>                    if (!DrawPixel(originX + renderedColumn, originY + renderedRow)) return false;</span>
+<span class="source-line" id="L471"><a class="line-number" href="#L471">471</a>                }</span>
+<span class="source-line" id="L472"><a class="line-number" href="#L472">472</a>                renderedColumn++;</span>
+<span class="source-line" id="L473"><a class="line-number" href="#L473">473</a>            }</span>
+<span class="source-line" id="L474"><a class="line-number" href="#L474">474</a>            renderedRow++;</span>
+<span class="source-line" id="L475"><a class="line-number" href="#L475">475</a>        }</span>
+<span class="source-line" id="L476"><a class="line-number" href="#L476">476</a>        MarkDirtyRectangle(originX, originY, _glyphWidth, _fontSize);</span>
+<span class="source-line" id="L477"><a class="line-number" href="#L477">477</a>        return true;</span>
+<span class="source-line" id="L478"><a class="line-number" href="#L478">478</a>    }</span>
+<span class="source-line" id="L479"><a class="line-number" href="#L479">479</a></span>
+<span class="source-line" id="L480"><a class="line-number" href="#L480">480</a>    private Boolean DrawPixel(UInt32 pixelX, UInt32 pixelY)</span>
+<span class="source-line" id="L481"><a class="line-number" href="#L481">481</a>    {</span>
+<span class="source-line" id="L482"><a class="line-number" href="#L482">482</a>        if (pixelX &gt;= _width || pixelY &gt;= _height) return false;</span>
+<span class="source-line" id="L483"><a class="line-number" href="#L483">483</a>        UInt64 index = ((UInt64)pixelY * (UInt64)_pitch) + pixelX;</span>
+<span class="source-line" id="L484"><a class="line-number" href="#L484">484</a>        if (index &gt;= _size / 4UL) return false;</span>
+<span class="source-line" id="L485"><a class="line-number" href="#L485">485</a>        *((UInt32*)GetRenderAddress() + index) = _foreground;</span>
+<span class="source-line" id="L486"><a class="line-number" href="#L486">486</a>        return true;</span>
+<span class="source-line" id="L487"><a class="line-number" href="#L487">487</a>    }</span>
+<span class="source-line" id="L488"><a class="line-number" href="#L488">488</a></span>
+<span class="source-line" id="L489"><a class="line-number" href="#L489">489</a>    private UInt64 GetRenderAddress()</span>
+<span class="source-line" id="L490"><a class="line-number" href="#L490">490</a>    {</span>
+<span class="source-line" id="L491"><a class="line-number" href="#L491">491</a>        return _bufferCount == 1U ? _address : _drawBuffer;</span>
+<span class="source-line" id="L492"><a class="line-number" href="#L492">492</a>    }</span>
+<span class="source-line" id="L493"><a class="line-number" href="#L493">493</a></span>
+<span class="source-line" id="L494"><a class="line-number" href="#L494">494</a>    private Boolean Present()</span>
+<span class="source-line" id="L495"><a class="line-number" href="#L495">495</a>    {</span>
+<span class="source-line" id="L496"><a class="line-number" href="#L496">496</a>        if (!_dirty) return true;</span>
+<span class="source-line" id="L497"><a class="line-number" href="#L497">497</a>        if (_bufferCount == 1U)</span>
+<span class="source-line" id="L498"><a class="line-number" href="#L498">498</a>        {</span>
+<span class="source-line" id="L499"><a class="line-number" href="#L499">499</a>            ResetDirty();</span>
+<span class="source-line" id="L500"><a class="line-number" href="#L500">500</a>            return true;</span>
+<span class="source-line" id="L501"><a class="line-number" href="#L501">501</a>        }</span>
+<span class="source-line" id="L502"><a class="line-number" href="#L502">502</a>        if (_drawBuffer == 0UL || !CopyRegion(_drawBuffer, _address, _dirtyLeft, _dirtyTop, _dirtyRight, _dirtyBottom)) return false;</span>
+<span class="source-line" id="L503"><a class="line-number" href="#L503">503</a>        if (_bufferCount == 2U)</span>
+<span class="source-line" id="L504"><a class="line-number" href="#L504">504</a>        {</span>
+<span class="source-line" id="L505"><a class="line-number" href="#L505">505</a>            ResetDirty();</span>
+<span class="source-line" id="L506"><a class="line-number" href="#L506">506</a>            return true;</span>
+<span class="source-line" id="L507"><a class="line-number" href="#L507">507</a>        }</span>
+<span class="source-line" id="L508"><a class="line-number" href="#L508">508</a>        UInt64 next = _drawBuffer == _backBufferA ? _backBufferB : _backBufferA;</span>
+<span class="source-line" id="L509"><a class="line-number" href="#L509">509</a>        if (next == 0UL || !CopyRegion(_drawBuffer, next, _dirtyLeft, _dirtyTop, _dirtyRight, _dirtyBottom)) return false;</span>
+<span class="source-line" id="L510"><a class="line-number" href="#L510">510</a>        _drawBuffer = next;</span>
+<span class="source-line" id="L511"><a class="line-number" href="#L511">511</a>        ResetDirty();</span>
+<span class="source-line" id="L512"><a class="line-number" href="#L512">512</a>        return true;</span>
+<span class="source-line" id="L513"><a class="line-number" href="#L513">513</a>    }</span>
+<span class="source-line" id="L514"><a class="line-number" href="#L514">514</a></span>
+<span class="source-line" id="L515"><a class="line-number" href="#L515">515</a>    private Boolean CopyRegion(UInt64 sourceAddress, UInt64 destinationAddress, UInt32 left, UInt32 top, UInt32 right, UInt32 bottom)</span>
+<span class="source-line" id="L516"><a class="line-number" href="#L516">516</a>    {</span>
+<span class="source-line" id="L517"><a class="line-number" href="#L517">517</a>        if (sourceAddress == 0UL || destinationAddress == 0UL) return false;</span>
+<span class="source-line" id="L518"><a class="line-number" href="#L518">518</a>        if ((sourceAddress &amp; 3UL) != 0UL || (destinationAddress &amp; 3UL) != 0UL) return false;</span>
+<span class="source-line" id="L519"><a class="line-number" href="#L519">519</a>        if (left &gt;= right || top &gt;= bottom || right &gt; _width || bottom &gt; _height) return false;</span>
+<span class="source-line" id="L520"><a class="line-number" href="#L520">520</a>        UInt32* source = (UInt32*)sourceAddress;</span>
+<span class="source-line" id="L521"><a class="line-number" href="#L521">521</a>        UInt32* destination = (UInt32*)destinationAddress;</span>
+<span class="source-line" id="L522"><a class="line-number" href="#L522">522</a>        UInt32 row = top;</span>
+<span class="source-line" id="L523"><a class="line-number" href="#L523">523</a>        while (row &lt; bottom)</span>
+<span class="source-line" id="L524"><a class="line-number" href="#L524">524</a>        {</span>
+<span class="source-line" id="L525"><a class="line-number" href="#L525">525</a>            UInt64 rowStart = (UInt64)row * (UInt64)_pitch;</span>
+<span class="source-line" id="L526"><a class="line-number" href="#L526">526</a>            UInt64 start = rowStart + left;</span>
+<span class="source-line" id="L527"><a class="line-number" href="#L527">527</a>            UInt64 end = rowStart + right;</span>
+<span class="source-line" id="L528"><a class="line-number" href="#L528">528</a>            if (end &gt; _size / 4UL) return false;</span>
+<span class="source-line" id="L529"><a class="line-number" href="#L529">529</a>            UInt64 index = start;</span>
+<span class="source-line" id="L530"><a class="line-number" href="#L530">530</a>            while (index &lt; end)</span>
+<span class="source-line" id="L531"><a class="line-number" href="#L531">531</a>            {</span>
+<span class="source-line" id="L532"><a class="line-number" href="#L532">532</a>                destination[index] = source[index];</span>
+<span class="source-line" id="L533"><a class="line-number" href="#L533">533</a>                index++;</span>
+<span class="source-line" id="L534"><a class="line-number" href="#L534">534</a>            }</span>
+<span class="source-line" id="L535"><a class="line-number" href="#L535">535</a>            row++;</span>
+<span class="source-line" id="L536"><a class="line-number" href="#L536">536</a>        }</span>
+<span class="source-line" id="L537"><a class="line-number" href="#L537">537</a>        return true;</span>
+<span class="source-line" id="L538"><a class="line-number" href="#L538">538</a>    }</span>
+<span class="source-line" id="L539"><a class="line-number" href="#L539">539</a></span>
+<span class="source-line" id="L540"><a class="line-number" href="#L540">540</a>    private void MarkDirtyRectangle(UInt32 left, UInt32 top, UInt32 width, UInt32 height)</span>
+<span class="source-line" id="L541"><a class="line-number" href="#L541">541</a>    {</span>
+<span class="source-line" id="L542"><a class="line-number" href="#L542">542</a>        if (width == 0U || height == 0U || left &gt;= _width || top &gt;= _height) return;</span>
+<span class="source-line" id="L543"><a class="line-number" href="#L543">543</a>        UInt64 right64 = (UInt64)left + width;</span>
+<span class="source-line" id="L544"><a class="line-number" href="#L544">544</a>        UInt64 bottom64 = (UInt64)top + height;</span>
+<span class="source-line" id="L545"><a class="line-number" href="#L545">545</a>        UInt32 right = right64 &gt; _width ? _width : (UInt32)right64;</span>
+<span class="source-line" id="L546"><a class="line-number" href="#L546">546</a>        UInt32 bottom = bottom64 &gt; _height ? _height : (UInt32)bottom64;</span>
+<span class="source-line" id="L547"><a class="line-number" href="#L547">547</a>        if (right &lt;= left || bottom &lt;= top) return;</span>
+<span class="source-line" id="L548"><a class="line-number" href="#L548">548</a>        if (!_dirty)</span>
+<span class="source-line" id="L549"><a class="line-number" href="#L549">549</a>        {</span>
+<span class="source-line" id="L550"><a class="line-number" href="#L550">550</a>            _dirty = true;</span>
+<span class="source-line" id="L551"><a class="line-number" href="#L551">551</a>            _dirtyLeft = left;</span>
+<span class="source-line" id="L552"><a class="line-number" href="#L552">552</a>            _dirtyTop = top;</span>
+<span class="source-line" id="L553"><a class="line-number" href="#L553">553</a>            _dirtyRight = right;</span>
+<span class="source-line" id="L554"><a class="line-number" href="#L554">554</a>            _dirtyBottom = bottom;</span>
+<span class="source-line" id="L555"><a class="line-number" href="#L555">555</a>            return;</span>
+<span class="source-line" id="L556"><a class="line-number" href="#L556">556</a>        }</span>
+<span class="source-line" id="L557"><a class="line-number" href="#L557">557</a>        if (left &lt; _dirtyLeft) _dirtyLeft = left;</span>
+<span class="source-line" id="L558"><a class="line-number" href="#L558">558</a>        if (top &lt; _dirtyTop) _dirtyTop = top;</span>
+<span class="source-line" id="L559"><a class="line-number" href="#L559">559</a>        if (right &gt; _dirtyRight) _dirtyRight = right;</span>
+<span class="source-line" id="L560"><a class="line-number" href="#L560">560</a>        if (bottom &gt; _dirtyBottom) _dirtyBottom = bottom;</span>
+<span class="source-line" id="L561"><a class="line-number" href="#L561">561</a>    }</span>
+<span class="source-line" id="L562"><a class="line-number" href="#L562">562</a></span>
+<span class="source-line" id="L563"><a class="line-number" href="#L563">563</a>    private void ResetDirty()</span>
+<span class="source-line" id="L564"><a class="line-number" href="#L564">564</a>    {</span>
+<span class="source-line" id="L565"><a class="line-number" href="#L565">565</a>        _dirty = false;</span>
+<span class="source-line" id="L566"><a class="line-number" href="#L566">566</a>        _dirtyLeft = 0U;</span>
+<span class="source-line" id="L567"><a class="line-number" href="#L567">567</a>        _dirtyTop = 0U;</span>
+<span class="source-line" id="L568"><a class="line-number" href="#L568">568</a>        _dirtyRight = 0U;</span>
+<span class="source-line" id="L569"><a class="line-number" href="#L569">569</a>        _dirtyBottom = 0U;</span>
+<span class="source-line" id="L570"><a class="line-number" href="#L570">570</a>    }</span>
+<span class="source-line" id="L571"><a class="line-number" href="#L571">571</a></span>
+<span class="source-line" id="L572"><a class="line-number" href="#L572">572</a>    private Boolean CopyFrame(UInt64 sourceAddress, UInt64 destinationAddress)</span>
+<span class="source-line" id="L573"><a class="line-number" href="#L573">573</a>    {</span>
+<span class="source-line" id="L574"><a class="line-number" href="#L574">574</a>        if (sourceAddress == 0UL || destinationAddress == 0UL) return false;</span>
+<span class="source-line" id="L575"><a class="line-number" href="#L575">575</a>        if ((sourceAddress &amp; 3UL) != 0UL || (destinationAddress &amp; 3UL) != 0UL) return false;</span>
+<span class="source-line" id="L576"><a class="line-number" href="#L576">576</a>        UInt64 pixelCount = _frameByteCount / 4UL;</span>
+<span class="source-line" id="L577"><a class="line-number" href="#L577">577</a>        if (pixelCount == 0UL || _frameByteCount &gt; _size) return false;</span>
+<span class="source-line" id="L578"><a class="line-number" href="#L578">578</a>        UInt32* source = (UInt32*)sourceAddress;</span>
+<span class="source-line" id="L579"><a class="line-number" href="#L579">579</a>        UInt32* destination = (UInt32*)destinationAddress;</span>
+<span class="source-line" id="L580"><a class="line-number" href="#L580">580</a>        UInt64 index = 0UL;</span>
+<span class="source-line" id="L581"><a class="line-number" href="#L581">581</a>        while (index &lt; pixelCount)</span>
+<span class="source-line" id="L582"><a class="line-number" href="#L582">582</a>        {</span>
+<span class="source-line" id="L583"><a class="line-number" href="#L583">583</a>            destination[index] = source[index];</span>
+<span class="source-line" id="L584"><a class="line-number" href="#L584">584</a>            index++;</span>
+<span class="source-line" id="L585"><a class="line-number" href="#L585">585</a>        }</span>
+<span class="source-line" id="L586"><a class="line-number" href="#L586">586</a>        return true;</span>
+<span class="source-line" id="L587"><a class="line-number" href="#L587">587</a>    }</span>
+<span class="source-line" id="L588"><a class="line-number" href="#L588">588</a></span>
+<span class="source-line" id="L589"><a class="line-number" href="#L589">589</a>    private UInt32 PackColor(Byte red, Byte green, Byte blue)</span>
+<span class="source-line" id="L590"><a class="line-number" href="#L590">590</a>    {</span>
+<span class="source-line" id="L591"><a class="line-number" href="#L591">591</a>        if (_pixelFormat == 0U) return (UInt32)red | ((UInt32)green &lt;&lt; 8) | ((UInt32)blue &lt;&lt; 16);</span>
+<span class="source-line" id="L592"><a class="line-number" href="#L592">592</a>        if (_pixelFormat == 1U) return (UInt32)blue | ((UInt32)green &lt;&lt; 8) | ((UInt32)red &lt;&lt; 16);</span>
+<span class="source-line" id="L593"><a class="line-number" href="#L593">593</a>        return EncodeMask(red, _redMask) | EncodeMask(green, _greenMask) | EncodeMask(blue, _blueMask);</span>
+<span class="source-line" id="L594"><a class="line-number" href="#L594">594</a>    }</span>
+<span class="source-line" id="L595"><a class="line-number" href="#L595">595</a></span>
+<span class="source-line" id="L596"><a class="line-number" href="#L596">596</a>    private static Boolean IsContiguousMask(UInt32 mask)</span>
+<span class="source-line" id="L597"><a class="line-number" href="#L597">597</a>    {</span>
+<span class="source-line" id="L598"><a class="line-number" href="#L598">598</a>        while ((mask &amp; 1U) == 0U) mask &gt;&gt;= 1;</span>
+<span class="source-line" id="L599"><a class="line-number" href="#L599">599</a>        while ((mask &amp; 1U) != 0U) mask &gt;&gt;= 1;</span>
+<span class="source-line" id="L600"><a class="line-number" href="#L600">600</a>        return mask == 0U;</span>
+<span class="source-line" id="L601"><a class="line-number" href="#L601">601</a>    }</span>
+<span class="source-line" id="L602"><a class="line-number" href="#L602">602</a></span>
+<span class="source-line" id="L603"><a class="line-number" href="#L603">603</a>    private static UInt32 EncodeMask(Byte component, UInt32 mask)</span>
+<span class="source-line" id="L604"><a class="line-number" href="#L604">604</a>    {</span>
+<span class="source-line" id="L605"><a class="line-number" href="#L605">605</a>        UInt32 shift = 0U;</span>
+<span class="source-line" id="L606"><a class="line-number" href="#L606">606</a>        while (((mask &gt;&gt; (Int32)shift) &amp; 1U) == 0U &amp;&amp; shift &lt; 31U) shift++;</span>
+<span class="source-line" id="L607"><a class="line-number" href="#L607">607</a>        UInt32 shiftedMask = mask &gt;&gt; (Int32)shift;</span>
+<span class="source-line" id="L608"><a class="line-number" href="#L608">608</a>        UInt32 bits = 0U;</span>
+<span class="source-line" id="L609"><a class="line-number" href="#L609">609</a>        while ((shiftedMask &amp; 1U) != 0U)</span>
+<span class="source-line" id="L610"><a class="line-number" href="#L610">610</a>        {</span>
+<span class="source-line" id="L611"><a class="line-number" href="#L611">611</a>            bits++;</span>
+<span class="source-line" id="L612"><a class="line-number" href="#L612">612</a>            shiftedMask &gt;&gt;= 1;</span>
+<span class="source-line" id="L613"><a class="line-number" href="#L613">613</a>        }</span>
+<span class="source-line" id="L614"><a class="line-number" href="#L614">614</a>        UInt64 maximum = bits == 32U ? 0xFFFFFFFFUL : ((1UL &lt;&lt; (Int32)bits) - 1UL);</span>
+<span class="source-line" id="L615"><a class="line-number" href="#L615">615</a>        UInt32 encoded = (UInt32)(((UInt64)component * maximum) / 255UL);</span>
+<span class="source-line" id="L616"><a class="line-number" href="#L616">616</a>        return (encoded &lt;&lt; (Int32)shift) &amp; mask;</span>
+<span class="source-line" id="L617"><a class="line-number" href="#L617">617</a>    }</span>
+<span class="source-line" id="L618"><a class="line-number" href="#L618">618</a>}</span>
+<span class="source-line" id="L619"><a class="line-number" href="#L619">619</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

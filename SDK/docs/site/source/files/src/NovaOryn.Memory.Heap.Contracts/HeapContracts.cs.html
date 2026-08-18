@@ -1,0 +1,203 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Memory.Heap.Contracts/HeapContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Memory.Heap.Contracts/HeapContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Core;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Memory.Heap;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Identifies a heap allocation policy supplied by NovaOryn or an SDK consumer.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;nova.when&gt;Use when selecting or reporting the raw-storage methodology behind a kernel heap.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;nova.depends&gt;NovaOryn.Core&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>public enum KernelHeapMethodology</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>{</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    /// &lt;summary&gt;Uses monotonic bump allocation; individual releases are not supported.&lt;/summary&gt;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    Bump = 0,</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;summary&gt;Uses address-ordered first-fit allocation with adjacent-block coalescing.&lt;/summary&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    FirstFit = 1,</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    /// &lt;summary&gt;Uses an SDK-consumer implementation of the heap contract.&lt;/summary&gt;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    Custom = 2</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>}</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a></span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>/// &lt;summary&gt;Describes one allocation request independently of a particular heap implementation.&lt;/summary&gt;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>/// &lt;nova.when&gt;Use when requesting raw kernel storage from an &lt;see cref=&quot;IKernelHeap&quot;/&gt;.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>/// &lt;nova.depends&gt;IKernelHeap&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>public readonly struct KernelHeapAllocationRequest</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>{</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    /// &lt;summary&gt;Creates a heap request.&lt;/summary&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    /// &lt;nova.when&gt;Use when the caller needs explicit byte alignment or zero-fill semantics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    /// &lt;nova.depends&gt;IKernelHeap.TryAllocate&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    /// &lt;param name=&quot;byteCount&quot;&gt;Number of usable bytes required.&lt;/param&gt;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    /// &lt;param name=&quot;alignment&quot;&gt;Power-of-two byte alignment.&lt;/param&gt;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;param name=&quot;zeroFill&quot;&gt;Whether the returned bytes must be cleared before use.&lt;/param&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    /// &lt;returns&gt;A new immutable allocation request.&lt;/returns&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    /// &lt;example&gt;&lt;code&gt;KernelHeapAllocationRequest request = new(4096, 64, true);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    public KernelHeapAllocationRequest(ulong byteCount, ulong alignment, bool zeroFill)</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    { ByteCount = byteCount; Alignment = alignment; ZeroFill = zeroFill; }</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a></span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    /// &lt;summary&gt;Gets the requested usable byte count.&lt;/summary&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;nova.when&gt;Use when validating or executing an allocation request.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    /// &lt;nova.depends&gt;The value supplied to the constructor.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    public ulong ByteCount { get; }</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a></span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    /// &lt;summary&gt;Gets the requested power-of-two byte alignment.&lt;/summary&gt;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    /// &lt;nova.when&gt;Use when positioning the returned raw storage.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    /// &lt;nova.depends&gt;The value supplied to the constructor.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    public ulong Alignment { get; }</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a></span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    /// &lt;summary&gt;Gets whether the implementation must clear returned storage.&lt;/summary&gt;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    /// &lt;nova.when&gt;Use when deciding whether allocation completion requires zero filling.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    /// &lt;nova.depends&gt;The value supplied to the constructor.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    public bool ZeroFill { get; }</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a></span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;summary&gt;Creates a conventional 16-byte-aligned zero-filled request.&lt;/summary&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;nova.when&gt;Use for general kernel data that does not require a stronger alignment.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;nova.depends&gt;IKernelHeap.TryAllocate&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;param name=&quot;byteCount&quot;&gt;Number of usable bytes required.&lt;/param&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    /// &lt;returns&gt;A 16-byte-aligned zero-filled request.&lt;/returns&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    /// &lt;example&gt;&lt;code&gt;KernelHeapAllocationRequest request = KernelHeapAllocationRequest.Default(128);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    public static KernelHeapAllocationRequest Default(ulong byteCount) =&gt; new(byteCount, 16UL, true);</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>}</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a></span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>/// &lt;summary&gt;Identifies one live heap allocation without exposing allocator metadata.&lt;/summary&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>/// &lt;nova.when&gt;Retain this value until the corresponding raw storage is released.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>/// &lt;nova.depends&gt;IKernelHeap.TryAllocate, IKernelHeap.TryRelease&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>public readonly struct KernelHeapAllocation</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>{</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    /// &lt;summary&gt;Creates a heap allocation value.&lt;/summary&gt;</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    /// &lt;nova.when&gt;Use from heap implementations when returning a newly created live allocation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    /// &lt;nova.depends&gt;IKernelHeap implementations&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    /// &lt;param name=&quot;token&quot;&gt;Opaque implementation-defined token.&lt;/param&gt;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    /// &lt;param name=&quot;address&quot;&gt;First usable virtual byte.&lt;/param&gt;</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    /// &lt;param name=&quot;byteCount&quot;&gt;Usable allocation length.&lt;/param&gt;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    /// &lt;returns&gt;A new immutable allocation descriptor.&lt;/returns&gt;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    /// &lt;example&gt;&lt;code&gt;KernelHeapAllocation allocation = new(1, 0x100000, 256);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    public KernelHeapAllocation(ulong token, ulong address, ulong byteCount)</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    { Token = token; Address = address; ByteCount = byteCount; }</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a></span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>    /// &lt;summary&gt;Gets the opaque allocation token.&lt;/summary&gt;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    /// &lt;nova.when&gt;Use together with the address and length when validating an exact release.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>    /// &lt;nova.depends&gt;The heap implementation that created the allocation.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    public ulong Token { get; }</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a></span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    /// &lt;summary&gt;Gets the first usable virtual byte.&lt;/summary&gt;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>    /// &lt;nova.when&gt;Use as the raw-storage address owned by this allocation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    /// &lt;nova.depends&gt;The heap implementation that created the allocation.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>    public ulong Address { get; }</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a></span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>    /// &lt;summary&gt;Gets the usable allocation length.&lt;/summary&gt;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>    /// &lt;nova.when&gt;Use when bounding access to the allocation or validating an exact release.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    /// &lt;nova.depends&gt;The heap implementation that created the allocation.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>    public ulong ByteCount { get; }</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>}</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a></span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>/// &lt;summary&gt;Provides implementation-independent heap accounting.&lt;/summary&gt;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>/// &lt;nova.when&gt;Use for diagnostics, capacity planning, and allocator instrumentation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>/// &lt;nova.depends&gt;IKernelHeap.GetStatistics&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>public readonly struct KernelHeapStatistics</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>{</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    /// &lt;summary&gt;Creates one statistics snapshot.&lt;/summary&gt;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    /// &lt;nova.when&gt;Use from heap implementations when reporting their current accounting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    /// &lt;nova.depends&gt;IKernelHeap.GetStatistics&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    /// &lt;returns&gt;A new immutable statistics snapshot.&lt;/returns&gt;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    /// &lt;example&gt;&lt;code&gt;KernelHeapStatistics stats = new(65536, 65536, 4096, 61440, 8192, 1, 2);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    public KernelHeapStatistics(ulong reservedBytes, ulong committedBytes, ulong allocatedBytes, ulong freeBytes, ulong peakAllocatedBytes, int liveAllocations, int freeBlocks)</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    { ReservedBytes=reservedBytes; CommittedBytes=committedBytes; AllocatedBytes=allocatedBytes; FreeBytes=freeBytes; PeakAllocatedBytes=peakAllocatedBytes; LiveAllocations=liveAllocations; FreeBlocks=freeBlocks; }</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a></span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>    /// &lt;summary&gt;Gets the virtual reservation capacity.&lt;/summary&gt;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>    /// &lt;nova.when&gt;Use when comparing committed heap backing with the total address reservation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>    /// &lt;nova.depends&gt;The reporting heap implementation.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>    public ulong ReservedBytes { get; }</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a></span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>    /// &lt;summary&gt;Gets bytes currently backed by physical memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>    /// &lt;nova.when&gt;Use when measuring current committed heap capacity.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>    /// &lt;nova.depends&gt;The reporting heap implementation.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>    public ulong CommittedBytes { get; }</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a></span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>    /// &lt;summary&gt;Gets usable bytes currently owned by live allocations.&lt;/summary&gt;</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>    /// &lt;nova.when&gt;Use when measuring current heap consumption.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>    /// &lt;nova.depends&gt;The reporting heap implementation.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    public ulong AllocatedBytes { get; }</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a></span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>    /// &lt;summary&gt;Gets committed bytes currently available for reuse.&lt;/summary&gt;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>    /// &lt;nova.when&gt;Use when deciding whether heap growth is likely to be required.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>    /// &lt;nova.depends&gt;The reporting heap implementation.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>    public ulong FreeBytes { get; }</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a></span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>    /// &lt;summary&gt;Gets the maximum simultaneously allocated byte count observed.&lt;/summary&gt;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>    /// &lt;nova.when&gt;Use for high-water-mark diagnostics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>    /// &lt;nova.depends&gt;The reporting heap implementation.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>    public ulong PeakAllocatedBytes { get; }</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a></span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>    /// &lt;summary&gt;Gets the live allocation count.&lt;/summary&gt;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>    /// &lt;nova.when&gt;Use for allocation-lifetime diagnostics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>    /// &lt;nova.depends&gt;The reporting heap implementation.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>    public int LiveAllocations { get; }</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a></span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>    /// &lt;summary&gt;Gets the current free-block count.&lt;/summary&gt;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>    /// &lt;nova.when&gt;Use as a simple fragmentation indicator.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>    /// &lt;nova.depends&gt;The reporting heap implementation.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>    public int FreeBlocks { get; }</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>}</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a></span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>/// &lt;summary&gt;Defines the common raw-storage contract for kernel heap methodologies.&lt;/summary&gt;</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>/// &lt;nova.when&gt;Implement to provide a custom heap while retaining NovaOryn-compatible allocation semantics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>/// &lt;nova.depends&gt;KernelHeapAllocationRequest, KernelHeapAllocation, KernelHeapStatistics&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>public interface IKernelHeap</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>{</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>    /// &lt;summary&gt;Gets the selected methodology.&lt;/summary&gt;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>    /// &lt;nova.when&gt;Use for diagnostics or methodology-specific policy decisions.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>    /// &lt;nova.depends&gt;The concrete heap implementation.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>    KernelHeapMethodology Methodology { get; }</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a></span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>    /// &lt;summary&gt;Attempts to allocate one raw byte range.&lt;/summary&gt;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>    /// &lt;nova.when&gt;Use whenever a kernel subsystem needs heap-owned raw storage.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>    /// &lt;nova.depends&gt;A valid request and sufficient implementation capacity.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when a live allocation was created.&lt;/returns&gt;</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>    /// &lt;example&gt;&lt;code&gt;bool ok = heap.TryAllocate(KernelHeapAllocationRequest.Default(128), out KernelHeapAllocation allocation);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>    bool TryAllocate(KernelHeapAllocationRequest request, out KernelHeapAllocation allocation);</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a></span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>    /// &lt;summary&gt;Attempts to release one exact live allocation.&lt;/summary&gt;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>    /// &lt;nova.when&gt;Use when storage returned by this heap is no longer required.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>    /// &lt;nova.depends&gt;An allocation value previously returned by this heap.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the token and range identify a live allocation.&lt;/returns&gt;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>    /// &lt;example&gt;&lt;code&gt;bool released = heap.TryRelease(allocation);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>    bool TryRelease(KernelHeapAllocation allocation);</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a></span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>    /// &lt;summary&gt;Gets current allocation accounting.&lt;/summary&gt;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>    /// &lt;nova.when&gt;Use when reporting heap capacity, consumption, or fragmentation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>    /// &lt;nova.depends&gt;The concrete heap implementation.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>    /// &lt;returns&gt;An immutable heap statistics snapshot.&lt;/returns&gt;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>    /// &lt;example&gt;&lt;code&gt;KernelHeapStatistics statistics = heap.GetStatistics();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>    KernelHeapStatistics GetStatistics();</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>}</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a></span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>/// &lt;summary&gt;Defines monotonic storage used before the full kernel heap is available.&lt;/summary&gt;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>/// &lt;nova.when&gt;Implement when bootstrap code requires bounded raw storage before the normal kernel heap is online.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>/// &lt;nova.depends&gt;A caller-owned storage range with bootstrap lifetime.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>public interface IEarlyAllocator</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>{</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>    /// &lt;summary&gt;Attempts to allocate aligned bytes without requiring a corresponding release.&lt;/summary&gt;</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>    /// &lt;nova.when&gt;Use only for bootstrap-lifetime data that does not require individual deallocation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>    /// &lt;nova.depends&gt;A non-zero byte count, power-of-two alignment, and remaining arena capacity.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the early arena has sufficient space.&lt;/returns&gt;</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>    /// &lt;example&gt;&lt;code&gt;bool ok = allocator.TryAllocate(256, 16, out ulong address);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>    bool TryAllocate(ulong byteCount, ulong alignment, out ulong address);</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a></span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>    /// &lt;summary&gt;Gets the remaining unallocated byte count.&lt;/summary&gt;</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>    /// &lt;nova.when&gt;Use to determine whether bootstrap metadata can still fit in the early arena.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>    /// &lt;nova.depends&gt;The allocator&#39;s current monotonic offset.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>    /// &lt;returns&gt;Available bytes in the bounded early arena.&lt;/returns&gt;</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>    /// &lt;example&gt;&lt;code&gt;ulong remaining = allocator.GetRemainingBytes();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>    ulong GetRemainingBytes();</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>}</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

@@ -1,0 +1,505 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Bootstrap/Kernel.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Bootstrap/Kernel.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Kernel.Console;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Kernel.Platform.X64;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>using NovaOryn.Kernel.Memory;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>using NovaOryn.Kernel.VirtualMemory;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>using NovaOryn.Kernel.AddressSpace;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>using NovaOryn.Kernel.Heap;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>using NovaOryn.Kernel.Acpi;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>using NovaOryn.Kernel.TimerDispatch;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>using NovaOryn.Kernel.InterruptDispatch;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>using NovaOryn.Kernel.InterruptBroker;</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>using NovaOryn.Kernel.Time;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>using NovaOryn.Kernel.Smp;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>using NovaOryn.Kernel.Scheduler;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>using NovaOryn.Kernel.Protection;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>using NovaOryn.Kernel.SystemCalls;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>using NovaOryn.Kernel.Ps2;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>using NovaOryn.Kernel.Processes;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>using NovaOryn.Kernel.Drivers;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>using NovaOryn.Kernel.Storage;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>using NovaOryn.Kernel.Networking;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>using NovaOryn.Kernel.Pci;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>using NovaOryn.Kernel.Nvme;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>using NovaOryn.Kernel.Ahci;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>using NovaOryn.Kernel.Virtio;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>using NovaOryn.Kernel.Virtio.Gpu;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>using NovaOryn.Kernel.Graphics;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>using NovaOryn.Kernel.E1000;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>using NovaOryn.Kernel.Rtl8168;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>using NovaOryn.Bus.Usb;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>using NovaOryn.Usb.Xhci;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>using NovaOryn.Usb.Hid;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>using NovaOryn.Usb.MassStorage;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>using NovaOryn.Usb.Hub;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a></span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>namespace NovaOryn.Kernel.Bootstrap;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a></span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>/// &lt;summary&gt;Defines the authoritative freestanding NovaOryn bootstrap kernel.&lt;/summary&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>public static unsafe class Kernel</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>{</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;summary&gt;Initializes the kernel platform and enters the interrupt-driven interactive console.&lt;/summary&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    public static Boolean KMain(BootContext boot)</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    {</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>        if (!KernelConsole.Initialize(boot)) return false;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>        if (!KernelConsole.WriteLine(&quot;NovaOryn KMain started.&quot;)) return false;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>        if (!boot.HasFinalMemoryMap()) return false;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>        if (!KernelConsole.WriteLine(&quot;Final UEFI memory map retained; ExitBootServices succeeded.&quot;)) return false;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        if (!KernelPlatform.InitializeDescriptors()) return false;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>        if (!KernelConsole.WriteLine(&quot;GDT and TSS installed.&quot;)) return false;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>        if (!KernelPlatform.InitializeInterrupts()) return false;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>        if (!KernelConsole.WriteLine(&quot;IDT with 256 vectors installed.&quot;)) return false;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>        if (!KernelPlatform.DisableLegacyPic()) return false;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>        if (!KernelConsole.WriteLine(&quot;Legacy PIC masked; APIC/MSI controller layer ready.&quot;)) return false;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>        if (!KernelAcpi.Initialize(boot)) return false;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>        if (!KernelConsole.Write(&quot;ACPI status: &quot;)) return false;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>        if (!KernelConsole.WriteLine(KernelAcpi.GetLastStatusName())) return false;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>        if (!KernelConsole.Write(&quot;ACPI RSDP: &quot;)) return false;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>        if (!KernelConsole.WriteHex(KernelAcpi.GetRootPointerAddress())) return false;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>        if (!KernelConsole.Write(&quot;ACPI root table: &quot;)) return false;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>        if (!KernelConsole.WriteHex(KernelAcpi.GetRootTableAddress())) return false;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>        if (!KernelConsole.WriteLine(KernelAcpi.UsesXsdt() ? &quot; XSDT&quot; : &quot; RSDT&quot;)) return false;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>        if (!KernelConsole.Write(&quot;ACPI processors: &quot;)) return false;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>        if (!KernelConsole.WriteUInt64(KernelAcpi.GetProcessorCount())) return false;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>        if (!KernelConsole.Write(&quot;ACPI I/O APICs: &quot;)) return false;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>        if (!KernelConsole.WriteUInt64(KernelAcpi.GetIoApicCount())) return false;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>        if (KernelAcpi.TryGetLocalApicAddress(out UInt64 localApicAddress))</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>        {</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>            if (!KernelConsole.Write(&quot;Local APIC base: &quot;)) return false;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>            if (!KernelConsole.WriteHex(localApicAddress)) return false;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>            if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>        }</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>        if (KernelAcpi.TryGetPciEcam(0U, out AcpiPciEcamInfo ecam))</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>        {</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>            if (!KernelConsole.Write(&quot;PCI ECAM base: &quot;)) return false;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>            if (!KernelConsole.WriteHex(ecam.BaseAddress)) return false;</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>            if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        }</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>        if (KernelAcpi.TryGetHpet(out AcpiHpetInfo hpet))</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>        {</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>            if (!KernelConsole.Write(&quot;HPET base: &quot;)) return false;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>            if (!KernelConsole.WriteHex(hpet.BaseAddress)) return false;</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>            if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>        }</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>        if (!KernelAcpiFadt.Initialize()) return false;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>        if (!KernelAcpiPower.Initialize()) return false;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>        Boolean ecReady = KernelAcpiEc.Initialize();</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>        AcpiPowerCapabilities power = KernelAcpiPower.GetCapabilities();</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>        if (!KernelConsole.Write(&quot;ACPI FADT power reset/shutdown/button: &quot;)) return false;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>        if (!KernelConsole.Write(power.ResetAvailable ? &quot;yes&quot; : &quot;no&quot;)) return false;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>        if (!KernelConsole.Write(power.ShutdownAvailable ? &quot;yes&quot; : &quot;no&quot;)) return false;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>        if (!KernelConsole.WriteLine(power.PowerButtonAvailable ? &quot;yes&quot; : &quot;no&quot;)) return false;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>        if (!KernelConsole.Write(&quot;ACPI embedded controller: &quot;)) return false;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>        if (!KernelConsole.WriteLine(ecReady ? &quot;ECDT online&quot; : &quot;not advertised by ECDT&quot;)) return false;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>        if (!KernelConsole.WriteLine(&quot;ACPI MADT, MCFG, HPET, FADT and platform power services online.&quot;)) return false;</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>        if (!KernelTime.Initialize()) return false;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>        KernelTimeCapabilities timeCapabilities = KernelTime.GetCapabilities();</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>        if (!KernelConsole.Write(&quot;HPET: &quot;)) return false;</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>        if (!KernelConsole.Write(timeCapabilities.HasHpet ? &quot;online @ &quot; : &quot;unavailable&quot;)) return false;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>        if (timeCapabilities.HasHpet &amp;&amp; !KernelConsole.WriteFrequency(KernelHpet.GetFrequencyHz())) return false;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>        if (!KernelConsole.Write(&quot;TSC: &quot;)) return false;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>        if (!KernelConsole.Write(timeCapabilities.HasTsc ? &quot;available&quot; : &quot;unavailable&quot;)) return false;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>        if (timeCapabilities.HasTsc)</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>        {</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>            if (!KernelConsole.Write(timeCapabilities.HasInvariantTsc ? &quot; / invariant&quot; : &quot; / non-invariant&quot;)) return false;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>            if (KernelTsc.GetFrequencyHz() != 0UL)</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>            {</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>                if (!KernelConsole.Write(&quot; @ &quot;)) return false;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>                if (!KernelConsole.WriteFrequency(KernelTsc.GetFrequencyHz())) return false;</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>            }</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>        }</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>        if (!KernelConsole.Write(&quot;Monotonic clock source: &quot;)) return false;</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>        if (!KernelConsole.Write(KernelTime.GetClockSourceName())) return false;</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>        if (!KernelConsole.Write(&quot; @ &quot;)) return false;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>        if (!KernelConsole.WriteFrequency(KernelTime.GetClockFrequencyHz())) return false;</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>        if (!KernelConsole.Write(&quot;Local APIC timer: &quot;)) return false;</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>        if (!KernelConsole.WriteLine(KernelLocalApicTimer.IsAvailable() ? &quot;calibrated&quot; : &quot;unavailable&quot;)) return false;</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>        if (KernelLocalApicTimer.IsAvailable())</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>        {</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>            if (!KernelConsole.Write(&quot;Local APIC timer frequency: &quot;)) return false;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>            if (!KernelConsole.WriteFrequency(KernelLocalApicTimer.GetFrequencyHz())) return false;</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>            if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>        }</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>        if (!KernelConsole.Write(&quot;RTC/CMOS: &quot;)) return false;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>        if (KernelRtcCmos.TryRead(out KernelRtcDateTime rtc))</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>        {</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>            if (!KernelConsole.WriteUInt64(rtc.Year)) return false;</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>            if (!KernelConsole.Write(&quot;-&quot;)) return false;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>            if (!KernelConsole.WriteUInt64(rtc.Month)) return false;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>            if (!KernelConsole.Write(&quot;-&quot;)) return false;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>            if (!KernelConsole.WriteUInt64(rtc.Day)) return false;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>            if (!KernelConsole.Write(&quot; &quot;)) return false;</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>            if (!KernelConsole.WriteUInt64(rtc.Hour)) return false;</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>            if (!KernelConsole.Write(&quot;:&quot;)) return false;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>            if (!KernelConsole.WriteUInt64(rtc.Minute)) return false;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>            if (!KernelConsole.Write(&quot;:&quot;)) return false;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>            if (!KernelConsole.WriteUInt64(rtc.Second)) return false;</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>            if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>        }</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>        else if (!KernelConsole.WriteLine(&quot;unavailable&quot;)) return false;</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>        if (!KernelConsole.WriteLine(&quot;HPET, Local APIC timer, TSC, RTC/CMOS and invariant-TSC clock source online.&quot;)) return false;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>        if (!KernelPhysicalMemory.Initialize(boot)) return false;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>        KernelPhysicalMemoryStatistics physicalMemory = KernelPhysicalMemory.GetStatistics();</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>        if (!KernelConsole.Write(&quot;Physical memory managed/free/reserved: &quot;)) return false;</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>        if (!KernelConsole.WriteByteSize(physicalMemory.ManagedPages * 4096UL)) return false;</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>        if (!KernelConsole.WriteByteSize(physicalMemory.FreePages * 4096UL)) return false;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>        if (!KernelConsole.WriteByteSize(physicalMemory.ReservedPages * 4096UL)) return false;</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>        if (!KernelConsole.WriteLine(&quot;Physical memory manager initialized from final UEFI map.&quot;)) return false;</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>        if (!KernelVirtualMemory.Initialize()) return false;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>        if (!KernelConsole.WriteLine(&quot;Virtual memory manager attached to active x64 page tables.&quot;)) return false;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>        Boolean addressSpaceReady = KernelAddressSpace.Initialize();</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>        if (!KernelConsole.Write(&quot;Kernel address-space status: &quot;)) return false;</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>        if (!KernelConsole.WriteLine(KernelAddressSpace.GetLastStatusName())) return false;</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>        if (!addressSpaceReady)</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>        {</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>            if (!KernelConsole.Write(&quot;Virtual memory status: &quot;)) return false;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>            if (!KernelConsole.WriteLine(KernelVirtualMemory.GetLastStatusName())) return false;</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>            return false;</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>        }</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>        if (!KernelConsole.Write(&quot;Kernel image base: &quot;)) return false;</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>        if (!KernelConsole.WriteHex(KernelAddressSpace.KernelImageBase)) return false;</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>        if (!KernelConsole.Write(&quot;Kernel heap base: &quot;)) return false;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>        if (!KernelConsole.WriteHex(KernelAddressSpace.KernelHeapBase)) return false;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>        if (!KernelConsole.Write(&quot;Kernel stacks base: &quot;)) return false;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>        if (!KernelConsole.WriteHex(KernelAddressSpace.KernelStacksBase)) return false;</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>        if (!KernelConsole.Write(&quot;Direct map base: &quot;)) return false;</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>        if (!KernelConsole.WriteHex(KernelAddressSpace.DirectMapBase)) return false;</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>        if (!KernelConsole.Write(&quot;MMIO base: &quot;)) return false;</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>        if (!KernelConsole.WriteHex(KernelAddressSpace.MmioBase)) return false;</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>        if (!KernelConsole.Write(&quot;Page-table window: &quot;)) return false;</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>        if (!KernelConsole.WriteHex(KernelAddressSpace.PageTableWindowBase)) return false;</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>        if (!KernelEarlyAllocator.Initialize()) return false;</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>        if (!KernelEarlyAllocator.TryAllocate(256UL, 16UL, out UInt64 earlyAddress)) return false;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>        if (!KernelConsole.Write(&quot;Early allocator sample: &quot;)) return false;</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>        if (!KernelConsole.WriteHex(earlyAddress)) return false;</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>        Boolean heapReady = KernelHeap.Initialize();</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>        if (!KernelConsole.Write(&quot;Kernel heap status: &quot;)) return false;</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>        if (!KernelConsole.WriteLine(KernelHeap.GetLastStatusName())) return false;</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>        if (!heapReady) return false;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>        if (!KernelGraphics.Initialize()) return false;</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>        if (!FirmwareFramebuffer.Register(boot.GetFramebufferAddress(), boot.GetFramebufferSize(), boot.GetFramebufferWidth(), boot.GetFramebufferHeight(), boot.GetFramebufferPitchInPixels(), boot.GetFramebufferPixelFormat(), out KernelGraphicsDisplayHandle firmwareDisplay)) return false;</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>        if (!KernelConsole.Write(&quot;Generic framebuffer registered: &quot;)) return false;</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>        if (!KernelConsole.WriteUInt64(firmwareDisplay.Value)) return false;</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>        if (!KernelConsole.Write(&quot; @ &quot;)) return false;</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>        if (!KernelConsole.WriteUInt64(boot.GetFramebufferWidth())) return false;</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>        if (!KernelConsole.Write(&quot;x&quot;)) return false;</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>        if (!KernelConsole.WriteUInt64(boot.GetFramebufferHeight())) return false;</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>        if (!KernelConsole.WriteLine(&quot; (UEFI GOP / simple framebuffer target).&quot;)) return false;</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>        UInt64 framebufferBufferBytes = KernelConsole.GetFramebufferBufferByteCount();</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>        if (framebufferBufferBytes == 0UL) return false;</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>        if (!KernelHeap.TryAllocate(framebufferBufferBytes, 4096UL, true, out KernelHeapAllocation framebufferBackBufferA)) return false;</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>        if (!KernelHeap.TryAllocate(framebufferBufferBytes, 4096UL, true, out KernelHeapAllocation framebufferBackBufferB)) return false;</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>        if (!KernelConsole.ConfigureFramebufferBuffers(framebufferBackBufferA.Address, framebufferBackBufferB.Address, framebufferBufferBytes)) return false;</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>        FramebufferBufferCapabilities framebufferBuffers = KernelConsole.GetFramebufferBufferCapabilities();</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>        if (!KernelConsole.Write(&quot;Framebuffer buffers available/active: &quot;)) return false;</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>        if (!KernelConsole.WriteUInt64(framebufferBuffers.AvailableBufferCount)) return false;</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>        if (!KernelConsole.WriteUInt64((UInt32)framebufferBuffers.Mode)) return false;</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a>        if (!KernelConsole.WriteLine(&quot; (software backbuffering; GOP scan-out is the front buffer).&quot;)) return false;</span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>        if (!KernelHeap.TryAllocate(256UL, 16UL, true, out KernelHeapAllocation heapSample)) return false;</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>        if (!KernelConsole.Write(&quot;Kernel heap sample: &quot;)) return false;</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>        if (!KernelConsole.WriteHex(heapSample.Address)) return false;</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>        if (!KernelHeap.TryRelease(heapSample)) return false;</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>        if (!KernelSmp.Initialize(boot)) return false;</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a>        if (!KernelConsole.Write(&quot;SMP status: &quot;)) return false;</span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>        if (!KernelConsole.WriteLine(KernelSmp.GetLastStatusName())) return false;</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>        if (!KernelConsole.Write(&quot;Processors online/total: &quot;)) return false;</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>        if (!KernelConsole.WriteUInt64(KernelSmp.GetOnlineProcessorCount())) return false;</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>        if (!KernelConsole.WriteUInt64(KernelSmp.GetProcessorCount())) return false;</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>        if (!KernelConsole.Write(&quot;Bootstrap processor index: &quot;)) return false;</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>        if (!KernelConsole.WriteUInt64(KernelSmp.GetBootstrapProcessorIndex())) return false;</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>        if (!KernelConsole.Write(&quot;AP trampoline: &quot;)) return false;</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>        if (!KernelConsole.WriteHex(KernelSmp.GetCapabilities().TrampolineAddress)) return false;</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>        if (!KernelConsole.WriteLine(&quot;SMP and per-CPU state online.&quot;)) return false;</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a>        if (!KernelScheduler.Initialize()) return false;</span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a>        if (!KernelConsole.Write(&quot;Scheduler threads active: &quot;)) return false;</span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a>        if (!KernelConsole.WriteUInt64(KernelScheduler.GetActiveThreadCount())) return false;</span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L241"><a class="line-number" href="#L241">241</a>        if (!KernelConsole.Write(&quot;Scheduler quantum: &quot;)) return false;</span>
+<span class="source-line" id="L242"><a class="line-number" href="#L242">242</a>        if (!KernelConsole.WriteDurationNanoseconds(KernelScheduler.GetQuantumNanoseconds())) return false;</span>
+<span class="source-line" id="L243"><a class="line-number" href="#L243">243</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L244"><a class="line-number" href="#L244">244</a>        if (!KernelConsole.Write(&quot;Timer preemption: &quot;)) return false;</span>
+<span class="source-line" id="L245"><a class="line-number" href="#L245">245</a>        if (!KernelConsole.WriteLine(KernelScheduler.GetCapabilities().HasTimerPreemption ? &quot;available&quot; : &quot;cooperative only&quot;)) return false;</span>
+<span class="source-line" id="L246"><a class="line-number" href="#L246">246</a>        if (!KernelConsole.WriteLine(&quot;Scheduler and threads online.&quot;)) return false;</span>
+<span class="source-line" id="L247"><a class="line-number" href="#L247">247</a>        if (!KernelProtection.Initialize()) return false;</span>
+<span class="source-line" id="L248"><a class="line-number" href="#L248">248</a>        KernelProtectionCapabilities protection = KernelProtection.GetCapabilities();</span>
+<span class="source-line" id="L249"><a class="line-number" href="#L249">249</a>        if (!KernelConsole.Write(&quot;User range: &quot;)) return false;</span>
+<span class="source-line" id="L250"><a class="line-number" href="#L250">250</a>        if (!KernelConsole.WriteHex(protection.MinimumUserAddress)) return false;</span>
+<span class="source-line" id="L251"><a class="line-number" href="#L251">251</a>        if (!KernelConsole.Write(&quot; - &quot;)) return false;</span>
+<span class="source-line" id="L252"><a class="line-number" href="#L252">252</a>        if (!KernelConsole.WriteHex(protection.MaximumUserAddress)) return false;</span>
+<span class="source-line" id="L253"><a class="line-number" href="#L253">253</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L254"><a class="line-number" href="#L254">254</a>        if (!KernelConsole.Write(&quot;Ring 3 selectors code/data: &quot;)) return false;</span>
+<span class="source-line" id="L255"><a class="line-number" href="#L255">255</a>        if (!KernelConsole.WriteHex(protection.UserCodeSelector)) return false;</span>
+<span class="source-line" id="L256"><a class="line-number" href="#L256">256</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L257"><a class="line-number" href="#L257">257</a>        if (!KernelConsole.WriteHex(protection.UserDataSelector)) return false;</span>
+<span class="source-line" id="L258"><a class="line-number" href="#L258">258</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L259"><a class="line-number" href="#L259">259</a>        if (!KernelConsole.Write(&quot;Supervisor protections WP/SMEP/SMAP: &quot;)) return false;</span>
+<span class="source-line" id="L260"><a class="line-number" href="#L260">260</a>        if (!KernelConsole.Write(protection.WriteProtectEnabled ? &quot;on&quot; : &quot;off&quot;)) return false;</span>
+<span class="source-line" id="L261"><a class="line-number" href="#L261">261</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L262"><a class="line-number" href="#L262">262</a>        if (!KernelConsole.Write(protection.SmepEnabled ? &quot;on&quot; : (protection.SmepSupported ? &quot;available&quot; : &quot;unsupported&quot;))) return false;</span>
+<span class="source-line" id="L263"><a class="line-number" href="#L263">263</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L264"><a class="line-number" href="#L264">264</a>        if (!KernelConsole.WriteLine(protection.SmapSupported ? &quot;available for syscall copy guards&quot; : &quot;unsupported&quot;)) return false;</span>
+<span class="source-line" id="L265"><a class="line-number" href="#L265">265</a>        if (!KernelConsole.WriteLine(&quot;User/kernel separation online.&quot;)) return false;</span>
+<span class="source-line" id="L266"><a class="line-number" href="#L266">266</a>        if (!KernelSystemCalls.Initialize()) return false;</span>
+<span class="source-line" id="L267"><a class="line-number" href="#L267">267</a>        if (!KernelSystemCalls.RegisterGet(33U, &amp;GetFontPresetSyscall)) return false;</span>
+<span class="source-line" id="L268"><a class="line-number" href="#L268">268</a>        if (!KernelSystemCalls.RegisterSet(33U, &amp;SetFontPresetSyscall)) return false;</span>
+<span class="source-line" id="L269"><a class="line-number" href="#L269">269</a>        if (!KernelSystemCalls.RegisterGet(34U, &amp;GetBufferingPresetSyscall)) return false;</span>
+<span class="source-line" id="L270"><a class="line-number" href="#L270">270</a>        if (!KernelSystemCalls.RegisterSet(34U, &amp;SetBufferingPresetSyscall)) return false;</span>
+<span class="source-line" id="L271"><a class="line-number" href="#L271">271</a>        KernelSystemCallCapabilities systemCalls = KernelSystemCalls.GetCapabilities();</span>
+<span class="source-line" id="L272"><a class="line-number" href="#L272">272</a>        if (!KernelConsole.Write(&quot;System calls: Get/Set/Event + Linux-style + NT-style; syscall stack: &quot;)) return false;</span>
+<span class="source-line" id="L273"><a class="line-number" href="#L273">273</a>        if (!KernelConsole.WriteByteSize(systemCalls.SyscallStackBytes)) return false;</span>
+<span class="source-line" id="L274"><a class="line-number" href="#L274">274</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L275"><a class="line-number" href="#L275">275</a>        if (!KernelConsole.Write(&quot;SMAP guarded user copies: &quot;)) return false;</span>
+<span class="source-line" id="L276"><a class="line-number" href="#L276">276</a>        if (!KernelConsole.WriteLine(systemCalls.SmapEnabled ? &quot;enabled&quot; : &quot;not supported&quot;)) return false;</span>
+<span class="source-line" id="L277"><a class="line-number" href="#L277">277</a>        if (!KernelConsole.WriteLine(&quot;System calls online.&quot;)) return false;</span>
+<span class="source-line" id="L278"><a class="line-number" href="#L278">278</a>        if (!KernelPs2.Initialize()) return false;</span>
+<span class="source-line" id="L279"><a class="line-number" href="#L279">279</a>        if (!KernelPs2.SetKeyboardEventHandler(&amp;HandleKeyboardEvent)) return false;</span>
+<span class="source-line" id="L280"><a class="line-number" href="#L280">280</a>        Ps2Capabilities ps2 = KernelPs2.GetCapabilities();</span>
+<span class="source-line" id="L281"><a class="line-number" href="#L281">281</a>        if (!KernelConsole.Write(&quot;PS/2 i8042 keyboard/mouse: &quot;)) return false;</span>
+<span class="source-line" id="L282"><a class="line-number" href="#L282">282</a>        if (!KernelConsole.Write(ps2.Controller ? &quot;on&quot; : &quot;off&quot;)) return false;</span>
+<span class="source-line" id="L283"><a class="line-number" href="#L283">283</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L284"><a class="line-number" href="#L284">284</a>        if (!KernelConsole.Write(ps2.Keyboard ? &quot;on&quot; : &quot;off&quot;)) return false;</span>
+<span class="source-line" id="L285"><a class="line-number" href="#L285">285</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L286"><a class="line-number" href="#L286">286</a>        if (!KernelConsole.WriteLine(ps2.Mouse ? &quot;on&quot; : &quot;off&quot;)) return false;</span>
+<span class="source-line" id="L287"><a class="line-number" href="#L287">287</a>        if (!KernelConsole.Write(&quot;Keyboard layout: &quot;)) return false;</span>
+<span class="source-line" id="L288"><a class="line-number" href="#L288">288</a>        if (!KernelConsole.WriteLine(KeyboardLayouts.GetName(ps2.Layout))) return false;</span>
+<span class="source-line" id="L289"><a class="line-number" href="#L289">289</a>        if (!KernelConsole.WriteLine(&quot;Keyboard layouts loaded: English_UK, English_USA.&quot;)) return false;</span>
+<span class="source-line" id="L290"><a class="line-number" href="#L290">290</a>        if (!KernelProcesses.Initialize()) return false;</span>
+<span class="source-line" id="L291"><a class="line-number" href="#L291">291</a>        KernelProcessCapabilities processes = KernelProcesses.GetCapabilities();</span>
+<span class="source-line" id="L292"><a class="line-number" href="#L292">292</a>        if (!KernelConsole.Write(&quot;Processes ready/max: &quot;)) return false;</span>
+<span class="source-line" id="L293"><a class="line-number" href="#L293">293</a>        if (!KernelConsole.WriteUInt64(processes.ActiveProcessCount)) return false;</span>
+<span class="source-line" id="L294"><a class="line-number" href="#L294">294</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L295"><a class="line-number" href="#L295">295</a>        if (!KernelConsole.WriteUInt64(processes.MaximumProcesses)) return false;</span>
+<span class="source-line" id="L296"><a class="line-number" href="#L296">296</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L297"><a class="line-number" href="#L297">297</a>        if (!KernelConsole.WriteLine(&quot;Executable loading: ELF64 + PE32+ x64; private user address spaces online.&quot;)) return false;</span>
+<span class="source-line" id="L298"><a class="line-number" href="#L298">298</a>        if (!KernelInterruptDispatch.Initialize()) return false;</span>
+<span class="source-line" id="L299"><a class="line-number" href="#L299">299</a>        if (!KernelTimerDispatch.Initialize()) return false;</span>
+<span class="source-line" id="L300"><a class="line-number" href="#L300">300</a>        if (!KernelTimerDispatch.Register(1000000UL, &amp;ServiceConsoleInput, 0UL, out _)) return false;</span>
+<span class="source-line" id="L301"><a class="line-number" href="#L301">301</a>        if (!KernelTimerDispatch.Register(2000000UL, &amp;ServiceNetworkAdapters, 0UL, out _)) return false;</span>
+<span class="source-line" id="L302"><a class="line-number" href="#L302">302</a>        if (!KernelConsole.WriteLine(&quot;Interrupt and timer dispatch online; background polling disabled.&quot;)) return false;</span>
+<span class="source-line" id="L303"><a class="line-number" href="#L303">303</a>        if (!KernelDrivers.Initialize()) return false;</span>
+<span class="source-line" id="L304"><a class="line-number" href="#L304">304</a>        if (!KernelPci.Initialize()) return false;</span>
+<span class="source-line" id="L305"><a class="line-number" href="#L305">305</a>        if (!KernelXhci.Initialize()) return false;</span>
+<span class="source-line" id="L306"><a class="line-number" href="#L306">306</a>        if (!KernelXhci.ScanRootPorts()) return false;</span>
+<span class="source-line" id="L307"><a class="line-number" href="#L307">307</a>        XhciCapabilities xhci = KernelXhci.GetCapabilities();</span>
+<span class="source-line" id="L308"><a class="line-number" href="#L308">308</a>        if (!KernelConsole.Write(&quot;xHCI controllers/running/connected root ports: &quot;)) return false;</span>
+<span class="source-line" id="L309"><a class="line-number" href="#L309">309</a>        if (!KernelConsole.WriteUInt64(xhci.Controllers)) return false;</span>
+<span class="source-line" id="L310"><a class="line-number" href="#L310">310</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L311"><a class="line-number" href="#L311">311</a>        if (!KernelConsole.WriteUInt64(xhci.RunningControllers)) return false;</span>
+<span class="source-line" id="L312"><a class="line-number" href="#L312">312</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L313"><a class="line-number" href="#L313">313</a>        if (!KernelConsole.WriteUInt64(xhci.ConnectedPorts)) return false;</span>
+<span class="source-line" id="L314"><a class="line-number" href="#L314">314</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L315"><a class="line-number" href="#L315">315</a>        if (!KernelInterruptBroker.Initialize()) return false;</span>
+<span class="source-line" id="L316"><a class="line-number" href="#L316">316</a>        KernelInterruptBrokerCapabilities interruptBroker = KernelInterruptBroker.GetCapabilities();</span>
+<span class="source-line" id="L317"><a class="line-number" href="#L317">317</a>        if (!KernelConsole.Write(&quot;Interrupt broker Local APIC / I/O APIC / x2APIC / MSI / MSI-X: &quot;)) return false;</span>
+<span class="source-line" id="L318"><a class="line-number" href="#L318">318</a>        if (!KernelConsole.Write(interruptBroker.LocalApic ? &quot;on&quot; : &quot;off&quot;)) return false;</span>
+<span class="source-line" id="L319"><a class="line-number" href="#L319">319</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L320"><a class="line-number" href="#L320">320</a>        if (!KernelConsole.Write(interruptBroker.IoApic ? &quot;on&quot; : &quot;off&quot;)) return false;</span>
+<span class="source-line" id="L321"><a class="line-number" href="#L321">321</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L322"><a class="line-number" href="#L322">322</a>        if (!KernelConsole.Write(interruptBroker.X2Apic ? &quot;on&quot; : &quot;off&quot;)) return false;</span>
+<span class="source-line" id="L323"><a class="line-number" href="#L323">323</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L324"><a class="line-number" href="#L324">324</a>        if (!KernelConsole.Write(interruptBroker.Msi ? &quot;on&quot; : &quot;off&quot;)) return false;</span>
+<span class="source-line" id="L325"><a class="line-number" href="#L325">325</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L326"><a class="line-number" href="#L326">326</a>        if (!KernelConsole.WriteLine(interruptBroker.MsiX ? &quot;on&quot; : &quot;off&quot;)) return false;</span>
+<span class="source-line" id="L327"><a class="line-number" href="#L327">327</a>        KernelDriverCapabilities drivers = KernelDrivers.GetCapabilities();</span>
+<span class="source-line" id="L328"><a class="line-number" href="#L328">328</a>        PciCapabilities pci = KernelPci.GetCapabilities();</span>
+<span class="source-line" id="L329"><a class="line-number" href="#L329">329</a>        if (!KernelConsole.Write(&quot;Driver framework drivers/devices: &quot;)) return false;</span>
+<span class="source-line" id="L330"><a class="line-number" href="#L330">330</a>        if (!KernelConsole.WriteUInt64(drivers.RegisteredDrivers)) return false;</span>
+<span class="source-line" id="L331"><a class="line-number" href="#L331">331</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L332"><a class="line-number" href="#L332">332</a>        if (!KernelConsole.WriteUInt64(drivers.RegisteredDevices)) return false;</span>
+<span class="source-line" id="L333"><a class="line-number" href="#L333">333</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L334"><a class="line-number" href="#L334">334</a>        if (!KernelConsole.Write(&quot;PCI/PCIe devices / ECAM segments: &quot;)) return false;</span>
+<span class="source-line" id="L335"><a class="line-number" href="#L335">335</a>        if (!KernelConsole.WriteUInt64(pci.DeviceCount)) return false;</span>
+<span class="source-line" id="L336"><a class="line-number" href="#L336">336</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L337"><a class="line-number" href="#L337">337</a>        if (!KernelConsole.WriteUInt64(pci.EcamSegments)) return false;</span>
+<span class="source-line" id="L338"><a class="line-number" href="#L338">338</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L339"><a class="line-number" href="#L339">339</a>        if (!KernelConsole.WriteLine(&quot;PCI configuration, BAR discovery, capabilities, MSI/MSI-X discovery and MMIO mapping online.&quot;)) return false;</span>
+<span class="source-line" id="L340"><a class="line-number" href="#L340">340</a>        if (!KernelConsole.WriteLine(drivers.RegistryMode == KernelDriverRegistryMode.Dynamic ? &quot;Driver framework online; heap-backed registries grow dynamically.&quot; : &quot;Driver framework online; fixed registry policy active.&quot;)) return false;</span>
+<span class="source-line" id="L341"><a class="line-number" href="#L341">341</a>        if (!KernelStorage.Initialize()) return false;</span>
+<span class="source-line" id="L342"><a class="line-number" href="#L342">342</a>        if (!KernelFat32.Install()) return false;</span>
+<span class="source-line" id="L343"><a class="line-number" href="#L343">343</a>        if (!UsbHub.Initialize()) return false;</span>
+<span class="source-line" id="L344"><a class="line-number" href="#L344">344</a>        if (!UsbHub.EnumerateDownstream()) return false;</span>
+<span class="source-line" id="L345"><a class="line-number" href="#L345">345</a>        if (!UsbHid.Initialize()) return false;</span>
+<span class="source-line" id="L346"><a class="line-number" href="#L346">346</a>        if (!UsbHid.SetKeyboardEventHandler(&amp;HandleUsbKeyboardEvent)) return false;</span>
+<span class="source-line" id="L347"><a class="line-number" href="#L347">347</a>        if (!UsbMassStorage.Initialize()) return false;</span>
+<span class="source-line" id="L348"><a class="line-number" href="#L348">348</a>        UsbBusCapabilities usb = KernelUsbBus.GetCapabilities();</span>
+<span class="source-line" id="L349"><a class="line-number" href="#L349">349</a>        UsbHubCapabilities usbHubs = UsbHub.GetCapabilities();</span>
+<span class="source-line" id="L350"><a class="line-number" href="#L350">350</a>        UsbHidCapabilities usbHid = UsbHid.GetCapabilities();</span>
+<span class="source-line" id="L351"><a class="line-number" href="#L351">351</a>        UsbMassStorageCapabilities usbStorage = UsbMassStorage.GetCapabilities();</span>
+<span class="source-line" id="L352"><a class="line-number" href="#L352">352</a>        if (!KernelConsole.Write(&quot;USB hosts/devices/interfaces: &quot;)) return false;</span>
+<span class="source-line" id="L353"><a class="line-number" href="#L353">353</a>        if (!KernelConsole.WriteUInt64(usb.Hosts)) return false;</span>
+<span class="source-line" id="L354"><a class="line-number" href="#L354">354</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L355"><a class="line-number" href="#L355">355</a>        if (!KernelConsole.WriteUInt64(usb.Devices)) return false;</span>
+<span class="source-line" id="L356"><a class="line-number" href="#L356">356</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L357"><a class="line-number" href="#L357">357</a>        if (!KernelConsole.WriteUInt64(usb.Interfaces)) return false;</span>
+<span class="source-line" id="L358"><a class="line-number" href="#L358">358</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L359"><a class="line-number" href="#L359">359</a>        if (!KernelConsole.Write(&quot;USB hubs/ports, HID keyboards/mice, mass-storage devices: &quot;)) return false;</span>
+<span class="source-line" id="L360"><a class="line-number" href="#L360">360</a>        if (!KernelConsole.WriteUInt64(usbHubs.Hubs)) return false;</span>
+<span class="source-line" id="L361"><a class="line-number" href="#L361">361</a>        if (!KernelConsole.Write(&quot;/&quot;)) return false;</span>
+<span class="source-line" id="L362"><a class="line-number" href="#L362">362</a>        if (!KernelConsole.WriteUInt64(usbHubs.Ports)) return false;</span>
+<span class="source-line" id="L363"><a class="line-number" href="#L363">363</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L364"><a class="line-number" href="#L364">364</a>        if (!KernelConsole.WriteUInt64(usbHid.Keyboards)) return false;</span>
+<span class="source-line" id="L365"><a class="line-number" href="#L365">365</a>        if (!KernelConsole.Write(&quot;/&quot;)) return false;</span>
+<span class="source-line" id="L366"><a class="line-number" href="#L366">366</a>        if (!KernelConsole.WriteUInt64(usbHid.Mice)) return false;</span>
+<span class="source-line" id="L367"><a class="line-number" href="#L367">367</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L368"><a class="line-number" href="#L368">368</a>        if (!KernelConsole.WriteUInt64(usbStorage.Devices)) return false;</span>
+<span class="source-line" id="L369"><a class="line-number" href="#L369">369</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L370"><a class="line-number" href="#L370">370</a>        if (!KernelNvme.Initialize()) return false;</span>
+<span class="source-line" id="L371"><a class="line-number" href="#L371">371</a>        NvmeCapabilities nvme = KernelNvme.GetCapabilities();</span>
+<span class="source-line" id="L372"><a class="line-number" href="#L372">372</a>        if (!KernelConsole.Write(&quot;NVMe controllers/namespaces: &quot;)) return false;</span>
+<span class="source-line" id="L373"><a class="line-number" href="#L373">373</a>        if (!KernelConsole.WriteUInt64(nvme.Controllers)) return false;</span>
+<span class="source-line" id="L374"><a class="line-number" href="#L374">374</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L375"><a class="line-number" href="#L375">375</a>        if (!KernelConsole.WriteUInt64(nvme.Namespaces)) return false;</span>
+<span class="source-line" id="L376"><a class="line-number" href="#L376">376</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L377"><a class="line-number" href="#L377">377</a>        if (!KernelAhci.Initialize()) return false;</span>
+<span class="source-line" id="L378"><a class="line-number" href="#L378">378</a>        AhciCapabilities ahci = KernelAhci.GetCapabilities();</span>
+<span class="source-line" id="L379"><a class="line-number" href="#L379">379</a>        if (!KernelConsole.Write(&quot;AHCI controllers/SATA disks: &quot;)) return false;</span>
+<span class="source-line" id="L380"><a class="line-number" href="#L380">380</a>        if (!KernelConsole.WriteUInt64(ahci.Controllers)) return false;</span>
+<span class="source-line" id="L381"><a class="line-number" href="#L381">381</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L382"><a class="line-number" href="#L382">382</a>        if (!KernelConsole.WriteUInt64(ahci.Disks)) return false;</span>
+<span class="source-line" id="L383"><a class="line-number" href="#L383">383</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L384"><a class="line-number" href="#L384">384</a>        if (!KernelNetworking.Initialize()) return false;</span>
+<span class="source-line" id="L385"><a class="line-number" href="#L385">385</a>        if (!KernelVirtio.Initialize()) return false;</span>
+<span class="source-line" id="L386"><a class="line-number" href="#L386">386</a>        if (!KernelVirtioGpu.Initialize()) return false;</span>
+<span class="source-line" id="L387"><a class="line-number" href="#L387">387</a>        if (!KernelE1000.Initialize()) return false;</span>
+<span class="source-line" id="L388"><a class="line-number" href="#L388">388</a>        if (!KernelRtl8168.Initialize()) return false;</span>
+<span class="source-line" id="L389"><a class="line-number" href="#L389">389</a>        VirtioCapabilities virtio = KernelVirtio.GetCapabilities();</span>
+<span class="source-line" id="L390"><a class="line-number" href="#L390">390</a>        if (!KernelConsole.Write(&quot;VirtIO devices block/net/console/rng: &quot;)) return false;</span>
+<span class="source-line" id="L391"><a class="line-number" href="#L391">391</a>        if (!KernelConsole.WriteUInt64(virtio.BlockDevices)) return false;</span>
+<span class="source-line" id="L392"><a class="line-number" href="#L392">392</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L393"><a class="line-number" href="#L393">393</a>        if (!KernelConsole.WriteUInt64(virtio.NetworkDevices)) return false;</span>
+<span class="source-line" id="L394"><a class="line-number" href="#L394">394</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L395"><a class="line-number" href="#L395">395</a>        if (!KernelConsole.WriteUInt64(virtio.Consoles)) return false;</span>
+<span class="source-line" id="L396"><a class="line-number" href="#L396">396</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L397"><a class="line-number" href="#L397">397</a>        if (!KernelConsole.WriteUInt64(virtio.EntropySources)) return false;</span>
+<span class="source-line" id="L398"><a class="line-number" href="#L398">398</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L399"><a class="line-number" href="#L399">399</a>        VirtioGpuCapabilities virtioGpu = KernelVirtioGpu.GetCapabilities();</span>
+<span class="source-line" id="L400"><a class="line-number" href="#L400">400</a>        if (!KernelConsole.Write(&quot;VirtIO GPU controllers/displays: &quot;)) return false;</span>
+<span class="source-line" id="L401"><a class="line-number" href="#L401">401</a>        if (!KernelConsole.WriteUInt64(virtioGpu.Controllers)) return false;</span>
+<span class="source-line" id="L402"><a class="line-number" href="#L402">402</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L403"><a class="line-number" href="#L403">403</a>        if (!KernelConsole.WriteUInt64(virtioGpu.Displays)) return false;</span>
+<span class="source-line" id="L404"><a class="line-number" href="#L404">404</a>        if (!KernelConsole.WriteLine(&quot; (2D resources + mode changes).&quot;)) return false;</span>
+<span class="source-line" id="L405"><a class="line-number" href="#L405">405</a>        KernelGraphicsCapabilities graphics = KernelGraphics.GetCapabilities();</span>
+<span class="source-line" id="L406"><a class="line-number" href="#L406">406</a>        if (!KernelConsole.Write(&quot;Graphics displays firmware/VirtIO/total: &quot;)) return false;</span>
+<span class="source-line" id="L407"><a class="line-number" href="#L407">407</a>        if (!KernelConsole.WriteUInt64(graphics.FirmwareFramebuffers)) return false;</span>
+<span class="source-line" id="L408"><a class="line-number" href="#L408">408</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L409"><a class="line-number" href="#L409">409</a>        if (!KernelConsole.WriteUInt64(graphics.VirtioGpus)) return false;</span>
+<span class="source-line" id="L410"><a class="line-number" href="#L410">410</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L411"><a class="line-number" href="#L411">411</a>        if (!KernelConsole.WriteUInt64(graphics.Displays)) return false;</span>
+<span class="source-line" id="L412"><a class="line-number" href="#L412">412</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L413"><a class="line-number" href="#L413">413</a>        E1000Capabilities e1000 = KernelE1000.GetCapabilities();</span>
+<span class="source-line" id="L414"><a class="line-number" href="#L414">414</a>        if (!KernelConsole.Write(&quot;Intel E1000/E1000e controllers/interfaces: &quot;)) return false;</span>
+<span class="source-line" id="L415"><a class="line-number" href="#L415">415</a>        if (!KernelConsole.WriteUInt64(e1000.Controllers)) return false;</span>
+<span class="source-line" id="L416"><a class="line-number" href="#L416">416</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L417"><a class="line-number" href="#L417">417</a>        if (!KernelConsole.WriteUInt64(e1000.Interfaces)) return false;</span>
+<span class="source-line" id="L418"><a class="line-number" href="#L418">418</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L419"><a class="line-number" href="#L419">419</a>        Rtl8168Capabilities rtl8168 = KernelRtl8168.GetCapabilities();</span>
+<span class="source-line" id="L420"><a class="line-number" href="#L420">420</a>        if (!KernelConsole.Write(&quot;Realtek RTL8168/RTL8111 controllers/interfaces: &quot;)) return false;</span>
+<span class="source-line" id="L421"><a class="line-number" href="#L421">421</a>        if (!KernelConsole.WriteUInt64(rtl8168.Controllers)) return false;</span>
+<span class="source-line" id="L422"><a class="line-number" href="#L422">422</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L423"><a class="line-number" href="#L423">423</a>        if (!KernelConsole.WriteUInt64(rtl8168.Interfaces)) return false;</span>
+<span class="source-line" id="L424"><a class="line-number" href="#L424">424</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L425"><a class="line-number" href="#L425">425</a>        KernelStorageCapabilities storage = KernelStorage.GetCapabilities();</span>
+<span class="source-line" id="L426"><a class="line-number" href="#L426">426</a>        if (!KernelConsole.Write(&quot;Storage devices/volumes/mounts: &quot;)) return false;</span>
+<span class="source-line" id="L427"><a class="line-number" href="#L427">427</a>        if (!KernelConsole.WriteUInt64(storage.Devices)) return false;</span>
+<span class="source-line" id="L428"><a class="line-number" href="#L428">428</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L429"><a class="line-number" href="#L429">429</a>        if (!KernelConsole.WriteUInt64(storage.Volumes)) return false;</span>
+<span class="source-line" id="L430"><a class="line-number" href="#L430">430</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L431"><a class="line-number" href="#L431">431</a>        if (!KernelConsole.WriteUInt64(storage.Mounts)) return false;</span>
+<span class="source-line" id="L432"><a class="line-number" href="#L432">432</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L433"><a class="line-number" href="#L433">433</a>        if (!KernelConsole.WriteLine(&quot;Storage/VFS online; MBR + GPT discovery, FAT32 and VirtIO block ready.&quot;)) return false;</span>
+<span class="source-line" id="L434"><a class="line-number" href="#L434">434</a>        KernelNetworkCapabilities networking = KernelNetworking.GetCapabilities();</span>
+<span class="source-line" id="L435"><a class="line-number" href="#L435">435</a>        if (!KernelConsole.Write(&quot;Networking interfaces/routes/sockets: &quot;)) return false;</span>
+<span class="source-line" id="L436"><a class="line-number" href="#L436">436</a>        if (!KernelConsole.WriteUInt64(networking.Interfaces)) return false;</span>
+<span class="source-line" id="L437"><a class="line-number" href="#L437">437</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L438"><a class="line-number" href="#L438">438</a>        if (!KernelConsole.WriteUInt64(networking.Routes)) return false;</span>
+<span class="source-line" id="L439"><a class="line-number" href="#L439">439</a>        if (!KernelConsole.Write(&quot; / &quot;)) return false;</span>
+<span class="source-line" id="L440"><a class="line-number" href="#L440">440</a>        if (!KernelConsole.WriteUInt64(networking.Sockets)) return false;</span>
+<span class="source-line" id="L441"><a class="line-number" href="#L441">441</a>        if (!KernelConsole.WriteLine(&quot;&quot;)) return false;</span>
+<span class="source-line" id="L442"><a class="line-number" href="#L442">442</a>        if (!KernelConsole.WriteLine(&quot;Networking online; Ethernet + ARP + IPv4 + ICMP + UDP + TCP with VirtIO-net, Intel E1000/E1000e and Realtek RTL8168/RTL8111 ready.&quot;)) return false;</span>
+<span class="source-line" id="L443"><a class="line-number" href="#L443">443</a>        if (!KernelConsole.WriteLine(&quot;Interactive console ready. Defaults: font 3, buffering 3. Userland: font get/set/list; buffering get/set/list.&quot;)) return false;</span>
+<span class="source-line" id="L444"><a class="line-number" href="#L444">444</a>        if (!KernelInterruptDispatch.Enable()) return false;</span>
+<span class="source-line" id="L445"><a class="line-number" href="#L445">445</a>        return KernelConsole.RunInteractive();</span>
+<span class="source-line" id="L446"><a class="line-number" href="#L446">446</a>    }</span>
+<span class="source-line" id="L447"><a class="line-number" href="#L447">447</a>    private static Int64 GetFontPresetSyscall(KernelSystemCallFrame* frame) =&gt; (Int64)KernelConsole.GetFontPreset();</span>
+<span class="source-line" id="L448"><a class="line-number" href="#L448">448</a>    private static Int64 SetFontPresetSyscall(KernelSystemCallFrame* frame) =&gt; KernelConsole.SetFontPreset((UInt32)frame-&gt;Argument0) ? 0L : (Int64)KernelSystemCallError.InvalidArgument;</span>
+<span class="source-line" id="L449"><a class="line-number" href="#L449">449</a>    private static Int64 GetBufferingPresetSyscall(KernelSystemCallFrame* frame) =&gt; (Int64)(UInt32)KernelConsole.GetFramebufferBufferCapabilities().Mode;</span>
+<span class="source-line" id="L450"><a class="line-number" href="#L450">450</a>    private static Int64 SetBufferingPresetSyscall(KernelSystemCallFrame* frame) =&gt; KernelConsole.SetFramebufferBufferCount((UInt32)frame-&gt;Argument0) ? 0L : (Int64)KernelSystemCallError.InvalidArgument;</span>
+<span class="source-line" id="L451"><a class="line-number" href="#L451">451</a></span>
+<span class="source-line" id="L452"><a class="line-number" href="#L452">452</a>    private static Boolean ServiceConsoleInput(UInt64 cookie)</span>
+<span class="source-line" id="L453"><a class="line-number" href="#L453">453</a>    {</span>
+<span class="source-line" id="L454"><a class="line-number" href="#L454">454</a>        Boolean ok=KernelPs2.Service();</span>
+<span class="source-line" id="L455"><a class="line-number" href="#L455">455</a>        if (UsbHid.IsInitialized()) ok=UsbHid.Service()&amp;ok;</span>
+<span class="source-line" id="L456"><a class="line-number" href="#L456">456</a>        return ok;</span>
+<span class="source-line" id="L457"><a class="line-number" href="#L457">457</a>    }</span>
+<span class="source-line" id="L458"><a class="line-number" href="#L458">458</a>    // Decoded PS/2 events are consumed here; KernelConsole never rereads i8042 hardware.</span>
+<span class="source-line" id="L459"><a class="line-number" href="#L459">459</a>    private static Boolean HandleKeyboardEvent(Ps2KeyboardEvent input)</span>
+<span class="source-line" id="L460"><a class="line-number" href="#L460">460</a>    {</span>
+<span class="source-line" id="L461"><a class="line-number" href="#L461">461</a>        if (!input.Pressed) return true;</span>
+<span class="source-line" id="L462"><a class="line-number" href="#L462">462</a>        if (input.Key == Ps2Key.Up) return KernelConsole.ScrollUp();</span>
+<span class="source-line" id="L463"><a class="line-number" href="#L463">463</a>        if (input.Key == Ps2Key.Down) return KernelConsole.ScrollDown();</span>
+<span class="source-line" id="L464"><a class="line-number" href="#L464">464</a>        if (input.Control &amp;&amp; input.Key == Ps2Key.D1) return KernelConsole.SetFramebufferBufferCount(1U);</span>
+<span class="source-line" id="L465"><a class="line-number" href="#L465">465</a>        if (input.Control &amp;&amp; input.Key == Ps2Key.D2) return KernelConsole.SetFramebufferBufferCount(2U);</span>
+<span class="source-line" id="L466"><a class="line-number" href="#L466">466</a>        if (input.Control &amp;&amp; input.Key == Ps2Key.D3) return KernelConsole.SetFramebufferBufferCount(3U);</span>
+<span class="source-line" id="L467"><a class="line-number" href="#L467">467</a>        if (input.Key == Ps2Key.D1) return KernelConsole.SetFontPreset(1U);</span>
+<span class="source-line" id="L468"><a class="line-number" href="#L468">468</a>        if (input.Key == Ps2Key.D2) return KernelConsole.SetFontPreset(2U);</span>
+<span class="source-line" id="L469"><a class="line-number" href="#L469">469</a>        if (input.Key == Ps2Key.D3) return KernelConsole.SetFontPreset(3U);</span>
+<span class="source-line" id="L470"><a class="line-number" href="#L470">470</a>        Char character = input.Character;</span>
+<span class="source-line" id="L471"><a class="line-number" href="#L471">471</a>        if (character == &#39;\0&#39; || character == &#39;\b&#39;) return true;</span>
+<span class="source-line" id="L472"><a class="line-number" href="#L472">472</a>        if (character == &#39;\n&#39;) return KernelConsole.WriteLine(&quot;&quot;);</span>
+<span class="source-line" id="L473"><a class="line-number" href="#L473">473</a>        if ((UInt32)character &gt; 0x7FU) return KernelConsole.Write(&quot;?&quot;);</span>
+<span class="source-line" id="L474"><a class="line-number" href="#L474">474</a>        return KernelConsole.Write((Byte)character);</span>
+<span class="source-line" id="L475"><a class="line-number" href="#L475">475</a>    }</span>
+<span class="source-line" id="L476"><a class="line-number" href="#L476">476</a>    private static Boolean HandleUsbKeyboardEvent(UsbHidKeyboardEvent input)</span>
+<span class="source-line" id="L477"><a class="line-number" href="#L477">477</a>    {</span>
+<span class="source-line" id="L478"><a class="line-number" href="#L478">478</a>        if (!input.Pressed) return true;</span>
+<span class="source-line" id="L479"><a class="line-number" href="#L479">479</a>        if (input.Usage == 82U) return KernelConsole.ScrollUp();</span>
+<span class="source-line" id="L480"><a class="line-number" href="#L480">480</a>        if (input.Usage == 81U) return KernelConsole.ScrollDown();</span>
+<span class="source-line" id="L481"><a class="line-number" href="#L481">481</a>        Boolean control=(input.Modifiers&amp;0x11U)!=0;</span>
+<span class="source-line" id="L482"><a class="line-number" href="#L482">482</a>        if (control &amp;&amp; input.Usage == 30U) return KernelConsole.SetFramebufferBufferCount(1U);</span>
+<span class="source-line" id="L483"><a class="line-number" href="#L483">483</a>        if (control &amp;&amp; input.Usage == 31U) return KernelConsole.SetFramebufferBufferCount(2U);</span>
+<span class="source-line" id="L484"><a class="line-number" href="#L484">484</a>        if (control &amp;&amp; input.Usage == 32U) return KernelConsole.SetFramebufferBufferCount(3U);</span>
+<span class="source-line" id="L485"><a class="line-number" href="#L485">485</a>        if (input.Usage == 30U) return KernelConsole.SetFontPreset(1U);</span>
+<span class="source-line" id="L486"><a class="line-number" href="#L486">486</a>        if (input.Usage == 31U) return KernelConsole.SetFontPreset(2U);</span>
+<span class="source-line" id="L487"><a class="line-number" href="#L487">487</a>        if (input.Usage == 32U) return KernelConsole.SetFontPreset(3U);</span>
+<span class="source-line" id="L488"><a class="line-number" href="#L488">488</a>        Char character=input.Character;</span>
+<span class="source-line" id="L489"><a class="line-number" href="#L489">489</a>        if (character == &#39;\0&#39; || character == &#39;\b&#39;) return true;</span>
+<span class="source-line" id="L490"><a class="line-number" href="#L490">490</a>        if (character == &#39;\n&#39;) return KernelConsole.WriteLine(&quot;&quot;);</span>
+<span class="source-line" id="L491"><a class="line-number" href="#L491">491</a>        if ((UInt32)character &gt; 0x7FU) return KernelConsole.Write(&quot;?&quot;);</span>
+<span class="source-line" id="L492"><a class="line-number" href="#L492">492</a>        return KernelConsole.Write((Byte)character);</span>
+<span class="source-line" id="L493"><a class="line-number" href="#L493">493</a>    }</span>
+<span class="source-line" id="L494"><a class="line-number" href="#L494">494</a>    private static Boolean ServiceNetworkAdapters(UInt64 cookie)</span>
+<span class="source-line" id="L495"><a class="line-number" href="#L495">495</a>    {</span>
+<span class="source-line" id="L496"><a class="line-number" href="#L496">496</a>        Boolean ok=true;</span>
+<span class="source-line" id="L497"><a class="line-number" href="#L497">497</a>        if (KernelVirtio.IsInitialized()) ok=KernelVirtio.ServiceAll()&amp;ok;</span>
+<span class="source-line" id="L498"><a class="line-number" href="#L498">498</a>        if (KernelE1000.IsInitialized()) ok=KernelE1000.ServiceAll()&amp;ok;</span>
+<span class="source-line" id="L499"><a class="line-number" href="#L499">499</a>        if (KernelRtl8168.IsInitialized()) ok=KernelRtl8168.ServiceAll()&amp;ok;</span>
+<span class="source-line" id="L500"><a class="line-number" href="#L500">500</a>        return ok;</span>
+<span class="source-line" id="L501"><a class="line-number" href="#L501">501</a>    }</span>
+<span class="source-line" id="L502"><a class="line-number" href="#L502">502</a></span>
+<span class="source-line" id="L503"><a class="line-number" href="#L503">503</a>}</span>
+<span class="source-line" id="L504"><a class="line-number" href="#L504">504</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

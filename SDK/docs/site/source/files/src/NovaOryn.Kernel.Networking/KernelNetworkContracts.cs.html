@@ -1,0 +1,111 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Networking/KernelNetworkContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Networking/KernelNetworkContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Kernel.Drivers;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Kernel.Networking;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>public enum KernelNetworkRegistryMode : Byte { Dynamic=0, Fixed=1 }</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>public enum KernelNetworkInterfaceState : Byte { Down=0, Up=1 }</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>public enum KernelNetworkProtocol : Byte { Icmp=1, Tcp=6, Udp=17 }</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>public enum KernelSocketType : Byte { Datagram=1, Stream=2 }</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>public enum KernelSocketState : Byte { Closed=0, Created=1, Bound=2, Listening=3, Connecting=4, Connected=5 }</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>public enum KernelTcpState : Byte { Closed=0, Listen=1, SynSent=2, SynReceived=3, Established=4, FinWait1=5, FinWait2=6, CloseWait=7, Closing=8, LastAck=9, TimeWait=10 }</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>public enum KernelNetworkPacketState : Byte { Queued=1, Processed=2, Failed=3 }</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a></span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>public readonly struct KernelNetworkOptions</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>{</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    public KernelNetworkOptions(KernelNetworkRegistryMode mode,UInt32 initialInterfaces,UInt32 initialRoutes,UInt32 initialNeighbors,UInt32 initialSockets,UInt32 initialPackets,UInt32 maximumInterfaces,UInt32 maximumRoutes,UInt32 maximumNeighbors,UInt32 maximumSockets,UInt32 maximumPackets)</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    { RegistryMode=mode;InitialInterfaces=initialInterfaces;InitialRoutes=initialRoutes;InitialNeighbors=initialNeighbors;InitialSockets=initialSockets;InitialPackets=initialPackets;MaximumInterfaces=maximumInterfaces;MaximumRoutes=maximumRoutes;MaximumNeighbors=maximumNeighbors;MaximumSockets=maximumSockets;MaximumPackets=maximumPackets; }</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    public KernelNetworkRegistryMode RegistryMode { get; } public UInt32 InitialInterfaces { get; } public UInt32 InitialRoutes { get; } public UInt32 InitialNeighbors { get; } public UInt32 InitialSockets { get; }</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    public UInt32 InitialPackets { get; }</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    public UInt32 MaximumInterfaces { get; } public UInt32 MaximumRoutes { get; } public UInt32 MaximumNeighbors { get; } public UInt32 MaximumSockets { get; } public UInt32 MaximumPackets { get; }</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    public static KernelNetworkOptions DynamicDefault =&gt; new(KernelNetworkRegistryMode.Dynamic,8U,16U,64U,128U,64U,UInt32.MaxValue,UInt32.MaxValue,UInt32.MaxValue,UInt32.MaxValue,UInt32.MaxValue);</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    public static KernelNetworkOptions Fixed(UInt32 interfaces,UInt32 routes,UInt32 neighbors,UInt32 sockets)=&gt;new(KernelNetworkRegistryMode.Fixed,interfaces,routes,neighbors,sockets,sockets,interfaces,routes,neighbors,sockets,sockets);</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>}</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a></span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>public readonly struct KernelNetworkInterfaceHandle { public KernelNetworkInterfaceHandle(UInt32 value){Value=value;} public UInt32 Value { get; } }</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>public readonly struct KernelSocketHandle { public KernelSocketHandle(UInt32 value){Value=value;} public UInt32 Value { get; } }</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a></span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>public readonly struct KernelMacAddress</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>{</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    public KernelMacAddress(Byte a,Byte b,Byte c,Byte d,Byte e,Byte f){A=a;B=b;C=c;D=d;E=e;F=f;}</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    public Byte A { get; } public Byte B { get; } public Byte C { get; } public Byte D { get; } public Byte E { get; } public Byte F { get; }</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    public Boolean IsZero =&gt; (A|B|C|D|E|F)==0;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>}</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a></span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>public readonly struct KernelIpv4Address</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>{</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    public KernelIpv4Address(UInt32 value){Value=value;}</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    public UInt32 Value { get; }</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    public Byte A =&gt; (Byte)(Value&gt;&gt;24); public Byte B =&gt; (Byte)(Value&gt;&gt;16); public Byte C =&gt; (Byte)(Value&gt;&gt;8); public Byte D =&gt; (Byte)Value;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    public static KernelIpv4Address FromBytes(Byte a,Byte b,Byte c,Byte d)=&gt;new(((UInt32)a&lt;&lt;24)|((UInt32)b&lt;&lt;16)|((UInt32)c&lt;&lt;8)|d);</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>}</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a></span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a></span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>public readonly struct KernelIpv6Address</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>{</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    public KernelIpv6Address(UInt64 high,UInt64 low){High=high;Low=low;}</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    public UInt64 High { get; } public UInt64 Low { get; }</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    public Boolean IsUnspecified =&gt; High==0&amp;&amp;Low==0;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>}</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a></span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>public readonly struct KernelNetworkPacketHandle { public KernelNetworkPacketHandle(UInt32 value){Value=value;} public UInt32 Value { get; } }</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>public readonly struct KernelNetworkPacketInfo</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>{</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    public KernelNetworkPacketInfo(KernelNetworkPacketHandle handle,KernelNetworkInterfaceHandle networkInterface,KernelNetworkPacketState state,UInt32 length){Handle=handle;Interface=networkInterface;State=state;Length=length;}</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    public KernelNetworkPacketHandle Handle { get; } public KernelNetworkInterfaceHandle Interface { get; } public KernelNetworkPacketState State { get; } public UInt32 Length { get; }</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>}</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a></span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>public readonly struct KernelIpv4Endpoint</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>{</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    public KernelIpv4Endpoint(KernelIpv4Address address,UInt16 port){Address=address;Port=port;}</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    public KernelIpv4Address Address { get; } public UInt16 Port { get; }</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>}</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a></span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>public readonly struct KernelNetworkRoute</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>{</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    public KernelNetworkRoute(KernelIpv4Address network,KernelIpv4Address mask,KernelIpv4Address gateway,KernelNetworkInterfaceHandle networkInterface,UInt32 metric)</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    { Network=network;Mask=mask;Gateway=gateway;Interface=networkInterface;Metric=metric; }</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    public KernelIpv4Address Network { get; } public KernelIpv4Address Mask { get; } public KernelIpv4Address Gateway { get; } public KernelNetworkInterfaceHandle Interface { get; } public UInt32 Metric { get; }</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>}</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a></span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>public readonly struct KernelNetworkInterfaceInfo</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>{</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    public KernelNetworkInterfaceInfo(KernelNetworkInterfaceHandle handle,KernelDeviceHandle device,KernelMacAddress mac,KernelIpv4Address address,KernelIpv4Address mask,KernelIpv4Address gateway,UInt32 mtu,KernelNetworkInterfaceState state)</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    { Handle=handle;Device=device;MacAddress=mac;Address=address;Mask=mask;Gateway=gateway;Mtu=mtu;State=state; }</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    public KernelNetworkInterfaceHandle Handle { get; } public KernelDeviceHandle Device { get; } public KernelMacAddress MacAddress { get; } public KernelIpv4Address Address { get; } public KernelIpv4Address Mask { get; } public KernelIpv4Address Gateway { get; } public UInt32 Mtu { get; } public KernelNetworkInterfaceState State { get; }</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>}</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a></span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>public readonly struct KernelSocketInfo</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>{</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>    public KernelSocketInfo(KernelSocketHandle handle,KernelSocketType type,KernelSocketState state,KernelIpv4Endpoint local,KernelIpv4Endpoint remote,KernelTcpState tcpState)</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    { Handle=handle;Type=type;State=state;Local=local;Remote=remote;TcpState=tcpState; }</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>    public KernelSocketHandle Handle { get; } public KernelSocketType Type { get; } public KernelSocketState State { get; } public KernelIpv4Endpoint Local { get; } public KernelIpv4Endpoint Remote { get; } public KernelTcpState TcpState { get; }</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>}</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a></span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>public readonly struct KernelNetworkCapabilities</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>{</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    public KernelNetworkCapabilities(Boolean initialized,KernelNetworkRegistryMode mode,UInt32 interfaces,UInt32 routes,UInt32 neighbors,UInt32 sockets,UInt32 interfaceCapacity,UInt32 routeCapacity,UInt32 neighborCapacity,UInt32 socketCapacity)</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>    { Initialized=initialized;RegistryMode=mode;Interfaces=interfaces;Routes=routes;Neighbors=neighbors;Sockets=sockets;InterfaceCapacity=interfaceCapacity;RouteCapacity=routeCapacity;NeighborCapacity=neighborCapacity;SocketCapacity=socketCapacity; }</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>    public Boolean Initialized { get; } public KernelNetworkRegistryMode RegistryMode { get; } public UInt32 Interfaces { get; } public UInt32 Routes { get; } public UInt32 Neighbors { get; } public UInt32 Sockets { get; }</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>    public UInt32 InterfaceCapacity { get; } public UInt32 RouteCapacity { get; } public UInt32 NeighborCapacity { get; } public UInt32 SocketCapacity { get; }</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>}</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a></span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>public readonly unsafe struct KernelNetworkInterfaceCallbacks</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>{</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>    public readonly delegate*&lt;Byte*,UInt32,Boolean&gt; TransmitFrame;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>    public readonly delegate*&lt;Boolean,Boolean&gt; SetReceiveEnabled;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>    public KernelNetworkInterfaceCallbacks(delegate*&lt;Byte*,UInt32,Boolean&gt; transmitFrame,delegate*&lt;Boolean,Boolean&gt; setReceiveEnabled){TransmitFrame=transmitFrame;SetReceiveEnabled=setReceiveEnabled;}</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>}</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a></span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>/// &lt;summary&gt;Provides network callbacks that receive the owning generic device, allowing one driver implementation to serve multiple interfaces.&lt;/summary&gt;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>public readonly unsafe struct KernelContextualNetworkInterfaceCallbacks</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>{</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    /// &lt;summary&gt;Transmits one Ethernet frame for the supplied generic device.&lt;/summary&gt;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    public readonly delegate*&lt;KernelDeviceHandle,Byte*,UInt32,Boolean&gt; TransmitFrame;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    /// &lt;summary&gt;Changes receive enablement for the supplied generic device.&lt;/summary&gt;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    public readonly delegate*&lt;KernelDeviceHandle,Boolean,Boolean&gt; SetReceiveEnabled;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    /// &lt;summary&gt;Creates contextual network-interface callbacks.&lt;/summary&gt;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    public KernelContextualNetworkInterfaceCallbacks(delegate*&lt;KernelDeviceHandle,Byte*,UInt32,Boolean&gt; transmitFrame,delegate*&lt;KernelDeviceHandle,Boolean,Boolean&gt; setReceiveEnabled){TransmitFrame=transmitFrame;SetReceiveEnabled=setReceiveEnabled;}</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>}</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

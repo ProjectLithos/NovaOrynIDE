@@ -1,0 +1,217 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.VisualStudio/NovaOryn.VisualStudio.csproj · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.VisualStudio/NovaOryn.VisualStudio.csproj</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>&lt;Project&gt;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>  &lt;Import Project=&quot;Sdk.props&quot; Sdk=&quot;Microsoft.NET.Sdk&quot; /&gt;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>  &lt;PropertyGroup&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>    &lt;Configuration Condition=&quot;&#39;$(Configuration)&#39; == &#39;&#39;&quot;&gt;Debug&lt;/Configuration&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>    &lt;Platform Condition=&quot;&#39;$(Platform)&#39; == &#39;&#39;&quot;&gt;AnyCPU&lt;/Platform&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a></span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    &lt;ProjectGuid&gt;{AA2A444B-3AB7-48C5-B738-A70E6182D3E1}&lt;/ProjectGuid&gt;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    &lt;ProjectTypeGuids&gt;{82B43B9B-A64C-4715-B499-D71E9CA2BD60};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}&lt;/ProjectTypeGuids&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a></span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    &lt;OutputType&gt;Library&lt;/OutputType&gt;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    &lt;RootNamespace&gt;NovaOryn.VisualStudio&lt;/RootNamespace&gt;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    &lt;AssemblyName&gt;NovaOryn.VisualStudio&lt;/AssemblyName&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    &lt;TargetFramework&gt;net472&lt;/TargetFramework&gt;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a></span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    &lt;!-- SDK-style MSBuild is required here. It imports ResolvePackageAssets,</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>         which turns the successful NuGet restore into compiler references. --&gt;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    &lt;GenerateAssemblyInfo&gt;false&lt;/GenerateAssemblyInfo&gt;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    &lt;AppendTargetFrameworkToOutputPath&gt;false&lt;/AppendTargetFrameworkToOutputPath&gt;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    &lt;AutoGenerateBindingRedirects&gt;true&lt;/AutoGenerateBindingRedirects&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    &lt;GenerateBindingRedirectsOutputType&gt;true&lt;/GenerateBindingRedirectsOutputType&gt;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a></span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    &lt;LangVersion&gt;12.0&lt;/LangVersion&gt;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    &lt;Nullable&gt;disable&lt;/Nullable&gt;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    &lt;ImplicitUsings&gt;disable&lt;/ImplicitUsings&gt;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    &lt;Deterministic&gt;true&lt;/Deterministic&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    &lt;GenerateDocumentationFile&gt;true&lt;/GenerateDocumentationFile&gt;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a></span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    &lt;VisualStudioVersion Condition=&quot;&#39;$(VisualStudioVersion)&#39; == &#39;&#39;&quot;&gt;17.0&lt;/VisualStudioVersion&gt;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    &lt;MinimumVisualStudioVersion&gt;17.0&lt;/MinimumVisualStudioVersion&gt;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a></span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    &lt;VsixDeployOnDebug&gt;false&lt;/VsixDeployOnDebug&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    &lt;GeneratePkgDefFile&gt;true&lt;/GeneratePkgDefFile&gt;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    &lt;CreateVsixContainer&gt;true&lt;/CreateVsixContainer&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    &lt;DeployExtension&gt;false&lt;/DeployExtension&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    &lt;IncludeAssemblyInVSIXContainer&gt;true&lt;/IncludeAssemblyInVSIXContainer&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    &lt;IncludeDebugSymbolsInVSIXContainer&gt;true&lt;/IncludeDebugSymbolsInVSIXContainer&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    &lt;IncludeDebugSymbolsInLocalVSIXDeployment&gt;true&lt;/IncludeDebugSymbolsInLocalVSIXDeployment&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    &lt;CopyBuildOutputToOutputDirectory&gt;true&lt;/CopyBuildOutputToOutputDirectory&gt;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    &lt;CopyOutputSymbolsToOutputDirectory&gt;true&lt;/CopyOutputSymbolsToOutputDirectory&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    &lt;UseCodebase&gt;true&lt;/UseCodebase&gt;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a></span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    &lt;TargetVsixContainerName&gt;NovaOryn.VisualStudio.vsix&lt;/TargetVsixContainerName&gt;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    &lt;NovaOrynProjectTemplateSourcePath&gt;$(MSBuildProjectDirectory)\ProjectTemplates\CSharp\1033\NovaOrynKernel&lt;/NovaOrynProjectTemplateSourcePath&gt;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    &lt;NovaOrynProjectTemplateManifestPath&gt;$(MSBuildProjectDirectory)\ProjectTemplates\NovaOryn.VisualStudio.Project.vstman&lt;/NovaOrynProjectTemplateManifestPath&gt;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>  &lt;/PropertyGroup&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a></span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>  &lt;PropertyGroup Condition=&quot;&#39;$(Configuration)&#39; == &#39;Debug&#39;&quot;&gt;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    &lt;DebugSymbols&gt;true&lt;/DebugSymbols&gt;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    &lt;DebugType&gt;full&lt;/DebugType&gt;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    &lt;Optimize&gt;false&lt;/Optimize&gt;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    &lt;DefineConstants&gt;DEBUG;TRACE&lt;/DefineConstants&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    &lt;OutputPath&gt;bin\Debug\&lt;/OutputPath&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    &lt;IntermediateOutputPath&gt;obj\Debug\&lt;/IntermediateOutputPath&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    &lt;VsixOutputPath&gt;$(OutputPath)&lt;/VsixOutputPath&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>  &lt;/PropertyGroup&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a></span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>  &lt;PropertyGroup Condition=&quot;&#39;$(Configuration)&#39; == &#39;Release&#39;&quot;&gt;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    &lt;DebugSymbols&gt;true&lt;/DebugSymbols&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    &lt;DebugType&gt;pdbonly&lt;/DebugType&gt;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    &lt;Optimize&gt;true&lt;/Optimize&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    &lt;DefineConstants&gt;TRACE&lt;/DefineConstants&gt;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    &lt;OutputPath&gt;bin\Release\&lt;/OutputPath&gt;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    &lt;IntermediateOutputPath&gt;obj\Release\&lt;/IntermediateOutputPath&gt;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    &lt;VsixOutputPath&gt;$(OutputPath)&lt;/VsixOutputPath&gt;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>  &lt;/PropertyGroup&gt;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a></span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>  &lt;!-- Evaluate this only after the configuration-specific OutputPath exists. --&gt;</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>  &lt;PropertyGroup&gt;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    &lt;TargetVsixContainer&gt;$(OutputPath)$(TargetVsixContainerName)&lt;/TargetVsixContainer&gt;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>  &lt;/PropertyGroup&gt;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a></span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a></span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>  &lt;ItemGroup&gt;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    &lt;Reference Include=&quot;Microsoft.CSharp&quot; /&gt;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    &lt;Reference Include=&quot;EnvDTE&quot; /&gt;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    &lt;Reference Include=&quot;EnvDTE80&quot; /&gt;</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    &lt;Reference Include=&quot;PresentationCore&quot; /&gt;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>    &lt;Reference Include=&quot;PresentationFramework&quot; /&gt;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    &lt;Reference Include=&quot;System&quot; /&gt;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>    &lt;Reference Include=&quot;System.Core&quot; /&gt;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    &lt;Reference Include=&quot;System.Design&quot; /&gt;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>    &lt;Reference Include=&quot;System.Xaml&quot; /&gt;</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    &lt;Reference Include=&quot;WindowsBase&quot; /&gt;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>  &lt;/ItemGroup&gt;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a></span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>  &lt;ItemGroup&gt;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>    &lt;!-- The SDK-style project imports NuGet&#39;s generated .props/.targets and</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>         ResolvePackageAssets. These references therefore become real compiler</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>         references instead of restore-only entries. --&gt;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    &lt;PackageReference Include=&quot;Microsoft.VisualStudio.SDK&quot;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>                      Version=&quot;17.14.40265&quot;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>                      ExcludeAssets=&quot;runtime&quot; /&gt;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>    &lt;PackageReference Include=&quot;Microsoft.VisualStudio.Shell.15.0&quot;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>                      Version=&quot;17.14.40264&quot;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>                      ExcludeAssets=&quot;runtime&quot; /&gt;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>    &lt;PackageReference Include=&quot;Microsoft.VisualStudio.Shell.Framework&quot;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>                      Version=&quot;17.14.40264&quot;</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>                      ExcludeAssets=&quot;runtime&quot; /&gt;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    &lt;PackageReference Include=&quot;Microsoft.VisualStudio.Interop&quot;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>                      Version=&quot;17.14.40260&quot;</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>                      ExcludeAssets=&quot;runtime&quot; /&gt;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    &lt;PackageReference Include=&quot;Microsoft.VisualStudio.OLE.Interop&quot;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>                      Version=&quot;17.14.40260&quot;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>                      ExcludeAssets=&quot;runtime&quot; /&gt;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    &lt;PackageReference Include=&quot;Microsoft.VisualStudio.Threading&quot;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>                      Version=&quot;17.14.15&quot;</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>                      ExcludeAssets=&quot;runtime&quot; /&gt;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a></span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>    &lt;PackageReference Include=&quot;Microsoft.VSSDK.BuildTools&quot;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>                      Version=&quot;17.14.2142&quot;</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>                      GeneratePathProperty=&quot;true&quot;&gt;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>      &lt;PrivateAssets&gt;all&lt;/PrivateAssets&gt;</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>      &lt;IncludeAssets&gt;runtime;build;native;contentfiles;analyzers;buildtransitive&lt;/IncludeAssets&gt;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>    &lt;/PackageReference&gt;</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a></span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>    &lt;PackageReference Include=&quot;Microsoft.NETFramework.ReferenceAssemblies.net472&quot;</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>                      Version=&quot;1.0.3&quot;</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>                      PrivateAssets=&quot;all&quot; /&gt;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>  &lt;/ItemGroup&gt;</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a></span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>  &lt;!-- SDK-style projects compile C# files recursively. The template source is</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>       a VSIX asset and must never be compiled into NovaOryn.VisualStudio.dll. --&gt;</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>  &lt;ItemGroup&gt;</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>    &lt;Compile Remove=&quot;ProjectTemplates\**\*.cs&quot; /&gt;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>    &lt;None Remove=&quot;NovaOrynCommands.vsct&quot; /&gt;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>    &lt;None Remove=&quot;ProjectTemplates\**\*&quot; /&gt;</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>  &lt;/ItemGroup&gt;</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a></span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>  &lt;ItemGroup&gt;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>    &lt;VSCTCompile Include=&quot;NovaOrynCommands.vsct&quot;&gt;</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>      &lt;ResourceName&gt;Menus.ctmenu&lt;/ResourceName&gt;</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>      &lt;SubType&gt;Designer&lt;/SubType&gt;</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>    &lt;/VSCTCompile&gt;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a></span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>    &lt;None Update=&quot;source.extension.vsixmanifest&quot;&gt;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>      &lt;SubType&gt;Designer&lt;/SubType&gt;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>    &lt;/None&gt;</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a></span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>    &lt;Content Include=&quot;ProjectTemplates\**\*&quot;&gt;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>      &lt;IncludeInVSIX&gt;true&lt;/IncludeInVSIX&gt;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>    &lt;/Content&gt;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a></span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>  &lt;/ItemGroup&gt;</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a></span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>  &lt;!-- Finish the standard SDK build pipeline first. PackageReference-generated</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>       .props/.targets are now available, including the BuildTools task setup. --&gt;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>  &lt;Import Project=&quot;Sdk.targets&quot; Sdk=&quot;Microsoft.NET.Sdk&quot; /&gt;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a></span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>  &lt;!-- Microsoft.VSSDK.BuildTools 17.x predates official implicit SDK-style VSIX</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>       support. Import the Visual Studio SDK targets explicitly after the .NET SDK</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>       targets so CreateVsixContainer, VSCTCompile, pkgdef, and VSIX tasks exist. --&gt;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>  &lt;Import Project=&quot;$(PkgMicrosoft_VSSDK_BuildTools)\tools\VSSDK\Microsoft.VsSDK.targets&quot;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>          Condition=&quot;Exists(&#39;$(PkgMicrosoft_VSSDK_BuildTools)\tools\VSSDK\Microsoft.VsSDK.targets&#39;)&quot; /&gt;</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a></span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>  &lt;Target Name=&quot;RequireOrynVssdkTargets&quot;</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>          BeforeTargets=&quot;Build&quot;&gt;</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>    &lt;Error Condition=&quot;&#39;$(PkgMicrosoft_VSSDK_BuildTools)&#39; == &#39;&#39;&quot;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>           Text=&quot;Microsoft.VSSDK.BuildTools package path was not generated. Delete src\NovaOryn.VisualStudio\obj and restore again.&quot; /&gt;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>    &lt;Error Condition=&quot;!Exists(&#39;$(PkgMicrosoft_VSSDK_BuildTools)\tools\VSSDK\Microsoft.VsSDK.targets&#39;)&quot;</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>           Text=&quot;Microsoft.VsSDK.targets was not restored from Microsoft.VSSDK.BuildTools 17.14.2142.&quot; /&gt;</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>  &lt;/Target&gt;</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a></span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>  &lt;!-- Override the default only after Microsoft.VsSDK.targets has been imported. --&gt;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>  &lt;PropertyGroup&gt;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>    &lt;TargetVsixContainerName&gt;NovaOryn.VisualStudio.vsix&lt;/TargetVsixContainerName&gt;</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>    &lt;TargetVsixContainer&gt;$(OutputPath)$(TargetVsixContainerName)&lt;/TargetVsixContainer&gt;</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>  &lt;/PropertyGroup&gt;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a></span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>  &lt;!-- Reassert the final container path immediately before packaging so no</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>       VSSDK default can replace the product filename. --&gt;</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>  &lt;Target Name=&quot;SetOrynVsixContainerPath&quot;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>          BeforeTargets=&quot;CreateVsixContainer&quot;&gt;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>    &lt;PropertyGroup&gt;</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>      &lt;TargetVsixContainer&gt;$(OutputPath)$(TargetVsixContainerName)&lt;/TargetVsixContainer&gt;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>    &lt;/PropertyGroup&gt;</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>  &lt;/Target&gt;</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a></span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>  &lt;Target Name=&quot;RequireVisualStudioSdkCompileReferences&quot;</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>          BeforeTargets=&quot;CoreCompile&quot;&gt;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>    &lt;ItemGroup&gt;</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>      &lt;_OrynVisualStudioShellReference Include=&quot;@(ReferencePath)&quot;</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>          Condition=&quot;&#39;%(Filename)&#39; == &#39;Microsoft.VisualStudio.Shell.15.0&#39;&quot; /&gt;</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>      &lt;_OrynVisualStudioShellInteropReference Include=&quot;@(ReferencePath)&quot;</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>          Condition=&quot;&#39;%(Filename)&#39; == &#39;Microsoft.VisualStudio.Shell.Interop&#39; Or &#39;%(Filename)&#39; == &#39;Microsoft.VisualStudio.Shell.Interop.8.0&#39;&quot; /&gt;</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>    &lt;/ItemGroup&gt;</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>    &lt;Error Condition=&quot;&#39;@(_OrynVisualStudioShellReference)&#39; == &#39;&#39;&quot;</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>           Text=&quot;Microsoft.VisualStudio.Shell.15.0 was restored but was not resolved as a compiler reference. Delete src\NovaOryn.VisualStudio\obj and restore again.&quot; /&gt;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>    &lt;Error Condition=&quot;&#39;@(_OrynVisualStudioShellInteropReference)&#39; == &#39;&#39;&quot;</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>           Text=&quot;The Visual Studio Shell interop compiler reference was not resolved from Microsoft.VisualStudio.SDK.&quot; /&gt;</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>  &lt;/Target&gt;</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a></span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>  &lt;Target Name=&quot;RequireNovaOrynProjectTemplateDiscoveryFiles&quot;</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>          BeforeTargets=&quot;GetVsixSourceItems;CreateVsixContainer&quot;&gt;</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>    &lt;Error Condition=&quot;!Exists(&#39;$(NovaOrynProjectTemplateManifestPath)&#39;)&quot;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>           Text=&quot;The Visual Studio project-template manifest is missing: $(NovaOrynProjectTemplateManifestPath)&quot; /&gt;</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>    &lt;Error Condition=&quot;!Exists(&#39;$(NovaOrynProjectTemplateSourcePath)\NovaOrynKernel.vstemplate&#39;)&quot;</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>           Text=&quot;The NovaOryn .vstemplate file is missing from the ProjectTemplates tree.&quot; /&gt;</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>    &lt;Error Condition=&quot;!Exists(&#39;$(NovaOrynProjectTemplateSourcePath)\NovaOrynKernel.ico&#39;)&quot;</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>           Text=&quot;The NovaOryn project-template icon is missing from the ProjectTemplates tree.&quot; /&gt;</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>  &lt;/Target&gt;</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a></span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a></span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a></span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>  &lt;Target Name=&quot;EnsureOrynVsixWasCreated&quot;</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>          AfterTargets=&quot;Build&quot;</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>          DependsOnTargets=&quot;CreateVsixContainer&quot;&gt;</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>    &lt;Error Condition=&quot;!Exists(&#39;$(TargetVsixContainer)&#39;)&quot;</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>           Text=&quot;The NovaOryn VSIX was not generated. Expected: $(TargetVsixContainer)&quot; /&gt;</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>    &lt;Message Importance=&quot;high&quot;</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>             Text=&quot;[ OK ] NovaOryn VSIX generated: $(TargetVsixContainer)&quot; /&gt;</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>  &lt;/Target&gt;</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a></span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>&lt;/Project&gt;</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

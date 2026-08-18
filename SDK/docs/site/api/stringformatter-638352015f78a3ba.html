@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>StringFormatter · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"><script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../guides/Getting-Started.html">Guides</a><a href="../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">NovaOryn.String · Type</p><h1>NovaOryn.Text.StringFormatter</h1><pre><code>public static class StringFormatter</code></pre><h2>What it does</h2><p>Provides allocation-free value-to-text helpers for freestanding NovaOryn code.</p><h2>When to use it</h2><p>Use anywhere in the kernel or a driver that needs to render a primitive value (bool, or a signed/unsigned integer) as text without heap allocation, such as before writing to the console or a log buffer.</p><h2>Details</h2><p>A static class exposing Format(bool), which returns one of two fixed strings, and overloaded TryFormat methods for UInt64 and Int64 that write decimal digits directly into a caller-supplied character buffer instead of returning a new string.</p><h2>Dependencies</h2><p>NovaOryn.Freestanding.CoreLib</p><h2>Return value</h2><p>Not applicable at the type level; see the individual Format/TryFormat members.</p><h2>Example</h2><pre><code>Span&lt;char&gt; buffer = stackalloc char[20];
+unsafe
+{
+    fixed (char* p = buffer)
+    {
+        if (StringFormatter.TryFormat(42UL, p, 20U, out uint written))
+        {
+            KernelConsole.WriteLine(buffer[..(int)written]);
+        }
+    }
+}</code></pre><h2>Source</h2><p><a href="../source/files/src/NovaOryn.String/StringFormatter.cs.html#L6"><code>src/NovaOryn.String/StringFormatter.cs:6</code></a></p></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

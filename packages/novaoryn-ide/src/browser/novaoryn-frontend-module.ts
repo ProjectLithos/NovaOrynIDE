@@ -25,6 +25,7 @@ import { NovaOrynMemoryMapVisualizerWidget } from './novaoryn-memory-map-visuali
 import { NovaOrynInterruptApicVisualizerWidget } from './novaoryn-interrupt-apic-visualizer-widget';
 import { NovaOrynSyscallExplorerWidget } from './novaoryn-syscall-explorer-widget';
 import { NovaOrynSdkApiWidget } from './novaoryn-sdk-api-widget';
+import { NovaOrynImageDiskExplorerWidget } from './novaoryn-image-disk-explorer-widget';
 import './style/novaoryn.css';
 
 export default new ContainerModule(bind => {
@@ -50,6 +51,7 @@ export default new ContainerModule(bind => {
     bind(NovaOrynInterruptApicVisualizerWidget).toSelf().inSingletonScope();
     bind(NovaOrynSyscallExplorerWidget).toSelf().inSingletonScope();
     bind(NovaOrynSdkApiWidget).toSelf().inSingletonScope();
+    bind(NovaOrynImageDiskExplorerWidget).toSelf().inSingletonScope();
     bind(WidgetFactory).toDynamicValue(ctx => ({
         id: NovaOrynWidget.ID,
         createWidget: () => ctx.container.get(NovaOrynWidget)
@@ -72,6 +74,7 @@ export default new ContainerModule(bind => {
     bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynInterruptApicVisualizerWidget.ID, createWidget: () => ctx.container.get(NovaOrynInterruptApicVisualizerWidget) })).inSingletonScope();
     bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynSyscallExplorerWidget.ID, createWidget: () => ctx.container.get(NovaOrynSyscallExplorerWidget) })).inSingletonScope();
     bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynSdkApiWidget.ID, createWidget: () => ctx.container.get(NovaOrynSdkApiWidget) })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(ctx => ({ id: NovaOrynImageDiskExplorerWidget.ID, createWidget: () => ctx.container.get(NovaOrynImageDiskExplorerWidget) })).inSingletonScope();
 
     bind(NovaOrynBreakpointManager).toSelf().inSingletonScope();
 

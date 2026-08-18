@@ -1,0 +1,370 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Memory.Physical.Contracts/PhysicalMemoryContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Memory.Physical.Contracts/PhysicalMemoryContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Core;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Memory;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>namespace NovaOryn.Memory.Physical;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a></span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;summary&gt;Identifies the physical-frame allocation methodology selected by an SDK consumer.&lt;/summary&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>/// &lt;nova.when&gt;Use when reporting or selecting the implementation behind physical-memory management.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>/// &lt;nova.depends&gt;NovaOryn.Memory.Contracts&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>public enum PhysicalAllocatorMethod</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>{</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;summary&gt;Uses one allocation bit for each managed physical frame.&lt;/summary&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    Bitmap = 0,</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    /// &lt;summary&gt;Uses power-of-two blocks with split and buddy coalescing.&lt;/summary&gt;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    Buddy = 1,</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    /// &lt;summary&gt;Uses sorted free extents and exact range splitting.&lt;/summary&gt;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    Extent = 2,</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    /// &lt;summary&gt;Identifies an SDK-consumer implementation of &lt;see cref=&quot;IPhysicalMemoryManager&quot;/&gt;.&lt;/summary&gt;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    Custom = 3</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>}</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a></span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>/// &lt;summary&gt;Identifies the intended ownership of an allocation or reservation.&lt;/summary&gt;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>/// &lt;nova.when&gt;Use to classify physical pages for diagnostics and later address-space policy.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>/// &lt;nova.depends&gt;PhysicalAllocation and PhysicalReservation&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>public enum PhysicalMemoryPurpose</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>{</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    /// &lt;summary&gt;No specialised ownership is required.&lt;/summary&gt;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    General = 0,</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    /// &lt;summary&gt;The pages will hold page-table structures.&lt;/summary&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    PageTables = 1,</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;summary&gt;The pages will back kernel heap storage.&lt;/summary&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    KernelHeap = 2,</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    /// &lt;summary&gt;The pages will back a kernel stack.&lt;/summary&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    KernelStack = 3,</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;summary&gt;The pages must satisfy device DMA constraints.&lt;/summary&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    Dma = 4,</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;summary&gt;The pages hold kernel or SDK metadata.&lt;/summary&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    Metadata = 5,</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    /// &lt;summary&gt;The SDK consumer assigns a project-specific meaning.&lt;/summary&gt;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    Custom = 6</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>}</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a></span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>/// &lt;summary&gt;Reports the outcome of a physical-memory operation without requiring exceptions for expected allocation failure.&lt;/summary&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>/// &lt;nova.when&gt;Inspect when a physical allocator returns &lt;see langword=&quot;false&quot;/&gt;.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>/// &lt;nova.depends&gt;IPhysicalMemoryManager&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>public enum PhysicalMemoryStatus</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>{</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;summary&gt;The operation completed successfully.&lt;/summary&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    Success = 0,</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;summary&gt;The supplied request, range, map, or capacity was invalid.&lt;/summary&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    InvalidParameter = 1,</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    /// &lt;summary&gt;The manager has not been initialised.&lt;/summary&gt;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    NotInitialized = 2,</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    /// &lt;summary&gt;The manager was already initialised.&lt;/summary&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    AlreadyInitialized = 3,</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    /// &lt;summary&gt;The caller-owned metadata workspace is too small.&lt;/summary&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    WorkspaceTooSmall = 4,</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    /// &lt;summary&gt;No free range can satisfy the requested page count.&lt;/summary&gt;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    OutOfMemory = 5,</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    /// &lt;summary&gt;Free memory exists, but none satisfies the requested address or alignment constraints.&lt;/summary&gt;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    AddressConstraintUnsatisfied = 6,</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    /// &lt;summary&gt;The allocation token is unknown or has already been released.&lt;/summary&gt;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    AllocationNotFound = 7,</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    /// &lt;summary&gt;The reservation token is unknown or has already been released.&lt;/summary&gt;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    ReservationNotFound = 8,</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    /// &lt;summary&gt;The requested physical range is not completely free.&lt;/summary&gt;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    RangeNotFree = 9,</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    /// &lt;summary&gt;The bounded allocation or reservation record table is full.&lt;/summary&gt;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    RecordCapacityExhausted = 10</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>}</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a></span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>/// &lt;summary&gt;Describes one exact page-aligned physical-frame range.&lt;/summary&gt;</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>/// &lt;nova.when&gt;Use for reservations and for reporting allocator-owned physical ranges.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>/// &lt;nova.depends&gt;NovaOryn.Primitives.PhysicalAddress&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>public readonly struct PhysicalFrameRange</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>{</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    private PhysicalFrameRange(PhysicalAddress start, ulong pageCount)</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>    {</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>        Start = start;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>        PageCount = pageCount;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>    }</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a></span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>    /// &lt;summary&gt;Gets the first physical byte of the range.&lt;/summary&gt;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    /// &lt;nova.when&gt;Use as the physical address of the first frame.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>    public PhysicalAddress Start { get; }</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>    /// &lt;summary&gt;Gets the number of 4 KiB frames in the range.&lt;/summary&gt;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>    /// &lt;nova.when&gt;Use for frame accounting and page-table mapping.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>    public ulong PageCount { get; }</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>    /// &lt;summary&gt;Gets the range length in bytes.&lt;/summary&gt;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>    /// &lt;nova.when&gt;Use for diagnostics or byte-address calculations.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    public ulong Length =&gt; PageCount * 4096UL;</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>    /// &lt;summary&gt;Gets the exclusive physical end address.&lt;/summary&gt;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    /// &lt;nova.when&gt;Use for non-overlap and upper-bound checks.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    public PhysicalAddress EndExclusive</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    {</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>        get { return new PhysicalAddress(Start.Value + Length); }</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    }</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a></span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    /// &lt;summary&gt;Attempts to create a validated 4 KiB page-aligned physical range.&lt;/summary&gt;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    /// &lt;nova.when&gt;Use before reserving a fixed physical range.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    /// &lt;nova.depends&gt;4 KiB physical frame size&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the range is non-empty, aligned, and cannot overflow.&lt;/returns&gt;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>    /// &lt;example&gt;&lt;code&gt;bool valid = PhysicalFrameRange.TryCreate(new PhysicalAddress(0x100000), 16, out PhysicalFrameRange range);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>    public static bool TryCreate(PhysicalAddress start, ulong pageCount, out PhysicalFrameRange range)</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>    {</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>        range = default;</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>        if (pageCount == 0 || (start.Value &amp; 0xFFFUL) != 0) return false;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>        if (pageCount &gt; ulong.MaxValue / 4096UL) return false;</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>        ulong length = pageCount * 4096UL;</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>        if (start.Value &gt; ulong.MaxValue - length) return false;</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>        range = new PhysicalFrameRange(start, pageCount);</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>        return true;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>    }</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>}</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a></span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>/// &lt;summary&gt;Describes a contiguous allocation request and its physical-address constraints.&lt;/summary&gt;</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>/// &lt;nova.when&gt;Use for normal, aligned, below-limit, or DMA-oriented frame allocation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>/// &lt;nova.depends&gt;PhysicalMemoryPurpose&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>public readonly struct PhysicalAllocationRequest</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>{</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>    private PhysicalAllocationRequest(ulong pageCount, ulong alignmentPages, PhysicalAddress minimumAddress, PhysicalAddress maximumAddressExclusive, PhysicalMemoryPurpose purpose)</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>    {</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>        PageCount = pageCount;</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>        AlignmentPages = alignmentPages;</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>        MinimumAddress = minimumAddress;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>        MaximumAddressExclusive = maximumAddressExclusive;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>        Purpose = purpose;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>    }</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a></span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>    /// &lt;summary&gt;Gets the requested number of contiguous 4 KiB pages.&lt;/summary&gt;</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>    /// &lt;nova.when&gt;Use to compare requested and allocator-reserved page counts.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>    public ulong PageCount { get; }</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>    /// &lt;summary&gt;Gets the required power-of-two alignment in pages.&lt;/summary&gt;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>    /// &lt;nova.when&gt;Use for page-table, huge-page, and device-alignment constraints.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>    public ulong AlignmentPages { get; }</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>    /// &lt;summary&gt;Gets the inclusive minimum physical address.&lt;/summary&gt;</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>    /// &lt;nova.when&gt;Use to constrain allocations away from low physical memory.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>    public PhysicalAddress MinimumAddress { get; }</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>    /// &lt;summary&gt;Gets the exclusive maximum physical address, or zero for no upper limit.&lt;/summary&gt;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>    /// &lt;nova.when&gt;Use for DMA32-style or device-specific physical-address ceilings.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>    public PhysicalAddress MaximumAddressExclusive { get; }</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>    /// &lt;summary&gt;Gets the intended allocation ownership.&lt;/summary&gt;</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>    /// &lt;nova.when&gt;Use for diagnostics and later mapping policy.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>    public PhysicalMemoryPurpose Purpose { get; }</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a></span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>    /// &lt;summary&gt;Attempts to create a validated contiguous frame-allocation request.&lt;/summary&gt;</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>    /// &lt;nova.when&gt;Use before calling &lt;see cref=&quot;IPhysicalMemoryManager.TryAllocate&quot;/&gt;.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>    /// &lt;nova.depends&gt;4 KiB physical frame size and power-of-two alignment&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the page count, alignment, and address interval are valid.&lt;/returns&gt;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>    /// &lt;example&gt;&lt;code&gt;bool valid = PhysicalAllocationRequest.TryCreate(8, 8, default, new PhysicalAddress(0x100000000), PhysicalMemoryPurpose.Dma, out PhysicalAllocationRequest request);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>    public static bool TryCreate(ulong pageCount, ulong alignmentPages, PhysicalAddress minimumAddress, PhysicalAddress maximumAddressExclusive, PhysicalMemoryPurpose purpose, out PhysicalAllocationRequest request)</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>    {</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>        request = default;</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>        if (pageCount == 0 || pageCount &gt; ulong.MaxValue / 4096UL) return false;</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>        if (alignmentPages == 0 || alignmentPages &gt; ulong.MaxValue / 4096UL || (alignmentPages &amp; (alignmentPages - 1)) != 0) return false;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>        if ((minimumAddress.Value &amp; 0xFFFUL) != 0 || (maximumAddressExclusive.Value &amp; 0xFFFUL) != 0) return false;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>        if (maximumAddressExclusive.Value != 0 &amp;&amp; minimumAddress.Value &gt;= maximumAddressExclusive.Value) return false;</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>        request = new PhysicalAllocationRequest(pageCount, alignmentPages, minimumAddress, maximumAddressExclusive, purpose);</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>        return true;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>    }</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>}</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a></span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>/// &lt;summary&gt;Represents one live physical allocation and its release token.&lt;/summary&gt;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>/// &lt;nova.when&gt;Retain until the allocation is released back to the same manager.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>/// &lt;nova.depends&gt;IPhysicalMemoryManager.TryAllocate&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>public readonly struct PhysicalAllocation</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>{</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>    internal PhysicalAllocation(PhysicalFrameRange range, ulong requestedPageCount, ulong token, PhysicalMemoryPurpose purpose)</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>    {</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>        Range = range;</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>        RequestedPageCount = requestedPageCount;</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>        Token = token;</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>        Purpose = purpose;</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>    }</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a></span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>    /// &lt;summary&gt;Gets the actual physical range owned by the allocation.&lt;/summary&gt;</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>    /// &lt;nova.when&gt;Use for mapping or hardware programming.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>    public PhysicalFrameRange Range { get; }</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>    /// &lt;summary&gt;Gets the page count requested by the caller before allocator rounding.&lt;/summary&gt;</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>    /// &lt;nova.when&gt;Use to measure buddy-allocator internal fragmentation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>    public ulong RequestedPageCount { get; }</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>    /// &lt;summary&gt;Gets the opaque token required for release validation.&lt;/summary&gt;</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>    /// &lt;nova.when&gt;Preserve unchanged until releasing the allocation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>    public ulong Token { get; }</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>    /// &lt;summary&gt;Gets the declared ownership purpose.&lt;/summary&gt;</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>    /// &lt;nova.when&gt;Use for allocation diagnostics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>    public PhysicalMemoryPurpose Purpose { get; }</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>}</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a></span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>/// &lt;summary&gt;Represents one live fixed physical reservation and its release token.&lt;/summary&gt;</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>/// &lt;nova.when&gt;Retain while an allocator-managed range must remain unavailable for ordinary allocation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>/// &lt;nova.depends&gt;IPhysicalMemoryManager.TryReserve&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>public readonly struct PhysicalReservation</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>{</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>    internal PhysicalReservation(PhysicalFrameRange range, ulong token, PhysicalMemoryPurpose purpose)</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>    {</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>        Range = range;</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>        Token = token;</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>        Purpose = purpose;</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>    }</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a></span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a>    /// &lt;summary&gt;Gets the exact reserved physical range.&lt;/summary&gt;</span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>    /// &lt;nova.when&gt;Use for diagnostics and ownership tracking.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>    public PhysicalFrameRange Range { get; }</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>    /// &lt;summary&gt;Gets the opaque token required for reservation release.&lt;/summary&gt;</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>    /// &lt;nova.when&gt;Preserve unchanged until releasing the reservation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>    public ulong Token { get; }</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>    /// &lt;summary&gt;Gets the declared reservation purpose.&lt;/summary&gt;</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a>    /// &lt;nova.when&gt;Use for reservation diagnostics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>    public PhysicalMemoryPurpose Purpose { get; }</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>}</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a></span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>/// &lt;summary&gt;Reports current page accounting for one physical-memory manager.&lt;/summary&gt;</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>/// &lt;nova.when&gt;Use for boot diagnostics, pressure reporting, and allocator comparisons.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>/// &lt;nova.depends&gt;IPhysicalMemoryManager.GetStatistics&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>public readonly struct PhysicalMemoryStatistics</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>{</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>    private PhysicalMemoryStatistics(ulong totalManagedPages, ulong freePages, ulong allocatedPages, ulong reservedPages, ulong largestFreeRunPages, int activeAllocations, int activeReservations)</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>    {</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>        TotalManagedPages = totalManagedPages;</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a>        FreePages = freePages;</span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a>        AllocatedPages = allocatedPages;</span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a>        ReservedPages = reservedPages;</span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a>        LargestFreeRunPages = largestFreeRunPages;</span>
+<span class="source-line" id="L241"><a class="line-number" href="#L241">241</a>        ActiveAllocations = activeAllocations;</span>
+<span class="source-line" id="L242"><a class="line-number" href="#L242">242</a>        ActiveReservations = activeReservations;</span>
+<span class="source-line" id="L243"><a class="line-number" href="#L243">243</a>    }</span>
+<span class="source-line" id="L244"><a class="line-number" href="#L244">244</a></span>
+<span class="source-line" id="L245"><a class="line-number" href="#L245">245</a>    /// &lt;summary&gt;Gets the number of frames initially admitted from the normalised map.&lt;/summary&gt;</span>
+<span class="source-line" id="L246"><a class="line-number" href="#L246">246</a>    /// &lt;nova.when&gt;Use as the accounting denominator for this manager.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L247"><a class="line-number" href="#L247">247</a>    public ulong TotalManagedPages { get; }</span>
+<span class="source-line" id="L248"><a class="line-number" href="#L248">248</a>    /// &lt;summary&gt;Gets the number of frames currently available for allocation.&lt;/summary&gt;</span>
+<span class="source-line" id="L249"><a class="line-number" href="#L249">249</a>    /// &lt;nova.when&gt;Use for memory-pressure checks.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L250"><a class="line-number" href="#L250">250</a>    public ulong FreePages { get; }</span>
+<span class="source-line" id="L251"><a class="line-number" href="#L251">251</a>    /// &lt;summary&gt;Gets the number of frames currently owned by live allocations.&lt;/summary&gt;</span>
+<span class="source-line" id="L252"><a class="line-number" href="#L252">252</a>    /// &lt;nova.when&gt;Use for allocation accounting, including buddy rounding.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L253"><a class="line-number" href="#L253">253</a>    public ulong AllocatedPages { get; }</span>
+<span class="source-line" id="L254"><a class="line-number" href="#L254">254</a>    /// &lt;summary&gt;Gets the number of frames currently held by live reservations.&lt;/summary&gt;</span>
+<span class="source-line" id="L255"><a class="line-number" href="#L255">255</a>    /// &lt;nova.when&gt;Use for fixed-range ownership accounting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L256"><a class="line-number" href="#L256">256</a>    public ulong ReservedPages { get; }</span>
+<span class="source-line" id="L257"><a class="line-number" href="#L257">257</a>    /// &lt;summary&gt;Gets the largest currently free contiguous run or buddy block.&lt;/summary&gt;</span>
+<span class="source-line" id="L258"><a class="line-number" href="#L258">258</a>    /// &lt;nova.when&gt;Use when deciding whether a large contiguous request is likely to succeed.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L259"><a class="line-number" href="#L259">259</a>    public ulong LargestFreeRunPages { get; }</span>
+<span class="source-line" id="L260"><a class="line-number" href="#L260">260</a>    /// &lt;summary&gt;Gets the number of live allocation records.&lt;/summary&gt;</span>
+<span class="source-line" id="L261"><a class="line-number" href="#L261">261</a>    /// &lt;nova.when&gt;Use to monitor bounded allocation-record capacity.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L262"><a class="line-number" href="#L262">262</a>    public int ActiveAllocations { get; }</span>
+<span class="source-line" id="L263"><a class="line-number" href="#L263">263</a>    /// &lt;summary&gt;Gets the number of live reservation records.&lt;/summary&gt;</span>
+<span class="source-line" id="L264"><a class="line-number" href="#L264">264</a>    /// &lt;nova.when&gt;Use to monitor bounded reservation-record capacity.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L265"><a class="line-number" href="#L265">265</a>    public int ActiveReservations { get; }</span>
+<span class="source-line" id="L266"><a class="line-number" href="#L266">266</a></span>
+<span class="source-line" id="L267"><a class="line-number" href="#L267">267</a>    /// &lt;summary&gt;Creates an immutable physical-memory statistics snapshot.&lt;/summary&gt;</span>
+<span class="source-line" id="L268"><a class="line-number" href="#L268">268</a>    /// &lt;nova.when&gt;Use from physical-memory manager implementations when returning current accounting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L269"><a class="line-number" href="#L269">269</a>    /// &lt;nova.depends&gt;Consistent manager counters captured at one point in time&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L270"><a class="line-number" href="#L270">270</a>    /// &lt;returns&gt;A statistics value containing the supplied counters.&lt;/returns&gt;</span>
+<span class="source-line" id="L271"><a class="line-number" href="#L271">271</a>    /// &lt;example&gt;&lt;code&gt;PhysicalMemoryStatistics statistics = PhysicalMemoryStatistics.Create(total, free, allocated, reserved, largest, allocations, reservations);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L272"><a class="line-number" href="#L272">272</a>    public static PhysicalMemoryStatistics Create(ulong totalManagedPages, ulong freePages, ulong allocatedPages, ulong reservedPages, ulong largestFreeRunPages, int activeAllocations, int activeReservations)</span>
+<span class="source-line" id="L273"><a class="line-number" href="#L273">273</a>        =&gt; new(totalManagedPages, freePages, allocatedPages, reservedPages, largestFreeRunPages, activeAllocations, activeReservations);</span>
+<span class="source-line" id="L274"><a class="line-number" href="#L274">274</a>}</span>
+<span class="source-line" id="L275"><a class="line-number" href="#L275">275</a></span>
+<span class="source-line" id="L276"><a class="line-number" href="#L276">276</a>/// &lt;summary&gt;Describes caller-owned raw storage used exclusively for allocator metadata.&lt;/summary&gt;</span>
+<span class="source-line" id="L277"><a class="line-number" href="#L277">277</a>/// &lt;nova.when&gt;Provide memory reserved before physical allocation begins so the manager itself never requires the kernel heap.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L278"><a class="line-number" href="#L278">278</a>/// &lt;nova.depends&gt;Stable writable memory address valid for the manager lifetime&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L279"><a class="line-number" href="#L279">279</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L280"><a class="line-number" href="#L280">280</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L281"><a class="line-number" href="#L281">281</a>public readonly struct PhysicalAllocatorWorkspace</span>
+<span class="source-line" id="L282"><a class="line-number" href="#L282">282</a>{</span>
+<span class="source-line" id="L283"><a class="line-number" href="#L283">283</a>    private PhysicalAllocatorWorkspace(nint address, ulong byteLength)</span>
+<span class="source-line" id="L284"><a class="line-number" href="#L284">284</a>    {</span>
+<span class="source-line" id="L285"><a class="line-number" href="#L285">285</a>        Address = address;</span>
+<span class="source-line" id="L286"><a class="line-number" href="#L286">286</a>        ByteLength = byteLength;</span>
+<span class="source-line" id="L287"><a class="line-number" href="#L287">287</a>    }</span>
+<span class="source-line" id="L288"><a class="line-number" href="#L288">288</a></span>
+<span class="source-line" id="L289"><a class="line-number" href="#L289">289</a>    /// &lt;summary&gt;Gets the writable metadata address.&lt;/summary&gt;</span>
+<span class="source-line" id="L290"><a class="line-number" href="#L290">290</a>    /// &lt;nova.when&gt;Use only when integrating custom allocator implementations.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L291"><a class="line-number" href="#L291">291</a>    public nint Address { get; }</span>
+<span class="source-line" id="L292"><a class="line-number" href="#L292">292</a>    /// &lt;summary&gt;Gets the number of writable metadata bytes.&lt;/summary&gt;</span>
+<span class="source-line" id="L293"><a class="line-number" href="#L293">293</a>    /// &lt;nova.when&gt;Use to validate implementation-specific workspace requirements.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L294"><a class="line-number" href="#L294">294</a>    public ulong ByteLength { get; }</span>
+<span class="source-line" id="L295"><a class="line-number" href="#L295">295</a></span>
+<span class="source-line" id="L296"><a class="line-number" href="#L296">296</a>    /// &lt;summary&gt;Attempts to describe a non-null writable metadata buffer.&lt;/summary&gt;</span>
+<span class="source-line" id="L297"><a class="line-number" href="#L297">297</a>    /// &lt;nova.when&gt;Use with static, boot-reserved, stack, or otherwise caller-owned storage before manager initialisation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L298"><a class="line-number" href="#L298">298</a>    /// &lt;nova.depends&gt;The caller owns the buffer lifetime&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L299"><a class="line-number" href="#L299">299</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the address is non-zero, 8-byte aligned, and the buffer is non-empty.&lt;/returns&gt;</span>
+<span class="source-line" id="L300"><a class="line-number" href="#L300">300</a>    /// &lt;example&gt;&lt;code&gt;bool valid = PhysicalAllocatorWorkspace.TryCreate(address, byteLength, out PhysicalAllocatorWorkspace workspace);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L301"><a class="line-number" href="#L301">301</a>    public static bool TryCreate(nint address, ulong byteLength, out PhysicalAllocatorWorkspace workspace)</span>
+<span class="source-line" id="L302"><a class="line-number" href="#L302">302</a>    {</span>
+<span class="source-line" id="L303"><a class="line-number" href="#L303">303</a>        workspace = default;</span>
+<span class="source-line" id="L304"><a class="line-number" href="#L304">304</a>        if (address == 0 || byteLength == 0 || (((nuint)address) &amp; (nuint)7) != 0) return false;</span>
+<span class="source-line" id="L305"><a class="line-number" href="#L305">305</a>        workspace = new PhysicalAllocatorWorkspace(address, byteLength);</span>
+<span class="source-line" id="L306"><a class="line-number" href="#L306">306</a>        return true;</span>
+<span class="source-line" id="L307"><a class="line-number" href="#L307">307</a>    }</span>
+<span class="source-line" id="L308"><a class="line-number" href="#L308">308</a>}</span>
+<span class="source-line" id="L309"><a class="line-number" href="#L309">309</a></span>
+<span class="source-line" id="L310"><a class="line-number" href="#L310">310</a>/// &lt;summary&gt;Defines the replaceable contract for physical-frame allocation.&lt;/summary&gt;</span>
+<span class="source-line" id="L311"><a class="line-number" href="#L311">311</a>/// &lt;nova.when&gt;Implement for a custom allocator or consume through a selected NovaOryn allocator methodology.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L312"><a class="line-number" href="#L312">312</a>/// &lt;nova.depends&gt;NormalisedMemoryMap and PhysicalAllocatorWorkspace&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L313"><a class="line-number" href="#L313">313</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L314"><a class="line-number" href="#L314">314</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L315"><a class="line-number" href="#L315">315</a>public interface IPhysicalMemoryManager</span>
+<span class="source-line" id="L316"><a class="line-number" href="#L316">316</a>{</span>
+<span class="source-line" id="L317"><a class="line-number" href="#L317">317</a>    /// &lt;summary&gt;Gets the allocator methodology.&lt;/summary&gt;</span>
+<span class="source-line" id="L318"><a class="line-number" href="#L318">318</a>    /// &lt;nova.when&gt;Use for diagnostics and configuration reporting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L319"><a class="line-number" href="#L319">319</a>    PhysicalAllocatorMethod Method { get; }</span>
+<span class="source-line" id="L320"><a class="line-number" href="#L320">320</a>    /// &lt;summary&gt;Gets whether the manager has accepted a normalised map and workspace.&lt;/summary&gt;</span>
+<span class="source-line" id="L321"><a class="line-number" href="#L321">321</a>    /// &lt;nova.when&gt;Check before allocation when manager ownership is indirect.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L322"><a class="line-number" href="#L322">322</a>    bool IsInitialized { get; }</span>
+<span class="source-line" id="L323"><a class="line-number" href="#L323">323</a>    /// &lt;summary&gt;Gets the physical frame size in bytes.&lt;/summary&gt;</span>
+<span class="source-line" id="L324"><a class="line-number" href="#L324">324</a>    /// &lt;nova.when&gt;Use when converting frame counts to byte lengths.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L325"><a class="line-number" href="#L325">325</a>    ulong PageSize { get; }</span>
+<span class="source-line" id="L326"><a class="line-number" href="#L326">326</a></span>
+<span class="source-line" id="L327"><a class="line-number" href="#L327">327</a>    /// &lt;summary&gt;Initialises the manager from immediately allocatable ranges in a normalised boot map.&lt;/summary&gt;</span>
+<span class="source-line" id="L328"><a class="line-number" href="#L328">328</a>    /// &lt;nova.when&gt;Call once after boot memory-map normalisation and before virtual-memory construction.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L329"><a class="line-number" href="#L329">329</a>    /// &lt;nova.depends&gt;NormalisedMemoryMap and caller-owned workspace&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L330"><a class="line-number" href="#L330">330</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when initialisation succeeds.&lt;/returns&gt;</span>
+<span class="source-line" id="L331"><a class="line-number" href="#L331">331</a>    /// &lt;example&gt;&lt;code&gt;bool ready = manager.TryInitialize(map, workspace, 128, 32, out PhysicalMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L332"><a class="line-number" href="#L332">332</a>    bool TryInitialize(NormalisedMemoryMap map, PhysicalAllocatorWorkspace workspace, int allocationCapacity, int reservationCapacity, out PhysicalMemoryStatus status);</span>
+<span class="source-line" id="L333"><a class="line-number" href="#L333">333</a></span>
+<span class="source-line" id="L334"><a class="line-number" href="#L334">334</a>    /// &lt;summary&gt;Allocates one contiguous physical range.&lt;/summary&gt;</span>
+<span class="source-line" id="L335"><a class="line-number" href="#L335">335</a>    /// &lt;nova.when&gt;Use for page tables, stacks, heap backing, DMA, and other frame ownership.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L336"><a class="line-number" href="#L336">336</a>    /// &lt;nova.depends&gt;Successful TryInitialize&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L337"><a class="line-number" href="#L337">337</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when a range satisfying all constraints is allocated.&lt;/returns&gt;</span>
+<span class="source-line" id="L338"><a class="line-number" href="#L338">338</a>    /// &lt;example&gt;&lt;code&gt;bool allocated = manager.TryAllocate(request, out PhysicalAllocation allocation, out PhysicalMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L339"><a class="line-number" href="#L339">339</a>    bool TryAllocate(PhysicalAllocationRequest request, out PhysicalAllocation allocation, out PhysicalMemoryStatus status);</span>
+<span class="source-line" id="L340"><a class="line-number" href="#L340">340</a></span>
+<span class="source-line" id="L341"><a class="line-number" href="#L341">341</a>    /// &lt;summary&gt;Releases a live allocation back to the same manager.&lt;/summary&gt;</span>
+<span class="source-line" id="L342"><a class="line-number" href="#L342">342</a>    /// &lt;nova.when&gt;Use when the owning subsystem no longer needs the physical frames.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L343"><a class="line-number" href="#L343">343</a>    /// &lt;nova.depends&gt;PhysicalAllocation token returned by TryAllocate&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L344"><a class="line-number" href="#L344">344</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the live allocation was found and released exactly once.&lt;/returns&gt;</span>
+<span class="source-line" id="L345"><a class="line-number" href="#L345">345</a>    /// &lt;example&gt;&lt;code&gt;bool released = manager.TryRelease(allocation, out PhysicalMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L346"><a class="line-number" href="#L346">346</a>    bool TryRelease(PhysicalAllocation allocation, out PhysicalMemoryStatus status);</span>
+<span class="source-line" id="L347"><a class="line-number" href="#L347">347</a></span>
+<span class="source-line" id="L348"><a class="line-number" href="#L348">348</a>    /// &lt;summary&gt;Removes an exact currently-free range from ordinary allocation.&lt;/summary&gt;</span>
+<span class="source-line" id="L349"><a class="line-number" href="#L349">349</a>    /// &lt;nova.when&gt;Use for late hardware discoveries or physical metadata that must become reserved after manager initialisation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L350"><a class="line-number" href="#L350">350</a>    /// &lt;nova.depends&gt;PhysicalFrameRange&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L351"><a class="line-number" href="#L351">351</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when every requested frame was free and the reservation was recorded.&lt;/returns&gt;</span>
+<span class="source-line" id="L352"><a class="line-number" href="#L352">352</a>    /// &lt;example&gt;&lt;code&gt;bool reserved = manager.TryReserve(range, PhysicalMemoryPurpose.Metadata, out PhysicalReservation reservation, out PhysicalMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L353"><a class="line-number" href="#L353">353</a>    bool TryReserve(PhysicalFrameRange range, PhysicalMemoryPurpose purpose, out PhysicalReservation reservation, out PhysicalMemoryStatus status);</span>
+<span class="source-line" id="L354"><a class="line-number" href="#L354">354</a></span>
+<span class="source-line" id="L355"><a class="line-number" href="#L355">355</a>    /// &lt;summary&gt;Releases a live reservation back to the same manager.&lt;/summary&gt;</span>
+<span class="source-line" id="L356"><a class="line-number" href="#L356">356</a>    /// &lt;nova.when&gt;Use only when the reserving subsystem has made the exact range safe for general reuse.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L357"><a class="line-number" href="#L357">357</a>    /// &lt;nova.depends&gt;PhysicalReservation token returned by TryReserve&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L358"><a class="line-number" href="#L358">358</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the live reservation was found and released exactly once.&lt;/returns&gt;</span>
+<span class="source-line" id="L359"><a class="line-number" href="#L359">359</a>    /// &lt;example&gt;&lt;code&gt;bool released = manager.TryReleaseReservation(reservation, out PhysicalMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L360"><a class="line-number" href="#L360">360</a>    bool TryReleaseReservation(PhysicalReservation reservation, out PhysicalMemoryStatus status);</span>
+<span class="source-line" id="L361"><a class="line-number" href="#L361">361</a></span>
+<span class="source-line" id="L362"><a class="line-number" href="#L362">362</a>    /// &lt;summary&gt;Returns a current allocator accounting snapshot.&lt;/summary&gt;</span>
+<span class="source-line" id="L363"><a class="line-number" href="#L363">363</a>    /// &lt;nova.when&gt;Use for diagnostics and memory-pressure decisions.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L364"><a class="line-number" href="#L364">364</a>    /// &lt;nova.depends&gt;Current allocator state&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L365"><a class="line-number" href="#L365">365</a>    /// &lt;returns&gt;Current total, free, allocated, reserved, and largest-run counters.&lt;/returns&gt;</span>
+<span class="source-line" id="L366"><a class="line-number" href="#L366">366</a>    /// &lt;example&gt;&lt;code&gt;PhysicalMemoryStatistics statistics = manager.GetStatistics();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L367"><a class="line-number" href="#L367">367</a>    PhysicalMemoryStatistics GetStatistics();</span>
+<span class="source-line" id="L368"><a class="line-number" href="#L368">368</a>}</span>
+<span class="source-line" id="L369"><a class="line-number" href="#L369">369</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

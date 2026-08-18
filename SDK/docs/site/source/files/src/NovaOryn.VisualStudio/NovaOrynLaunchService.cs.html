@@ -1,0 +1,78 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.VisualStudio/NovaOrynLaunchService.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.VisualStudio/NovaOrynLaunchService.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using System.Collections;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using System.IO;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>using System.Linq;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>using System.Threading;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>using System.Threading.Tasks;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>using EnvDTE;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>using Microsoft.VisualStudio.Shell;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>using Microsoft.VisualStudio.Threading;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>namespace NovaOryn.VisualStudio;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>internal sealed class NovaOrynLaunchService</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>{</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    private readonly NovaOrynPackage _package;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    private int _launchActive;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    public NovaOrynLaunchService(NovaOrynPackage package) =&gt; _package = package ?? throw new ArgumentNullException(nameof(package));</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    public bool TryGetActiveProject(out string projectFile)</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    {</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>        ThreadHelper.ThrowIfNotOnUIThread(); projectFile = string.Empty;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>        if (!(ServiceProvider.GlobalProvider.GetService(typeof(DTE)) is DTE dte) || dte.Solution == null || !dte.Solution.IsOpen) return false;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>        Project project = ResolveStartupProject(dte) ?? (dte.ActiveSolutionProjects as Array)?.Cast&lt;object&gt;().OfType&lt;Project&gt;().FirstOrDefault();</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>        string candidate = project?.FullName;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>        if (!NovaOrynProjectRecognizer.IsNovaOrynProject(candidate)) return false;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>        projectFile = Path.GetFullPath(candidate); return true;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    }</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    public bool QueueLaunch(bool buildOnly)</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    {</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>        ThreadHelper.ThrowIfNotOnUIThread();</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>        if (Interlocked.CompareExchange(ref _launchActive, 1, 0) != 0)</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>        {</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>            _package.Output.WriteLine(&quot;[INFO] A NovaOryn build/run is already active; duplicate launch ignored.&quot;);</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>            return false;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>        }</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>        _package.JoinableTaskFactory.RunAsync(async delegate</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>        {</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>            try { await LaunchAsync(buildOnly, CancellationToken.None); }</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>            finally { Interlocked.Exchange(ref _launchActive, 0); }</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>        }).FileAndForget(&quot;NovaOryn/Launch&quot;);</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>        return true;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    }</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    private async Task LaunchAsync(bool buildOnly, CancellationToken token)</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    {</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(token); _package.Output.Activate();</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>        if (!TryGetActiveProject(out string projectFile)) { _package.Output.WriteLine(&quot;[FAIL] The startup project is not a NovaOryn kernel project.&quot;); return; }</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>        if (!SdkInstallationDetector.IsInstalled(out string sdkRoot)) { _package.Output.WriteLine($&quot;[FAIL] NovaOryn SDK was not found at {sdkRoot}.&quot;); return; }</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>        DTE dte = await _package.GetServiceAsync(typeof(DTE)) as DTE;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>        if (dte != null) dte.ExecuteCommand(&quot;File.SaveAll&quot;);</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>        string manifest = Path.Combine(Path.GetDirectoryName(projectFile) ?? string.Empty, &quot;NovaOrynProject.json&quot;);</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        string script = Path.Combine(sdkRoot, &quot;Build-NovaOryn.ps1&quot;);</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>        string configuration = ResolveConfiguration(dte);</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>        string arguments = $&quot;-NoProfile -ExecutionPolicy Bypass -File {Quote(script)} -Project {Quote(manifest)} -Configuration {configuration}&quot; + (buildOnly ? &quot; -NoRun&quot; : &quot; -Run&quot;);</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>        _package.Output.WriteLine($&quot;[INFO] NovaOryn {(buildOnly ? &quot;Build&quot; : &quot;Run&quot;)}: {Path.GetFileName(projectFile)} ({configuration}, fast kernel path; SDK validation skipped).&quot;);</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>        using var process = new System.Diagnostics.Process { StartInfo = new System.Diagnostics.ProcessStartInfo(&quot;powershell.exe&quot;, arguments) { WorkingDirectory = sdkRoot, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true }, EnableRaisingEvents = true };</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>        process.OutputDataReceived += (_, e) =&gt; WriteLine(e.Data); process.ErrorDataReceived += (_, e) =&gt; WriteLine(e.Data);</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>        if (!process.Start()) { _package.Output.WriteLine(&quot;[FAIL] NovaOryn build process did not start.&quot;); return; }</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>        process.BeginOutputReadLine(); process.BeginErrorReadLine(); await Task.Run(() =&gt; process.WaitForExit(), token);</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>        WriteLine(process.ExitCode == 0 ? &quot;[ OK ] NovaOryn operation completed.&quot; : $&quot;[FAIL] NovaOryn operation failed with exit code {process.ExitCode}.&quot;);</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    }</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    private void WriteLine(string line)</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    {</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>        if (string.IsNullOrWhiteSpace(line)) return;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>        _package.JoinableTaskFactory.RunAsync(async delegate { await _package.JoinableTaskFactory.SwitchToMainThreadAsync(); _package.Output.WriteLine(line); }).FileAndForget(&quot;NovaOryn/Output&quot;);</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    }</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    private static string ResolveConfiguration(DTE dte)</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    {</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>        ThreadHelper.ThrowIfNotOnUIThread(); try { return dte?.Solution?.SolutionBuild?.ActiveConfiguration?.Name ?? &quot;Debug&quot;; } catch { return &quot;Debug&quot;; }</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    }</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    private static Project ResolveStartupProject(DTE dte)</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    {</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>        ThreadHelper.ThrowIfNotOnUIThread();</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>        string unique = (dte.Solution.SolutionBuild.StartupProjects as Array)?.Cast&lt;object&gt;().Select(x =&gt; x?.ToString()).FirstOrDefault(x =&gt; !string.IsNullOrWhiteSpace(x));</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>        if (string.IsNullOrWhiteSpace(unique)) return null;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>        foreach (Project p in dte.Solution.Projects) if (string.Equals(p.UniqueName, unique, StringComparison.OrdinalIgnoreCase)) return p;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>        return null;</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    }</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    private static string Quote(string value) =&gt; &quot;\&quot;&quot; + value.Replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;) + &quot;\&quot;&quot;;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>}</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

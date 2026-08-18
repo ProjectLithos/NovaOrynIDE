@@ -1,0 +1,89 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Architecture.X64.Descriptors/X64TaskStateSegment.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Architecture.X64.Descriptors/X64TaskStateSegment.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Architecture;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Architecture.X64.Descriptors;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;summary&gt;Initialises and owns one caller-allocated x64 Task State Segment.&lt;/summary&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>public sealed unsafe class X64TaskStateSegment : ITaskStateSegment</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>{</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    private const uint ArchitecturalSize = 104;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    private TaskStateSegmentConfiguration configuration;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    private bool configured;</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a></span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    /// &lt;inheritdoc /&gt;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    public ProcessorId GetProcessorId() =&gt; configuration.ProcessorId;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a></span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    /// &lt;inheritdoc /&gt;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    public bool Configure(TaskStateSegmentConfiguration value)</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    {</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>        if (value.TaskStateSegmentAddress.Value == 0 || value.TaskStateSegmentCapacity &lt; ArchitecturalSize ||</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>            value.RingZeroStackTop.Value == 0 || value.DoubleFaultStackTop.Value == 0 || value.NmiStackTop.Value == 0)</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>        {</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>            return false;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>        }</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>        if (value.IoPermissionBitmapPolicy == IoPermissionBitmapPolicy.DenyByDefault &amp;&amp;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>            (value.IoPermissionBitmapAddress.Value == 0 || value.IoPermissionBitmapLength == 0))</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>        {</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>            return false;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>        }</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a></span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>        configuration = value;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>        byte* tss = (byte*)value.TaskStateSegmentAddress.Value;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>        for (uint index = 0; index &lt; ArchitecturalSize; index++) tss[index] = 0;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>        Write64(tss, 4, value.RingZeroStackTop.Value);</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>        Write64(tss, 36, value.DoubleFaultStackTop.Value); // IST1</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>        Write64(tss, 44, value.NmiStackTop.Value);         // IST2</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>        if (value.MachineCheckStackTop.Value != 0) Write64(tss, 52, value.MachineCheckStackTop.Value); // IST3</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a></span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>        ushort bitmapOffset = (ushort)ArchitecturalSize;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>        if (value.IoPermissionBitmapPolicy == IoPermissionBitmapPolicy.DenyByDefault)</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>        {</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>            ulong bitmapDistance = value.IoPermissionBitmapAddress.Value - value.TaskStateSegmentAddress.Value;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>            if (value.IoPermissionBitmapAddress.Value &lt; value.TaskStateSegmentAddress.Value || bitmapDistance &gt; ushort.MaxValue)</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>                return false;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>            bitmapOffset = (ushort)bitmapDistance;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>            byte* bitmap = (byte*)value.IoPermissionBitmapAddress.Value;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>            for (uint index = 0; index &lt; value.IoPermissionBitmapLength; index++) bitmap[index] = 0xFF;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>        }</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        Write16(tss, 102, bitmapOffset);</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>        configured = true;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>        return true;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    }</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a></span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;inheritdoc /&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    public bool Install(SegmentSelector taskStateSelector) =&gt; configured &amp;&amp; NativeMethods.LoadTaskRegister(taskStateSelector.Value);</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a></span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;inheritdoc /&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    public bool SetRingZeroStack(Address stackTop)</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    {</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>        if (!configured || stackTop.Value == 0) return false;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>        Write64((byte*)configuration.TaskStateSegmentAddress.Value, 4, stackTop.Value);</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>        configuration = configuration with { RingZeroStackTop = stackTop };</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>        return true;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    }</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a></span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    /// &lt;inheritdoc /&gt;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    public bool SetInterruptStack(byte entry, Address stackTop)</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    {</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        if (!configured || entry is &lt; 1 or &gt; 7 || stackTop.Value == 0) return false;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>        Write64((byte*)configuration.TaskStateSegmentAddress.Value, (uint)(28 + entry * 8), stackTop.Value);</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>        return true;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    }</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a></span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    /// &lt;inheritdoc /&gt;</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    public Address GetAddress() =&gt; configured ? configuration.TaskStateSegmentAddress : new Address(0);</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a></span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    /// &lt;inheritdoc /&gt;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    public uint GetLimit()</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    {</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>        if (!configured) return 0;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        if (configuration.IoPermissionBitmapPolicy != IoPermissionBitmapPolicy.DenyByDefault) return ArchitecturalSize - 1;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>        ulong length = configuration.IoPermissionBitmapAddress.Value - configuration.TaskStateSegmentAddress.Value + configuration.IoPermissionBitmapLength;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>        return length &gt; uint.MaxValue ? 0 : (uint)length;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    }</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a></span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    private static void Write16(byte* target, uint offset, ushort value) =&gt; *(ushort*)(target + offset) = value;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>    private static void Write64(byte* target, uint offset, ulong value) =&gt; *(ulong*)(target + offset) = value;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>}</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

@@ -1,0 +1,65 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Ps2/Ps2Contracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Ps2/Ps2Contracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Kernel.Ps2;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Keyboard layouts supplied by the NovaOryn PS/2 keyboard service.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>public enum KeyboardLayout : UInt32</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>{</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>    /// &lt;summary&gt;United Kingdom English keyboard.&lt;/summary&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    English_UK = 1U,</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    /// &lt;summary&gt;United States English keyboard.&lt;/summary&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    English_USA = 2U</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>}</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a></span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>/// &lt;summary&gt;Logical keys reported by the Set-1 PS/2 keyboard decoder.&lt;/summary&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>public enum Ps2Key : UInt16</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>{</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    None=0, Escape, D1,D2,D3,D4,D5,D6,D7,D8,D9,D0, Minus, Equals, Backspace, Tab,</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    Q,W,E,R,T,Y,U,I,O,P, LeftBracket,RightBracket,Enter,LeftControl,A,S,D,F,G,H,J,K,L,</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    Semicolon,Apostrophe,Grave,LeftShift,Backslash,Z,X,C,V,B,N,M,Comma,Period,Slash,RightShift,</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    KeypadMultiply,LeftAlt,Space,CapsLock,F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,NumLock,ScrollLock,</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    Keypad7,Keypad8,Keypad9,KeypadMinus,Keypad4,Keypad5,Keypad6,KeypadPlus,Keypad1,Keypad2,Keypad3,Keypad0,KeypadDecimal,Oem102,</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    F11,F12, RightControl,RightAlt,KeypadEnter,KeypadDivide,Home,Up,PageUp,Left,Right,End,Down,PageDown,Insert,Delete</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>}</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a></span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>/// &lt;summary&gt;One decoded keyboard transition.&lt;/summary&gt;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>public readonly struct Ps2KeyboardEvent</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>{</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    public Ps2KeyboardEvent(Ps2Key key, Boolean pressed, Char character, Boolean shift, Boolean control, Boolean alt, Boolean capsLock)</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    { Key=key; Pressed=pressed; Character=character; Shift=shift; Control=control; Alt=alt; CapsLock=capsLock; }</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    public Ps2Key Key { get; }</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    public Boolean Pressed { get; }</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    public Char Character { get; }</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    public Boolean Shift { get; }</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    public Boolean Control { get; }</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    public Boolean Alt { get; }</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    public Boolean CapsLock { get; }</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>}</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a></span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>/// &lt;summary&gt;Latest decoded PS/2 mouse state.&lt;/summary&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>public readonly struct Ps2MouseState</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>{</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    public Ps2MouseState(Int64 x,Int64 y,Boolean left,Boolean right,Boolean middle,Int32 wheel)</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    { X=x;Y=y;LeftButton=left;RightButton=right;MiddleButton=middle;Wheel=wheel; }</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    public Int64 X { get; }</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    public Int64 Y { get; }</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    public Boolean LeftButton { get; }</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    public Boolean RightButton { get; }</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    public Boolean MiddleButton { get; }</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    public Int32 Wheel { get; }</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>}</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a></span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>/// &lt;summary&gt;PS/2 controller and device capabilities.&lt;/summary&gt;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>public readonly struct Ps2Capabilities</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>{</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    public Ps2Capabilities(Boolean controller,Boolean keyboard,Boolean mouse,KeyboardLayout layout,UInt64 keyboardEvents,UInt64 mousePackets)</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    { Controller=controller;Keyboard=keyboard;Mouse=mouse;Layout=layout;KeyboardEvents=keyboardEvents;MousePackets=mousePackets; }</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    public Boolean Controller { get; }</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    public Boolean Keyboard { get; }</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    public Boolean Mouse { get; }</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    public KeyboardLayout Layout { get; }</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    public UInt64 KeyboardEvents { get; }</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    public UInt64 MousePackets { get; }</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>}</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scheduling, Protection and Processes · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"><script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../guides/Getting-Started.html">Guides</a><a href="../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../" placeholder="Type a public item"><div id="search-results"></div></label></header><main>
+<h1>Scheduling, protection and processes</h1>
+<h2>SMP and per-CPU state</h2>
+<p><code>KernelSmp</code> discovers enabled x64 processors, owns per-CPU bootstrap state and starts xAPIC application processors through INIT/SIPI. It exposes processor counts, online state, bootstrap-processor identity and per-CPU scheduler context storage.</p>
+<h2>Scheduler</h2>
+<p><code>KernelScheduler</code> owns kernel-thread records, per-CPU run state, priority queues, affinity and preemption decisions. It can create threads with page-aligned kernel stacks, change affinity, block/wake/terminate threads, select the next runnable thread and change the scheduling quantum.</p>
+<h2>User/kernel protection</h2>
+<p><code>KernelProtection</code> establishes the x64 ring-0/ring-3 boundary, enables supervisor write protection and available execution protections, validates user mappings, and prevents user mappings from being placed in the kernel half of the address space.</p>
+<h2>Processes and executables</h2>
+<p><code>KernelProcesses</code> creates isolated x64 user processes from validated ELF64 or PE32+ images. Images can be supplied from memory or loaded through the mounted VFS. Each process receives a private lower-half address space and user stack before ring-3 entry.</p>
+<h2>Relevant API assemblies</h2>
+<ul><li><a href="../assemblies/novaoryn-kernel-smp.html">SMP</a></li><li><a href="../assemblies/novaoryn-kernel-scheduler.html">Scheduler</a></li><li><a href="../assemblies/novaoryn-kernel-protection.html">Protection</a></li><li><a href="../assemblies/novaoryn-kernel-processes.html">Processes</a></li></ul></main><footer>Updated documentation for NovaOryn 0.29.0 SDK source.</footer></body></html>

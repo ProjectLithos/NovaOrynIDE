@@ -1,0 +1,251 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Console/KernelConsole.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Console/KernelConsole.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Kernel.Internal.X64;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Text;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>namespace NovaOryn.Kernel.Console;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a></span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;summary&gt;Provides normal managed C# console output for a freestanding NovaOryn kernel.&lt;/summary&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>public static class KernelConsole</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>{</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    private const UInt32 DefaultFontSize = BitmapFont.DefaultFontSize;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    private static FramebufferConsole _framebuffer;</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    private static Boolean _initialized;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    private static unsafe delegate*&lt;Byte, Boolean&gt; _secondarySerialWriter;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a></span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    /// &lt;summary&gt;Gets the exact glyph height used by the framebuffer renderer, in pixels.&lt;/summary&gt;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    public static UInt32 FontSize</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    {</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>        get { return _framebuffer.FontSize; }</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    }</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a></span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    /// &lt;summary&gt;Initializes serial output and a 16-pixel framebuffer font.&lt;/summary&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    public static Boolean Initialize(BootContext boot)</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    {</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>        return Initialize(boot, DefaultFontSize);</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    }</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a></span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    /// &lt;summary&gt;Initializes serial and framebuffer output with an exact rendered font size.&lt;/summary&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    public static Boolean Initialize(BootContext boot, UInt32 fontSize)</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    {</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>        if (!Native.InitializeSerial()) return false;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>        if (!_framebuffer.Initialize(boot, fontSize)) return false;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>        if (!_framebuffer.Clear()) return false;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>        _initialized = true;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>        return true;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    }</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a></span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    /// &lt;summary&gt;Writes a managed string without appending a line terminator.&lt;/summary&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    public static Boolean Write(String value)</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    {</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>        if (!_initialized || value == null) return false;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>        Int32 length = value.Length;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>        Int32 index = 0;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>        while (index &lt; length)</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>        {</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>            Char character = value[index];</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>            if ((UInt32)character &gt; 0x7FU) character = (Char)&#39;?&#39;;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>            if (!Write((Byte)character)) return false;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>            index++;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>        }</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>        return true;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    }</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a></span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;summary&gt;Writes a managed string followed by a carriage return and line feed.&lt;/summary&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    public static Boolean WriteLine(String value)</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    {</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>        if (!Write(value)) return false;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>        if (!Write((Byte)&#39;\r&#39;)) return false;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>        return Write((Byte)&#39;\n&#39;);</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    }</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a></span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    /// &lt;summary&gt;Writes a Boolean using normal .NET True/False text without allocating a managed string.&lt;/summary&gt;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    public static Boolean Write(Boolean value) =&gt; Write(StringFormatter.Format(value));</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a></span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    /// &lt;summary&gt;Writes a Boolean using normal .NET True/False text followed by a line terminator.&lt;/summary&gt;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    public static Boolean WriteLine(Boolean value) =&gt; WriteLine(StringFormatter.Format(value));</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a></span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    /// &lt;summary&gt;Writes a text prefix followed by a Boolean without runtime string concatenation.&lt;/summary&gt;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    public static Boolean Write(String prefix, Boolean value)</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    {</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>        if (!Write(prefix)) return false;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>        return Write(value);</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    }</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a></span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    /// &lt;summary&gt;Writes a text prefix followed by a Boolean and a line terminator without runtime string concatenation.&lt;/summary&gt;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    public static Boolean WriteLine(String prefix, Boolean value)</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    {</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>        if (!Write(prefix)) return false;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>        return WriteLine(value);</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    }</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a></span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a></span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>    /// &lt;summary&gt;Writes one unsigned 64-bit value as an ordinary base-10 number.&lt;/summary&gt;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    public static unsafe Boolean WriteUInt64(UInt64 value)</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>    {</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>        Byte* digits = stackalloc Byte[20];</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>        Int32 count = 0;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>        do</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>        {</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>            digits[count] = (Byte)(&#39;0&#39; + (Byte)(value % 10UL));</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>            value /= 10UL;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>            count++;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>        }</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>        while (value != 0UL);</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a></span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>        while (count &gt; 0)</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>        {</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>            count--;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>            if (!Write(digits[count])) return false;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>        }</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>        return true;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    }</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a></span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    /// &lt;summary&gt;Writes a byte quantity using B, KiB, MiB, GiB, or TiB as appropriate.&lt;/summary&gt;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    public static Boolean WriteByteSize(UInt64 bytes)</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    {</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>        if (bytes &gt;= 1099511627776UL) return WriteScaled(bytes, 1099511627776UL, &quot; TiB&quot;);</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>        if (bytes &gt;= 1073741824UL) return WriteScaled(bytes, 1073741824UL, &quot; GiB&quot;);</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>        if (bytes &gt;= 1048576UL) return WriteScaled(bytes, 1048576UL, &quot; MiB&quot;);</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>        if (bytes &gt;= 1024UL) return WriteScaled(bytes, 1024UL, &quot; KiB&quot;);</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>        if (!WriteUInt64(bytes)) return false;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>        return Write(&quot; B&quot;);</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>    }</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a></span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>    /// &lt;summary&gt;Writes a frequency using Hz, kHz, MHz, or GHz as appropriate.&lt;/summary&gt;</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>    public static Boolean WriteFrequency(UInt64 hertz)</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>    {</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>        if (hertz &gt;= 1000000000UL) return WriteScaled(hertz, 1000000000UL, &quot; GHz&quot;);</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>        if (hertz &gt;= 1000000UL) return WriteScaled(hertz, 1000000UL, &quot; MHz&quot;);</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>        if (hertz &gt;= 1000UL) return WriteScaled(hertz, 1000UL, &quot; kHz&quot;);</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>        if (!WriteUInt64(hertz)) return false;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>        return Write(&quot; Hz&quot;);</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>    }</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a></span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    /// &lt;summary&gt;Writes a duration expressed in nanoseconds using ns, us, ms, or s as appropriate.&lt;/summary&gt;</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>    public static Boolean WriteDurationNanoseconds(UInt64 nanoseconds)</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>    {</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>        if (nanoseconds &gt;= 1000000000UL) return WriteScaled(nanoseconds, 1000000000UL, &quot; s&quot;);</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>        if (nanoseconds &gt;= 1000000UL) return WriteScaled(nanoseconds, 1000000UL, &quot; ms&quot;);</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>        if (nanoseconds &gt;= 1000UL) return WriteScaled(nanoseconds, 1000UL, &quot; us&quot;);</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>        if (!WriteUInt64(nanoseconds)) return false;</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>        return Write(&quot; ns&quot;);</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>    }</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a></span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>    private static Boolean WriteScaled(UInt64 value, UInt64 divisor, String suffix)</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>    {</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>        UInt64 whole = value / divisor;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>        UInt64 remainder = value % divisor;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>        UInt64 hundredths = (remainder * 100UL) / divisor;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>        if (!WriteUInt64(whole)) return false;</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>        if (hundredths != 0UL)</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>        {</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>            if (!Write(&quot;.&quot;)) return false;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>            if (hundredths &lt; 10UL &amp;&amp; !Write(&quot;0&quot;)) return false;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>            if (!WriteUInt64(hundredths)) return false;</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>        }</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>        return Write(suffix);</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>    }</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a></span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>    /// &lt;summary&gt;Writes one unsigned 64-bit value as a fixed-width hexadecimal number prefixed with 0x.&lt;/summary&gt;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when every hexadecimal character was written.&lt;/returns&gt;</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>    public static Boolean WriteHex(UInt64 value)</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>    {</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>        if (!Write(&quot;0x&quot;)) return false;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>        Int32 shift = 60;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>        while (shift &gt;= 0)</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>        {</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>            UInt32 nibble = (UInt32)((value &gt;&gt; shift) &amp; 0xFUL);</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>            Byte character = nibble &lt; 10U ? (Byte)(&#39;0&#39; + nibble) : (Byte)(&#39;A&#39; + (nibble - 10U));</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>            if (!Write(character)) return false;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>            shift -= 4;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>        }</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>        return true;</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>    }</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a></span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a></span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>    /// &lt;summary&gt;Gets the byte count required by one complete framebuffer image.&lt;/summary&gt;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>    public static UInt64 GetFramebufferBufferByteCount()</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>    {</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>        return _initialized ? _framebuffer.FrameByteCount : 0UL;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>    }</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a></span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>    /// &lt;summary&gt;Gets the active framebuffer buffering mode and available buffer count.&lt;/summary&gt;</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>    public static FramebufferBufferCapabilities GetFramebufferBufferCapabilities()</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>    {</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>        FramebufferBufferMode mode = _framebuffer.BufferCount == 3U ? FramebufferBufferMode.Triple : (_framebuffer.BufferCount == 2U ? FramebufferBufferMode.Double : FramebufferBufferMode.Single);</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>        return new FramebufferBufferCapabilities(mode, _framebuffer.AvailableBufferCount, _framebuffer.FrameByteCount);</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>    }</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a></span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>    /// &lt;summary&gt;Attaches two heap-backed framebuffer images and enables triple-buffered output by default.&lt;/summary&gt;</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>    public static Boolean ConfigureFramebufferBuffers(UInt64 backBufferA, UInt64 backBufferB, UInt64 bufferByteCount)</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>    {</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>        if (!_initialized) return false;</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>        return _framebuffer.ConfigureBuffers(backBufferA, backBufferB, bufferByteCount);</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>    }</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a></span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>    /// &lt;summary&gt;Selects one, two, or three framebuffer buffers. Triple buffering uses two software backbuffers plus the GOP scan-out buffer.&lt;/summary&gt;</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>    public static Boolean SetFramebufferBufferCount(UInt32 bufferCount)</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>    {</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>        if (!_initialized) return false;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>        return _framebuffer.SetBufferCount(bufferCount);</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>    }</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a></span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>    /// &lt;summary&gt;Scrolls the framebuffer console upward by one visual line of retained output.&lt;/summary&gt;</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>    public static Boolean ScrollUp()</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>    {</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>        if (!_initialized) return false;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>        return _framebuffer.ScrollUp();</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>    }</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a></span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>    /// &lt;summary&gt;Scrolls the framebuffer console downward by one visual line toward live output.&lt;/summary&gt;</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>    public static Boolean ScrollDown()</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>    {</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>        if (!_initialized) return false;</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>        return _framebuffer.ScrollDown();</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>    }</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a></span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>    /// &lt;summary&gt;Gets the active framebuffer font preset: 1 = 8 px, 2 = 16 px, 3 = 24 px.&lt;/summary&gt;</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>    public static UInt32 GetFontPreset()</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>    {</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>        UInt32 size = _framebuffer.FontSize;</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>        if (size == FramebufferConsole.SmallFontSize) return 1U;</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>        if (size == FramebufferConsole.MediumFontSize) return 2U;</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>        if (size == FramebufferConsole.LargeFontSize) return 3U;</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>        return 0U;</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>    }</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a></span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>    /// &lt;summary&gt;Selects framebuffer font preset 1 (8 px), 2 (16 px), or 3 (24 px) and redraws retained output.&lt;/summary&gt;</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>    public static Boolean SetFontPreset(UInt32 preset)</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>    {</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>        if (!_initialized) return false;</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>        return _framebuffer.SetFontPreset(preset);</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>    }</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a></span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>    /// &lt;summary&gt;Confirms that the console is ready for decoded input delivered by the active input driver.&lt;/summary&gt;</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>    public static Boolean ServiceInput() =&gt; _initialized;</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a></span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>    /// &lt;summary&gt;Runs the post-boot interrupt-driven idle loop. Input is serviced by timer/interrupt dispatch, not by polling here.&lt;/summary&gt;</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>    public static Boolean RunInteractive()</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>    {</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>        if (!_initialized) return false;</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>        while (true) if (!Native.WaitForInterrupt()) return false;</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>    }</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a></span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>    /// &lt;summary&gt;Attaches an optional post-boot serial mirror while preserving COM1 as the primary debug transport.&lt;/summary&gt;</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>    public static unsafe Boolean SetSecondarySerialWriter(delegate*&lt;Byte, Boolean&gt; writer)</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>    {</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a>        _secondarySerialWriter = writer;</span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a>        return true;</span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a>    }</span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a></span>
+<span class="source-line" id="L241"><a class="line-number" href="#L241">241</a>    /// &lt;summary&gt;Writes one character to every configured console target.&lt;/summary&gt;</span>
+<span class="source-line" id="L242"><a class="line-number" href="#L242">242</a>    public static unsafe Boolean Write(Byte value)</span>
+<span class="source-line" id="L243"><a class="line-number" href="#L243">243</a>    {</span>
+<span class="source-line" id="L244"><a class="line-number" href="#L244">244</a>        if (!_initialized) return false;</span>
+<span class="source-line" id="L245"><a class="line-number" href="#L245">245</a>        if (!Native.WriteSerial(value)) return false;</span>
+<span class="source-line" id="L246"><a class="line-number" href="#L246">246</a>        if (_secondarySerialWriter != null &amp;&amp; !_secondarySerialWriter(value)) return false;</span>
+<span class="source-line" id="L247"><a class="line-number" href="#L247">247</a>        return _framebuffer.Write(value);</span>
+<span class="source-line" id="L248"><a class="line-number" href="#L248">248</a>    }</span>
+<span class="source-line" id="L249"><a class="line-number" href="#L249">249</a>}</span>
+<span class="source-line" id="L250"><a class="line-number" href="#L250">250</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

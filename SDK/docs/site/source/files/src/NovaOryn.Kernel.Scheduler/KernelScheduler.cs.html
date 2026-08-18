@@ -1,0 +1,135 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Scheduler/KernelScheduler.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Scheduler/KernelScheduler.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Kernel.Heap;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Kernel.Smp;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>using NovaOryn.Kernel.Time;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>using NovaOryn.Kernel.Internal.X64;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a></span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>namespace NovaOryn.Kernel.Scheduler;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a></span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>/// &lt;summary&gt;Owns kernel-thread records, per-CPU run state, priority queues, affinity and preemption decisions.&lt;/summary&gt;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>public static unsafe class KernelScheduler</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>{</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    private const UInt32 MaximumThreads = 256U;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    private const UInt64 DefaultStackBytes = 65536UL;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    private const UInt64 DefaultQuantumNanoseconds = 5000000UL;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    private const UInt32 NoProcessor = 0xFFFFFFFFU;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    private const UInt64 ContextBytes = 256UL;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a></span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    private struct ThreadRecord</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    {</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>        internal UInt64 Id, StackBase, StackTop, EntryPoint, Argument, AffinityMask, ContextAddress;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>        internal UInt32 State, Priority, ProcessorIndex, NextReady;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    }</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    private struct CpuScheduleState</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    {</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>        internal UInt32 CurrentSlot, IdleSlot;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>        internal UInt64 SwitchCount, PreemptionCount, LastDispatchNanoseconds;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    }</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a></span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    private static ThreadRecord* _threads;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    private static CpuScheduleState* _cpus;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    private static UInt32 _processorCount, _activeThreads;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    private static UInt64 _nextThreadId = 1UL, _quantum = DefaultQuantumNanoseconds;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    private static Boolean _initialized, _timerPreemption;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a></span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;summary&gt;Initializes scheduler tables after SMP, heap and clock initialization.&lt;/summary&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    public static Boolean Initialize()</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    {</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>        if (_initialized) return true;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>        if (!KernelSmp.IsInitialized() || !KernelTime.IsInitialized) return false;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>        _processorCount = KernelSmp.GetProcessorCount();</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>        if (_processorCount == 0U) return false;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>        if (!KernelSchedulerMath.TryGetTableBytes(MaximumThreads, (UInt32)sizeof(ThreadRecord), out UInt64 threadBytes)) return false;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>        if (!KernelSchedulerMath.TryGetTableBytes(_processorCount, (UInt32)sizeof(CpuScheduleState), out UInt64 cpuBytes)) return false;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>        if (!KernelHeap.TryAllocate(threadBytes, 64UL, true, out KernelHeapAllocation threadAlloc)) return false;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>        if (!KernelHeap.TryAllocate(cpuBytes, 64UL, true, out KernelHeapAllocation cpuAlloc)) return false;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>        _threads = (ThreadRecord*)threadAlloc.Address; _cpus = (CpuScheduleState*)cpuAlloc.Address;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>        for (UInt32 cpu=0U; cpu&lt;_processorCount; cpu++)</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        {</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>            CpuScheduleState* state=_cpus+cpu; state-&gt;CurrentSlot=0xFFFFFFFFU; state-&gt;IdleSlot=0xFFFFFFFFU;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>            if (!KernelSmp.TrySetSchedulerContext(cpu, (UInt64)state)) return false;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>        }</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>        if (!CreateBootstrapThread()) return false;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>        _timerPreemption = KernelTime.GetCapabilities().HasLocalApicTimer;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>        _initialized=true; return true;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    }</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a></span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    /// &lt;summary&gt;Gets whether scheduler state has been initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    public static Boolean IsInitialized() =&gt; _initialized;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    /// &lt;summary&gt;Gets scheduler capabilities and current usage.&lt;/summary&gt;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    public static KernelSchedulerCapabilities GetCapabilities() =&gt; new KernelSchedulerCapabilities(_processorCount, MaximumThreads, _activeThreads, _quantum, _timerPreemption);</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    /// &lt;summary&gt;Gets the number of active thread records.&lt;/summary&gt;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    public static UInt32 GetActiveThreadCount() =&gt; _activeThreads;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    /// &lt;summary&gt;Gets the configured scheduler quantum.&lt;/summary&gt;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    public static UInt64 GetQuantumNanoseconds() =&gt; _quantum;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    /// &lt;summary&gt;Sets the scheduler quantum and re-arms timer preemption when available.&lt;/summary&gt;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    public static Boolean SetQuantumNanoseconds(UInt64 nanoseconds)</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    {</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        if (!_initialized) return false; _quantum=KernelSchedulerMath.ClampQuantum(nanoseconds); return true;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    }</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a></span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    /// &lt;summary&gt;Creates a ready kernel thread with a page-aligned kernel stack and initial x64 entry context.&lt;/summary&gt;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    public static Boolean TryCreateThread(UInt64 entryPoint, UInt64 argument, KernelThreadPriority priority, UInt64 affinityMask, UInt64 stackBytes, out UInt64 threadId)</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    {</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>        threadId=0UL; if (!_initialized || entryPoint==0UL || affinityMask==0UL) return false;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>        if (stackBytes==0UL) stackBytes=DefaultStackBytes;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>        if (!KernelSchedulerMath.IsValidStackSize(stackBytes)) return false;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>        if (!FindUnusedSlot(out UInt32 slot)) return false;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>        if (!KernelHeap.TryAllocate(stackBytes, 4096UL, true, out KernelHeapAllocation stack)) return false;</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>        if (!KernelHeap.TryAllocate(ContextBytes, 16UL, true, out KernelHeapAllocation context)) { KernelHeap.TryRelease(stack); return false; }</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        if (!Native.InitializeThreadContext(context.Address, stack.Address+stack.ByteCount, entryPoint, argument)) { KernelHeap.TryRelease(context); KernelHeap.TryRelease(stack); return false; }</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>        ThreadRecord* r=_threads+slot; r-&gt;Id=_nextThreadId++; r-&gt;StackBase=stack.Address; r-&gt;StackTop=stack.Address+stack.ByteCount; r-&gt;EntryPoint=entryPoint; r-&gt;Argument=argument; r-&gt;AffinityMask=affinityMask; r-&gt;ContextAddress=context.Address; r-&gt;State=(UInt32)KernelThreadState.Ready; r-&gt;Priority=(UInt32)priority; r-&gt;ProcessorIndex=NoProcessor; r-&gt;NextReady=0xFFFFFFFFU;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>        _activeThreads++; threadId=r-&gt;Id; return true;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    }</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a></span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    /// &lt;summary&gt;Gets a stable snapshot of a thread.&lt;/summary&gt;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>    public static Boolean TryGetThread(UInt64 threadId, out KernelThreadInfo info)</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    {</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>        info=default; if (!FindThread(threadId,out UInt32 slot)) return false; ThreadRecord* r=_threads+slot;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>        info=new KernelThreadInfo(r-&gt;Id,(KernelThreadState)r-&gt;State,(KernelThreadPriority)r-&gt;Priority,r-&gt;ProcessorIndex,r-&gt;AffinityMask,r-&gt;StackBase,r-&gt;StackTop,r-&gt;EntryPoint,r-&gt;Argument); return true;</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>    }</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>    /// &lt;summary&gt;Changes a thread affinity mask while preserving at least one allowed processor.&lt;/summary&gt;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    public static Boolean SetAffinity(UInt64 threadId, UInt64 affinityMask)</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>    { if (affinityMask==0UL || !FindThread(threadId,out UInt32 slot)) return false; (_threads+slot)-&gt;AffinityMask=affinityMask; return true; }</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>    /// &lt;summary&gt;Blocks a non-terminated thread until Wake is requested.&lt;/summary&gt;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>    public static Boolean Block(UInt64 threadId)</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>    { if (!FindThread(threadId,out UInt32 slot)) return false; ThreadRecord* r=_threads+slot; if (r-&gt;State==(UInt32)KernelThreadState.Terminated) return false; r-&gt;State=(UInt32)KernelThreadState.Blocked; r-&gt;ProcessorIndex=NoProcessor; return true; }</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>    /// &lt;summary&gt;Makes a blocked thread runnable again.&lt;/summary&gt;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>    public static Boolean Wake(UInt64 threadId)</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    { if (!FindThread(threadId,out UInt32 slot)) return false; ThreadRecord* r=_threads+slot; if (r-&gt;State!=(UInt32)KernelThreadState.Blocked) return false; r-&gt;State=(UInt32)KernelThreadState.Ready; return true; }</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>    /// &lt;summary&gt;Marks a thread terminated so it can no longer be selected.&lt;/summary&gt;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    public static Boolean Terminate(UInt64 threadId)</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    { if (!FindThread(threadId,out UInt32 slot)) return false; ThreadRecord* r=_threads+slot; r-&gt;State=(UInt32)KernelThreadState.Terminated; r-&gt;ProcessorIndex=NoProcessor; return true; }</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a></span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    /// &lt;summary&gt;Selects the highest-priority runnable thread allowed on a processor.&lt;/summary&gt;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    public static Boolean TrySelectNext(UInt32 processorIndex, out UInt64 threadId)</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    {</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>        threadId=0UL; if (!_initialized || processorIndex&gt;=_processorCount) return false; UInt32 best=0xFFFFFFFFU; UInt32 bestPriority=0U;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>        for (UInt32 slot=0U;slot&lt;MaximumThreads;slot++) { ThreadRecord* r=_threads+slot; if (r-&gt;State!=(UInt32)KernelThreadState.Ready || !KernelSchedulerMath.AllowsProcessor(r-&gt;AffinityMask,processorIndex)) continue; if (best==0xFFFFFFFFU || r-&gt;Priority&gt;bestPriority) { best=slot; bestPriority=r-&gt;Priority; } }</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>        if (best==0xFFFFFFFFU) return false; threadId=(_threads+best)-&gt;Id; return true;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>    }</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a></span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>    /// &lt;summary&gt;Performs the scheduler decision associated with a cooperative yield.&lt;/summary&gt;</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>    public static Boolean Yield(UInt32 processorIndex, out UInt64 nextThreadId) =&gt; Schedule(processorIndex,false,out nextThreadId);</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>    /// &lt;summary&gt;Performs the scheduler decision associated with a Local APIC timer tick.&lt;/summary&gt;</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>    public static Boolean OnTimerTick(UInt32 processorIndex, out UInt64 nextThreadId) =&gt; Schedule(processorIndex,true,out nextThreadId);</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a></span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>    private static Boolean Schedule(UInt32 cpu, Boolean preempt, out UInt64 nextThreadId)</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>    {</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>        nextThreadId=0UL; if (!_initialized || cpu&gt;=_processorCount) return false; CpuScheduleState* cs=_cpus+cpu;</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>        if (cs-&gt;CurrentSlot!=0xFFFFFFFFU) { ThreadRecord* current=_threads+cs-&gt;CurrentSlot; if (current-&gt;State==(UInt32)KernelThreadState.Running) { current-&gt;State=(UInt32)KernelThreadState.Ready; current-&gt;ProcessorIndex=NoProcessor; } }</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>        if (!TrySelectNext(cpu,out nextThreadId)) return false; if (!FindThread(nextThreadId,out UInt32 slot)) return false; ThreadRecord* next=_threads+slot; UInt32 previousSlot=cs-&gt;CurrentSlot; ThreadRecord* previous=previousSlot==0xFFFFFFFFU ? null : _threads+previousSlot; next-&gt;State=(UInt32)KernelThreadState.Running; next-&gt;ProcessorIndex=cpu; cs-&gt;CurrentSlot=slot; cs-&gt;SwitchCount++; if(preempt) cs-&gt;PreemptionCount++; cs-&gt;LastDispatchNanoseconds=KernelTime.GetMonotonicNanoseconds();</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>        if (previous!=null &amp;&amp; previous!=next &amp;&amp; previous-&gt;ContextAddress!=0UL &amp;&amp; next-&gt;ContextAddress!=0UL) return Native.SwitchThreadContext(previous-&gt;ContextAddress,next-&gt;ContextAddress);</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>        return true;</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    }</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>    private static Boolean CreateBootstrapThread()</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>    {</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>        if (!KernelSmp.TryGetCurrentProcessor(out KernelProcessorState cpu)) return false; if (!KernelHeap.TryAllocate(ContextBytes,16UL,true,out KernelHeapAllocation context)) return false; ThreadRecord* r=_threads; r-&gt;Id=_nextThreadId++; r-&gt;State=(UInt32)KernelThreadState.Running; r-&gt;Priority=(UInt32)KernelThreadPriority.Critical; r-&gt;ProcessorIndex=cpu.Index; r-&gt;AffinityMask=cpu.Index&lt;64U ? 1UL&lt;&lt;(Int32)cpu.Index : 0xFFFFFFFFFFFFFFFFUL; r-&gt;ContextAddress=context.Address; _cpus[cpu.Index].CurrentSlot=0U; _activeThreads=1U; return true;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>    }</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>    private static Boolean FindUnusedSlot(out UInt32 slot)</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>    { slot=0U; for(UInt32 i=1U;i&lt;MaximumThreads;i++) if((_threads+i)-&gt;State==(UInt32)KernelThreadState.Unused){slot=i;return true;} return false; }</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>    private static Boolean FindThread(UInt64 id,out UInt32 slot)</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>    { slot=0U; if(id==0UL||_threads==null)return false; for(UInt32 i=0U;i&lt;MaximumThreads;i++) if((_threads+i)-&gt;Id==id &amp;&amp; (_threads+i)-&gt;State!=(UInt32)KernelThreadState.Unused){slot=i;return true;} return false; }</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>}</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

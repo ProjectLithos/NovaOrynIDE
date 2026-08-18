@@ -1,0 +1,414 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Heap/KernelHeap.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Heap/KernelHeap.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Kernel.AddressSpace;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Kernel.Memory;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>using NovaOryn.Kernel.VirtualMemory;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>namespace NovaOryn.Kernel.Heap;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a></span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>/// &lt;summary&gt;Reports the most recent freestanding kernel-heap operation.&lt;/summary&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>public enum KernelHeapStatus</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>{</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    /// &lt;summary&gt;The operation completed successfully.&lt;/summary&gt;</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    Success = 0,</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    /// &lt;summary&gt;One or more prerequisite memory layers are not initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    DependencyNotInitialized = 1,</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    /// &lt;summary&gt;The heap was already initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    AlreadyInitialized = 2,</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    /// &lt;summary&gt;The request has an invalid size or alignment.&lt;/summary&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    InvalidParameter = 3,</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    /// &lt;summary&gt;No physical or virtual capacity can satisfy the request.&lt;/summary&gt;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    OutOfMemory = 4,</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    /// &lt;summary&gt;The bounded block table has no free metadata record.&lt;/summary&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    MetadataCapacityExhausted = 5,</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    /// &lt;summary&gt;Backing pages could not be mapped into the kernel heap reservation.&lt;/summary&gt;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    MappingFailed = 6,</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    /// &lt;summary&gt;The supplied allocation token/range is unknown or was already released.&lt;/summary&gt;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    AllocationNotFound = 7</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>}</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a></span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>/// &lt;summary&gt;Identifies one live first-fit kernel-heap allocation.&lt;/summary&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>public readonly struct KernelHeapAllocation</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>{</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    internal KernelHeapAllocation(UInt64 token, UInt64 address, UInt64 byteCount)</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    {</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>        Token = token;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>        Address = address;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>        ByteCount = byteCount;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    }</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a></span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;summary&gt;Gets the opaque allocation token.&lt;/summary&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    public UInt64 Token { get; }</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;summary&gt;Gets the first usable virtual byte.&lt;/summary&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    public UInt64 Address { get; }</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    /// &lt;summary&gt;Gets the usable allocation byte count.&lt;/summary&gt;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    public UInt64 ByteCount { get; }</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>}</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a></span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>/// &lt;summary&gt;Provides current page-backed heap accounting.&lt;/summary&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>public readonly struct KernelHeapStatistics</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>{</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    internal KernelHeapStatistics(UInt64 committed, UInt64 allocated, UInt64 free, UInt64 peak, Int32 live, Int32 freeBlocks)</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    {</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>        CommittedBytes = committed;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>        AllocatedBytes = allocated;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>        FreeBytes = free;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>        PeakAllocatedBytes = peak;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>        LiveAllocations = live;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>        FreeBlocks = freeBlocks;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    }</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a></span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    /// &lt;summary&gt;Gets bytes backed by physical pages.&lt;/summary&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    public UInt64 CommittedBytes { get; }</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    /// &lt;summary&gt;Gets bytes owned by live allocations.&lt;/summary&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    public UInt64 AllocatedBytes { get; }</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    /// &lt;summary&gt;Gets committed reusable bytes.&lt;/summary&gt;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    public UInt64 FreeBytes { get; }</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    /// &lt;summary&gt;Gets peak simultaneously allocated bytes.&lt;/summary&gt;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    public UInt64 PeakAllocatedBytes { get; }</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    /// &lt;summary&gt;Gets the live allocation count.&lt;/summary&gt;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    public Int32 LiveAllocations { get; }</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    /// &lt;summary&gt;Gets the reusable free-block count.&lt;/summary&gt;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    public Int32 FreeBlocks { get; }</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>}</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a></span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>/// &lt;summary&gt;Provides the default first-fit, page-backed, non-executable kernel heap inside the standard heap reservation.&lt;/summary&gt;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>public static unsafe class KernelHeap</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>{</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    private const UInt64 PageSize = 4096UL;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    private const UInt64 GrowthPages = 16UL;</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    private const Int32 MaximumBlocks = 512;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a></span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    private unsafe struct State</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>    {</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>        internal fixed UInt64 Starts[MaximumBlocks];</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>        internal fixed UInt64 Lengths[MaximumBlocks];</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>        internal fixed UInt64 Tokens[MaximumBlocks];</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>        internal fixed Byte States[MaximumBlocks];</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    }</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a></span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>#pragma warning disable CS0169 // Fixed-buffer member access is not counted as use of the containing freestanding state field.</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>    private static State _state;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>#pragma warning restore CS0169</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    private static UInt64 _committed;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>    private static UInt64 _allocated;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>    private static UInt64 _peak;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>    private static UInt64 _nextToken = 1UL;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>    private static Int32 _live;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>    private static Boolean _initialized;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>    private static KernelHeapStatus _status;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a></span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>    /// &lt;summary&gt;Gets whether the kernel heap is initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    public static Boolean IsInitialized() =&gt; _initialized;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a></span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    /// &lt;summary&gt;Gets the most recent heap status.&lt;/summary&gt;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    public static KernelHeapStatus GetLastStatus() =&gt; _status;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a></span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    /// &lt;summary&gt;Gets a freestanding-safe symbolic status name.&lt;/summary&gt;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    /// &lt;returns&gt;A stable status string.&lt;/returns&gt;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    public static String GetLastStatusName()</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    {</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>        if (_status == KernelHeapStatus.Success) return &quot;Success&quot;;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>        if (_status == KernelHeapStatus.DependencyNotInitialized) return &quot;DependencyNotInitialized&quot;;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>        if (_status == KernelHeapStatus.AlreadyInitialized) return &quot;AlreadyInitialized&quot;;</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>        if (_status == KernelHeapStatus.InvalidParameter) return &quot;InvalidParameter&quot;;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>        if (_status == KernelHeapStatus.OutOfMemory) return &quot;OutOfMemory&quot;;</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>        if (_status == KernelHeapStatus.MetadataCapacityExhausted) return &quot;MetadataCapacityExhausted&quot;;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>        if (_status == KernelHeapStatus.MappingFailed) return &quot;MappingFailed&quot;;</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>        if (_status == KernelHeapStatus.AllocationNotFound) return &quot;AllocationNotFound&quot;;</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>        return &quot;Unknown&quot;;</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>    }</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a></span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>    /// &lt;summary&gt;Commits the first 64 KiB of the standard kernel-heap reservation.&lt;/summary&gt;</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when dependencies and initial mappings are ready.&lt;/returns&gt;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>    public static Boolean Initialize()</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    {</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>        if (_initialized)</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>        {</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>            _status = KernelHeapStatus.AlreadyInitialized;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>            return false;</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>        }</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>        if (!KernelAddressSpace.IsInitialized() || !KernelVirtualMemory.IsInitialized() || !KernelPhysicalMemory.IsInitialized())</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>        {</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>            _status = KernelHeapStatus.DependencyNotInitialized;</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>            return false;</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>        }</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>        Reset();</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>        if (!Grow(GrowthPages)) return false;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>        _initialized = true;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>        _status = KernelHeapStatus.Success;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>        return true;</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>    }</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a></span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>    /// &lt;summary&gt;Allocates raw virtual bytes using address-ordered first fit and optional zero filling.&lt;/summary&gt;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when a live allocation was created.&lt;/returns&gt;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>    public static Boolean TryAllocate(UInt64 byteCount, UInt64 alignment, Boolean zeroFill, out KernelHeapAllocation allocation)</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>    {</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>        allocation = default;</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>        if (!_initialized)</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>        {</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>            _status = KernelHeapStatus.DependencyNotInitialized;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>            return false;</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>        }</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>        if (byteCount == 0UL || alignment == 0UL || (alignment &amp; (alignment - 1UL)) != 0UL || alignment &gt; PageSize)</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>        {</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>            _status = KernelHeapStatus.InvalidParameter;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>            return false;</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>        }</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>        if (byteCount &gt; 0xFFFFFFFFFFFFFFFFUL - (alignment - 1UL))</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>        {</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>            _status = KernelHeapStatus.InvalidParameter;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>            return false;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>        }</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a></span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>        for (Int32 attempt = 0; attempt &lt; 2; attempt++)</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>        {</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>            if (TryAllocateExisting(byteCount, alignment, zeroFill, out allocation)) return true;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>            UInt64 required = byteCount + alignment - 1UL;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>            if (required &gt; 0xFFFFFFFFFFFFFFFFUL - (PageSize - 1UL))</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>            {</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>                _status = KernelHeapStatus.InvalidParameter;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>                return false;</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>            }</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>            UInt64 pages = (required + PageSize - 1UL) / PageSize;</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>            if (pages &lt; GrowthPages) pages = GrowthPages;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>            if (!Grow(pages)) return false;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>        }</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>        _status = KernelHeapStatus.OutOfMemory;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>        return false;</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>    }</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a></span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>    /// &lt;summary&gt;Releases one exact live allocation and coalesces adjacent free blocks.&lt;/summary&gt;</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the allocation was live.&lt;/returns&gt;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>    public static Boolean TryRelease(KernelHeapAllocation allocation)</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>    {</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>        if (!_initialized)</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>        {</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>            _status = KernelHeapStatus.DependencyNotInitialized;</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>            return false;</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>        }</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>        fixed (UInt64* starts = _state.Starts)</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>        fixed (UInt64* lengths = _state.Lengths)</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>        fixed (UInt64* tokens = _state.Tokens)</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>        fixed (Byte* states = _state.States)</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>        {</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>            for (Int32 i = 0; i &lt; MaximumBlocks; i++)</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>            {</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>                if (states[i] != 2 || tokens[i] != allocation.Token || starts[i] != allocation.Address || lengths[i] != allocation.ByteCount) continue;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>                states[i] = 1;</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>                tokens[i] = 0UL;</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>                _allocated -= lengths[i];</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>                _live--;</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>                Coalesce();</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>                _status = KernelHeapStatus.Success;</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>                return true;</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>            }</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>        }</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>        _status = KernelHeapStatus.AllocationNotFound;</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>        return false;</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>    }</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a></span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>    /// &lt;summary&gt;Gets current heap accounting.&lt;/summary&gt;</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>    /// &lt;returns&gt;An immutable statistics snapshot.&lt;/returns&gt;</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>    public static KernelHeapStatistics GetStatistics()</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>    {</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>        UInt64 free = 0UL;</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>        Int32 blocks = 0;</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a>        fixed (UInt64* lengths = _state.Lengths)</span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>        fixed (Byte* states = _state.States)</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>        {</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>            for (Int32 i = 0; i &lt; MaximumBlocks; i++)</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>            {</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>                if (states[i] != 1) continue;</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>                free += lengths[i];</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a>                blocks++;</span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>            }</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>        }</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>        return new KernelHeapStatistics(_committed, _allocated, free, _peak, _live, blocks);</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>    }</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a></span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>    private static Boolean TryAllocateExisting(UInt64 bytes, UInt64 alignment, Boolean zeroFill, out KernelHeapAllocation allocation)</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>    {</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>        allocation = default;</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>        fixed (UInt64* starts = _state.Starts)</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>        fixed (UInt64* lengths = _state.Lengths)</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>        fixed (UInt64* tokens = _state.Tokens)</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>        fixed (Byte* states = _state.States)</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>        {</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a>            for (Int32 i = 0; i &lt; MaximumBlocks; i++)</span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a>            {</span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a>                if (states[i] != 1) continue;</span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a>                UInt64 start = starts[i];</span>
+<span class="source-line" id="L241"><a class="line-number" href="#L241">241</a>                UInt64 length = lengths[i];</span>
+<span class="source-line" id="L242"><a class="line-number" href="#L242">242</a>                UInt64 mask = alignment - 1UL;</span>
+<span class="source-line" id="L243"><a class="line-number" href="#L243">243</a>                if (start &gt; 0xFFFFFFFFFFFFFFFFUL - mask) continue;</span>
+<span class="source-line" id="L244"><a class="line-number" href="#L244">244</a>                UInt64 aligned = (start + mask) &amp; ~mask;</span>
+<span class="source-line" id="L245"><a class="line-number" href="#L245">245</a>                UInt64 prefix = aligned - start;</span>
+<span class="source-line" id="L246"><a class="line-number" href="#L246">246</a>                if (prefix &gt; length || bytes &gt; length - prefix) continue;</span>
+<span class="source-line" id="L247"><a class="line-number" href="#L247">247</a>                UInt64 suffix = length - prefix - bytes;</span>
+<span class="source-line" id="L248"><a class="line-number" href="#L248">248</a>                Int32 firstSlot = prefix &gt; 0UL ? FindUnused(i, -1) : -1;</span>
+<span class="source-line" id="L249"><a class="line-number" href="#L249">249</a>                Int32 secondSlot = suffix &gt; 0UL ? FindUnused(i, firstSlot) : -1;</span>
+<span class="source-line" id="L250"><a class="line-number" href="#L250">250</a>                if ((prefix &gt; 0UL &amp;&amp; firstSlot &lt; 0) || (suffix &gt; 0UL &amp;&amp; secondSlot &lt; 0))</span>
+<span class="source-line" id="L251"><a class="line-number" href="#L251">251</a>                {</span>
+<span class="source-line" id="L252"><a class="line-number" href="#L252">252</a>                    _status = KernelHeapStatus.MetadataCapacityExhausted;</span>
+<span class="source-line" id="L253"><a class="line-number" href="#L253">253</a>                    return false;</span>
+<span class="source-line" id="L254"><a class="line-number" href="#L254">254</a>                }</span>
+<span class="source-line" id="L255"><a class="line-number" href="#L255">255</a></span>
+<span class="source-line" id="L256"><a class="line-number" href="#L256">256</a>                UInt64 token = NextToken();</span>
+<span class="source-line" id="L257"><a class="line-number" href="#L257">257</a>                states[i] = 2;</span>
+<span class="source-line" id="L258"><a class="line-number" href="#L258">258</a>                starts[i] = aligned;</span>
+<span class="source-line" id="L259"><a class="line-number" href="#L259">259</a>                lengths[i] = bytes;</span>
+<span class="source-line" id="L260"><a class="line-number" href="#L260">260</a>                tokens[i] = token;</span>
+<span class="source-line" id="L261"><a class="line-number" href="#L261">261</a>                if (prefix &gt; 0UL)</span>
+<span class="source-line" id="L262"><a class="line-number" href="#L262">262</a>                {</span>
+<span class="source-line" id="L263"><a class="line-number" href="#L263">263</a>                    states[firstSlot] = 1;</span>
+<span class="source-line" id="L264"><a class="line-number" href="#L264">264</a>                    starts[firstSlot] = start;</span>
+<span class="source-line" id="L265"><a class="line-number" href="#L265">265</a>                    lengths[firstSlot] = prefix;</span>
+<span class="source-line" id="L266"><a class="line-number" href="#L266">266</a>                }</span>
+<span class="source-line" id="L267"><a class="line-number" href="#L267">267</a>                if (suffix &gt; 0UL)</span>
+<span class="source-line" id="L268"><a class="line-number" href="#L268">268</a>                {</span>
+<span class="source-line" id="L269"><a class="line-number" href="#L269">269</a>                    states[secondSlot] = 1;</span>
+<span class="source-line" id="L270"><a class="line-number" href="#L270">270</a>                    starts[secondSlot] = aligned + bytes;</span>
+<span class="source-line" id="L271"><a class="line-number" href="#L271">271</a>                    lengths[secondSlot] = suffix;</span>
+<span class="source-line" id="L272"><a class="line-number" href="#L272">272</a>                }</span>
+<span class="source-line" id="L273"><a class="line-number" href="#L273">273</a>                _allocated += bytes;</span>
+<span class="source-line" id="L274"><a class="line-number" href="#L274">274</a>                if (_allocated &gt; _peak) _peak = _allocated;</span>
+<span class="source-line" id="L275"><a class="line-number" href="#L275">275</a>                _live++;</span>
+<span class="source-line" id="L276"><a class="line-number" href="#L276">276</a>                if (zeroFill)</span>
+<span class="source-line" id="L277"><a class="line-number" href="#L277">277</a>                {</span>
+<span class="source-line" id="L278"><a class="line-number" href="#L278">278</a>                    Byte* pointer = (Byte*)(nuint)aligned;</span>
+<span class="source-line" id="L279"><a class="line-number" href="#L279">279</a>                    for (UInt64 n = 0UL; n &lt; bytes; n++) pointer[n] = 0;</span>
+<span class="source-line" id="L280"><a class="line-number" href="#L280">280</a>                }</span>
+<span class="source-line" id="L281"><a class="line-number" href="#L281">281</a>                allocation = new KernelHeapAllocation(token, aligned, bytes);</span>
+<span class="source-line" id="L282"><a class="line-number" href="#L282">282</a>                _status = KernelHeapStatus.Success;</span>
+<span class="source-line" id="L283"><a class="line-number" href="#L283">283</a>                return true;</span>
+<span class="source-line" id="L284"><a class="line-number" href="#L284">284</a>            }</span>
+<span class="source-line" id="L285"><a class="line-number" href="#L285">285</a>        }</span>
+<span class="source-line" id="L286"><a class="line-number" href="#L286">286</a>        return false;</span>
+<span class="source-line" id="L287"><a class="line-number" href="#L287">287</a>    }</span>
+<span class="source-line" id="L288"><a class="line-number" href="#L288">288</a></span>
+<span class="source-line" id="L289"><a class="line-number" href="#L289">289</a>    private static Boolean Grow(UInt64 pages)</span>
+<span class="source-line" id="L290"><a class="line-number" href="#L290">290</a>    {</span>
+<span class="source-line" id="L291"><a class="line-number" href="#L291">291</a>        if (pages == 0UL || pages &gt; 0xFFFFFFFFFFFFFFFFUL / PageSize)</span>
+<span class="source-line" id="L292"><a class="line-number" href="#L292">292</a>        {</span>
+<span class="source-line" id="L293"><a class="line-number" href="#L293">293</a>            _status = KernelHeapStatus.InvalidParameter;</span>
+<span class="source-line" id="L294"><a class="line-number" href="#L294">294</a>            return false;</span>
+<span class="source-line" id="L295"><a class="line-number" href="#L295">295</a>        }</span>
+<span class="source-line" id="L296"><a class="line-number" href="#L296">296</a>        UInt64 bytes = pages * PageSize;</span>
+<span class="source-line" id="L297"><a class="line-number" href="#L297">297</a>        if (_committed &gt; KernelAddressSpace.KernelHeapLength || bytes &gt; KernelAddressSpace.KernelHeapLength - _committed)</span>
+<span class="source-line" id="L298"><a class="line-number" href="#L298">298</a>        {</span>
+<span class="source-line" id="L299"><a class="line-number" href="#L299">299</a>            _status = KernelHeapStatus.OutOfMemory;</span>
+<span class="source-line" id="L300"><a class="line-number" href="#L300">300</a>            return false;</span>
+<span class="source-line" id="L301"><a class="line-number" href="#L301">301</a>        }</span>
+<span class="source-line" id="L302"><a class="line-number" href="#L302">302</a>        Int32 slot = FindUnused(-1, -1);</span>
+<span class="source-line" id="L303"><a class="line-number" href="#L303">303</a>        if (slot &lt; 0)</span>
+<span class="source-line" id="L304"><a class="line-number" href="#L304">304</a>        {</span>
+<span class="source-line" id="L305"><a class="line-number" href="#L305">305</a>            _status = KernelHeapStatus.MetadataCapacityExhausted;</span>
+<span class="source-line" id="L306"><a class="line-number" href="#L306">306</a>            return false;</span>
+<span class="source-line" id="L307"><a class="line-number" href="#L307">307</a>        }</span>
+<span class="source-line" id="L308"><a class="line-number" href="#L308">308</a>        if (!KernelPhysicalMemory.TryAllocate(pages, 1UL, out KernelPhysicalAllocation physical))</span>
+<span class="source-line" id="L309"><a class="line-number" href="#L309">309</a>        {</span>
+<span class="source-line" id="L310"><a class="line-number" href="#L310">310</a>            _status = KernelHeapStatus.OutOfMemory;</span>
+<span class="source-line" id="L311"><a class="line-number" href="#L311">311</a>            return false;</span>
+<span class="source-line" id="L312"><a class="line-number" href="#L312">312</a>        }</span>
+<span class="source-line" id="L313"><a class="line-number" href="#L313">313</a></span>
+<span class="source-line" id="L314"><a class="line-number" href="#L314">314</a>        UInt64 mapped = 0UL;</span>
+<span class="source-line" id="L315"><a class="line-number" href="#L315">315</a>        KernelVirtualMemoryProtection protection = KernelVirtualMemoryProtection.Read | KernelVirtualMemoryProtection.Write | KernelVirtualMemoryProtection.Global;</span>
+<span class="source-line" id="L316"><a class="line-number" href="#L316">316</a>        for (UInt64 page = 0UL; page &lt; pages; page++)</span>
+<span class="source-line" id="L317"><a class="line-number" href="#L317">317</a>        {</span>
+<span class="source-line" id="L318"><a class="line-number" href="#L318">318</a>            UInt64 virtualAddress = KernelAddressSpace.KernelHeapBase + _committed + page * PageSize;</span>
+<span class="source-line" id="L319"><a class="line-number" href="#L319">319</a>            UInt64 physicalAddress = physical.StartAddress + page * PageSize;</span>
+<span class="source-line" id="L320"><a class="line-number" href="#L320">320</a>            if (!KernelVirtualMemory.TryMap(virtualAddress, physicalAddress, KernelVirtualPageSize.Page4KiB, protection))</span>
+<span class="source-line" id="L321"><a class="line-number" href="#L321">321</a>            {</span>
+<span class="source-line" id="L322"><a class="line-number" href="#L322">322</a>                for (UInt64 undo = 0UL; undo &lt; mapped; undo++)</span>
+<span class="source-line" id="L323"><a class="line-number" href="#L323">323</a>                    KernelVirtualMemory.TryUnmap(KernelAddressSpace.KernelHeapBase + _committed + undo * PageSize);</span>
+<span class="source-line" id="L324"><a class="line-number" href="#L324">324</a>                KernelPhysicalMemory.TryRelease(physical);</span>
+<span class="source-line" id="L325"><a class="line-number" href="#L325">325</a>                _status = KernelHeapStatus.MappingFailed;</span>
+<span class="source-line" id="L326"><a class="line-number" href="#L326">326</a>                return false;</span>
+<span class="source-line" id="L327"><a class="line-number" href="#L327">327</a>            }</span>
+<span class="source-line" id="L328"><a class="line-number" href="#L328">328</a>            mapped++;</span>
+<span class="source-line" id="L329"><a class="line-number" href="#L329">329</a>        }</span>
+<span class="source-line" id="L330"><a class="line-number" href="#L330">330</a></span>
+<span class="source-line" id="L331"><a class="line-number" href="#L331">331</a>        fixed (UInt64* starts = _state.Starts)</span>
+<span class="source-line" id="L332"><a class="line-number" href="#L332">332</a>        fixed (UInt64* lengths = _state.Lengths)</span>
+<span class="source-line" id="L333"><a class="line-number" href="#L333">333</a>        fixed (Byte* states = _state.States)</span>
+<span class="source-line" id="L334"><a class="line-number" href="#L334">334</a>        {</span>
+<span class="source-line" id="L335"><a class="line-number" href="#L335">335</a>            states[slot] = 1;</span>
+<span class="source-line" id="L336"><a class="line-number" href="#L336">336</a>            starts[slot] = KernelAddressSpace.KernelHeapBase + _committed;</span>
+<span class="source-line" id="L337"><a class="line-number" href="#L337">337</a>            lengths[slot] = bytes;</span>
+<span class="source-line" id="L338"><a class="line-number" href="#L338">338</a>        }</span>
+<span class="source-line" id="L339"><a class="line-number" href="#L339">339</a>        _committed += bytes;</span>
+<span class="source-line" id="L340"><a class="line-number" href="#L340">340</a>        Coalesce();</span>
+<span class="source-line" id="L341"><a class="line-number" href="#L341">341</a>        return true;</span>
+<span class="source-line" id="L342"><a class="line-number" href="#L342">342</a>    }</span>
+<span class="source-line" id="L343"><a class="line-number" href="#L343">343</a></span>
+<span class="source-line" id="L344"><a class="line-number" href="#L344">344</a>    private static Int32 FindUnused(Int32 excluded, Int32 excluded2)</span>
+<span class="source-line" id="L345"><a class="line-number" href="#L345">345</a>    {</span>
+<span class="source-line" id="L346"><a class="line-number" href="#L346">346</a>        fixed (Byte* states = _state.States)</span>
+<span class="source-line" id="L347"><a class="line-number" href="#L347">347</a>        {</span>
+<span class="source-line" id="L348"><a class="line-number" href="#L348">348</a>            for (Int32 i = 0; i &lt; MaximumBlocks; i++)</span>
+<span class="source-line" id="L349"><a class="line-number" href="#L349">349</a>                if (i != excluded &amp;&amp; i != excluded2 &amp;&amp; states[i] == 0) return i;</span>
+<span class="source-line" id="L350"><a class="line-number" href="#L350">350</a>        }</span>
+<span class="source-line" id="L351"><a class="line-number" href="#L351">351</a>        return -1;</span>
+<span class="source-line" id="L352"><a class="line-number" href="#L352">352</a>    }</span>
+<span class="source-line" id="L353"><a class="line-number" href="#L353">353</a></span>
+<span class="source-line" id="L354"><a class="line-number" href="#L354">354</a>    private static void Coalesce()</span>
+<span class="source-line" id="L355"><a class="line-number" href="#L355">355</a>    {</span>
+<span class="source-line" id="L356"><a class="line-number" href="#L356">356</a>        Boolean changed = true;</span>
+<span class="source-line" id="L357"><a class="line-number" href="#L357">357</a>        fixed (UInt64* starts = _state.Starts)</span>
+<span class="source-line" id="L358"><a class="line-number" href="#L358">358</a>        fixed (UInt64* lengths = _state.Lengths)</span>
+<span class="source-line" id="L359"><a class="line-number" href="#L359">359</a>        fixed (Byte* states = _state.States)</span>
+<span class="source-line" id="L360"><a class="line-number" href="#L360">360</a>        {</span>
+<span class="source-line" id="L361"><a class="line-number" href="#L361">361</a>            while (changed)</span>
+<span class="source-line" id="L362"><a class="line-number" href="#L362">362</a>            {</span>
+<span class="source-line" id="L363"><a class="line-number" href="#L363">363</a>                changed = false;</span>
+<span class="source-line" id="L364"><a class="line-number" href="#L364">364</a>                for (Int32 i = 0; i &lt; MaximumBlocks &amp;&amp; !changed; i++)</span>
+<span class="source-line" id="L365"><a class="line-number" href="#L365">365</a>                {</span>
+<span class="source-line" id="L366"><a class="line-number" href="#L366">366</a>                    if (states[i] != 1) continue;</span>
+<span class="source-line" id="L367"><a class="line-number" href="#L367">367</a>                    for (Int32 j = 0; j &lt; MaximumBlocks; j++)</span>
+<span class="source-line" id="L368"><a class="line-number" href="#L368">368</a>                    {</span>
+<span class="source-line" id="L369"><a class="line-number" href="#L369">369</a>                        if (i == j || states[j] != 1) continue;</span>
+<span class="source-line" id="L370"><a class="line-number" href="#L370">370</a>                        if (starts[i] &gt; 0xFFFFFFFFFFFFFFFFUL - lengths[i]) continue;</span>
+<span class="source-line" id="L371"><a class="line-number" href="#L371">371</a>                        if (starts[i] + lengths[i] != starts[j]) continue;</span>
+<span class="source-line" id="L372"><a class="line-number" href="#L372">372</a>                        lengths[i] += lengths[j];</span>
+<span class="source-line" id="L373"><a class="line-number" href="#L373">373</a>                        states[j] = 0;</span>
+<span class="source-line" id="L374"><a class="line-number" href="#L374">374</a>                        starts[j] = 0UL;</span>
+<span class="source-line" id="L375"><a class="line-number" href="#L375">375</a>                        lengths[j] = 0UL;</span>
+<span class="source-line" id="L376"><a class="line-number" href="#L376">376</a>                        changed = true;</span>
+<span class="source-line" id="L377"><a class="line-number" href="#L377">377</a>                        break;</span>
+<span class="source-line" id="L378"><a class="line-number" href="#L378">378</a>                    }</span>
+<span class="source-line" id="L379"><a class="line-number" href="#L379">379</a>                }</span>
+<span class="source-line" id="L380"><a class="line-number" href="#L380">380</a>            }</span>
+<span class="source-line" id="L381"><a class="line-number" href="#L381">381</a>        }</span>
+<span class="source-line" id="L382"><a class="line-number" href="#L382">382</a>    }</span>
+<span class="source-line" id="L383"><a class="line-number" href="#L383">383</a></span>
+<span class="source-line" id="L384"><a class="line-number" href="#L384">384</a>    private static UInt64 NextToken()</span>
+<span class="source-line" id="L385"><a class="line-number" href="#L385">385</a>    {</span>
+<span class="source-line" id="L386"><a class="line-number" href="#L386">386</a>        UInt64 token = _nextToken++;</span>
+<span class="source-line" id="L387"><a class="line-number" href="#L387">387</a>        if (token == 0UL) token = _nextToken++;</span>
+<span class="source-line" id="L388"><a class="line-number" href="#L388">388</a>        return token;</span>
+<span class="source-line" id="L389"><a class="line-number" href="#L389">389</a>    }</span>
+<span class="source-line" id="L390"><a class="line-number" href="#L390">390</a></span>
+<span class="source-line" id="L391"><a class="line-number" href="#L391">391</a>    private static void Reset()</span>
+<span class="source-line" id="L392"><a class="line-number" href="#L392">392</a>    {</span>
+<span class="source-line" id="L393"><a class="line-number" href="#L393">393</a>        _committed = 0UL;</span>
+<span class="source-line" id="L394"><a class="line-number" href="#L394">394</a>        _allocated = 0UL;</span>
+<span class="source-line" id="L395"><a class="line-number" href="#L395">395</a>        _peak = 0UL;</span>
+<span class="source-line" id="L396"><a class="line-number" href="#L396">396</a>        _live = 0;</span>
+<span class="source-line" id="L397"><a class="line-number" href="#L397">397</a>        _nextToken = 1UL;</span>
+<span class="source-line" id="L398"><a class="line-number" href="#L398">398</a>        fixed (UInt64* starts = _state.Starts)</span>
+<span class="source-line" id="L399"><a class="line-number" href="#L399">399</a>        fixed (UInt64* lengths = _state.Lengths)</span>
+<span class="source-line" id="L400"><a class="line-number" href="#L400">400</a>        fixed (UInt64* tokens = _state.Tokens)</span>
+<span class="source-line" id="L401"><a class="line-number" href="#L401">401</a>        fixed (Byte* states = _state.States)</span>
+<span class="source-line" id="L402"><a class="line-number" href="#L402">402</a>        {</span>
+<span class="source-line" id="L403"><a class="line-number" href="#L403">403</a>            for (Int32 i = 0; i &lt; MaximumBlocks; i++)</span>
+<span class="source-line" id="L404"><a class="line-number" href="#L404">404</a>            {</span>
+<span class="source-line" id="L405"><a class="line-number" href="#L405">405</a>                starts[i] = 0UL;</span>
+<span class="source-line" id="L406"><a class="line-number" href="#L406">406</a>                lengths[i] = 0UL;</span>
+<span class="source-line" id="L407"><a class="line-number" href="#L407">407</a>                tokens[i] = 0UL;</span>
+<span class="source-line" id="L408"><a class="line-number" href="#L408">408</a>                states[i] = 0;</span>
+<span class="source-line" id="L409"><a class="line-number" href="#L409">409</a>            }</span>
+<span class="source-line" id="L410"><a class="line-number" href="#L410">410</a>        }</span>
+<span class="source-line" id="L411"><a class="line-number" href="#L411">411</a>    }</span>
+<span class="source-line" id="L412"><a class="line-number" href="#L412">412</a>}</span>
+<span class="source-line" id="L413"><a class="line-number" href="#L413">413</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

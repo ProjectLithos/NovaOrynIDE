@@ -1,0 +1,106 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Sample/Kernel.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Sample/Kernel.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System.Runtime.InteropServices;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Architecture.X64;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Boot.Contracts;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>using NovaOryn.Boot.Memory;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>using NovaOryn.Console.Framebuffer;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>using NovaOryn.Console.Serial;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>using NovaOryn.Core;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a></span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>namespace NovaOryn.Kernel.Sample;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a></span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>public static class Kernel</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>{</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    private const uint ConsoleFontSize = 16U;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a></span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    [KernelEntry]</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    public static bool KMain(BootContext boot)</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    {</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>        SerialConsole serial = new();</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>        FramebufferConsole framebuffer = new();</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>        if (!serial.Configure(SerialConfiguration.Com1())) return false;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>        if (!framebuffer.Configure(FramebufferConfiguration.Default(ConsoleFontSize))) return false;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>        if (!serial.Initialize(boot)) return false;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>        if (!framebuffer.Initialize(boot)) return false;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>        if (!WriteLine(serial, framebuffer, &quot;NovaOryn KMain started.&quot;)) return false;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>        if (!NativeUefiMemoryMapSource.TryCreate(boot, out NativeUefiMemoryMapSource? finalMap)) return false;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>        if (finalMap is null || finalMap.Count &lt; 1) return false;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>        if (!WriteLine(serial, framebuffer, &quot;Final UEFI memory map retained; ExitBootServices succeeded.&quot;)) return false;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>        if (!WriteLine(serial, framebuffer, &quot;Native UEFI memory-map adapter online.&quot;)) return false;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>        KernelDiagnosticSink diagnostics = new(serial, framebuffer);</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>        if (!PlatformInitialization.Initialize(diagnostics)) return false;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>        if (!WriteLine(serial, framebuffer, &quot;GDT, TSS, IDT, exceptions, and interrupt-controller contracts online.&quot;)) return false;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>        if (!AddressSpaceExamples.ValidateStandardLayout()) return false;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>        if (!VirtualMemoryExamples.ValidateContracts()) return false;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>        if (!WriteLine(serial, framebuffer, &quot;Virtual-memory contracts and x64 page-table codec online.&quot;)) return false;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>        if (!HeapExamples.ValidateContracts()) return false;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>        if (!WriteLine(serial, framebuffer, &quot;Early-allocation and first-fit heap methodologies online.&quot;)) return false;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>        if (!WriteLine(serial, framebuffer, &quot;CPU halted.&quot;)) return false;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>        return CPU.Halt();</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    }</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a></span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    [UnmanagedCallersOnly(EntryPoint = &quot;NovaOrynManagedEntry&quot;)]</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    public static unsafe byte NativeEntry(nint bootContextAddress)</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    {</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>        if (bootContextAddress == 0) return 0;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>        NativeBootContext* native = (NativeBootContext*)bootContextAddress;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>        if (native-&gt;Signature != 0x4E59524F41564F4EUL) return 0;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a></span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>        Framebuffer framebuffer = new(</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>            new PhysicalAddress(native-&gt;FramebufferAddress),</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>            native-&gt;FramebufferSize,</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>            native-&gt;Width,</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>            native-&gt;Height,</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>            native-&gt;PixelsPerScanLine,</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>            (FramebufferPixelFormat)native-&gt;PixelFormat,</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>            new PixelBitMask(native-&gt;RedMask, native-&gt;GreenMask, native-&gt;BlueMask, native-&gt;ReservedMask));</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>        BootContext boot = new(</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>            BootProtocol.Uefi,</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>            framebuffer,</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>            new PhysicalAddress(native-&gt;FinalMemoryMapAddress),</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>            native-&gt;FinalMemoryMapLength,</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>            native-&gt;FinalMemoryMapKey,</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>            native-&gt;FinalMemoryDescriptorSize,</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>            native-&gt;FinalMemoryDescriptorVersion,</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>            native-&gt;FinalMemoryMapFlag == 1 &amp;&amp; native-&gt;ExitBootServicesStatus == 0,</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>            new PhysicalAddress(native-&gt;AcpiRootPointerAddress));</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>        return KMain(boot) ? (byte)1 : (byte)0;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    }</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a></span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    private static bool WriteLine(SerialConsole serial, FramebufferConsole framebuffer, ReadOnlySpan&lt;char&gt; text)</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    {</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>        if (!serial.WriteLine(text)) return false;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>        return framebuffer.WriteLine(text);</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    }</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a></span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    #pragma warning disable CS0649 // Populated by the native UEFI entry before managed execution.</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    [StructLayout(LayoutKind.Sequential)]</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    private struct NativeBootContext</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    {</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        internal ulong Signature;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>        internal ulong FramebufferAddress;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>        internal ulong FramebufferSize;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>        internal uint Width;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>        internal uint Height;</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>        internal uint PixelsPerScanLine;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>        internal uint PixelFormat;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>        internal uint RedMask;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>        internal uint GreenMask;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>        internal uint BlueMask;</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>        internal uint ReservedMask;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>        internal ulong FinalMemoryMapAddress;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>        internal ulong FinalMemoryMapLength;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>        internal ulong FinalMemoryMapKey;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>        internal ulong FinalMemoryDescriptorSize;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>        internal uint FinalMemoryDescriptorVersion;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>        internal uint FinalMemoryMapCaptureAttempts;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>        internal ulong ExitBootServicesStatus;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>        internal ulong FinalMemoryMapFlag;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>        internal ulong BootstrapPageTableWorkspaceAddress;</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>        internal ulong BootstrapPageTableWorkspacePages;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>        internal ulong AcpiRootPointerAddress;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    }</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    #pragma warning restore CS0649</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>}</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

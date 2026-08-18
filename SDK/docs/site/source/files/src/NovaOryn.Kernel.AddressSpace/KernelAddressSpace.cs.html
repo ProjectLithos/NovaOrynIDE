@@ -1,0 +1,113 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.AddressSpace/KernelAddressSpace.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.AddressSpace/KernelAddressSpace.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Kernel.VirtualMemory;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Kernel.AddressSpace;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;summary&gt;Reports the state of the freestanding kernel address-space policy.&lt;/summary&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>public enum KernelAddressSpaceStatus</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>{</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    /// &lt;summary&gt;The operation completed successfully.&lt;/summary&gt;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    Success = 0,</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    /// &lt;summary&gt;The virtual-memory manager must be initialized first.&lt;/summary&gt;</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    VirtualMemoryNotInitialized = 1,</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    /// &lt;summary&gt;The address-space policy was already initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    AlreadyInitialized = 2,</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    /// &lt;summary&gt;The compiled standard layout failed an internal invariant.&lt;/summary&gt;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    InvalidLayout = 3,</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    /// &lt;summary&gt;The calculated PMM-backed direct physical map could not be established.&lt;/summary&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    DirectMapInitializationFailed = 4</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>}</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a></span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>/// &lt;summary&gt;Exposes the standard NovaOryn x64 kernel virtual-address reservations to freestanding kernels.&lt;/summary&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>public static class KernelAddressSpace</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>{</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    /// &lt;summary&gt;First user virtual byte; low 64 KiB remain a guard.&lt;/summary&gt;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    public const UInt64 UserBase = 0x0000000000010000UL;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    /// &lt;summary&gt;Exclusive end of the user half.&lt;/summary&gt;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    public const UInt64 UserEndExclusive = 0x0000800000000000UL;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    /// &lt;summary&gt;Higher-half kernel image base.&lt;/summary&gt;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    public const UInt64 KernelImageBase = 0xFFFF800000000000UL;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    /// &lt;summary&gt;Kernel image reservation length.&lt;/summary&gt;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    public const UInt64 KernelImageLength = 0x0000000100000000UL;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;summary&gt;Future kernel heap base.&lt;/summary&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    public const UInt64 KernelHeapBase = 0xFFFF810000000000UL;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    /// &lt;summary&gt;Future kernel heap reservation length.&lt;/summary&gt;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    public const UInt64 KernelHeapLength = 0x0000010000000000UL;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    /// &lt;summary&gt;Kernel stack arena base.&lt;/summary&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    public const UInt64 KernelStacksBase = 0xFFFF820000000000UL;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    /// &lt;summary&gt;Kernel stack arena length.&lt;/summary&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    public const UInt64 KernelStacksLength = 0x0000010000000000UL;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    /// &lt;summary&gt;Direct physical map base.&lt;/summary&gt;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    public const UInt64 DirectMapBase = 0xFFFF900000000000UL;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    /// &lt;summary&gt;Direct physical map capacity.&lt;/summary&gt;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    public const UInt64 DirectMapLength = 0x0000400000000000UL;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    /// &lt;summary&gt;MMIO window base.&lt;/summary&gt;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    public const UInt64 MmioBase = 0xFFFFD00000000000UL;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    /// &lt;summary&gt;MMIO window length.&lt;/summary&gt;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    public const UInt64 MmioLength = 0x0000100000000000UL;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    /// &lt;summary&gt;Page-table access window base.&lt;/summary&gt;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    public const UInt64 PageTableWindowBase = 0xFFFFFF0000000000UL;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    /// &lt;summary&gt;Page-table access window length.&lt;/summary&gt;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    public const UInt64 PageTableWindowLength = 0x0000008000000000UL;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    private static Boolean _initialized;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    private static KernelAddressSpaceStatus _status = KernelAddressSpaceStatus.VirtualMemoryNotInitialized;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a></span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;summary&gt;Gets whether the address-space policy has been initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    public static Boolean IsInitialized() =&gt; _initialized;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    /// &lt;summary&gt;Gets the last initialization status.&lt;/summary&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    public static KernelAddressSpaceStatus GetLastStatus() =&gt; _status;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    /// &lt;summary&gt;Gets a freestanding-safe symbolic name for the last initialization status.&lt;/summary&gt;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    /// &lt;returns&gt;A stable status name that can be written directly without enum formatting or &lt;c&gt;string.Format&lt;/c&gt;.&lt;/returns&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    public static String GetLastStatusName()</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    {</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>        if (_status == KernelAddressSpaceStatus.Success) return &quot;Success&quot;;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>        if (_status == KernelAddressSpaceStatus.VirtualMemoryNotInitialized) return &quot;VirtualMemoryNotInitialized&quot;;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>        if (_status == KernelAddressSpaceStatus.AlreadyInitialized) return &quot;AlreadyInitialized&quot;;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>        if (_status == KernelAddressSpaceStatus.InvalidLayout) return &quot;InvalidLayout&quot;;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>        if (_status == KernelAddressSpaceStatus.DirectMapInitializationFailed) return &quot;DirectMapInitializationFailed&quot;;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        return &quot;Unknown&quot;;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    }</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a></span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    /// &lt;summary&gt;Validates and activates the standard address-space policy for later kernel subsystems.&lt;/summary&gt;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the VMM is ready and every standard region satisfies the compiled invariants.&lt;/returns&gt;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    public static Boolean Initialize()</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    {</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>        if (_initialized) { _status = KernelAddressSpaceStatus.AlreadyInitialized; return false; }</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>        if (!KernelVirtualMemory.IsInitialized()) { _status = KernelAddressSpaceStatus.VirtualMemoryNotInitialized; return false; }</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>        if (!ValidateRange(UserBase, UserEndExclusive - UserBase, false) ||</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>            !ValidateRange(KernelImageBase, KernelImageLength, true) || !ValidateRange(KernelHeapBase, KernelHeapLength, true) ||</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>            !ValidateRange(KernelStacksBase, KernelStacksLength, true) || !ValidateRange(DirectMapBase, DirectMapLength, true) ||</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>            !ValidateRange(MmioBase, MmioLength, true) || !ValidateRange(PageTableWindowBase, PageTableWindowLength, true) ||</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>            Overlaps(KernelImageBase, KernelImageLength, KernelHeapBase, KernelHeapLength) ||</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>            Overlaps(KernelHeapBase, KernelHeapLength, KernelStacksBase, KernelStacksLength) ||</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>            Overlaps(KernelStacksBase, KernelStacksLength, DirectMapBase, DirectMapLength) ||</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>            Overlaps(DirectMapBase, DirectMapLength, MmioBase, MmioLength) ||</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>            Overlaps(MmioBase, MmioLength, PageTableWindowBase, PageTableWindowLength))</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>        { _status = KernelAddressSpaceStatus.InvalidLayout; return false; }</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>        if (!KernelVirtualMemory.InitializeDirectMap(DirectMapBase, DirectMapLength))</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>        { _status = KernelAddressSpaceStatus.DirectMapInitializationFailed; return false; }</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>        _initialized = true; _status = KernelAddressSpaceStatus.Success; return true;</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>    }</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a></span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    /// &lt;summary&gt;Attempts to convert a physical byte address into the standard direct-map virtual address.&lt;/summary&gt;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the physical address fits the 64 TiB direct-map capacity.&lt;/returns&gt;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>    public static Boolean TryPhysicalToDirectMap(UInt64 physicalAddress, out UInt64 virtualAddress)</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>    { virtualAddress = 0; if (!_initialized || physicalAddress &gt;= DirectMapLength) return false; virtualAddress = DirectMapBase + physicalAddress; return true; }</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a></span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>    /// &lt;summary&gt;Attempts to convert one direct-map virtual address to a physical byte address.&lt;/summary&gt;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the virtual address lies inside the direct-map reservation.&lt;/returns&gt;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    public static Boolean TryDirectMapToPhysical(UInt64 virtualAddress, out UInt64 physicalAddress)</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>    { physicalAddress = 0; if (!_initialized || virtualAddress &lt; DirectMapBase || virtualAddress &gt;= DirectMapBase + DirectMapLength) return false; physicalAddress = virtualAddress - DirectMapBase; return true; }</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a></span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    private static Boolean ValidateRange(UInt64 address, UInt64 length, Boolean high)</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    {</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>        if (length == 0 || (address &amp; 0xFFFUL) != 0 || (length &amp; 0xFFFUL) != 0 || address &gt; 0xFFFFFFFFFFFFFFFFUL - length) return false;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>        UInt64 last = address + length - 1UL;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>        if (!IsCanonical(address) || !IsCanonical(last)) return false;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>        return high ? address &gt;= 0xFFFF800000000000UL : last &lt; 0x0000800000000000UL;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    }</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    private static Boolean IsCanonical(UInt64 address) { UInt64 upper = address &gt;&gt; 48; return ((address &gt;&gt; 47) &amp; 1UL) != 0 ? upper == 0xFFFFUL : upper == 0UL; }</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>    private static Boolean Overlaps(UInt64 a, UInt64 al, UInt64 b, UInt64 bl) =&gt; a &lt; b + bl &amp;&amp; b &lt; a + al;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>}</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

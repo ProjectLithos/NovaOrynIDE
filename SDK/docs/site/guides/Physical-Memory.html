@@ -1,0 +1,13 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Physical Memory · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"><script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../guides/Getting-Started.html">Guides</a><a href="../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../" placeholder="Type a public item"><div id="search-results"></div></label></header><main>
+<h1>Physical memory</h1>
+<p>NovaOryn exposes one common physical-memory contract with three built-in allocation methodologies: bitmap, buddy and extent.</p>
+<h2>Common contract</h2>
+<p>Higher-level SDK facilities can depend on <code>IPhysicalMemoryManager</code>. Built-in managers consume a normalized boot memory map plus caller-owned workspace, so allocator metadata does not depend on the later kernel heap.</p>
+<h2>Allocation constraints</h2>
+<p><code>PhysicalAllocationRequest</code> can express contiguous page count, power-of-two page alignment, a minimum physical address, an optional exclusive maximum address and allocation purpose. This supports ordinary pages as well as constrained DMA allocations.</p>
+<h2>Ownership</h2>
+<p>Allocations and reservations use explicit ownership records/tokens so stale or double releases can fail deterministically rather than silently corrupting the free-frame state.</p>
+<h2>Choosing a methodology</h2>
+<ul><li><strong>Bitmap:</strong> simple per-frame state and predictable lookup over reasonably dense physical ranges.</li><li><strong>Buddy:</strong> power-of-two blocks with split/coalesce behavior and natural alignment.</li><li><strong>Extent:</strong> exact page counts and metadata that follows free-range fragmentation.</li></ul>
+<h2>API</h2>
+<ul><li><a href="../assemblies/novaoryn-memory-physical-contracts.html">Physical contracts</a></li><li><a href="../assemblies/novaoryn-memory-physical.html">Physical implementations</a></li><li><a href="../assemblies/novaoryn-kernel-memory.html">Kernel memory integration</a></li></ul></main><footer>Updated documentation for NovaOryn 0.29.0 SDK source.</footer></body></html>

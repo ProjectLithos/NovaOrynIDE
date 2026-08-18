@@ -1,0 +1,40 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Serial/SerialContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Serial/SerialContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Kernel.Serial;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Identifies a serial/debug transport managed by NovaOryn.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>public enum KernelSerialTransport : Byte</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>{</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>    /// &lt;summary&gt;No serial transport.&lt;/summary&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    None = 0,</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    /// &lt;summary&gt;Legacy PC-compatible 8250/16450/16550 UART, normally COM1.&lt;/summary&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    Uart16550 = 1,</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    /// &lt;summary&gt;PCI communications-class UART using a 16550-compatible programming interface.&lt;/summary&gt;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    PciUart = 2,</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;summary&gt;VirtIO console device.&lt;/summary&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    VirtioConsole = 3</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>}</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a></span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>/// &lt;summary&gt;Reports the serial facilities discovered and attached to kernel debug output.&lt;/summary&gt;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>public readonly struct KernelSerialCapabilities</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>{</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    /// &lt;summary&gt;Creates one serial capability snapshot.&lt;/summary&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    public KernelSerialCapabilities(Boolean initialized, Boolean uart16550, UInt32 pciUartsDiscovered, UInt32 pciUartsOnline, UInt32 virtioConsoles, Boolean secondaryMirroring, UInt64 transmitFailures)</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    { Initialized=initialized; Uart16550=uart16550; PciUartsDiscovered=pciUartsDiscovered; PciUartsOnline=pciUartsOnline; VirtioConsoles=virtioConsoles; SecondaryMirroring=secondaryMirroring; TransmitFailures=transmitFailures; }</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    /// &lt;summary&gt;Whether the post-PCI serial facility has been initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    public Boolean Initialized { get; }</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    /// &lt;summary&gt;Whether the legacy 16550-compatible COM1 debug UART is active.&lt;/summary&gt;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    public Boolean Uart16550 { get; }</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    /// &lt;summary&gt;Number of PCI communications-class serial functions discovered.&lt;/summary&gt;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    public UInt32 PciUartsDiscovered { get; }</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    /// &lt;summary&gt;Number of discovered PCI UARTs with a supported 16550-compatible I/O or MMIO BAR.&lt;/summary&gt;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    public UInt32 PciUartsOnline { get; }</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;summary&gt;Number of started VirtIO console devices.&lt;/summary&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    public UInt32 VirtioConsoles { get; }</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    /// &lt;summary&gt;Whether at least one post-boot secondary serial transport is mirrored by KernelConsole.&lt;/summary&gt;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    public Boolean SecondaryMirroring { get; }</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    /// &lt;summary&gt;Best-effort secondary transmit failures observed since initialization.&lt;/summary&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    public UInt64 TransmitFailures { get; }</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>}</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

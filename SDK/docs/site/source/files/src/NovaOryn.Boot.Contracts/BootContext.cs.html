@@ -1,0 +1,217 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Boot.Contracts/BootContext.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Boot.Contracts/BootContext.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Boot.Contracts;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>public enum BootProtocol</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>{</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>    Unknown = 0,</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>    Uefi = 1,</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    Limine = 2,</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    Multiboot2 = 3</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>}</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a></span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>public enum FramebufferPixelFormat</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>{</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    RedGreenBlueReserved8BitPerColor = 0,</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    BlueGreenRedReserved8BitPerColor = 1,</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    BitMask = 2,</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    BltOnly = 3</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>}</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a></span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>public readonly struct PixelBitMask</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>{</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    public PixelBitMask(uint red, uint green, uint blue, uint reserved)</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    {</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>        Red = red;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>        Green = green;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>        Blue = blue;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>        Reserved = reserved;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    }</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a></span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    public uint Red { get; }</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    public uint Green { get; }</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    public uint Blue { get; }</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    public uint Reserved { get; }</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a></span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    public bool IsDirectColor()</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    {</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>        if (Red == 0 || Green == 0 || Blue == 0) return false;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>        if ((Red &amp; Green) != 0 || (Red &amp; Blue) != 0 || (Green &amp; Blue) != 0) return false;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>        if (Reserved != 0 &amp;&amp; ((Reserved &amp; Red) != 0 || (Reserved &amp; Green) != 0 || (Reserved &amp; Blue) != 0)) return false;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>        return IsContiguous(Red) &amp;&amp; IsContiguous(Green) &amp;&amp; IsContiguous(Blue);</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    }</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a></span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    private static bool IsContiguous(uint mask)</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    {</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>        while ((mask &amp; 1U) == 0U) mask &gt;&gt;= 1;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>        while ((mask &amp; 1U) != 0U) mask &gt;&gt;= 1;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        return mask == 0U;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    }</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>}</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a></span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>public readonly struct Framebuffer</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>{</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    public Framebuffer(</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>        PhysicalAddress address,</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>        ulong sizeInBytes,</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>        uint width,</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>        uint height,</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>        uint pixelsPerScanLine,</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>        FramebufferPixelFormat pixelFormat,</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>        PixelBitMask pixelMask)</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    {</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>        Address = address;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>        SizeInBytes = sizeInBytes;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>        Width = width;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>        Height = height;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>        PixelsPerScanLine = pixelsPerScanLine;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        PixelFormat = pixelFormat;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>        PixelMask = pixelMask;</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    }</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a></span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    public PhysicalAddress Address { get; }</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    public ulong SizeInBytes { get; }</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    public uint Width { get; }</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    public uint Height { get; }</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    public uint PixelsPerScanLine { get; }</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    public FramebufferPixelFormat PixelFormat { get; }</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    public PixelBitMask PixelMask { get; }</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a></span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>    public bool IsAvailable()</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    {</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>        if (Address.Value == 0 || SizeInBytes == 0 || Width == 0 || Height == 0) return false;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>        if (PixelsPerScanLine &lt; Width || PixelFormat &gt; FramebufferPixelFormat.BitMask) return false;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>        ulong bytesPerScanLine = checked((ulong)PixelsPerScanLine * 4UL);</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>        if ((ulong)Height &gt; SizeInBytes / bytesPerScanLine) return false;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>        return PixelFormat != FramebufferPixelFormat.BitMask || PixelMask.IsDirectColor();</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    }</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>}</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a></span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>public readonly struct BootContext</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>{</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    public BootContext(</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>        BootProtocol protocol,</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>        Framebuffer framebuffer,</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>        PhysicalAddress memoryMapAddress,</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>        ulong memoryMapLength)</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>        : this(protocol, framebuffer, memoryMapAddress, memoryMapLength, 0, 0, 0, false)</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>    {</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    }</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a></span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    /// &lt;summary&gt;Creates a boot context containing the accepted final firmware memory-map metadata.&lt;/summary&gt;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    /// &lt;nova.when&gt;Use after firmware has accepted the map key and boot services have exited.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    /// &lt;nova.depends&gt;The map storage must remain valid for the lifetime of the boot context.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    /// &lt;returns&gt;A boot context that identifies the retained final map and its descriptor format.&lt;/returns&gt;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    /// &lt;example&gt;&lt;code&gt;BootContext context = new(BootProtocol.Uefi, framebuffer, mapAddress, mapLength, mapKey, descriptorSize, descriptorVersion, true);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    /// &lt;param name=&quot;protocol&quot;&gt;Firmware or loader protocol used to enter the kernel.&lt;/param&gt;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    /// &lt;param name=&quot;framebuffer&quot;&gt;Framebuffer information captured before firmware services ended.&lt;/param&gt;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    /// &lt;param name=&quot;memoryMapAddress&quot;&gt;Physical address of the retained final map.&lt;/param&gt;</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    /// &lt;param name=&quot;memoryMapLength&quot;&gt;Length of the retained map in bytes.&lt;/param&gt;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>    /// &lt;param name=&quot;memoryMapKey&quot;&gt;Firmware key accepted by ExitBootServices.&lt;/param&gt;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>    /// &lt;param name=&quot;memoryDescriptorSize&quot;&gt;Size of each firmware descriptor.&lt;/param&gt;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>    /// &lt;param name=&quot;memoryDescriptorVersion&quot;&gt;Firmware descriptor format version.&lt;/param&gt;</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>    /// &lt;param name=&quot;isFinalMemoryMap&quot;&gt;Whether this is the map accepted immediately before ExitBootServices.&lt;/param&gt;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>    public BootContext(</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>        BootProtocol protocol,</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>        Framebuffer framebuffer,</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>        PhysicalAddress memoryMapAddress,</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>        ulong memoryMapLength,</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>        ulong memoryMapKey,</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>        ulong memoryDescriptorSize,</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>        uint memoryDescriptorVersion,</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>        bool isFinalMemoryMap)</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>        : this(protocol, framebuffer, memoryMapAddress, memoryMapLength, memoryMapKey, memoryDescriptorSize, memoryDescriptorVersion, isFinalMemoryMap, new PhysicalAddress(0), new PhysicalAddress(0))</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    {</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>    }</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a></span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>    /// &lt;summary&gt;Creates a boot context with final firmware memory-map metadata and a captured ACPI root pointer.&lt;/summary&gt;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>    /// &lt;param name=&quot;protocol&quot;&gt;Firmware or loader protocol used to enter the kernel.&lt;/param&gt;</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>    /// &lt;param name=&quot;framebuffer&quot;&gt;Framebuffer information captured before firmware services ended.&lt;/param&gt;</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>    /// &lt;param name=&quot;memoryMapAddress&quot;&gt;Physical address of the retained final map.&lt;/param&gt;</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>    /// &lt;param name=&quot;memoryMapLength&quot;&gt;Length of the retained map in bytes.&lt;/param&gt;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>    /// &lt;param name=&quot;memoryMapKey&quot;&gt;Firmware key accepted by ExitBootServices.&lt;/param&gt;</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>    /// &lt;param name=&quot;memoryDescriptorSize&quot;&gt;Size of each firmware descriptor.&lt;/param&gt;</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>    /// &lt;param name=&quot;memoryDescriptorVersion&quot;&gt;Firmware descriptor format version.&lt;/param&gt;</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>    /// &lt;param name=&quot;isFinalMemoryMap&quot;&gt;Whether this is the map accepted immediately before ExitBootServices.&lt;/param&gt;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>    /// &lt;param name=&quot;acpiRootPointerAddress&quot;&gt;Physical address of the ACPI RSDP, or zero when unavailable.&lt;/param&gt;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>    /// &lt;returns&gt;A boot context containing memory and hardware-discovery hand-off data.&lt;/returns&gt;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>    public BootContext(</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>        BootProtocol protocol,</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>        Framebuffer framebuffer,</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>        PhysicalAddress memoryMapAddress,</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>        ulong memoryMapLength,</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>        ulong memoryMapKey,</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>        ulong memoryDescriptorSize,</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>        uint memoryDescriptorVersion,</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>        bool isFinalMemoryMap,</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>        PhysicalAddress acpiRootPointerAddress)</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>        : this(protocol, framebuffer, memoryMapAddress, memoryMapLength, memoryMapKey, memoryDescriptorSize, memoryDescriptorVersion, isFinalMemoryMap, acpiRootPointerAddress, new PhysicalAddress(0))</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>    {</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>    }</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a></span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>    /// &lt;summary&gt;Creates a boot context with ACPI and x86 application-processor startup hand-off addresses.&lt;/summary&gt;</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>    /// &lt;param name=&quot;protocol&quot;&gt;Firmware or loader protocol used to enter the kernel.&lt;/param&gt;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>    /// &lt;param name=&quot;framebuffer&quot;&gt;Framebuffer information captured before firmware services ended.&lt;/param&gt;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>    /// &lt;param name=&quot;memoryMapAddress&quot;&gt;Physical address of the retained final map.&lt;/param&gt;</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>    /// &lt;param name=&quot;memoryMapLength&quot;&gt;Length of the retained map in bytes.&lt;/param&gt;</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>    /// &lt;param name=&quot;memoryMapKey&quot;&gt;Firmware key accepted by ExitBootServices.&lt;/param&gt;</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>    /// &lt;param name=&quot;memoryDescriptorSize&quot;&gt;Size of each firmware descriptor.&lt;/param&gt;</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>    /// &lt;param name=&quot;memoryDescriptorVersion&quot;&gt;Firmware descriptor format version.&lt;/param&gt;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>    /// &lt;param name=&quot;isFinalMemoryMap&quot;&gt;Whether this is the accepted final firmware map.&lt;/param&gt;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>    /// &lt;param name=&quot;acpiRootPointerAddress&quot;&gt;Physical address of the ACPI RSDP.&lt;/param&gt;</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>    /// &lt;param name=&quot;applicationProcessorTrampolineAddress&quot;&gt;Physical address of a reserved SIPI page below 1 MiB, or zero when unavailable.&lt;/param&gt;</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>    /// &lt;returns&gt;A boot context with memory, ACPI, and SMP bootstrap hand-off data.&lt;/returns&gt;</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>    public BootContext(</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>        BootProtocol protocol,</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>        Framebuffer framebuffer,</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>        PhysicalAddress memoryMapAddress,</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>        ulong memoryMapLength,</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>        ulong memoryMapKey,</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>        ulong memoryDescriptorSize,</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>        uint memoryDescriptorVersion,</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>        bool isFinalMemoryMap,</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>        PhysicalAddress acpiRootPointerAddress,</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>        PhysicalAddress applicationProcessorTrampolineAddress)</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>    {</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>        Protocol = protocol;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>        Framebuffer = framebuffer;</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>        MemoryMapAddress = memoryMapAddress;</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>        MemoryMapLength = memoryMapLength;</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>        MemoryMapKey = memoryMapKey;</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>        MemoryDescriptorSize = memoryDescriptorSize;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>        MemoryDescriptorVersion = memoryDescriptorVersion;</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>        IsFinalMemoryMap = isFinalMemoryMap;</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>        AcpiRootPointerAddress = acpiRootPointerAddress;</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>        ApplicationProcessorTrampolineAddress = applicationProcessorTrampolineAddress;</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>    }</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a></span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>    public BootProtocol Protocol { get; }</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>    public Framebuffer Framebuffer { get; }</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>    public PhysicalAddress MemoryMapAddress { get; }</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>    public ulong MemoryMapLength { get; }</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>    /// &lt;summary&gt;Gets the firmware map key accepted by ExitBootServices.&lt;/summary&gt;</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>    /// &lt;nova.when&gt;Use for diagnostics that prove the retained map was the accepted final map.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>    public ulong MemoryMapKey { get; }</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>    /// &lt;summary&gt;Gets the size in bytes of each retained firmware memory descriptor.&lt;/summary&gt;</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>    /// &lt;nova.when&gt;Use when enumerating the variable-sized UEFI descriptor array.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>    public ulong MemoryDescriptorSize { get; }</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>    /// &lt;summary&gt;Gets the retained firmware memory-descriptor format version.&lt;/summary&gt;</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>    /// &lt;nova.when&gt;Use when validating that a decoder supports the firmware descriptor format.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>    public uint MemoryDescriptorVersion { get; }</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>    /// &lt;summary&gt;Gets whether the retained map was accepted immediately before ExitBootServices.&lt;/summary&gt;</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>    /// &lt;nova.when&gt;Require this before constructing a physical-memory allocator.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>    public bool IsFinalMemoryMap { get; }</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>    /// &lt;summary&gt;Gets the ACPI Root System Description Pointer captured by the boot environment.&lt;/summary&gt;</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>    /// &lt;nova.when&gt;Use as the ACPI discovery root instead of scanning legacy BIOS address ranges.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>    public PhysicalAddress AcpiRootPointerAddress { get; }</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>    /// &lt;summary&gt;Gets a reserved x86 SIPI target page below 1 MiB when the boot environment supplied one.&lt;/summary&gt;</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>    public PhysicalAddress ApplicationProcessorTrampolineAddress { get; }</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a></span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>    public bool TryGetFramebuffer(out Framebuffer framebuffer)</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>    {</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>        framebuffer = Framebuffer;</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>        return framebuffer.IsAvailable();</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>    }</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>}</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

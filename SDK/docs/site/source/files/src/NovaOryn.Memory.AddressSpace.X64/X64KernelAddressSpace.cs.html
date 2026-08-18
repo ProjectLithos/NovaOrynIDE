@@ -1,0 +1,93 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Memory.AddressSpace.X64/X64KernelAddressSpace.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Memory.AddressSpace.X64/X64KernelAddressSpace.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Core;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Memory.Virtual.X64;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Memory.AddressSpace.X64;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;summary&gt;Defines and validates the standard NovaOryn four-level x64 kernel address-space policy.&lt;/summary&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;nova.when&gt;Use as the default x64 layout or as a reference when creating a custom layout.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>/// &lt;nova.depends&gt;Four-level x64 canonical addressing and 4 KiB pages.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>[SupportedArchitecture(SupportedArchitecture.X64)]</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>public static class X64KernelAddressSpace</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>{</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    /// &lt;summary&gt;Gets the first user virtual byte; the first 64 KiB are intentionally left unmapped as a null/low-address guard.&lt;/summary&gt;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    public const ulong UserBase = 0x0000000000010000UL;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    /// &lt;summary&gt;Gets the exclusive end of the low canonical user half.&lt;/summary&gt;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    public const ulong UserEndExclusive = 0x0000800000000000UL;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    /// &lt;summary&gt;Gets the target base of the higher-half kernel image window.&lt;/summary&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    public const ulong KernelImageBase = 0xFFFF800000000000UL;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    /// &lt;summary&gt;Gets the reserved kernel-image window length (4 GiB).&lt;/summary&gt;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    public const ulong KernelImageLength = 0x0000000100000000UL;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    /// &lt;summary&gt;Gets the base of the future kernel heap reservation.&lt;/summary&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    public const ulong KernelHeapBase = 0xFFFF810000000000UL;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    /// &lt;summary&gt;Gets the kernel heap reservation length (1 TiB).&lt;/summary&gt;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    public const ulong KernelHeapLength = 0x0000010000000000UL;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    /// &lt;summary&gt;Gets the base of the kernel stack/guard-page arena.&lt;/summary&gt;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    public const ulong KernelStacksBase = 0xFFFF820000000000UL;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    /// &lt;summary&gt;Gets the kernel stack arena length (1 TiB).&lt;/summary&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    public const ulong KernelStacksLength = 0x0000010000000000UL;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    /// &lt;summary&gt;Gets the base of the direct physical-memory map.&lt;/summary&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    public const ulong DirectMapBase = 0xFFFF900000000000UL;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    /// &lt;summary&gt;Gets the direct-map capacity (64 TiB of physical address space).&lt;/summary&gt;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    public const ulong DirectMapLength = 0x0000400000000000UL;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    /// &lt;summary&gt;Gets the base of the kernel MMIO window.&lt;/summary&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    public const ulong MmioBase = 0xFFFFD00000000000UL;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;summary&gt;Gets the MMIO window length (16 TiB).&lt;/summary&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    public const ulong MmioLength = 0x0000100000000000UL;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    /// &lt;summary&gt;Gets the base of the dedicated page-table access window.&lt;/summary&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    public const ulong PageTableWindowBase = 0xFFFFFF0000000000UL;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;summary&gt;Gets the page-table access window length (512 GiB).&lt;/summary&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    public const ulong PageTableWindowLength = 0x0000008000000000UL;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a></span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    /// &lt;summary&gt;Creates the standard NovaOryn x64 kernel layout.&lt;/summary&gt;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    /// &lt;nova.when&gt;Use during x64 kernel bootstrap before heap, stack, MMIO, or direct-map consumers are enabled.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    /// &lt;nova.depends&gt;Canonical four-level x64 address ranges.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when all standard regions were created and validated.&lt;/returns&gt;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    /// &lt;example&gt;&lt;code&gt;bool ok = X64KernelAddressSpace.TryCreateStandard(out KernelAddressSpaceLayout layout);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    public static bool TryCreateStandard(out KernelAddressSpaceLayout layout)</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    {</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>        layout = default;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>        if (!KernelAddressSpaceRegion.TryCreate(KernelAddressSpaceRegionKind.User, UserBase, UserEndExclusive - UserBase, out var user)) return false;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>        if (!KernelAddressSpaceRegion.TryCreate(KernelAddressSpaceRegionKind.KernelImage, KernelImageBase, KernelImageLength, out var image)) return false;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>        if (!KernelAddressSpaceRegion.TryCreate(KernelAddressSpaceRegionKind.KernelHeap, KernelHeapBase, KernelHeapLength, out var heap)) return false;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>        if (!KernelAddressSpaceRegion.TryCreate(KernelAddressSpaceRegionKind.KernelStacks, KernelStacksBase, KernelStacksLength, out var stacks)) return false;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>        if (!KernelAddressSpaceRegion.TryCreate(KernelAddressSpaceRegionKind.DirectPhysicalMap, DirectMapBase, DirectMapLength, out var direct)) return false;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>        if (!KernelAddressSpaceRegion.TryCreate(KernelAddressSpaceRegionKind.Mmio, MmioBase, MmioLength, out var mmio)) return false;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>        if (!KernelAddressSpaceRegion.TryCreate(KernelAddressSpaceRegionKind.PageTableWindow, PageTableWindowBase, PageTableWindowLength, out var tables)) return false;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>        if (!KernelAddressSpaceLayout.TryCreate(user, image, heap, stacks, direct, mmio, tables, out layout)) return false;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>        return Validate(layout);</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    }</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a></span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    /// &lt;summary&gt;Validates canonicality, high/low-half placement, separation, and page alignment for an x64 kernel layout.&lt;/summary&gt;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    /// &lt;nova.when&gt;Use before accepting a custom x64 address-space policy.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    /// &lt;nova.depends&gt;A structurally valid &lt;see cref=&quot;KernelAddressSpaceLayout&quot;/&gt;.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when every mapped endpoint is canonical and the user/kernel split is respected.&lt;/returns&gt;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    /// &lt;example&gt;&lt;code&gt;bool valid = X64KernelAddressSpace.Validate(layout);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    public static bool Validate(KernelAddressSpaceLayout layout)</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    {</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        if (layout.User.BaseAddress &lt; UserBase || layout.User.EndExclusive &gt; UserEndExclusive) return false;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>        foreach (var region in new[] { layout.KernelImage, layout.KernelHeap, layout.KernelStacks, layout.DirectPhysicalMap, layout.Mmio, layout.PageTableWindow })</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>        {</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>            if (region.BaseAddress &lt; 0xFFFF800000000000UL || !X64VirtualAddress.IsCanonical(region.BaseAddress) || !X64VirtualAddress.IsCanonical(region.EndExclusive - 1UL)) return false;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>        }</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>        return true;</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    }</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a></span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    /// &lt;summary&gt;Attempts to translate a direct-map virtual address back to its physical byte address.&lt;/summary&gt;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    /// &lt;nova.when&gt;Use for diagnostics or physical-page ownership calculations within the direct-map window.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    /// &lt;nova.depends&gt;The standard direct-map base and capacity.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the virtual address belongs to the direct-map window.&lt;/returns&gt;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>    /// &lt;example&gt;&lt;code&gt;bool ok = X64KernelAddressSpace.TryDirectMapToPhysical(X64KernelAddressSpace.DirectMapBase + 0x2000, out ulong physical);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    public static bool TryDirectMapToPhysical(ulong virtualAddress, out ulong physicalAddress)</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>    { physicalAddress = 0; if (virtualAddress &lt; DirectMapBase || virtualAddress &gt;= DirectMapBase + DirectMapLength) return false; physicalAddress = virtualAddress - DirectMapBase; return true; }</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a></span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>    /// &lt;summary&gt;Attempts to convert a physical byte address into the standard direct-map virtual address.&lt;/summary&gt;</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    /// &lt;nova.when&gt;Use when a kernel subsystem needs stable virtual access to a physical byte inside the direct-map capacity.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>    /// &lt;nova.depends&gt;Physical address below &lt;see cref=&quot;DirectMapLength&quot;/&gt;.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the physical address fits the configured direct-map capacity.&lt;/returns&gt;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>    /// &lt;example&gt;&lt;code&gt;bool ok = X64KernelAddressSpace.TryPhysicalToDirectMap(0x2000, out ulong virtualAddress);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>    public static bool TryPhysicalToDirectMap(ulong physicalAddress, out ulong virtualAddress)</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>    { virtualAddress = 0; if (physicalAddress &gt;= DirectMapLength) return false; virtualAddress = DirectMapBase + physicalAddress; return true; }</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>}</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

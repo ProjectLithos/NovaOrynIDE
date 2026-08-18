@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Virtio.Gpu/VirtioGpuContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Virtio.Gpu/VirtioGpuContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Kernel.Drivers;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Kernel.Graphics;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>namespace NovaOryn.Kernel.Virtio.Gpu;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a></span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;summary&gt;Describes one started VirtIO GPU controller and its scan-out.&lt;/summary&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>public readonly struct VirtioGpuInfo</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>{</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    public VirtioGpuInfo(KernelDeviceHandle device,KernelGraphicsDisplayHandle display,KernelGraphicsMode mode,UInt32 scanout,Boolean started){Device=device;Display=display;Mode=mode;Scanout=scanout;Started=started;}</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    public KernelDeviceHandle Device { get; }</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    public KernelGraphicsDisplayHandle Display { get; }</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    public KernelGraphicsMode Mode { get; }</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    public UInt32 Scanout { get; }</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    public Boolean Started { get; }</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>}</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>/// &lt;summary&gt;Summarizes discovered and started VirtIO GPU controllers.&lt;/summary&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>public readonly struct VirtioGpuCapabilities</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>{</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    public VirtioGpuCapabilities(Boolean initialized,UInt32 controllers,UInt32 displays,Boolean modeChanges,Boolean twoDimensionalResources){Initialized=initialized;Controllers=controllers;Displays=displays;ModeChanges=modeChanges;TwoDimensionalResources=twoDimensionalResources;}</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    public Boolean Initialized { get; }</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    public UInt32 Controllers { get; }</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    public UInt32 Displays { get; }</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    public Boolean ModeChanges { get; }</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    public Boolean TwoDimensionalResources { get; }</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>}</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

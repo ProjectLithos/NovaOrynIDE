@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.ProjectModel/NovaOrynProject.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.ProjectModel/NovaOrynProject.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System.Text.Json;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.ProjectModel;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>public sealed record NovaOrynProject(</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>    string Name,</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>    string ProjectFile,</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>    string TargetArchitecture,</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    string BootProtocol,</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    string KernelEntry,</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    string RuntimePack,</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    string OutputDirectory)</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>{</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    public static bool TryLoad(string path, out NovaOrynProject? project, out string error)</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    {</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>        project = null;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>        error = string.Empty;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>        if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException(&quot;Project path is required.&quot;, nameof(path));</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>        string manifestPath = Path.GetFullPath(path);</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>        if (!File.Exists(manifestPath)) { error = $&quot;Project manifest not found: {manifestPath}&quot;; return false; }</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>        try</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>        {</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>            project = JsonSerializer.Deserialize&lt;NovaOrynProject&gt;(File.ReadAllText(manifestPath));</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>            if (project is null) { error = &quot;Project manifest was empty.&quot;; return false; }</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>            string root = Path.GetDirectoryName(manifestPath) ?? Environment.CurrentDirectory;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>            project = project with</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>            {</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>                ProjectFile = Resolve(root, project.ProjectFile),</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>                OutputDirectory = Resolve(root, project.OutputDirectory)</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>            };</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>            return project.Validate(out error);</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>        }</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>        catch (Exception exception) when (exception is IOException or JsonException)</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>        {</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>            error = exception.Message;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>            return false;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>        }</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    }</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a></span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    public bool Validate(out string error)</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    {</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>        if (string.IsNullOrWhiteSpace(Name)) { error = &quot;Name is required.&quot;; return false; }</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>        if (!File.Exists(ProjectFile)) { error = $&quot;Kernel project was not found: {ProjectFile}&quot;; return false; }</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>        if (!string.Equals(TargetArchitecture, &quot;x64&quot;, StringComparison.OrdinalIgnoreCase)) { error = &quot;NovaOryn 0.0.30 supports x64 only.&quot;; return false; }</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>        if (!string.Equals(BootProtocol, &quot;Uefi&quot;, StringComparison.OrdinalIgnoreCase)) { error = &quot;NovaOryn 0.0.30 supports UEFI only.&quot;; return false; }</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>        if (!string.Equals(KernelEntry, &quot;KMain&quot;, StringComparison.Ordinal)) { error = &quot;KernelEntry must be KMain.&quot;; return false; }</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>        error = string.Empty;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        return true;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    }</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a></span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    private static string Resolve(string root, string value) =&gt; Path.IsPathRooted(value) ? Path.GetFullPath(value) : Path.GetFullPath(Path.Combine(root, value));</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>}</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

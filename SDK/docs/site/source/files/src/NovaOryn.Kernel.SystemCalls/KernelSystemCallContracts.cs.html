@@ -1,0 +1,75 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.SystemCalls/KernelSystemCallContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.SystemCalls/KernelSystemCallContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Kernel.SystemCalls;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Identifies the syscall convention selected for one protected kernel entry.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>public enum KernelSystemCallAbi : Byte</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>{</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>    Unknown = 0,</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    GetSetEvent = 1,</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    Linux = 2,</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    Nt = 3</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>}</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a></span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>/// &lt;summary&gt;Identifies the three native NovaOryn service classes.&lt;/summary&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>public enum KernelSystemCallOperation : Byte</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>{</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    Get = 0,</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    Set = 1,</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    Event = 2</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>}</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a></span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>/// &lt;summary&gt;Defines stable negative NovaOryn/Linux-style syscall failures.&lt;/summary&gt;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>public enum KernelSystemCallError : Int64</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>{</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    Success = 0,</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    NotPermitted = -1,</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    NotFound = -2,</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    InvalidArgument = -22,</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    NotImplemented = -38,</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    Fault = -14,</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    Busy = -16</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>}</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a></span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a></span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>/// &lt;summary&gt;Defines common NTSTATUS values used by the NT-style compatibility dispatcher.&lt;/summary&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>public enum KernelNtStatus : UInt32</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>{</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    Success = 0x00000000U,</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    NotImplemented = 0xC0000002U,</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    InvalidParameter = 0xC000000DU,</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    AccessViolation = 0xC0000005U</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>}</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a></span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>/// &lt;summary&gt;Contains the six register arguments delivered to a NovaOryn syscall handler.&lt;/summary&gt;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>public unsafe struct KernelSystemCallFrame</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>{</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    internal KernelSystemCallFrame(KernelSystemCallAbi abi, KernelSystemCallOperation operation, UInt32 service, UInt64 a0, UInt64 a1, UInt64 a2, UInt64 a3, UInt64 a4, UInt64 a5)</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    { Abi=abi; Operation=operation; ServiceNumber=service; Argument0=a0; Argument1=a1; Argument2=a2; Argument3=a3; Argument4=a4; Argument5=a5; }</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    public KernelSystemCallAbi Abi { get; }</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    public KernelSystemCallOperation Operation { get; }</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    public UInt32 ServiceNumber { get; }</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    public UInt64 Argument0 { get; }</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    public UInt64 Argument1 { get; }</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    public UInt64 Argument2 { get; }</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    public UInt64 Argument3 { get; }</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    public UInt64 Argument4 { get; }</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    public UInt64 Argument5 { get; }</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>}</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a></span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>/// &lt;summary&gt;Reports the active protected syscall environment.&lt;/summary&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>public readonly struct KernelSystemCallCapabilities</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>{</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    internal KernelSystemCallCapabilities(Boolean syscall, Boolean smap, UInt32 configured, UInt32 processors, UInt64 stackBytes)</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    { HasX64Syscall=syscall; SmapEnabled=smap; ConfiguredProcessors=configured; ProcessorCount=processors; SyscallStackBytes=stackBytes; }</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    public Boolean HasX64Syscall { get; }</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    public Boolean SmapEnabled { get; }</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    public UInt32 ConfiguredProcessors { get; }</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    public UInt32 ProcessorCount { get; }</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    public UInt64 SyscallStackBytes { get; }</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    public Boolean SupportsGetSetEvent =&gt; true;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    public Boolean SupportsLinuxStyle =&gt; true;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    public Boolean SupportsNtStyle =&gt; true;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>}</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

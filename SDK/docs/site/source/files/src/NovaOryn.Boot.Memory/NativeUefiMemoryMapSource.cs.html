@@ -1,0 +1,105 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Boot.Memory/NativeUefiMemoryMapSource.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Boot.Memory/NativeUefiMemoryMapSource.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Boot.Contracts;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Memory;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>namespace NovaOryn.Boot.Memory;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a></span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;summary&gt;Reads the retained native UEFI descriptor buffer exposed by a final boot context.&lt;/summary&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>/// &lt;nova.when&gt;Use during identity-mapped early boot, or pass an explicitly mapped virtual address after paging changes.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>/// &lt;nova.depends&gt;BootContext final-map metadata and a readable mapping of the retained descriptor buffer&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>public sealed unsafe class NativeUefiMemoryMapSource : IMemoryMapSource</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>{</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    private readonly ulong _mappedAddress;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    private readonly ulong _descriptorSize;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a></span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    private NativeUefiMemoryMapSource(</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>        ulong mappedAddress,</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>        int count,</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>        ulong mapKey,</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>        ulong descriptorSize,</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>        uint descriptorVersion)</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    {</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>        _mappedAddress = mappedAddress;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>        Count = count;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>        MapKey = mapKey;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>        _descriptorSize = descriptorSize;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>        DescriptorVersion = descriptorVersion;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    }</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a></span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    /// &lt;summary&gt;Gets whether this source was created from a final accepted UEFI map.&lt;/summary&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    /// &lt;nova.when&gt;Check before supplying the source to a normaliser.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    public bool IsFinal =&gt; true;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;summary&gt;Gets the retained descriptor count.&lt;/summary&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    /// &lt;nova.when&gt;Use to bound immutable firmware diagnostics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    public int Count { get; }</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;summary&gt;Gets the map key accepted by ExitBootServices.&lt;/summary&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    /// &lt;nova.when&gt;Use when diagnosing the final firmware hand-off.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    public ulong MapKey { get; }</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    /// &lt;summary&gt;Gets the firmware descriptor size in bytes.&lt;/summary&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;nova.when&gt;Use when validating or displaying native UEFI layout metadata.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    public ulong DescriptorSize =&gt; _descriptorSize;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;summary&gt;Gets the firmware descriptor version.&lt;/summary&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    /// &lt;nova.when&gt;Use when interpreting future firmware descriptor extensions.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    public uint DescriptorVersion { get; }</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a></span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    /// &lt;summary&gt;Creates a source while the retained physical buffer remains identity mapped.&lt;/summary&gt;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    /// &lt;nova.when&gt;Use before replacing the firmware page tables.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    /// &lt;nova.depends&gt;BootContext.MemoryMapAddress must be directly readable&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when all final-map metadata is valid.&lt;/returns&gt;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    /// &lt;example&gt;&lt;code&gt;bool ready = NativeUefiMemoryMapSource.TryCreate(boot, out NativeUefiMemoryMapSource? source);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    public static bool TryCreate(BootContext boot, out NativeUefiMemoryMapSource? source)</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>        =&gt; TryCreate(boot, boot.MemoryMapAddress.Value, out source);</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a></span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;summary&gt;Creates a source using the virtual address at which the retained physical buffer is mapped.&lt;/summary&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;nova.when&gt;Use after installing page tables that map the final UEFI buffer at a non-identity address.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;nova.depends&gt;The complete buffer must be readable at mappedAddress&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when all final-map metadata and address arithmetic are valid.&lt;/returns&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    /// &lt;example&gt;&lt;code&gt;bool ready = NativeUefiMemoryMapSource.TryCreate(boot, mappedAddress, out NativeUefiMemoryMapSource? source);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    public static bool TryCreate(BootContext boot, ulong mappedAddress, out NativeUefiMemoryMapSource? source)</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    {</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>        source = null;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>        if (boot.Protocol != BootProtocol.Uefi || !boot.IsFinalMemoryMap) return false;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>        if (mappedAddress == 0 || boot.MemoryMapLength == 0 || boot.MemoryDescriptorSize &lt; 40) return false;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>        if ((boot.MemoryDescriptorSize &amp; 7UL) != 0 || boot.MemoryMapLength % boot.MemoryDescriptorSize != 0) return false;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>        if (mappedAddress &gt; ulong.MaxValue - boot.MemoryMapLength) return false;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>        ulong count = boot.MemoryMapLength / boot.MemoryDescriptorSize;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>        if (count == 0 || count &gt; int.MaxValue) return false;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>        source = new NativeUefiMemoryMapSource(mappedAddress, (int)count, boot.MemoryMapKey, boot.MemoryDescriptorSize, boot.MemoryDescriptorVersion);</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        return true;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    }</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a></span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    /// &lt;summary&gt;Attempts to translate one descriptor from the retained native buffer.&lt;/summary&gt;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    /// &lt;nova.when&gt;Used by every memory-map normaliser implementation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    /// &lt;nova.depends&gt;The buffer mapping must remain valid and immutable&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the index and descriptor are valid.&lt;/returns&gt;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    /// &lt;example&gt;&lt;code&gt;bool found = source.TryGetDescriptor(0, out MemoryDescriptor descriptor);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    public bool TryGetDescriptor(int index, out MemoryDescriptor descriptor)</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    {</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>        descriptor = default;</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>        if (!TryGetUefiDescriptor(index, out UefiMemoryDescriptor source)) return false;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        return UefiMemoryDescriptorMapper.TryMap(source, out descriptor);</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    }</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a></span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    /// &lt;summary&gt;Attempts to read one original UEFI descriptor from the retained native buffer.&lt;/summary&gt;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>    /// &lt;nova.when&gt;Use for immutable firmware diagnostics before reclaiming or unmapping the buffer.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    /// &lt;nova.depends&gt;UEFI descriptor layout version one fields at offsets 0 through 39&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the index exists and its address is representable.&lt;/returns&gt;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    /// &lt;example&gt;&lt;code&gt;bool found = source.TryGetUefiDescriptor(0, out UefiMemoryDescriptor descriptor);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>    public bool TryGetUefiDescriptor(int index, out UefiMemoryDescriptor descriptor)</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>    {</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>        descriptor = default;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>        if ((uint)index &gt;= (uint)Count) return false;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>        ulong offset = (ulong)(uint)index * _descriptorSize;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>        if (_mappedAddress &gt; ulong.MaxValue - offset) return false;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>        byte* address = (byte*)(nuint)(_mappedAddress + offset);</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>        UefiMemoryType type = (UefiMemoryType)(*(uint*)(address + 0));</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>        ulong physicalStart = *(ulong*)(address + 8);</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>        ulong virtualStart = *(ulong*)(address + 16);</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>        ulong pageCount = *(ulong*)(address + 24);</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>        UefiMemoryAttributes attributes = (UefiMemoryAttributes)(*(ulong*)(address + 32));</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>        descriptor = new UefiMemoryDescriptor(type, new PhysicalAddress(physicalStart), virtualStart, pageCount, attributes);</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>        return true;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    }</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>}</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

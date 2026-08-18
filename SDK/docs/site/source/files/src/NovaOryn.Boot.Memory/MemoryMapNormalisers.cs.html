@@ -1,0 +1,484 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Boot.Memory/MemoryMapNormalisers.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Boot.Memory/MemoryMapNormalisers.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Memory;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Boot.Memory;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;summary&gt;Creates one of NovaOryn&#39;s supported memory-map normalisation implementations.&lt;/summary&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;nova.when&gt;Use when selecting strict, safety-priority, or conservative firmware-overlap handling.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>/// &lt;nova.depends&gt;IMemoryMapNormaliser&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>public static class MemoryMapNormaliserFactory</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>{</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    /// &lt;summary&gt;Creates the requested stateless normaliser.&lt;/summary&gt;</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    /// &lt;nova.when&gt;Use during boot-policy selection or SDK configuration.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    /// &lt;nova.depends&gt;MemoryMapNormalisationMethod&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;returns&gt;A normaliser implementing the selected overlap policy.&lt;/returns&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    /// &lt;example&gt;&lt;code&gt;IMemoryMapNormaliser normaliser = MemoryMapNormaliserFactory.Create(MemoryMapNormalisationMethod.SafetyPriority);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    public static IMemoryMapNormaliser Create(MemoryMapNormalisationMethod method)</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    {</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>        return method switch</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>        {</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>            MemoryMapNormalisationMethod.Strict =&gt; new StrictMemoryMapNormaliser(),</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>            MemoryMapNormalisationMethod.SafetyPriority =&gt; new SafetyPriorityMemoryMapNormaliser(),</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>            MemoryMapNormalisationMethod.Conservative =&gt; new ConservativeMemoryMapNormaliser(),</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>            _ =&gt; new StrictMemoryMapNormaliser()</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>        };</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    }</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>}</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a></span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>/// &lt;summary&gt;Rejects incompatible overlaps in the firmware map while applying explicit reservations.&lt;/summary&gt;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>/// &lt;nova.when&gt;Use on trusted firmware or when malformed maps must stop boot deterministically.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>/// &lt;nova.depends&gt;MemoryMapNormaliserCore&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>public sealed class StrictMemoryMapNormaliser : IMemoryMapNormaliser</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>{</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    /// &lt;summary&gt;Gets the strict implementation identifier.&lt;/summary&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    /// &lt;nova.when&gt;Use to confirm that overlap conflicts will be rejected.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    public MemoryMapNormalisationMethod Method =&gt; MemoryMapNormalisationMethod.Strict;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a></span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    /// &lt;summary&gt;Normalises using strict firmware-overlap validation.&lt;/summary&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    /// &lt;nova.when&gt;Use when incompatible source overlaps are considered fatal.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;nova.depends&gt;Final immutable map source&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    /// &lt;returns&gt;A detailed normalisation result.&lt;/returns&gt;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;example&gt;&lt;code&gt;MemoryMapNormalisationResult result = normaliser.Normalise(source, reservations, workspace, out NormalisedMemoryMap? map);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    public MemoryMapNormalisationResult Normalise(IMemoryMapSource source, MemoryReservation[] reservations, MemoryMapNormalisationWorkspace workspace, out NormalisedMemoryMap? map)</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>        =&gt; MemoryMapNormaliserCore.Normalise(source, reservations, workspace, Method, out map);</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>}</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a></span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>/// &lt;summary&gt;Resolves incompatible firmware overlaps by selecting the safest ownership type.&lt;/summary&gt;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>/// &lt;nova.when&gt;Use on real hardware where defensive progress is preferred over rejecting the map.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>/// &lt;nova.depends&gt;MemoryMapNormaliserCore safety priorities&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>public sealed class SafetyPriorityMemoryMapNormaliser : IMemoryMapNormaliser</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>{</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    /// &lt;summary&gt;Gets the safety-priority implementation identifier.&lt;/summary&gt;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    /// &lt;nova.when&gt;Use to confirm that overlaps will choose the safest recognised owner.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    public MemoryMapNormalisationMethod Method =&gt; MemoryMapNormalisationMethod.SafetyPriority;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a></span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;summary&gt;Normalises using deterministic safety-priority overlap resolution.&lt;/summary&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;nova.when&gt;Use to retain the most restrictive known owner for every overlap.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    /// &lt;nova.depends&gt;Final immutable map source&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    /// &lt;returns&gt;A detailed normalisation result.&lt;/returns&gt;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    /// &lt;example&gt;&lt;code&gt;MemoryMapNormalisationResult result = normaliser.Normalise(source, reservations, workspace, out NormalisedMemoryMap? map);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    public MemoryMapNormalisationResult Normalise(IMemoryMapSource source, MemoryReservation[] reservations, MemoryMapNormalisationWorkspace workspace, out NormalisedMemoryMap? map)</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>        =&gt; MemoryMapNormaliserCore.Normalise(source, reservations, workspace, Method, out map);</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>}</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a></span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>/// &lt;summary&gt;Converts incompatible firmware overlaps into reserved memory while preserving runtime ownership.&lt;/summary&gt;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>/// &lt;nova.when&gt;Use for maximum safety when firmware ownership conflicts cannot be trusted.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>/// &lt;nova.depends&gt;MemoryMapNormaliserCore conservative synthesis&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>public sealed class ConservativeMemoryMapNormaliser : IMemoryMapNormaliser</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>{</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    /// &lt;summary&gt;Gets the conservative implementation identifier.&lt;/summary&gt;</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    /// &lt;nova.when&gt;Use to confirm that uncertain overlaps will remain reserved.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    public MemoryMapNormalisationMethod Method =&gt; MemoryMapNormalisationMethod.Conservative;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a></span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    /// &lt;summary&gt;Normalises by reserving every incompatible firmware overlap.&lt;/summary&gt;</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    /// &lt;nova.when&gt;Use when preserving availability is less important than avoiding unsafe allocation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    /// &lt;nova.depends&gt;Final immutable map source&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    /// &lt;returns&gt;A detailed normalisation result.&lt;/returns&gt;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    /// &lt;example&gt;&lt;code&gt;MemoryMapNormalisationResult result = normaliser.Normalise(source, reservations, workspace, out NormalisedMemoryMap? map);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    public MemoryMapNormalisationResult Normalise(IMemoryMapSource source, MemoryReservation[] reservations, MemoryMapNormalisationWorkspace workspace, out NormalisedMemoryMap? map)</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>        =&gt; MemoryMapNormaliserCore.Normalise(source, reservations, workspace, Method, out map);</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>}</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a></span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>internal static class MemoryMapNormaliserCore</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>{</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>    internal static MemoryMapNormalisationResult Normalise(</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>        IMemoryMapSource source,</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>        MemoryReservation[] reservations,</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>        MemoryMapNormalisationWorkspace workspace,</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>        MemoryMapNormalisationMethod method,</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>        out NormalisedMemoryMap? map)</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>    {</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>        map = null;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>        if (source is null || reservations is null || workspace is null || source.Count &lt; 1)</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>            return Result(MemoryMapNormalisationStatus.InvalidInput, source?.Count ?? 0, reservations?.Length ?? 0);</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>        if (!source.IsFinal)</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>            return Result(MemoryMapNormalisationStatus.FinalMapRequired, source.Count, reservations.Length);</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a></span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>        int sourceCount = source.Count;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>        if (sourceCount &gt; workspace.Inputs.Length || reservations.Length &gt; workspace.Inputs.Length - sourceCount)</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>            return Result(MemoryMapNormalisationStatus.InsufficientCapacity, sourceCount, reservations.Length);</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>        int totalCount = sourceCount + reservations.Length;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>        if (totalCount &gt; workspace.Boundaries.Length / 2)</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>            return Result(MemoryMapNormalisationStatus.InsufficientCapacity, sourceCount, reservations.Length);</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a></span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>        for (int index = 0; index &lt; sourceCount; index++)</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>        {</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>            if (!source.TryGetDescriptor(index, out MemoryDescriptor descriptor))</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>                return Result(MemoryMapNormalisationStatus.InvalidDescriptor, sourceCount, reservations.Length);</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>            workspace.Inputs[index] = descriptor;</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>        }</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>        for (int index = 0; index &lt; reservations.Length; index++)</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>            workspace.Inputs[sourceCount + index] = reservations[index].Descriptor;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a></span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>        int boundaryCount = 0;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>        for (int index = 0; index &lt; totalCount; index++)</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>        {</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>            MemoryDescriptor descriptor = workspace.Inputs[index];</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>            if (descriptor.Length == 0 || descriptor.EndExclusive &lt;= descriptor.PhysicalStart.Value)</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>                return Result(MemoryMapNormalisationStatus.InvalidDescriptor, sourceCount, reservations.Length);</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>            workspace.Boundaries[boundaryCount++] = descriptor.PhysicalStart.Value;</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>            workspace.Boundaries[boundaryCount++] = descriptor.EndExclusive;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>        }</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>        SortAndDeduplicate(workspace.Boundaries, ref boundaryCount);</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a></span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>        int outputCount = 0;</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>        int splitCount = 0;</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>        int mergeCount = 0;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>        int resolvedOverlapCount = 0;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>        for (int boundaryIndex = 0; boundaryIndex + 1 &lt; boundaryCount; boundaryIndex++)</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>        {</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>            ulong start = workspace.Boundaries[boundaryIndex];</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>            ulong end = workspace.Boundaries[boundaryIndex + 1];</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>            if (start == end) continue;</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a></span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>            int sourceSelection = -1;</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>            bool sourceConflict = false;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>            int sourceCoverage = 0;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>            for (int index = 0; index &lt; sourceCount; index++)</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>            {</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>                MemoryDescriptor candidate = workspace.Inputs[index];</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>                if (!Covers(candidate, start, end)) continue;</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>                sourceCoverage++;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>                if (sourceSelection &lt; 0)</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>                {</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>                    sourceSelection = index;</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>                    continue;</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>                }</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>                MemoryDescriptor selected = workspace.Inputs[sourceSelection];</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>                if (!SameMetadata(selected, candidate)) sourceConflict = true;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>                if (IsSafer(candidate, selected)) sourceSelection = index;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>            }</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a></span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>            int reservationSelection = -1;</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>            for (int index = sourceCount; index &lt; totalCount; index++)</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>            {</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>                MemoryDescriptor reservation = workspace.Inputs[index];</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>                if (!Covers(reservation, start, end)) continue;</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>                if (reservationSelection &lt; 0 || IsSafer(reservation, workspace.Inputs[reservationSelection]))</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>                    reservationSelection = index;</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>            }</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a></span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>            if (sourceSelection &lt; 0 &amp;&amp; reservationSelection &lt; 0) continue;</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>            if (sourceCoverage &gt; 1) resolvedOverlapCount++;</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>            if (sourceConflict &amp;&amp; method == MemoryMapNormalisationMethod.Strict)</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>                return new MemoryMapNormalisationResult(MemoryMapNormalisationStatus.OverlapConflict, sourceCount, reservations.Length, outputCount, splitCount, mergeCount, resolvedOverlapCount);</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a></span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>            MemoryDescriptor selectedDescriptor;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>            if (sourceSelection &lt; 0)</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>            {</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>                if (!workspace.Inputs[reservationSelection].TrySlice(start, end, out selectedDescriptor))</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>                    return Result(MemoryMapNormalisationStatus.InvalidDescriptor, sourceCount, reservations.Length);</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>            }</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>            else if (sourceConflict &amp;&amp; method == MemoryMapNormalisationMethod.Conservative)</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>            {</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>                if (!TryCreateConservativeInterval(workspace.Inputs, sourceCount, start, end, out selectedDescriptor))</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>                    return Result(MemoryMapNormalisationStatus.InvalidDescriptor, sourceCount, reservations.Length);</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>            }</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>            else if (sourceConflict &amp;&amp; method == MemoryMapNormalisationMethod.SafetyPriority)</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>            {</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>                if (!TryCreateSafetyInterval(workspace.Inputs, sourceCount, sourceSelection, start, end, out selectedDescriptor))</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>                    return Result(MemoryMapNormalisationStatus.InvalidDescriptor, sourceCount, reservations.Length);</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>            }</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>            else if (!workspace.Inputs[sourceSelection].TrySlice(start, end, out selectedDescriptor))</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>            {</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>                return Result(MemoryMapNormalisationStatus.InvalidDescriptor, sourceCount, reservations.Length);</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>            }</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a></span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>            if (reservationSelection &gt;= 0 &amp;&amp; !TryCreateReservationInterval(workspace.Inputs, sourceCount, reservationSelection, start, end, out selectedDescriptor))</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>                return Result(MemoryMapNormalisationStatus.InvalidDescriptor, sourceCount, reservations.Length);</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a></span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>            splitCount++;</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>            if (outputCount &gt; 0 &amp;&amp; workspace.Outputs[outputCount - 1].IsMergeCompatible(selectedDescriptor))</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>            {</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>                MemoryDescriptor previous = workspace.Outputs[outputCount - 1];</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>                if (previous.PageCount &gt; ulong.MaxValue - selectedDescriptor.PageCount)</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>                    return Result(MemoryMapNormalisationStatus.InvalidDescriptor, sourceCount, reservations.Length);</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>                ulong pages = previous.PageCount + selectedDescriptor.PageCount;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>                if (!MemoryDescriptor.TryCreate(previous.PhysicalStart, pages, previous.MemoryType, previous.CacheAttributes, previous.RuntimeStatus, previous.Availability, previous.HasNumaNode, previous.NumaNode, out MemoryDescriptor merged))</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>                    return Result(MemoryMapNormalisationStatus.InvalidDescriptor, sourceCount, reservations.Length);</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>                workspace.Outputs[outputCount - 1] = merged;</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>                mergeCount++;</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>                continue;</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>            }</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>            if (outputCount &gt;= workspace.Outputs.Length)</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>                return new MemoryMapNormalisationResult(MemoryMapNormalisationStatus.InsufficientCapacity, sourceCount, reservations.Length, outputCount, splitCount, mergeCount, resolvedOverlapCount);</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>            workspace.Outputs[outputCount++] = selectedDescriptor;</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>        }</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a></span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>        if (outputCount == 0)</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>            return Result(MemoryMapNormalisationStatus.InvalidDescriptor, sourceCount, reservations.Length);</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>        map = new NormalisedMemoryMap(workspace.Outputs, outputCount, method);</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>        return new MemoryMapNormalisationResult(MemoryMapNormalisationStatus.Success, sourceCount, reservations.Length, outputCount, splitCount, mergeCount, resolvedOverlapCount);</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>    }</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a></span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>    private static bool TryCreateReservationInterval(</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>        MemoryDescriptor[] descriptors,</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a>        int sourceCount,</span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>        int reservationIndex,</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>        ulong start,</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>        ulong end,</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>        out MemoryDescriptor descriptor)</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>    {</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>        MemoryDescriptor reservation = descriptors[reservationIndex];</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a>        MemoryRuntimeStatus runtimeStatus = CombineRuntimeStatus(descriptors, sourceCount, start, end);</span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>        MemoryCacheAttributes attributes = CombineReservationAttributes(</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>            CombineAttributes(descriptors, sourceCount, start, end),</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>            reservation.CacheAttributes);</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>        bool hasNumaNode = TryGetConsistentNumaNode(descriptors, sourceCount, start, end, out uint numaNode);</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>        return MemoryDescriptor.TryCreate(</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>            new PhysicalAddress(start),</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>            (end - start) / 4096UL,</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>            reservation.MemoryType,</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>            attributes,</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>            runtimeStatus,</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>            runtimeStatus == MemoryRuntimeStatus.NotRuntime ? reservation.Availability : MemoryAvailability.RuntimeOwned,</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>            hasNumaNode,</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>            numaNode,</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a>            out descriptor);</span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a>    }</span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a></span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a>    private static bool TryCreateSafetyInterval(</span>
+<span class="source-line" id="L241"><a class="line-number" href="#L241">241</a>        MemoryDescriptor[] descriptors,</span>
+<span class="source-line" id="L242"><a class="line-number" href="#L242">242</a>        int sourceCount,</span>
+<span class="source-line" id="L243"><a class="line-number" href="#L243">243</a>        int selectedIndex,</span>
+<span class="source-line" id="L244"><a class="line-number" href="#L244">244</a>        ulong start,</span>
+<span class="source-line" id="L245"><a class="line-number" href="#L245">245</a>        ulong end,</span>
+<span class="source-line" id="L246"><a class="line-number" href="#L246">246</a>        out MemoryDescriptor descriptor)</span>
+<span class="source-line" id="L247"><a class="line-number" href="#L247">247</a>    {</span>
+<span class="source-line" id="L248"><a class="line-number" href="#L248">248</a>        MemoryDescriptor selected = descriptors[selectedIndex];</span>
+<span class="source-line" id="L249"><a class="line-number" href="#L249">249</a>        MemoryCacheAttributes combinedAttributes = CombineAttributes(descriptors, sourceCount, start, end);</span>
+<span class="source-line" id="L250"><a class="line-number" href="#L250">250</a>        MemoryRuntimeStatus runtimeStatus = CombineRuntimeStatus(descriptors, sourceCount, start, end);</span>
+<span class="source-line" id="L251"><a class="line-number" href="#L251">251</a>        bool hasNumaNode = TryGetConsistentNumaNode(descriptors, sourceCount, start, end, out uint numaNode);</span>
+<span class="source-line" id="L252"><a class="line-number" href="#L252">252</a>        return MemoryDescriptor.TryCreate(</span>
+<span class="source-line" id="L253"><a class="line-number" href="#L253">253</a>            new PhysicalAddress(start),</span>
+<span class="source-line" id="L254"><a class="line-number" href="#L254">254</a>            (end - start) / 4096UL,</span>
+<span class="source-line" id="L255"><a class="line-number" href="#L255">255</a>            selected.MemoryType,</span>
+<span class="source-line" id="L256"><a class="line-number" href="#L256">256</a>            combinedAttributes,</span>
+<span class="source-line" id="L257"><a class="line-number" href="#L257">257</a>            runtimeStatus,</span>
+<span class="source-line" id="L258"><a class="line-number" href="#L258">258</a>            runtimeStatus == MemoryRuntimeStatus.NotRuntime ? selected.Availability : MemoryAvailability.RuntimeOwned,</span>
+<span class="source-line" id="L259"><a class="line-number" href="#L259">259</a>            hasNumaNode,</span>
+<span class="source-line" id="L260"><a class="line-number" href="#L260">260</a>            numaNode,</span>
+<span class="source-line" id="L261"><a class="line-number" href="#L261">261</a>            out descriptor);</span>
+<span class="source-line" id="L262"><a class="line-number" href="#L262">262</a>    }</span>
+<span class="source-line" id="L263"><a class="line-number" href="#L263">263</a></span>
+<span class="source-line" id="L264"><a class="line-number" href="#L264">264</a>    private static bool TryCreateConservativeInterval(</span>
+<span class="source-line" id="L265"><a class="line-number" href="#L265">265</a>        MemoryDescriptor[] descriptors,</span>
+<span class="source-line" id="L266"><a class="line-number" href="#L266">266</a>        int sourceCount,</span>
+<span class="source-line" id="L267"><a class="line-number" href="#L267">267</a>        ulong start,</span>
+<span class="source-line" id="L268"><a class="line-number" href="#L268">268</a>        ulong end,</span>
+<span class="source-line" id="L269"><a class="line-number" href="#L269">269</a>        out MemoryDescriptor descriptor)</span>
+<span class="source-line" id="L270"><a class="line-number" href="#L270">270</a>    {</span>
+<span class="source-line" id="L271"><a class="line-number" href="#L271">271</a>        MemoryCacheAttributes combinedAttributes = CombineAttributes(descriptors, sourceCount, start, end);</span>
+<span class="source-line" id="L272"><a class="line-number" href="#L272">272</a>        MemoryRuntimeStatus runtimeStatus = CombineRuntimeStatus(descriptors, sourceCount, start, end);</span>
+<span class="source-line" id="L273"><a class="line-number" href="#L273">273</a>        MemoryAvailability availability = runtimeStatus == MemoryRuntimeStatus.NotRuntime</span>
+<span class="source-line" id="L274"><a class="line-number" href="#L274">274</a>            ? MemoryAvailability.PermanentlyReserved</span>
+<span class="source-line" id="L275"><a class="line-number" href="#L275">275</a>            : MemoryAvailability.RuntimeOwned;</span>
+<span class="source-line" id="L276"><a class="line-number" href="#L276">276</a>        return MemoryDescriptor.TryCreate(</span>
+<span class="source-line" id="L277"><a class="line-number" href="#L277">277</a>            new PhysicalAddress(start),</span>
+<span class="source-line" id="L278"><a class="line-number" href="#L278">278</a>            (end - start) / 4096UL,</span>
+<span class="source-line" id="L279"><a class="line-number" href="#L279">279</a>            MemoryType.FirmwareReserved,</span>
+<span class="source-line" id="L280"><a class="line-number" href="#L280">280</a>            combinedAttributes,</span>
+<span class="source-line" id="L281"><a class="line-number" href="#L281">281</a>            runtimeStatus,</span>
+<span class="source-line" id="L282"><a class="line-number" href="#L282">282</a>            availability,</span>
+<span class="source-line" id="L283"><a class="line-number" href="#L283">283</a>            false,</span>
+<span class="source-line" id="L284"><a class="line-number" href="#L284">284</a>            0,</span>
+<span class="source-line" id="L285"><a class="line-number" href="#L285">285</a>            out descriptor);</span>
+<span class="source-line" id="L286"><a class="line-number" href="#L286">286</a>    }</span>
+<span class="source-line" id="L287"><a class="line-number" href="#L287">287</a></span>
+<span class="source-line" id="L288"><a class="line-number" href="#L288">288</a></span>
+<span class="source-line" id="L289"><a class="line-number" href="#L289">289</a>    private static MemoryCacheAttributes CombineAttributes(</span>
+<span class="source-line" id="L290"><a class="line-number" href="#L290">290</a>        MemoryDescriptor[] descriptors,</span>
+<span class="source-line" id="L291"><a class="line-number" href="#L291">291</a>        int sourceCount,</span>
+<span class="source-line" id="L292"><a class="line-number" href="#L292">292</a>        ulong start,</span>
+<span class="source-line" id="L293"><a class="line-number" href="#L293">293</a>        ulong end)</span>
+<span class="source-line" id="L294"><a class="line-number" href="#L294">294</a>    {</span>
+<span class="source-line" id="L295"><a class="line-number" href="#L295">295</a>        const MemoryCacheAttributes cacheMask =</span>
+<span class="source-line" id="L296"><a class="line-number" href="#L296">296</a>            MemoryCacheAttributes.Uncacheable |</span>
+<span class="source-line" id="L297"><a class="line-number" href="#L297">297</a>            MemoryCacheAttributes.WriteCombining |</span>
+<span class="source-line" id="L298"><a class="line-number" href="#L298">298</a>            MemoryCacheAttributes.WriteThrough |</span>
+<span class="source-line" id="L299"><a class="line-number" href="#L299">299</a>            MemoryCacheAttributes.WriteBack |</span>
+<span class="source-line" id="L300"><a class="line-number" href="#L300">300</a>            MemoryCacheAttributes.UncachedExported;</span>
+<span class="source-line" id="L301"><a class="line-number" href="#L301">301</a>        MemoryCacheAttributes nonCacheAttributes = MemoryCacheAttributes.None;</span>
+<span class="source-line" id="L302"><a class="line-number" href="#L302">302</a>        bool uncacheable = false;</span>
+<span class="source-line" id="L303"><a class="line-number" href="#L303">303</a>        bool uncachedExported = false;</span>
+<span class="source-line" id="L304"><a class="line-number" href="#L304">304</a>        bool writeThrough = false;</span>
+<span class="source-line" id="L305"><a class="line-number" href="#L305">305</a>        bool writeCombining = false;</span>
+<span class="source-line" id="L306"><a class="line-number" href="#L306">306</a>        bool writeBack = false;</span>
+<span class="source-line" id="L307"><a class="line-number" href="#L307">307</a>        for (int index = 0; index &lt; sourceCount; index++)</span>
+<span class="source-line" id="L308"><a class="line-number" href="#L308">308</a>        {</span>
+<span class="source-line" id="L309"><a class="line-number" href="#L309">309</a>            MemoryDescriptor candidate = descriptors[index];</span>
+<span class="source-line" id="L310"><a class="line-number" href="#L310">310</a>            if (!Covers(candidate, start, end)) continue;</span>
+<span class="source-line" id="L311"><a class="line-number" href="#L311">311</a>            MemoryCacheAttributes attributes = candidate.CacheAttributes;</span>
+<span class="source-line" id="L312"><a class="line-number" href="#L312">312</a>            nonCacheAttributes |= attributes &amp; ~cacheMask;</span>
+<span class="source-line" id="L313"><a class="line-number" href="#L313">313</a>            uncacheable |= (attributes &amp; MemoryCacheAttributes.Uncacheable) != 0;</span>
+<span class="source-line" id="L314"><a class="line-number" href="#L314">314</a>            uncachedExported |= (attributes &amp; MemoryCacheAttributes.UncachedExported) != 0;</span>
+<span class="source-line" id="L315"><a class="line-number" href="#L315">315</a>            writeThrough |= (attributes &amp; MemoryCacheAttributes.WriteThrough) != 0;</span>
+<span class="source-line" id="L316"><a class="line-number" href="#L316">316</a>            writeCombining |= (attributes &amp; MemoryCacheAttributes.WriteCombining) != 0;</span>
+<span class="source-line" id="L317"><a class="line-number" href="#L317">317</a>            writeBack |= (attributes &amp; MemoryCacheAttributes.WriteBack) != 0;</span>
+<span class="source-line" id="L318"><a class="line-number" href="#L318">318</a>        }</span>
+<span class="source-line" id="L319"><a class="line-number" href="#L319">319</a>        MemoryCacheAttributes cacheAttribute = uncacheable ? MemoryCacheAttributes.Uncacheable</span>
+<span class="source-line" id="L320"><a class="line-number" href="#L320">320</a>            : uncachedExported ? MemoryCacheAttributes.UncachedExported</span>
+<span class="source-line" id="L321"><a class="line-number" href="#L321">321</a>            : writeThrough ? MemoryCacheAttributes.WriteThrough</span>
+<span class="source-line" id="L322"><a class="line-number" href="#L322">322</a>            : writeCombining ? MemoryCacheAttributes.WriteCombining</span>
+<span class="source-line" id="L323"><a class="line-number" href="#L323">323</a>            : writeBack ? MemoryCacheAttributes.WriteBack</span>
+<span class="source-line" id="L324"><a class="line-number" href="#L324">324</a>            : MemoryCacheAttributes.None;</span>
+<span class="source-line" id="L325"><a class="line-number" href="#L325">325</a>        return nonCacheAttributes | cacheAttribute;</span>
+<span class="source-line" id="L326"><a class="line-number" href="#L326">326</a>    }</span>
+<span class="source-line" id="L327"><a class="line-number" href="#L327">327</a></span>
+<span class="source-line" id="L328"><a class="line-number" href="#L328">328</a>    private static MemoryCacheAttributes CombineReservationAttributes(</span>
+<span class="source-line" id="L329"><a class="line-number" href="#L329">329</a>        MemoryCacheAttributes sourceAttributes,</span>
+<span class="source-line" id="L330"><a class="line-number" href="#L330">330</a>        MemoryCacheAttributes reservationAttributes)</span>
+<span class="source-line" id="L331"><a class="line-number" href="#L331">331</a>    {</span>
+<span class="source-line" id="L332"><a class="line-number" href="#L332">332</a>        const MemoryCacheAttributes cacheMask =</span>
+<span class="source-line" id="L333"><a class="line-number" href="#L333">333</a>            MemoryCacheAttributes.Uncacheable |</span>
+<span class="source-line" id="L334"><a class="line-number" href="#L334">334</a>            MemoryCacheAttributes.WriteCombining |</span>
+<span class="source-line" id="L335"><a class="line-number" href="#L335">335</a>            MemoryCacheAttributes.WriteThrough |</span>
+<span class="source-line" id="L336"><a class="line-number" href="#L336">336</a>            MemoryCacheAttributes.WriteBack |</span>
+<span class="source-line" id="L337"><a class="line-number" href="#L337">337</a>            MemoryCacheAttributes.UncachedExported;</span>
+<span class="source-line" id="L338"><a class="line-number" href="#L338">338</a>        MemoryCacheAttributes combined = sourceAttributes | reservationAttributes;</span>
+<span class="source-line" id="L339"><a class="line-number" href="#L339">339</a>        MemoryCacheAttributes nonCacheAttributes = combined &amp; ~cacheMask;</span>
+<span class="source-line" id="L340"><a class="line-number" href="#L340">340</a>        MemoryCacheAttributes cacheAttribute = (combined &amp; MemoryCacheAttributes.Uncacheable) != 0 ? MemoryCacheAttributes.Uncacheable</span>
+<span class="source-line" id="L341"><a class="line-number" href="#L341">341</a>            : (combined &amp; MemoryCacheAttributes.UncachedExported) != 0 ? MemoryCacheAttributes.UncachedExported</span>
+<span class="source-line" id="L342"><a class="line-number" href="#L342">342</a>            : (combined &amp; MemoryCacheAttributes.WriteThrough) != 0 ? MemoryCacheAttributes.WriteThrough</span>
+<span class="source-line" id="L343"><a class="line-number" href="#L343">343</a>            : (combined &amp; MemoryCacheAttributes.WriteCombining) != 0 ? MemoryCacheAttributes.WriteCombining</span>
+<span class="source-line" id="L344"><a class="line-number" href="#L344">344</a>            : (combined &amp; MemoryCacheAttributes.WriteBack) != 0 ? MemoryCacheAttributes.WriteBack</span>
+<span class="source-line" id="L345"><a class="line-number" href="#L345">345</a>            : MemoryCacheAttributes.None;</span>
+<span class="source-line" id="L346"><a class="line-number" href="#L346">346</a>        return nonCacheAttributes | cacheAttribute;</span>
+<span class="source-line" id="L347"><a class="line-number" href="#L347">347</a>    }</span>
+<span class="source-line" id="L348"><a class="line-number" href="#L348">348</a></span>
+<span class="source-line" id="L349"><a class="line-number" href="#L349">349</a>    private static bool TryGetConsistentNumaNode(</span>
+<span class="source-line" id="L350"><a class="line-number" href="#L350">350</a>        MemoryDescriptor[] descriptors,</span>
+<span class="source-line" id="L351"><a class="line-number" href="#L351">351</a>        int sourceCount,</span>
+<span class="source-line" id="L352"><a class="line-number" href="#L352">352</a>        ulong start,</span>
+<span class="source-line" id="L353"><a class="line-number" href="#L353">353</a>        ulong end,</span>
+<span class="source-line" id="L354"><a class="line-number" href="#L354">354</a>        out uint numaNode)</span>
+<span class="source-line" id="L355"><a class="line-number" href="#L355">355</a>    {</span>
+<span class="source-line" id="L356"><a class="line-number" href="#L356">356</a>        numaNode = 0;</span>
+<span class="source-line" id="L357"><a class="line-number" href="#L357">357</a>        bool found = false;</span>
+<span class="source-line" id="L358"><a class="line-number" href="#L358">358</a>        for (int index = 0; index &lt; sourceCount; index++)</span>
+<span class="source-line" id="L359"><a class="line-number" href="#L359">359</a>        {</span>
+<span class="source-line" id="L360"><a class="line-number" href="#L360">360</a>            MemoryDescriptor candidate = descriptors[index];</span>
+<span class="source-line" id="L361"><a class="line-number" href="#L361">361</a>            if (!Covers(candidate, start, end)) continue;</span>
+<span class="source-line" id="L362"><a class="line-number" href="#L362">362</a>            if (!candidate.HasNumaNode) return false;</span>
+<span class="source-line" id="L363"><a class="line-number" href="#L363">363</a>            if (!found)</span>
+<span class="source-line" id="L364"><a class="line-number" href="#L364">364</a>            {</span>
+<span class="source-line" id="L365"><a class="line-number" href="#L365">365</a>                numaNode = candidate.NumaNode;</span>
+<span class="source-line" id="L366"><a class="line-number" href="#L366">366</a>                found = true;</span>
+<span class="source-line" id="L367"><a class="line-number" href="#L367">367</a>            }</span>
+<span class="source-line" id="L368"><a class="line-number" href="#L368">368</a>            else if (candidate.NumaNode != numaNode)</span>
+<span class="source-line" id="L369"><a class="line-number" href="#L369">369</a>            {</span>
+<span class="source-line" id="L370"><a class="line-number" href="#L370">370</a>                numaNode = 0;</span>
+<span class="source-line" id="L371"><a class="line-number" href="#L371">371</a>                return false;</span>
+<span class="source-line" id="L372"><a class="line-number" href="#L372">372</a>            }</span>
+<span class="source-line" id="L373"><a class="line-number" href="#L373">373</a>        }</span>
+<span class="source-line" id="L374"><a class="line-number" href="#L374">374</a>        return found;</span>
+<span class="source-line" id="L375"><a class="line-number" href="#L375">375</a>    }</span>
+<span class="source-line" id="L376"><a class="line-number" href="#L376">376</a></span>
+<span class="source-line" id="L377"><a class="line-number" href="#L377">377</a>    private static MemoryRuntimeStatus CombineRuntimeStatus(</span>
+<span class="source-line" id="L378"><a class="line-number" href="#L378">378</a>        MemoryDescriptor[] descriptors,</span>
+<span class="source-line" id="L379"><a class="line-number" href="#L379">379</a>        int sourceCount,</span>
+<span class="source-line" id="L380"><a class="line-number" href="#L380">380</a>        ulong start,</span>
+<span class="source-line" id="L381"><a class="line-number" href="#L381">381</a>        ulong end)</span>
+<span class="source-line" id="L382"><a class="line-number" href="#L382">382</a>    {</span>
+<span class="source-line" id="L383"><a class="line-number" href="#L383">383</a>        bool hasCode = false;</span>
+<span class="source-line" id="L384"><a class="line-number" href="#L384">384</a>        bool hasData = false;</span>
+<span class="source-line" id="L385"><a class="line-number" href="#L385">385</a>        for (int index = 0; index &lt; sourceCount; index++)</span>
+<span class="source-line" id="L386"><a class="line-number" href="#L386">386</a>        {</span>
+<span class="source-line" id="L387"><a class="line-number" href="#L387">387</a>            MemoryDescriptor candidate = descriptors[index];</span>
+<span class="source-line" id="L388"><a class="line-number" href="#L388">388</a>            if (!Covers(candidate, start, end)) continue;</span>
+<span class="source-line" id="L389"><a class="line-number" href="#L389">389</a>            hasCode |= candidate.RuntimeStatus is MemoryRuntimeStatus.RuntimeCode or MemoryRuntimeStatus.RuntimeCodeAndData;</span>
+<span class="source-line" id="L390"><a class="line-number" href="#L390">390</a>            hasData |= candidate.RuntimeStatus is MemoryRuntimeStatus.RuntimeData or MemoryRuntimeStatus.RuntimeCodeAndData;</span>
+<span class="source-line" id="L391"><a class="line-number" href="#L391">391</a>        }</span>
+<span class="source-line" id="L392"><a class="line-number" href="#L392">392</a>        if (hasCode &amp;&amp; hasData) return MemoryRuntimeStatus.RuntimeCodeAndData;</span>
+<span class="source-line" id="L393"><a class="line-number" href="#L393">393</a>        if (hasCode) return MemoryRuntimeStatus.RuntimeCode;</span>
+<span class="source-line" id="L394"><a class="line-number" href="#L394">394</a>        if (hasData) return MemoryRuntimeStatus.RuntimeData;</span>
+<span class="source-line" id="L395"><a class="line-number" href="#L395">395</a>        return MemoryRuntimeStatus.NotRuntime;</span>
+<span class="source-line" id="L396"><a class="line-number" href="#L396">396</a>    }</span>
+<span class="source-line" id="L397"><a class="line-number" href="#L397">397</a></span>
+<span class="source-line" id="L398"><a class="line-number" href="#L398">398</a>    private static bool Covers(MemoryDescriptor descriptor, ulong start, ulong end)</span>
+<span class="source-line" id="L399"><a class="line-number" href="#L399">399</a>        =&gt; descriptor.PhysicalStart.Value &lt;= start &amp;&amp; descriptor.EndExclusive &gt;= end;</span>
+<span class="source-line" id="L400"><a class="line-number" href="#L400">400</a></span>
+<span class="source-line" id="L401"><a class="line-number" href="#L401">401</a>    private static bool SameMetadata(MemoryDescriptor left, MemoryDescriptor right)</span>
+<span class="source-line" id="L402"><a class="line-number" href="#L402">402</a>        =&gt; left.MemoryType == right.MemoryType &amp;&amp; left.CacheAttributes == right.CacheAttributes &amp;&amp;</span>
+<span class="source-line" id="L403"><a class="line-number" href="#L403">403</a>           left.RuntimeStatus == right.RuntimeStatus &amp;&amp; left.Availability == right.Availability &amp;&amp;</span>
+<span class="source-line" id="L404"><a class="line-number" href="#L404">404</a>           left.HasNumaNode == right.HasNumaNode &amp;&amp; (!left.HasNumaNode || left.NumaNode == right.NumaNode);</span>
+<span class="source-line" id="L405"><a class="line-number" href="#L405">405</a></span>
+<span class="source-line" id="L406"><a class="line-number" href="#L406">406</a>    private static bool IsSafer(MemoryDescriptor candidate, MemoryDescriptor selected)</span>
+<span class="source-line" id="L407"><a class="line-number" href="#L407">407</a>    {</span>
+<span class="source-line" id="L408"><a class="line-number" href="#L408">408</a>        int candidateType = GetPriority(candidate.MemoryType);</span>
+<span class="source-line" id="L409"><a class="line-number" href="#L409">409</a>        int selectedType = GetPriority(selected.MemoryType);</span>
+<span class="source-line" id="L410"><a class="line-number" href="#L410">410</a>        if (candidateType != selectedType) return candidateType &gt; selectedType;</span>
+<span class="source-line" id="L411"><a class="line-number" href="#L411">411</a>        int candidateAvailability = GetAvailabilityPriority(candidate.Availability);</span>
+<span class="source-line" id="L412"><a class="line-number" href="#L412">412</a>        int selectedAvailability = GetAvailabilityPriority(selected.Availability);</span>
+<span class="source-line" id="L413"><a class="line-number" href="#L413">413</a>        if (candidateAvailability != selectedAvailability) return candidateAvailability &gt; selectedAvailability;</span>
+<span class="source-line" id="L414"><a class="line-number" href="#L414">414</a>        if (candidate.RuntimeStatus != selected.RuntimeStatus) return (int)candidate.RuntimeStatus &gt; (int)selected.RuntimeStatus;</span>
+<span class="source-line" id="L415"><a class="line-number" href="#L415">415</a>        if (candidate.CacheAttributes != selected.CacheAttributes) return (ulong)candidate.CacheAttributes &gt; (ulong)selected.CacheAttributes;</span>
+<span class="source-line" id="L416"><a class="line-number" href="#L416">416</a>        if (candidate.HasNumaNode != selected.HasNumaNode) return !candidate.HasNumaNode;</span>
+<span class="source-line" id="L417"><a class="line-number" href="#L417">417</a>        if (candidate.HasNumaNode &amp;&amp; candidate.NumaNode != selected.NumaNode) return candidate.NumaNode &lt; selected.NumaNode;</span>
+<span class="source-line" id="L418"><a class="line-number" href="#L418">418</a>        return false;</span>
+<span class="source-line" id="L419"><a class="line-number" href="#L419">419</a>    }</span>
+<span class="source-line" id="L420"><a class="line-number" href="#L420">420</a></span>
+<span class="source-line" id="L421"><a class="line-number" href="#L421">421</a>    private static int GetPriority(MemoryType type)</span>
+<span class="source-line" id="L422"><a class="line-number" href="#L422">422</a>    {</span>
+<span class="source-line" id="L423"><a class="line-number" href="#L423">423</a>        return type switch</span>
+<span class="source-line" id="L424"><a class="line-number" href="#L424">424</a>        {</span>
+<span class="source-line" id="L425"><a class="line-number" href="#L425">425</a>            MemoryType.BadMemory =&gt; 140,</span>
+<span class="source-line" id="L426"><a class="line-number" href="#L426">426</a>            MemoryType.MemoryMappedIo =&gt; 130,</span>
+<span class="source-line" id="L427"><a class="line-number" href="#L427">427</a>            MemoryType.Framebuffer =&gt; 125,</span>
+<span class="source-line" id="L428"><a class="line-number" href="#L428">428</a>            MemoryType.RuntimeServices =&gt; 120,</span>
+<span class="source-line" id="L429"><a class="line-number" href="#L429">429</a>            MemoryType.FirmwareReserved =&gt; 110,</span>
+<span class="source-line" id="L430"><a class="line-number" href="#L430">430</a>            MemoryType.AcpiNvs =&gt; 105,</span>
+<span class="source-line" id="L431"><a class="line-number" href="#L431">431</a>            MemoryType.PageTables =&gt; 100,</span>
+<span class="source-line" id="L432"><a class="line-number" href="#L432">432</a>            MemoryType.BootStructures =&gt; 95,</span>
+<span class="source-line" id="L433"><a class="line-number" href="#L433">433</a>            MemoryType.LoaderKernelImage =&gt; 90,</span>
+<span class="source-line" id="L434"><a class="line-number" href="#L434">434</a>            MemoryType.EarlyAllocatorAllocations =&gt; 85,</span>
+<span class="source-line" id="L435"><a class="line-number" href="#L435">435</a>            MemoryType.BootServices =&gt; 60,</span>
+<span class="source-line" id="L436"><a class="line-number" href="#L436">436</a>            MemoryType.AcpiReclaimable =&gt; 50,</span>
+<span class="source-line" id="L437"><a class="line-number" href="#L437">437</a>            MemoryType.PersistentMemory =&gt; 40,</span>
+<span class="source-line" id="L438"><a class="line-number" href="#L438">438</a>            MemoryType.UsableConventional =&gt; 10,</span>
+<span class="source-line" id="L439"><a class="line-number" href="#L439">439</a>            _ =&gt; 0</span>
+<span class="source-line" id="L440"><a class="line-number" href="#L440">440</a>        };</span>
+<span class="source-line" id="L441"><a class="line-number" href="#L441">441</a>    }</span>
+<span class="source-line" id="L442"><a class="line-number" href="#L442">442</a></span>
+<span class="source-line" id="L443"><a class="line-number" href="#L443">443</a>    private static int GetAvailabilityPriority(MemoryAvailability availability)</span>
+<span class="source-line" id="L444"><a class="line-number" href="#L444">444</a>    {</span>
+<span class="source-line" id="L445"><a class="line-number" href="#L445">445</a>        return availability switch</span>
+<span class="source-line" id="L446"><a class="line-number" href="#L446">446</a>        {</span>
+<span class="source-line" id="L447"><a class="line-number" href="#L447">447</a>            MemoryAvailability.Defective =&gt; 60,</span>
+<span class="source-line" id="L448"><a class="line-number" href="#L448">448</a>            MemoryAvailability.RuntimeOwned =&gt; 50,</span>
+<span class="source-line" id="L449"><a class="line-number" href="#L449">449</a>            MemoryAvailability.PermanentlyReserved =&gt; 40,</span>
+<span class="source-line" id="L450"><a class="line-number" href="#L450">450</a>            MemoryAvailability.Unavailable =&gt; 30,</span>
+<span class="source-line" id="L451"><a class="line-number" href="#L451">451</a>            MemoryAvailability.ReclaimableAfterAcpiInitialization =&gt; 20,</span>
+<span class="source-line" id="L452"><a class="line-number" href="#L452">452</a>            MemoryAvailability.AvailableAfterExitBootServices =&gt; 10,</span>
+<span class="source-line" id="L453"><a class="line-number" href="#L453">453</a>            _ =&gt; 0</span>
+<span class="source-line" id="L454"><a class="line-number" href="#L454">454</a>        };</span>
+<span class="source-line" id="L455"><a class="line-number" href="#L455">455</a>    }</span>
+<span class="source-line" id="L456"><a class="line-number" href="#L456">456</a></span>
+<span class="source-line" id="L457"><a class="line-number" href="#L457">457</a>    private static void SortAndDeduplicate(ulong[] values, ref int count)</span>
+<span class="source-line" id="L458"><a class="line-number" href="#L458">458</a>    {</span>
+<span class="source-line" id="L459"><a class="line-number" href="#L459">459</a>        for (int index = 1; index &lt; count; index++)</span>
+<span class="source-line" id="L460"><a class="line-number" href="#L460">460</a>        {</span>
+<span class="source-line" id="L461"><a class="line-number" href="#L461">461</a>            ulong value = values[index];</span>
+<span class="source-line" id="L462"><a class="line-number" href="#L462">462</a>            int insert = index - 1;</span>
+<span class="source-line" id="L463"><a class="line-number" href="#L463">463</a>            while (insert &gt;= 0 &amp;&amp; values[insert] &gt; value)</span>
+<span class="source-line" id="L464"><a class="line-number" href="#L464">464</a>            {</span>
+<span class="source-line" id="L465"><a class="line-number" href="#L465">465</a>                values[insert + 1] = values[insert];</span>
+<span class="source-line" id="L466"><a class="line-number" href="#L466">466</a>                insert--;</span>
+<span class="source-line" id="L467"><a class="line-number" href="#L467">467</a>            }</span>
+<span class="source-line" id="L468"><a class="line-number" href="#L468">468</a>            values[insert + 1] = value;</span>
+<span class="source-line" id="L469"><a class="line-number" href="#L469">469</a>        }</span>
+<span class="source-line" id="L470"><a class="line-number" href="#L470">470</a>        if (count &lt; 2) return;</span>
+<span class="source-line" id="L471"><a class="line-number" href="#L471">471</a>        int write = 1;</span>
+<span class="source-line" id="L472"><a class="line-number" href="#L472">472</a>        for (int read = 1; read &lt; count; read++)</span>
+<span class="source-line" id="L473"><a class="line-number" href="#L473">473</a>        {</span>
+<span class="source-line" id="L474"><a class="line-number" href="#L474">474</a>            if (values[read] == values[write - 1]) continue;</span>
+<span class="source-line" id="L475"><a class="line-number" href="#L475">475</a>            values[write++] = values[read];</span>
+<span class="source-line" id="L476"><a class="line-number" href="#L476">476</a>        }</span>
+<span class="source-line" id="L477"><a class="line-number" href="#L477">477</a>        count = write;</span>
+<span class="source-line" id="L478"><a class="line-number" href="#L478">478</a>    }</span>
+<span class="source-line" id="L479"><a class="line-number" href="#L479">479</a></span>
+<span class="source-line" id="L480"><a class="line-number" href="#L480">480</a>    private static MemoryMapNormalisationResult Result(MemoryMapNormalisationStatus status, int sourceCount, int reservationCount)</span>
+<span class="source-line" id="L481"><a class="line-number" href="#L481">481</a>        =&gt; new(status, sourceCount, reservationCount, 0, 0, 0, 0);</span>
+<span class="source-line" id="L482"><a class="line-number" href="#L482">482</a>}</span>
+<span class="source-line" id="L483"><a class="line-number" href="#L483">483</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

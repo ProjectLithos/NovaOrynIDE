@@ -1,0 +1,106 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Memory/KernelPhysicalMemory.Bootstrap.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Memory/KernelPhysicalMemory.Bootstrap.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Kernel.Memory;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>public static unsafe partial class KernelPhysicalMemory</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>{</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a></span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>    /// &lt;summary&gt;Gets the physical base of the UEFI-reserved bootstrap page-table workspace.&lt;/summary&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    public static UInt64 GetBootstrapPageTableWorkspaceAddress() =&gt; _initialized ? _bootstrapWorkspaceAddress : 0UL;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a></span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    /// &lt;summary&gt;Gets the total UEFI-reserved bootstrap page-table workspace size in 4 KiB pages.&lt;/summary&gt;</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    public static UInt64 GetBootstrapPageTableWorkspacePages() =&gt; _initialized ? _bootstrapWorkspacePages : 0UL;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a></span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;summary&gt;Gets the number of bootstrap page-table workspace pages consumed so far.&lt;/summary&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    public static UInt64 GetBootstrapPageTableWorkspaceUsedPages() =&gt; _initialized ? _bootstrapWorkspaceUsedPages : 0UL;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a></span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    /// &lt;summary&gt;Claims one page from the UEFI-reserved page-table workspace before the direct map exists.&lt;/summary&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    /// &lt;param name=&quot;physicalAddress&quot;&gt;Receives the physical address of the writable, already-reachable page.&lt;/param&gt;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when a reserved workspace page remains available.&lt;/returns&gt;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    public static Boolean TryTakeBootstrapPageTable(out UInt64 physicalAddress)</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    {</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>        physicalAddress = 0UL;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>        if (!_initialized) return SetFailure(KernelPhysicalMemoryStatus.NotInitialized);</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>        if (_bootstrapWorkspaceUsedPages &gt;= _bootstrapWorkspacePages) return SetFailure(KernelPhysicalMemoryStatus.OutOfMemory);</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>        UInt64 offset = _bootstrapWorkspaceUsedPages * PageSize;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>        if (_bootstrapWorkspaceAddress &gt; 0xFFFFFFFFFFFFFFFFUL - offset) return SetFailure(KernelPhysicalMemoryStatus.InvalidParameter);</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>        physicalAddress = _bootstrapWorkspaceAddress + offset;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>        _bootstrapWorkspaceUsedPages++;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>        _lastStatus = KernelPhysicalMemoryStatus.Success;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>        return true;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    }</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;summary&gt;Gets the number of currently free physical extents known to the early allocator.&lt;/summary&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    public static Int32 GetFreeExtentCount() =&gt; _initialized ? _extentCount : 0;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a></span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;summary&gt;Reads one current free physical extent without allocating it.&lt;/summary&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    /// &lt;param name=&quot;index&quot;&gt;Zero-based free-extent index.&lt;/param&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    /// &lt;param name=&quot;startAddress&quot;&gt;Receives the first physical byte address.&lt;/param&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    /// &lt;param name=&quot;pageCount&quot;&gt;Receives the number of contiguous 4 KiB pages.&lt;/param&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the requested extent exists.&lt;/returns&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    public static Boolean TryGetFreeExtent(Int32 index, out UInt64 startAddress, out UInt64 pageCount)</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    {</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>        startAddress = 0UL;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>        pageCount = 0UL;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>        if (!_initialized) return SetFailure(KernelPhysicalMemoryStatus.NotInitialized);</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>        if (index &lt; 0 || index &gt;= _extentCount) return SetFailure(KernelPhysicalMemoryStatus.InvalidParameter);</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>        fixed (UInt64* starts = _state.ExtentStarts)</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>        fixed (UInt64* pages = _state.ExtentPages)</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        {</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>            startAddress = starts[index] * PageSize;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>            pageCount = pages[index];</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>        }</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>        _lastStatus = KernelPhysicalMemoryStatus.Success;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>        return true;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    }</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a></span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;summary&gt;Allocates an exact free physical range selected by an early bootstrap consumer.&lt;/summary&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    /// &lt;param name=&quot;physicalAddress&quot;&gt;4 KiB-aligned physical start address.&lt;/param&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    /// &lt;param name=&quot;pageCount&quot;&gt;Number of contiguous pages to claim.&lt;/param&gt;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    /// &lt;param name=&quot;allocation&quot;&gt;Receives the live allocation token and range.&lt;/param&gt;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the exact range was free and could be split from its extent.&lt;/returns&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    public static Boolean TryAllocateAt(UInt64 physicalAddress, UInt64 pageCount, out KernelPhysicalAllocation allocation)</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    {</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>        allocation = default;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>        if (!_initialized) return SetFailure(KernelPhysicalMemoryStatus.NotInitialized);</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>        if (pageCount == 0UL || (physicalAddress &amp; 0xFFFUL) != 0UL) return SetFailure(KernelPhysicalMemoryStatus.InvalidParameter);</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>        UInt64 startFrame = physicalAddress / PageSize;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>        if (startFrame &gt; 0xFFFFFFFFFFFFFFFFUL - pageCount) return SetFailure(KernelPhysicalMemoryStatus.InvalidParameter);</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        Int32 record = FindFreeAllocationRecord();</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>        if (record &lt; 0) return SetFailure(KernelPhysicalMemoryStatus.AllocationCapacityExhausted);</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>        fixed (UInt64* starts = _state.ExtentStarts)</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>        fixed (UInt64* pages = _state.ExtentPages)</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>        fixed (UInt64* tokens = _state.AllocationTokens)</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>        fixed (UInt64* allocationStarts = _state.AllocationStarts)</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>        fixed (UInt64* allocationPages = _state.AllocationPages)</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>        fixed (Byte* active = _state.AllocationActive)</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>        {</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>            for (Int32 index = 0; index &lt; _extentCount; index++)</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>            {</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>                UInt64 extentStart = starts[index];</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>                UInt64 extentPages = pages[index];</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>                if (startFrame &lt; extentStart) continue;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>                UInt64 prefix = startFrame - extentStart;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>                if (prefix &gt; extentPages || pageCount &gt; extentPages - prefix) continue;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>                UInt64 suffix = extentPages - prefix - pageCount;</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>                if (prefix != 0UL &amp;&amp; suffix != 0UL &amp;&amp; _extentCount &gt;= MaximumExtents)</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>                    return SetFailure(KernelPhysicalMemoryStatus.ExtentCapacityExhausted);</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>                if (!ReplaceAllocatedExtent(index, extentStart, prefix, startFrame + pageCount, suffix))</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>                    return SetFailure(KernelPhysicalMemoryStatus.ExtentCapacityExhausted);</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>                UInt64 token = NextToken();</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>                tokens[record] = token;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>                allocationStarts[record] = startFrame;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>                allocationPages[record] = pageCount;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>                active[record] = 1;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>                _liveAllocationCount++;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>                _freePages -= pageCount;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>                _allocatedPages += pageCount;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>                allocation = new KernelPhysicalAllocation(token, physicalAddress, pageCount);</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>                _lastStatus = KernelPhysicalMemoryStatus.Success;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>                return true;</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>            }</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>        }</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>        return SetFailure(KernelPhysicalMemoryStatus.OutOfMemory);</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    }</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>}</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

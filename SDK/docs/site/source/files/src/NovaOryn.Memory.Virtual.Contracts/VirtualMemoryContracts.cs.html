@@ -1,0 +1,310 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Memory.Virtual.Contracts/VirtualMemoryContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Memory.Virtual.Contracts/VirtualMemoryContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Core;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>namespace NovaOryn.Memory.Virtual;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a></span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;summary&gt;Identifies the virtual-memory implementation selected by an SDK consumer.&lt;/summary&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>/// &lt;nova.when&gt;Use when reporting or selecting the address-translation implementation behind a kernel address space.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>/// &lt;nova.depends&gt;IVirtualMemoryManager&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>public enum VirtualMemoryMethod</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>{</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;summary&gt;Uses the four-level x64 paging hierarchy with 4 KiB, 2 MiB, and 1 GiB leaf mappings.&lt;/summary&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    X64FourLevel = 0,</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    /// &lt;summary&gt;Identifies an SDK-consumer implementation of &lt;see cref=&quot;IVirtualMemoryManager&quot;/&gt;.&lt;/summary&gt;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    Custom = 1</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>}</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a></span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>/// &lt;summary&gt;Identifies a page size supported by virtual-memory contracts.&lt;/summary&gt;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>/// &lt;nova.when&gt;Use when choosing the granularity of a virtual mapping.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>/// &lt;nova.depends&gt;Architecture support for the selected leaf size&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>public enum VirtualPageSize : ulong</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>{</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    /// &lt;summary&gt;A standard 4 KiB page.&lt;/summary&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    Page4KiB = 4096UL,</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    /// &lt;summary&gt;A 2 MiB large page.&lt;/summary&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    Page2MiB = 2UL * 1024UL * 1024UL,</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    /// &lt;summary&gt;A 1 GiB large page.&lt;/summary&gt;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    Page1GiB = 1024UL * 1024UL * 1024UL</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>}</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a></span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>/// &lt;summary&gt;Defines architecture-neutral access permissions and cache intent for a virtual mapping.&lt;/summary&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>/// &lt;nova.when&gt;Use when mapping or changing protection without exposing architecture-specific entry bits.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>/// &lt;nova.depends&gt;Architecture-specific page-table encoder&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>[Flags]</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>public enum VirtualMemoryProtection : ulong</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>{</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    /// &lt;summary&gt;No access permission is selected.&lt;/summary&gt;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    None = 0,</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    /// &lt;summary&gt;The mapping may be read.&lt;/summary&gt;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    Read = 1UL &lt;&lt; 0,</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    /// &lt;summary&gt;The mapping may be written.&lt;/summary&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    Write = 1UL &lt;&lt; 1,</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    /// &lt;summary&gt;Instructions may execute from the mapping.&lt;/summary&gt;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    Execute = 1UL &lt;&lt; 2,</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    /// &lt;summary&gt;User-mode code may access the mapping subject to read/write/execute permissions.&lt;/summary&gt;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    User = 1UL &lt;&lt; 3,</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;summary&gt;The translation may remain global across address-space switches.&lt;/summary&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    Global = 1UL &lt;&lt; 4,</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;summary&gt;The mapping targets device memory and requests uncached/strongly ordered semantics.&lt;/summary&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    Device = 1UL &lt;&lt; 5,</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    /// &lt;summary&gt;The mapping requests write-through caching.&lt;/summary&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    WriteThrough = 1UL &lt;&lt; 6</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>}</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a></span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>/// &lt;summary&gt;Reports the outcome of a virtual-memory operation without requiring exceptions for expected mapping failures.&lt;/summary&gt;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>/// &lt;nova.when&gt;Inspect when a virtual-memory manager returns &lt;see langword=&quot;false&quot;/&gt;.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>/// &lt;nova.depends&gt;IVirtualMemoryManager&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>public enum VirtualMemoryStatus</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>{</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    /// &lt;summary&gt;The operation completed successfully.&lt;/summary&gt;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    Success = 0,</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    /// &lt;summary&gt;The supplied address, size, permissions, or root was invalid.&lt;/summary&gt;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    InvalidParameter = 1,</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    /// &lt;summary&gt;The manager has not been initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    NotInitialized = 2,</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    /// &lt;summary&gt;The manager was already initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    AlreadyInitialized = 3,</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    /// &lt;summary&gt;The requested virtual address is not canonical for the active architecture.&lt;/summary&gt;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    NonCanonicalAddress = 4,</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    /// &lt;summary&gt;A mapping already exists at the requested virtual address.&lt;/summary&gt;</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    AlreadyMapped = 5,</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>    /// &lt;summary&gt;No mapping exists for the requested virtual address.&lt;/summary&gt;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    NotMapped = 6,</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>    /// &lt;summary&gt;A physical page-table page could not be allocated.&lt;/summary&gt;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    PageTableAllocationFailed = 7,</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>    /// &lt;summary&gt;The architecture backend could not access a page-table page.&lt;/summary&gt;</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    PageTableAccessFailed = 8,</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>    /// &lt;summary&gt;The requested page size is unsupported by the selected implementation or processor.&lt;/summary&gt;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    UnsupportedPageSize = 9,</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>    /// &lt;summary&gt;The requested permission combination is unsupported or unsafe.&lt;/summary&gt;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>    UnsupportedProtection = 10,</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>    /// &lt;summary&gt;A translation-cache invalidation or address-space activation operation failed.&lt;/summary&gt;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>    ArchitectureOperationFailed = 11</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>}</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a></span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>/// &lt;summary&gt;Describes one page-aligned virtual-address range.&lt;/summary&gt;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>/// &lt;nova.when&gt;Use for unmapping, protection changes, and address-space diagnostics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>/// &lt;nova.depends&gt;VirtualPageSize&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>public readonly struct VirtualAddressRange</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>{</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    private readonly ulong _pageSizeBytes;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a></span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    private VirtualAddressRange(ulong start, ulong pageCount, VirtualPageSize pageSize)</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    {</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>        Start = start;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>        PageCount = pageCount;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>        PageSize = pageSize;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>        _pageSizeBytes = (ulong)pageSize;</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    }</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a></span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>    /// &lt;summary&gt;Gets the first virtual byte in the range.&lt;/summary&gt;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>    /// &lt;nova.when&gt;Use as the first mapping or protection-change address.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>    public ulong Start { get; }</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>    /// &lt;summary&gt;Gets the number of pages in the range.&lt;/summary&gt;</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>    /// &lt;nova.when&gt;Use for range iteration and accounting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>    public ulong PageCount { get; }</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>    /// &lt;summary&gt;Gets the mapping granularity of every page in the range.&lt;/summary&gt;</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>    /// &lt;nova.when&gt;Use when walking or removing leaf entries.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>    public VirtualPageSize PageSize { get; }</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>    /// &lt;summary&gt;Gets the byte length of the range.&lt;/summary&gt;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>    /// &lt;nova.when&gt;Use for diagnostics and end-address calculations.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>    public ulong Length { get { return PageCount * _pageSizeBytes; } }</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a></span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    /// &lt;summary&gt;Attempts to create a validated aligned virtual-address range.&lt;/summary&gt;</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>    /// &lt;nova.when&gt;Use before unmapping or changing protection on a contiguous range.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>    /// &lt;nova.depends&gt;Power-of-two page size and checked address arithmetic&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the range is non-empty, aligned, and does not overflow.&lt;/returns&gt;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>    /// &lt;example&gt;&lt;code&gt;bool valid = VirtualAddressRange.TryCreate(0xFFFF800000000000, 4, VirtualPageSize.Page4KiB, out VirtualAddressRange range);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>    public static bool TryCreate(ulong start, ulong pageCount, VirtualPageSize pageSize, out VirtualAddressRange range)</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>    {</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>        range = default;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>        ulong size = (ulong)pageSize;</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>        if (!IsSupportedSize(size) || pageCount == 0 || (start &amp; (size - 1UL)) != 0) return false;</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>        if (pageCount &gt; ulong.MaxValue / size) return false;</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>        ulong length = pageCount * size;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>        if (start &gt; ulong.MaxValue - length) return false;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>        range = new VirtualAddressRange(start, pageCount, pageSize);</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>        return true;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>    }</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a></span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>    private static bool IsSupportedSize(ulong size) =&gt; size == 4096UL || size == 2097152UL || size == 1073741824UL;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>}</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a></span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>/// &lt;summary&gt;Describes one physical-to-virtual mapping request.&lt;/summary&gt;</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>/// &lt;nova.when&gt;Use to add a leaf translation to an address space.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>/// &lt;nova.depends&gt;VirtualPageSize and VirtualMemoryProtection&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>public readonly struct VirtualMappingRequest</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>{</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>    private VirtualMappingRequest(ulong virtualAddress, PhysicalAddress physicalAddress, VirtualPageSize pageSize, VirtualMemoryProtection protection)</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>    {</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>        VirtualAddress = virtualAddress;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>        PhysicalAddress = physicalAddress;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>        PageSize = pageSize;</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>        Protection = protection;</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>    }</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a></span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>    /// &lt;summary&gt;Gets the aligned virtual leaf address.&lt;/summary&gt;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>    /// &lt;nova.when&gt;Use as the translation key.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>    public ulong VirtualAddress { get; }</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>    /// &lt;summary&gt;Gets the aligned physical leaf address.&lt;/summary&gt;</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>    /// &lt;nova.when&gt;Use as the translation target.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>    public PhysicalAddress PhysicalAddress { get; }</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>    /// &lt;summary&gt;Gets the requested leaf page size.&lt;/summary&gt;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>    /// &lt;nova.when&gt;Use to select the architecture leaf level.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>    public VirtualPageSize PageSize { get; }</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>    /// &lt;summary&gt;Gets architecture-neutral access and caching intent.&lt;/summary&gt;</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>    /// &lt;nova.when&gt;Use to encode the leaf entry.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>    public VirtualMemoryProtection Protection { get; }</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a></span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>    /// &lt;summary&gt;Attempts to create a validated single-page mapping request.&lt;/summary&gt;</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>    /// &lt;nova.when&gt;Use before calling &lt;see cref=&quot;IVirtualMemoryManager.TryMap&quot;/&gt;.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>    /// &lt;nova.depends&gt;Aligned physical and virtual addresses&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when both addresses are aligned and at least read access is requested.&lt;/returns&gt;</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>    /// &lt;example&gt;&lt;code&gt;bool valid = VirtualMappingRequest.TryCreate(0xFFFF800000200000, new PhysicalAddress(0x200000), VirtualPageSize.Page2MiB, VirtualMemoryProtection.Read | VirtualMemoryProtection.Write, out VirtualMappingRequest request);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>    public static bool TryCreate(ulong virtualAddress, PhysicalAddress physicalAddress, VirtualPageSize pageSize, VirtualMemoryProtection protection, out VirtualMappingRequest request)</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>    {</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>        request = default;</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>        ulong size = (ulong)pageSize;</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>        if (size != 4096UL &amp;&amp; size != 2097152UL &amp;&amp; size != 1073741824UL) return false;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>        if ((virtualAddress &amp; (size - 1UL)) != 0 || (physicalAddress.Value &amp; (size - 1UL)) != 0) return false;</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>        if ((protection &amp; VirtualMemoryProtection.Read) == 0) return false;</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>        request = new VirtualMappingRequest(virtualAddress, physicalAddress, pageSize, protection);</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>        return true;</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>    }</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>}</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a></span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>/// &lt;summary&gt;Reports one resolved virtual-to-physical translation.&lt;/summary&gt;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>/// &lt;nova.when&gt;Use for page-fault diagnostics, address validation, and mapping inspection.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>/// &lt;nova.depends&gt;IVirtualMemoryManager.TryTranslate&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>public readonly struct VirtualTranslation</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>{</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>    /// &lt;summary&gt;Creates one resolved translation result.&lt;/summary&gt;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>    /// &lt;nova.when&gt;Use from virtual-memory implementations after decoding a present leaf entry.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>    /// &lt;nova.depends&gt;Validated leaf address and page size&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>    /// &lt;returns&gt;A translation value containing the supplied validated fields.&lt;/returns&gt;</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>    /// &lt;example&gt;&lt;code&gt;VirtualTranslation translation = new(virtualAddress, physicalAddress, VirtualPageSize.Page4KiB, VirtualMemoryProtection.Read);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>    public VirtualTranslation(ulong virtualAddress, PhysicalAddress physicalAddress, VirtualPageSize pageSize, VirtualMemoryProtection protection)</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>    {</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>        VirtualAddress = virtualAddress;</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>        PhysicalAddress = physicalAddress;</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>        PageSize = pageSize;</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>        Protection = protection;</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>    }</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a></span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>    /// &lt;summary&gt;Gets the queried virtual address.&lt;/summary&gt;</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>    /// &lt;nova.when&gt;Use to correlate the result with a page fault or probe.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>    public ulong VirtualAddress { get; }</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>    /// &lt;summary&gt;Gets the exact translated physical byte address including the leaf offset.&lt;/summary&gt;</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>    /// &lt;nova.when&gt;Use for diagnostics or physical ownership checks.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>    public PhysicalAddress PhysicalAddress { get; }</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>    /// &lt;summary&gt;Gets the leaf page size that supplied the translation.&lt;/summary&gt;</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a>    /// &lt;nova.when&gt;Use to identify 4 KiB versus large-page translations.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>    public VirtualPageSize PageSize { get; }</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>    /// &lt;summary&gt;Gets the decoded effective leaf protection.&lt;/summary&gt;</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>    /// &lt;nova.when&gt;Use to validate access policy.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>    public VirtualMemoryProtection Protection { get; }</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>}</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a></span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a>/// &lt;summary&gt;Provides a current virtual-memory accounting snapshot.&lt;/summary&gt;</span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>/// &lt;nova.when&gt;Use for diagnostics and page-table memory accounting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>/// &lt;nova.depends&gt;IVirtualMemoryManager.GetStatistics&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>public readonly struct VirtualMemoryStatistics</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>{</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>    /// &lt;summary&gt;Creates one immutable virtual-memory statistics snapshot.&lt;/summary&gt;</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>    /// &lt;nova.when&gt;Use from manager implementations when exposing current accounting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>    /// &lt;nova.depends&gt;Current address-space state&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>    /// &lt;returns&gt;An immutable statistics value containing the supplied counters.&lt;/returns&gt;</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>    /// &lt;example&gt;&lt;code&gt;VirtualMemoryStatistics statistics = new(1024, 16, 2, 1);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>    public VirtualMemoryStatistics(ulong mappedPages4KiB, ulong mappedPages2MiB, ulong mappedPages1GiB, ulong pageTablePages)</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>    {</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a>        MappedPages4KiB = mappedPages4KiB;</span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a>        MappedPages2MiB = mappedPages2MiB;</span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a>        MappedPages1GiB = mappedPages1GiB;</span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a>        PageTablePages = pageTablePages;</span>
+<span class="source-line" id="L241"><a class="line-number" href="#L241">241</a>    }</span>
+<span class="source-line" id="L242"><a class="line-number" href="#L242">242</a></span>
+<span class="source-line" id="L243"><a class="line-number" href="#L243">243</a>    /// &lt;summary&gt;Gets the number of managed 4 KiB leaf mappings.&lt;/summary&gt;</span>
+<span class="source-line" id="L244"><a class="line-number" href="#L244">244</a>    /// &lt;nova.when&gt;Use for fine-grained mapping accounting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L245"><a class="line-number" href="#L245">245</a>    public ulong MappedPages4KiB { get; }</span>
+<span class="source-line" id="L246"><a class="line-number" href="#L246">246</a>    /// &lt;summary&gt;Gets the number of managed 2 MiB leaf mappings.&lt;/summary&gt;</span>
+<span class="source-line" id="L247"><a class="line-number" href="#L247">247</a>    /// &lt;nova.when&gt;Use for large-page accounting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L248"><a class="line-number" href="#L248">248</a>    public ulong MappedPages2MiB { get; }</span>
+<span class="source-line" id="L249"><a class="line-number" href="#L249">249</a>    /// &lt;summary&gt;Gets the number of managed 1 GiB leaf mappings.&lt;/summary&gt;</span>
+<span class="source-line" id="L250"><a class="line-number" href="#L250">250</a>    /// &lt;nova.when&gt;Use for huge-page accounting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L251"><a class="line-number" href="#L251">251</a>    public ulong MappedPages1GiB { get; }</span>
+<span class="source-line" id="L252"><a class="line-number" href="#L252">252</a>    /// &lt;summary&gt;Gets the number of page-table pages owned or protected by the manager.&lt;/summary&gt;</span>
+<span class="source-line" id="L253"><a class="line-number" href="#L253">253</a>    /// &lt;nova.when&gt;Use to quantify translation-structure physical-memory cost.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L254"><a class="line-number" href="#L254">254</a>    public ulong PageTablePages { get; }</span>
+<span class="source-line" id="L255"><a class="line-number" href="#L255">255</a>}</span>
+<span class="source-line" id="L256"><a class="line-number" href="#L256">256</a></span>
+<span class="source-line" id="L257"><a class="line-number" href="#L257">257</a>/// &lt;summary&gt;Defines the architecture-neutral virtual-memory service contract.&lt;/summary&gt;</span>
+<span class="source-line" id="L258"><a class="line-number" href="#L258">258</a>/// &lt;nova.when&gt;Implement to provide a custom address-space manager or consume through SDK-neutral kernel code.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L259"><a class="line-number" href="#L259">259</a>/// &lt;nova.depends&gt;Physical-memory ownership and architecture translation primitives&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L260"><a class="line-number" href="#L260">260</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L261"><a class="line-number" href="#L261">261</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L262"><a class="line-number" href="#L262">262</a>public interface IVirtualMemoryManager</span>
+<span class="source-line" id="L263"><a class="line-number" href="#L263">263</a>{</span>
+<span class="source-line" id="L264"><a class="line-number" href="#L264">264</a>    /// &lt;summary&gt;Gets the implementation methodology.&lt;/summary&gt;</span>
+<span class="source-line" id="L265"><a class="line-number" href="#L265">265</a>    /// &lt;nova.when&gt;Use for configuration and diagnostics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L266"><a class="line-number" href="#L266">266</a>    VirtualMemoryMethod Method { get; }</span>
+<span class="source-line" id="L267"><a class="line-number" href="#L267">267</a>    /// &lt;summary&gt;Gets whether the manager has attached to or created an address space.&lt;/summary&gt;</span>
+<span class="source-line" id="L268"><a class="line-number" href="#L268">268</a>    /// &lt;nova.when&gt;Check before mapping when ownership is indirect.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L269"><a class="line-number" href="#L269">269</a>    bool IsInitialized { get; }</span>
+<span class="source-line" id="L270"><a class="line-number" href="#L270">270</a>    /// &lt;summary&gt;Gets the root page-table physical address.&lt;/summary&gt;</span>
+<span class="source-line" id="L271"><a class="line-number" href="#L271">271</a>    /// &lt;nova.when&gt;Use for diagnostics and architecture address-space activation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L272"><a class="line-number" href="#L272">272</a>    PhysicalAddress RootPhysicalAddress { get; }</span>
+<span class="source-line" id="L273"><a class="line-number" href="#L273">273</a></span>
+<span class="source-line" id="L274"><a class="line-number" href="#L274">274</a>    /// &lt;summary&gt;Maps one aligned physical page into one aligned virtual leaf address.&lt;/summary&gt;</span>
+<span class="source-line" id="L275"><a class="line-number" href="#L275">275</a>    /// &lt;nova.when&gt;Use after physical backing has been allocated or reserved.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L276"><a class="line-number" href="#L276">276</a>    /// &lt;nova.depends&gt;Initialized manager and architecture page-table storage&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L277"><a class="line-number" href="#L277">277</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the leaf mapping is installed and invalidated as required.&lt;/returns&gt;</span>
+<span class="source-line" id="L278"><a class="line-number" href="#L278">278</a>    /// &lt;example&gt;&lt;code&gt;bool mapped = manager.TryMap(request, out VirtualMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L279"><a class="line-number" href="#L279">279</a>    bool TryMap(VirtualMappingRequest request, out VirtualMemoryStatus status);</span>
+<span class="source-line" id="L280"><a class="line-number" href="#L280">280</a></span>
+<span class="source-line" id="L281"><a class="line-number" href="#L281">281</a>    /// &lt;summary&gt;Removes the leaf mapping at one aligned virtual address.&lt;/summary&gt;</span>
+<span class="source-line" id="L282"><a class="line-number" href="#L282">282</a>    /// &lt;nova.when&gt;Use before releasing or repurposing the physical backing.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L283"><a class="line-number" href="#L283">283</a>    /// &lt;nova.depends&gt;Existing leaf mapping&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L284"><a class="line-number" href="#L284">284</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when a present leaf mapping was removed.&lt;/returns&gt;</span>
+<span class="source-line" id="L285"><a class="line-number" href="#L285">285</a>    /// &lt;example&gt;&lt;code&gt;bool unmapped = manager.TryUnmap(virtualAddress, out VirtualMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L286"><a class="line-number" href="#L286">286</a>    bool TryUnmap(ulong virtualAddress, out VirtualMemoryStatus status);</span>
+<span class="source-line" id="L287"><a class="line-number" href="#L287">287</a></span>
+<span class="source-line" id="L288"><a class="line-number" href="#L288">288</a>    /// &lt;summary&gt;Changes protection on one existing leaf mapping without changing its physical target.&lt;/summary&gt;</span>
+<span class="source-line" id="L289"><a class="line-number" href="#L289">289</a>    /// &lt;nova.when&gt;Use for W^X transitions, read-only data, user access, and device cache policy.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L290"><a class="line-number" href="#L290">290</a>    /// &lt;nova.depends&gt;Existing leaf mapping&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L291"><a class="line-number" href="#L291">291</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when protection was replaced and the translation invalidated.&lt;/returns&gt;</span>
+<span class="source-line" id="L292"><a class="line-number" href="#L292">292</a>    /// &lt;example&gt;&lt;code&gt;bool protectedPage = manager.TryProtect(virtualAddress, VirtualMemoryProtection.Read, out VirtualMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L293"><a class="line-number" href="#L293">293</a>    bool TryProtect(ulong virtualAddress, VirtualMemoryProtection protection, out VirtualMemoryStatus status);</span>
+<span class="source-line" id="L294"><a class="line-number" href="#L294">294</a></span>
+<span class="source-line" id="L295"><a class="line-number" href="#L295">295</a>    /// &lt;summary&gt;Resolves one virtual byte address through the current page tables.&lt;/summary&gt;</span>
+<span class="source-line" id="L296"><a class="line-number" href="#L296">296</a>    /// &lt;nova.when&gt;Use for diagnostics and access validation without changing mappings.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L297"><a class="line-number" href="#L297">297</a>    /// &lt;nova.depends&gt;Current page-table hierarchy&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L298"><a class="line-number" href="#L298">298</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when a present leaf covers the address.&lt;/returns&gt;</span>
+<span class="source-line" id="L299"><a class="line-number" href="#L299">299</a>    /// &lt;example&gt;&lt;code&gt;bool translated = manager.TryTranslate(virtualAddress, out VirtualTranslation translation, out VirtualMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L300"><a class="line-number" href="#L300">300</a>    bool TryTranslate(ulong virtualAddress, out VirtualTranslation translation, out VirtualMemoryStatus status);</span>
+<span class="source-line" id="L301"><a class="line-number" href="#L301">301</a></span>
+<span class="source-line" id="L302"><a class="line-number" href="#L302">302</a>    /// &lt;summary&gt;Returns a current virtual-memory accounting snapshot.&lt;/summary&gt;</span>
+<span class="source-line" id="L303"><a class="line-number" href="#L303">303</a>    /// &lt;nova.when&gt;Use for diagnostics and page-table memory-cost reporting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L304"><a class="line-number" href="#L304">304</a>    /// &lt;nova.depends&gt;Current manager state&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L305"><a class="line-number" href="#L305">305</a>    /// &lt;returns&gt;Current leaf and page-table counters.&lt;/returns&gt;</span>
+<span class="source-line" id="L306"><a class="line-number" href="#L306">306</a>    /// &lt;example&gt;&lt;code&gt;VirtualMemoryStatistics statistics = manager.GetStatistics();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L307"><a class="line-number" href="#L307">307</a>    VirtualMemoryStatistics GetStatistics();</span>
+<span class="source-line" id="L308"><a class="line-number" href="#L308">308</a>}</span>
+<span class="source-line" id="L309"><a class="line-number" href="#L309">309</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

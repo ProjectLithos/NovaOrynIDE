@@ -1,0 +1,179 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Serial/KernelSerial.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Serial/KernelSerial.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Kernel.Console;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Kernel.Drivers;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>using NovaOryn.Kernel.Internal.X64;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>using NovaOryn.Kernel.Pci;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>using NovaOryn.Kernel.Virtio;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a></span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>namespace NovaOryn.Kernel.Serial;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a></span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>/// &lt;summary&gt;Owns early 16550 serial debugging and attaches PCI UART and VirtIO-console mirrors after bus discovery.&lt;/summary&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>public static unsafe class KernelSerial</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>{</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    private const UInt16 LegacyCom1 = 0x03F8;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    private const UInt32 DefaultBaudRate = 115200U;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    private const UInt32 TransmitPollLimit = 1000000U;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    private static Boolean _initialized;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    private static Boolean _legacy16550;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    private static UInt32 _pciDiscovered;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    private static UInt32 _pciOnline;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    private static UInt32 _virtioConsoles;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    private static Boolean _hasPciMirror;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    private static PciLocation _pciMirrorLocation;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    private static Byte _pciMirrorBar;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    private static PciBarType _pciMirrorBarType;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    private static UInt16 _pciMirrorIoBase;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    private static KernelDeviceHandle _virtioMirror;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    private static UInt64 _transmitFailures;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a></span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    /// &lt;summary&gt;Initializes the legacy 16550-compatible COM1 UART for earliest-possible kernel diagnostics.&lt;/summary&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    public static Boolean InitializeEarly16550()</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    {</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>        if (!Native.InitializeSerial()) return false;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>        _legacy16550 = true;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>        return true;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    }</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a></span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    /// &lt;summary&gt;Discovers PCI UARTs, attaches started VirtIO consoles, and mirrors KernelConsole output to available secondary transports.&lt;/summary&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    public static Boolean Initialize()</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    {</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>        if (_initialized) return true;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>        if (!_legacy16550 &amp;&amp; !InitializeEarly16550()) return false;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>        if (!KernelPci.IsInitialized() || !KernelVirtio.IsInitialized()) return false;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>        _pciDiscovered = 0U; _pciOnline = 0U; _virtioConsoles = 0U; _hasPciMirror = false; _virtioMirror = default; _transmitFailures = 0UL;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>        DiscoverPciUarts();</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>        DiscoverVirtioConsoles();</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>        if ((_hasPciMirror || _virtioMirror.Value != 0U) &amp;&amp; !KernelConsole.SetSecondarySerialWriter(&amp;WriteSecondaryByte)) return false;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>        _initialized = true;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        return true;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    }</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a></span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    /// &lt;summary&gt;Gets whether the complete serial facility has been initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    public static Boolean IsInitialized() =&gt; _initialized;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a></span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;summary&gt;Gets current 16550, PCI-UART, and VirtIO-console capability information.&lt;/summary&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    public static KernelSerialCapabilities GetCapabilities() =&gt; new(_initialized, _legacy16550, _pciDiscovered, _pciOnline, _virtioConsoles, _hasPciMirror || _virtioMirror.Value != 0U, _transmitFailures);</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a></span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    /// &lt;summary&gt;Attempts a non-blocking read from the legacy COM1 UART.&lt;/summary&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    public static Boolean TryReadLegacyByte(out Byte value)</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    {</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>        value = 0;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>        if (!_legacy16550 || !Native.ReadPort8((UInt16)(LegacyCom1 + 5), out Byte status) || (status &amp; 0x01) == 0) return false;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>        return Native.ReadPort8(LegacyCom1, out value);</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    }</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a></span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    private static Boolean WriteSecondaryByte(Byte value)</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    {</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>        Boolean attempted = false;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        if (_hasPciMirror)</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>        {</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>            attempted = true;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>            if (!WritePciByte(value)) _transmitFailures++;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>        }</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>        if (_virtioMirror.Value != 0U)</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>        {</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>            attempted = true;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>            Byte local = value;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>            if (!KernelVirtio.WriteConsole(_virtioMirror, &amp;local, 1U)) _transmitFailures++;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>        }</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>        _ = attempted;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        return true;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>    }</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a></span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    private static Boolean DiscoverPciUarts()</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>    {</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>        UInt32 count = KernelPci.GetDeviceCount();</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>        for (UInt32 index=0U; index&lt;count; index++)</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>        {</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>            if (!KernelPci.TryGetDevice(index, out PciDeviceInfo device) || !SerialMath.IsPciSerialController(device.ClassCode)) continue;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>            _pciDiscovered++;</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>            if (!SerialMath.Is16550CompatibleProgrammingInterface(device.ClassCode)) continue;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>            if (!TryInitializePciUart(device, out Byte barIndex, out PciBarType barType, out UInt16 ioBase)) continue;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>            _pciOnline++;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>            if (_hasPciMirror) continue;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>            _hasPciMirror = true; _pciMirrorLocation = device.Location; _pciMirrorBar = barIndex; _pciMirrorBarType = barType; _pciMirrorIoBase = ioBase;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>        }</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>        return true;</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>    }</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a></span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    private static Boolean TryInitializePciUart(PciDeviceInfo device, out Byte selectedBar, out PciBarType selectedType, out UInt16 ioBase)</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>    {</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>        selectedBar=0; selectedType=PciBarType.None; ioBase=0;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>        for (Byte barIndex=0; barIndex&lt;6; barIndex++)</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>        {</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>            if (!KernelPci.TryGetBar(device.Location, barIndex, out PciBarInfo bar) || bar.Length &lt; 8UL) continue;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>            if (bar.Type == PciBarType.Io)</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>            {</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>                if (bar.Address == 0UL || bar.Address &gt; UInt16.MaxValue) continue;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>                if (!EnablePciDecode(device.Location, true, false)) return false;</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>                UInt16 basePort=(UInt16)bar.Address;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>                if (!ConfigureUart(device.Location, barIndex, PciBarType.Io, basePort)) return false;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>                selectedBar=barIndex; selectedType=PciBarType.Io; ioBase=basePort; return true;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>            }</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>            if (bar.Type == PciBarType.Memory32 || bar.Type == PciBarType.Memory64)</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>            {</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>                if (!EnablePciDecode(device.Location, false, true)) return false;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>                if (!ConfigureUart(device.Location, barIndex, bar.Type, 0)) return false;</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>                selectedBar=barIndex; selectedType=bar.Type; return true;</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>            }</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>        }</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>        return false;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>    }</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a></span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>    private static Boolean ConfigureUart(PciLocation location, Byte barIndex, PciBarType barType, UInt16 ioBase)</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    {</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>        if (!SerialMath.TryCalculateDivisor(DefaultBaudRate, out UInt16 divisor)) return false;</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>        if (!WriteRegister(location,barIndex,barType,ioBase,1,0x00)) return false;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>        if (!WriteRegister(location,barIndex,barType,ioBase,3,0x80)) return false;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>        if (!WriteRegister(location,barIndex,barType,ioBase,0,(Byte)(divisor &amp; 0xFF))) return false;</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>        if (!WriteRegister(location,barIndex,barType,ioBase,1,(Byte)(divisor &gt;&gt; 8))) return false;</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>        if (!WriteRegister(location,barIndex,barType,ioBase,3,0x03)) return false;</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>        if (!WriteRegister(location,barIndex,barType,ioBase,2,0xC7)) return false;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>        return WriteRegister(location,barIndex,barType,ioBase,4,0x0B);</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>    }</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a></span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>    private static Boolean DiscoverVirtioConsoles()</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>    {</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>        UInt32 count=KernelVirtio.GetDeviceCount();</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>        for(UInt32 index=0U;index&lt;count;index++)</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>        {</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>            if(!KernelVirtio.TryGetDevice(index,out VirtioDeviceInfo info)||info.Type!=VirtioDeviceType.Console||!info.Started)continue;</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>            _virtioConsoles++;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>            if(_virtioMirror.Value==0U)_virtioMirror=info.Device;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>        }</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>        return true;</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>    }</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a></span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>    private static Boolean WritePciByte(Byte value)</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>    {</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>        for(UInt32 attempt=0U;attempt&lt;TransmitPollLimit;attempt++)</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>        {</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>            if(!ReadRegister(_pciMirrorLocation,_pciMirrorBar,_pciMirrorBarType,_pciMirrorIoBase,5,out Byte status))return false;</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>            if((status&amp;0x20)!=0)return WriteRegister(_pciMirrorLocation,_pciMirrorBar,_pciMirrorBarType,_pciMirrorIoBase,0,value);</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>        }</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>        return false;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>    }</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a></span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>    private static Boolean EnablePciDecode(PciLocation location, Boolean io, Boolean memory)</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>    {</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>        if(!KernelPci.TryRead16(location,0x04,out UInt16 command))return false;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>        UInt16 next=command;if(io)next=(UInt16)(next|0x0001);if(memory)next=(UInt16)(next|0x0002);</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>        return next==command||KernelPci.TryWrite16(location,0x04,next);</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>    }</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a></span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>    private static Boolean WriteRegister(PciLocation location,Byte barIndex,PciBarType barType,UInt16 ioBase,Byte register,Byte value)</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>    {</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>        if(barType==PciBarType.Io)return Native.WritePort8((UInt16)(ioBase+register),value);</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>        if(!KernelPci.TryMapBar(location,barIndex,out _,out UInt64 address))return false;</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>        *((Byte*)(nuint)(address+register))=value;return true;</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>    }</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a></span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>    private static Boolean ReadRegister(PciLocation location,Byte barIndex,PciBarType barType,UInt16 ioBase,Byte register,out Byte value)</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>    {</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>        value=0;if(barType==PciBarType.Io)return Native.ReadPort8((UInt16)(ioBase+register),out value);</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>        if(!KernelPci.TryMapBar(location,barIndex,out _,out UInt64 address))return false;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>        value=*((Byte*)(nuint)(address+register));return true;</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>    }</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>}</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

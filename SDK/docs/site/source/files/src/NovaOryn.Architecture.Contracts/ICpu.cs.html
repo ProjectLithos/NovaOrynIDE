@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Architecture.Contracts/ICpu.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Architecture.Contracts/ICpu.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Architecture;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Defines the architecture-neutral processor operations exposed to kernel services.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;nova.when&gt;Use this contract when code needs processor control without depending on x64 or ARM64 implementation details.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;nova.depends&gt;NovaOryn.Primitives.ProcessorId&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>public interface ICpu</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>{</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    /// &lt;summary&gt;Enables maskable interrupts on the current processor.&lt;/summary&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when interrupts are enabled.&lt;/returns&gt;</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    /// &lt;example&gt;&lt;code&gt;bool enabled = cpu.EnableInterrupts();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    bool EnableInterrupts();</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a></span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    /// &lt;summary&gt;Disables maskable interrupts on the current processor.&lt;/summary&gt;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when interrupts are disabled.&lt;/returns&gt;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    /// &lt;example&gt;&lt;code&gt;bool disabled = cpu.DisableInterrupts();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    bool DisableInterrupts();</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a></span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    /// &lt;summary&gt;Determines whether maskable interrupts are enabled on the current processor.&lt;/summary&gt;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when interrupts are enabled; otherwise, &lt;see langword=&quot;false&quot;/&gt;.&lt;/returns&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    /// &lt;example&gt;&lt;code&gt;bool enabled = cpu.AreInterruptsEnabled();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    bool AreInterruptsEnabled();</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a></span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    /// &lt;summary&gt;Gets the stable NovaOryn identifier for the current logical processor.&lt;/summary&gt;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    /// &lt;returns&gt;The current logical processor identifier.&lt;/returns&gt;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    /// &lt;example&gt;&lt;code&gt;ProcessorId processor = cpu.GetProcessorId();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    ProcessorId GetProcessorId();</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a></span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    /// &lt;summary&gt;Halts the current processor until an interrupt or architecture-defined wake event occurs.&lt;/summary&gt;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; if execution resumes after the halt operation.&lt;/returns&gt;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;example&gt;&lt;code&gt;bool resumed = cpu.Halt();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    bool Halt();</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>}</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

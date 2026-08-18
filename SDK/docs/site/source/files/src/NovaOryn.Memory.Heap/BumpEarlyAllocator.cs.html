@@ -1,0 +1,61 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Memory.Heap/BumpEarlyAllocator.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Memory.Heap/BumpEarlyAllocator.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Core;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Memory.Heap;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;summary&gt;Implements a bounded monotonic early allocator over a caller-selected address range.&lt;/summary&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;nova.when&gt;Use when bootstrap metadata needs aligned raw storage and individual releases are unnecessary.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>/// &lt;nova.depends&gt;NovaOryn.Memory.Heap.Contracts&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>public sealed class BumpEarlyAllocator : IEarlyAllocator</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>{</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    private readonly ulong _baseAddress;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    private readonly ulong _length;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    private ulong _offset;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a></span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    /// &lt;summary&gt;Creates a bump allocator over one half-open address range.&lt;/summary&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    /// &lt;nova.when&gt;Use after reserving a stable caller-owned range for bootstrap-lifetime allocations.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    /// &lt;nova.depends&gt;The supplied range must be non-empty and must not overflow the 64-bit address space.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    /// &lt;param name=&quot;baseAddress&quot;&gt;First byte in the caller-owned range.&lt;/param&gt;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    /// &lt;param name=&quot;length&quot;&gt;Range length in bytes.&lt;/param&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    /// &lt;returns&gt;A bump allocator positioned at the beginning of the supplied range.&lt;/returns&gt;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    /// &lt;example&gt;&lt;code&gt;BumpEarlyAllocator allocator = new(0x100000, 65536);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    public BumpEarlyAllocator(ulong baseAddress, ulong length)</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    {</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>        if (length == 0 || baseAddress &gt; ulong.MaxValue - length) throw new ArgumentOutOfRangeException(nameof(length));</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>        _baseAddress = baseAddress;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>        _length = length;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    }</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a></span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    /// &lt;summary&gt;Attempts to allocate aligned bytes monotonically from the caller-owned range.&lt;/summary&gt;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;nova.when&gt;Use for bootstrap-lifetime allocations that need no individual release.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    /// &lt;nova.depends&gt;A power-of-two alignment and remaining range capacity.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the aligned allocation fits.&lt;/returns&gt;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;example&gt;&lt;code&gt;bool ok = allocator.TryAllocate(128, 16, out ulong address);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    public bool TryAllocate(ulong byteCount, ulong alignment, out ulong address)</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    {</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>        address = 0;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>        if (byteCount == 0 || alignment == 0 || (alignment &amp; (alignment - 1)) != 0) return false;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>        ulong current = _baseAddress + _offset;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>        if (current &lt; _baseAddress) return false;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>        ulong mask = alignment - 1;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>        if (current &gt; ulong.MaxValue - mask) return false;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>        ulong aligned = (current + mask) &amp; ~mask;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>        if (aligned &lt; _baseAddress) return false;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>        ulong used = aligned - _baseAddress;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>        if (used &gt; _length || byteCount &gt; _length - used) return false;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        _offset = used + byteCount;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>        address = aligned;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>        return true;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    }</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a></span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;summary&gt;Gets the remaining unallocated byte count.&lt;/summary&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;nova.when&gt;Use to check remaining bootstrap capacity before requesting more storage.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;nova.depends&gt;The allocator&#39;s current monotonic offset.&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;returns&gt;The number of bytes not yet consumed by the bump allocator.&lt;/returns&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    /// &lt;example&gt;&lt;code&gt;ulong remaining = allocator.GetRemainingBytes();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    public ulong GetRemainingBytes() =&gt; _offset &lt;= _length ? _length - _offset : 0UL;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>}</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

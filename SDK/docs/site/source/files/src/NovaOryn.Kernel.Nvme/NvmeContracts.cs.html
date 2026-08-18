@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Nvme/NvmeContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Nvme/NvmeContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Kernel.Drivers;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using NovaOryn.Kernel.Pci;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>using NovaOryn.Kernel.Storage;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>namespace NovaOryn.Kernel.Nvme;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;summary&gt;NVMe controller lifecycle state.&lt;/summary&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>public enum NvmeControllerState : Byte { Unknown=0, Disabled=1, Ready=2, Failed=3 }</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>/// &lt;summary&gt;NVMe interrupt delivery selected for a controller.&lt;/summary&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>public enum NvmeInterruptMode : Byte { Synchronous=0, BrokerManaged=1 }</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>/// &lt;summary&gt;Information about one initialized PCI NVMe controller.&lt;/summary&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>public readonly struct NvmeControllerInfo</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>{</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a> public NvmeControllerInfo(PciLocation location,KernelDeviceHandle device,NvmeControllerState state,NvmeInterruptMode interruptMode,UInt16 adminQueueEntries,UInt16 ioQueueEntries,UInt32 namespaceCount,UInt32 version){Location=location;Device=device;State=state;InterruptMode=interruptMode;AdminQueueEntries=adminQueueEntries;IoQueueEntries=ioQueueEntries;NamespaceCount=namespaceCount;Version=version;}</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a> public PciLocation Location { get; } public KernelDeviceHandle Device { get; } public NvmeControllerState State { get; } public NvmeInterruptMode InterruptMode { get; } public UInt16 AdminQueueEntries { get; } public UInt16 IoQueueEntries { get; } public UInt32 NamespaceCount { get; } public UInt32 Version { get; }</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>}</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>/// &lt;summary&gt;Information about one active NVMe namespace exposed as a NovaOryn block device.&lt;/summary&gt;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>public readonly struct NvmeNamespaceInfo</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>{</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a> public NvmeNamespaceInfo(UInt32 controllerIndex,UInt32 namespaceId,UInt32 logicalBlockSize,UInt64 blockCount,KernelDeviceHandle device,KernelStorageDeviceHandle storage){ControllerIndex=controllerIndex;NamespaceId=namespaceId;LogicalBlockSize=logicalBlockSize;BlockCount=blockCount;Device=device;Storage=storage;}</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a> public UInt32 ControllerIndex { get; } public UInt32 NamespaceId { get; } public UInt32 LogicalBlockSize { get; } public UInt64 BlockCount { get; } public KernelDeviceHandle Device { get; } public KernelStorageDeviceHandle Storage { get; }</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>}</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>/// &lt;summary&gt;Overall NVMe driver state.&lt;/summary&gt;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>public readonly struct NvmeCapabilities</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>{</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a> public NvmeCapabilities(Boolean initialized,UInt32 controllers,UInt32 namespaces){Initialized=initialized;Controllers=controllers;Namespaces=namespaces;} public Boolean Initialized { get; } public UInt32 Controllers { get; } public UInt32 Namespaces { get; }</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>}</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Virtual Memory · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"><script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../guides/Getting-Started.html">Guides</a><a href="../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../" placeholder="Type a public item"><div id="search-results"></div></label></header><main>
+<h1>Virtual memory</h1>
+<p>NovaOryn 0.29.0 provides architecture-neutral virtual-memory contracts, checked x64 page-table encoding/decoding and a freestanding manager that attaches to the active CR3 hierarchy.</p>
+<h2>Supported mappings</h2>
+<p>The x64 implementation supports 4 KiB, 2 MiB and 1 GiB leaf mappings together with map, unmap, protection replacement, translation, canonical-address validation, page-table allocation and per-page TLB invalidation.</p>
+<h2>Bootstrap safety</h2>
+<p>Existing page-table frames are protected from physical reallocation before normal mapping operations are accepted. The kernel address-space layer then applies policy over the lower-level virtual-memory mechanism.</p>
+<h2>User mappings</h2>
+<p>User-accessible mappings are validated by the protection layer so ring-3 mappings remain in the canonical lower half and do not silently weaken supervisor-only pages.</p>
+<h2>API</h2>
+<ul><li><a href="../assemblies/novaoryn-memory-virtual-contracts.html">Virtual contracts</a></li><li><a href="../assemblies/novaoryn-memory-virtual-x64.html">x64 virtual implementation</a></li><li><a href="../assemblies/novaoryn-kernel-virtualmemory.html">Kernel virtual memory</a></li><li><a href="../assemblies/novaoryn-kernel-addressspace.html">Kernel address space</a></li></ul></main><footer>Updated documentation for NovaOryn 0.29.0 SDK source.</footer></body></html>

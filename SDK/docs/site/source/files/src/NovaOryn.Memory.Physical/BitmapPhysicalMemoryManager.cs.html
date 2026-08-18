@@ -1,0 +1,327 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Memory.Physical/BitmapPhysicalMemoryManager.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Memory.Physical/BitmapPhysicalMemoryManager.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Core;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Memory;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Memory.Physical;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;summary&gt;Allocates contiguous physical frames from a one-bit-per-frame ownership bitmap.&lt;/summary&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;nova.when&gt;Choose for predictable metadata and simple frame-state checks when the physical address space is not excessively sparse.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>/// &lt;nova.depends&gt;NovaOryn.Memory.Physical.Contracts and NormalisedMemoryMap&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>[SupportedArchitecture(SupportedArchitecture.All)]</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>[BootStage(BootStage.ManagedBootstrap)]</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>public unsafe struct BitmapPhysicalMemoryManager : IPhysicalMemoryManager</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>{</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    private byte* _bitmap;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    private AllocationRecord* _allocations;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    private ReservationRecord* _reservations;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    private ulong _minimumFrame;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    private ulong _frameSpan;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    private ulong _totalManagedPages;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    private int _allocationCapacity;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    private int _reservationCapacity;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    private ulong _nextToken;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    private bool _initialized;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a></span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    /// &lt;summary&gt;Gets the bitmap allocator methodology.&lt;/summary&gt;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    /// &lt;nova.when&gt;Use for allocator-selection diagnostics.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    public readonly PhysicalAllocatorMethod Method =&gt; PhysicalAllocatorMethod.Bitmap;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    /// &lt;summary&gt;Gets whether the manager has been initialised.&lt;/summary&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    /// &lt;nova.when&gt;Check before indirect allocation through a stored manager instance.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    public readonly bool IsInitialized =&gt; _initialized;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    /// &lt;summary&gt;Gets the fixed NovaOryn physical frame size.&lt;/summary&gt;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    /// &lt;nova.when&gt;Use for frame-to-byte conversions.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    public readonly ulong PageSize =&gt; PhysicalAllocatorInternals.PageSize;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a></span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    /// &lt;summary&gt;Calculates bitmap and record-table metadata required for a normalised map.&lt;/summary&gt;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;nova.when&gt;Call before reserving caller-owned bitmap metadata memory.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    /// &lt;nova.depends&gt;Highest and lowest immediately allocatable physical frame&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the sparse frame span and record tables can be represented.&lt;/returns&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    /// &lt;example&gt;&lt;code&gt;bool sized = BitmapPhysicalMemoryManager.TryGetRequiredWorkspaceBytes(map, 128, 32, out ulong bytes);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    public static bool TryGetRequiredWorkspaceBytes(NormalisedMemoryMap map, int allocationCapacity, int reservationCapacity, out ulong bytes)</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    {</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>        bytes = 0;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>        if (!PhysicalAllocatorInternals.TryGetManagedFrameBounds(map, out ulong minimumFrame, out ulong maximumFrameExclusive, out _, out _)) return false;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>        ulong span = maximumFrameExclusive - minimumFrame;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>        if (span &gt; ulong.MaxValue - 7UL) return false;</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>        ulong bitmapBytes = (span + 7UL) / 8UL;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>        if (!PhysicalAllocatorInternals.TryAlignWorkspaceBytes(bitmapBytes, out ulong primaryBytes)) return false;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>        return PhysicalAllocatorInternals.TryWorkspaceBytes(primaryBytes, allocationCapacity, reservationCapacity, out bytes);</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    }</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a></span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    /// &lt;summary&gt;Initialises the bitmap to unavailable, then marks only normalised immediately-allocatable frames free.&lt;/summary&gt;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    /// &lt;nova.when&gt;Call once after memory-map normalisation and before virtual-memory construction.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    /// &lt;nova.depends&gt;Caller-owned PhysicalAllocatorWorkspace&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the bitmap and bounded record tables fit the workspace.&lt;/returns&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;example&gt;&lt;code&gt;bool ready = allocator.TryInitialize(map, workspace, 128, 32, out PhysicalMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    public bool TryInitialize(NormalisedMemoryMap map, PhysicalAllocatorWorkspace workspace, int allocationCapacity, int reservationCapacity, out PhysicalMemoryStatus status)</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    {</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>        status = PhysicalMemoryStatus.InvalidParameter;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>        if (_initialized)</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>        {</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>            status = PhysicalMemoryStatus.AlreadyInitialized;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>            return false;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>        }</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>        if (!PhysicalAllocatorInternals.TryGetManagedFrameBounds(map, out ulong minimumFrame, out ulong maximumFrameExclusive, out ulong managedPages, out _)) return false;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>        if (!TryGetRequiredWorkspaceBytes(map, allocationCapacity, reservationCapacity, out ulong requiredBytes)) return false;</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>        ulong span = maximumFrameExclusive - minimumFrame;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>        ulong bitmapBytes = (span + 7UL) / 8UL;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>        if (!PhysicalAllocatorInternals.TryAlignWorkspaceBytes(bitmapBytes, out ulong primaryBytes)) return false;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        if (workspace.ByteLength &lt; requiredBytes || bitmapBytes &gt; long.MaxValue || !PhysicalAllocatorInternals.TryPartition(workspace, primaryBytes, allocationCapacity, reservationCapacity, out byte* primary, out AllocationRecord* allocations, out ReservationRecord* reservations))</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>        {</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>            status = PhysicalMemoryStatus.WorkspaceTooSmall;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>            return false;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>        }</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a></span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>        _bitmap = primary;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>        _allocations = allocations;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>        _reservations = reservations;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>        _minimumFrame = minimumFrame;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>        _frameSpan = span;</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>        _totalManagedPages = managedPages;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        _allocationCapacity = allocationCapacity;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>        _reservationCapacity = reservationCapacity;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>        _nextToken = 0;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>        for (ulong index = 0; index &lt; bitmapBytes; index++) _bitmap[index] = 0xFF;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>        ClearRecords();</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a></span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>        for (int index = 0; index &lt; map.Count; index++)</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>        {</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>            if (!map.TryGetDescriptor(index, out MemoryDescriptor descriptor)) return false;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>            if (descriptor.Availability != MemoryAvailability.AvailableAfterExitBootServices) continue;</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>            ulong startFrame = descriptor.PhysicalStart.Value / PageSize;</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>            SetRange(startFrame, descriptor.PageCount, false);</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>        }</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>        _initialized = true;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>        status = PhysicalMemoryStatus.Success;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>        return true;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>    }</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a></span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>    /// &lt;summary&gt;Allocates an exact contiguous run of free bitmap frames.&lt;/summary&gt;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    /// &lt;nova.when&gt;Use for arbitrary page counts with page or power-of-two alignment constraints.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>    /// &lt;nova.depends&gt;Successful TryInitialize&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when a matching free run is marked owned and recorded.&lt;/returns&gt;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    /// &lt;example&gt;&lt;code&gt;bool ok = allocator.TryAllocate(request, out PhysicalAllocation allocation, out PhysicalMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    public bool TryAllocate(PhysicalAllocationRequest request, out PhysicalAllocation allocation, out PhysicalMemoryStatus status)</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    {</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>        allocation = default;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>        status = PhysicalMemoryStatus.NotInitialized;</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>        if (!_initialized) return false;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>        if (!PhysicalAllocatorInternals.TryGetRequestFrameWindow(request, out ulong minimumFrame, out ulong maximumFrameExclusive))</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>        {</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>            status = PhysicalMemoryStatus.InvalidParameter;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>            return false;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>        }</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>        if (!PhysicalAllocatorInternals.TryFindFreeAllocationRecord(_allocations, _allocationCapacity, out int recordIndex))</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>        {</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>            status = PhysicalMemoryStatus.RecordCapacityExhausted;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>            return false;</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>        }</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a></span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>        ulong spanEnd = _minimumFrame + _frameSpan;</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>        ulong scanStart = minimumFrame &gt; _minimumFrame ? minimumFrame : _minimumFrame;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>        ulong scanEnd = maximumFrameExclusive &lt; spanEnd ? maximumFrameExclusive : spanEnd;</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>        if (scanStart &lt; scanEnd &amp;&amp; PhysicalAllocatorInternals.TryAlignFrame(scanStart, request.AlignmentPages, out ulong candidate))</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>        {</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>            while (candidate &lt; scanEnd)</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>            {</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>                if (PhysicalAllocatorInternals.FitsWindow(candidate, request.PageCount, scanStart, scanEnd) &amp;&amp; IsRangeFree(candidate, request.PageCount))</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>                {</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>                    SetRange(candidate, request.PageCount, true);</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>                    ref AllocationRecord record = ref _allocations[recordIndex];</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>                    record.Token = PhysicalAllocatorInternals.NextToken(ref _nextToken);</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>                    record.StartFrame = candidate;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>                    record.RequestedPages = request.PageCount;</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>                    record.ActualPages = request.PageCount;</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>                    record.Purpose = request.Purpose;</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>                    record.Active = 1;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>                    allocation = PhysicalAllocatorInternals.CreateAllocation(ref record);</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>                    status = PhysicalMemoryStatus.Success;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>                    return true;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>                }</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>                if (candidate &gt; ulong.MaxValue - request.AlignmentPages) break;</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>                candidate += request.AlignmentPages;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>            }</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>        }</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>        status = HasAnyFreeRun(request.PageCount) ? PhysicalMemoryStatus.AddressConstraintUnsatisfied : PhysicalMemoryStatus.OutOfMemory;</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>        return false;</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>    }</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a></span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>    /// &lt;summary&gt;Releases a live bitmap allocation after validating its opaque token and exact range.&lt;/summary&gt;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>    /// &lt;nova.when&gt;Call when the allocation owner has stopped using the pages.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>    /// &lt;nova.depends&gt;Allocation token returned by this manager&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the live allocation is cleared exactly once.&lt;/returns&gt;</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>    /// &lt;example&gt;&lt;code&gt;bool ok = allocator.TryRelease(allocation, out PhysicalMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>    public bool TryRelease(PhysicalAllocation allocation, out PhysicalMemoryStatus status)</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>    {</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>        status = PhysicalMemoryStatus.NotInitialized;</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>        if (!_initialized) return false;</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>        if (!PhysicalAllocatorInternals.TryFindAllocationRecord(_allocations, _allocationCapacity, allocation, out int recordIndex))</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>        {</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>            status = PhysicalMemoryStatus.AllocationNotFound;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>            return false;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>        }</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>        AllocationRecord record = _allocations[recordIndex];</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>        SetRange(record.StartFrame, record.ActualPages, false);</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>        _allocations[recordIndex].Active = 0;</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>        status = PhysicalMemoryStatus.Success;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>        return true;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>    }</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a></span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>    /// &lt;summary&gt;Marks an exact currently-free bitmap range reserved.&lt;/summary&gt;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>    /// &lt;nova.when&gt;Use for late fixed-range exclusions such as hardware or metadata discoveries.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>    /// &lt;nova.depends&gt;PhysicalFrameRange&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when every frame is managed and currently free.&lt;/returns&gt;</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>    /// &lt;example&gt;&lt;code&gt;bool ok = allocator.TryReserve(range, PhysicalMemoryPurpose.Metadata, out PhysicalReservation reservation, out PhysicalMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>    public bool TryReserve(PhysicalFrameRange range, PhysicalMemoryPurpose purpose, out PhysicalReservation reservation, out PhysicalMemoryStatus status)</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>    {</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>        reservation = default;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>        status = PhysicalMemoryStatus.NotInitialized;</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>        if (!_initialized) return false;</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>        if (range.PageCount == 0 || (range.Start.Value &amp; 0xFFFUL) != 0)</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>        {</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>            status = PhysicalMemoryStatus.InvalidParameter;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>            return false;</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>        }</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>        if (!PhysicalAllocatorInternals.TryFindFreeReservationRecord(_reservations, _reservationCapacity, out int recordIndex))</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>        {</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>            status = PhysicalMemoryStatus.RecordCapacityExhausted;</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>            return false;</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>        }</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>        ulong startFrame = range.Start.Value / PageSize;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>        if (!IsRangeFree(startFrame, range.PageCount))</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>        {</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>            status = PhysicalMemoryStatus.RangeNotFree;</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>            return false;</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>        }</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>        SetRange(startFrame, range.PageCount, true);</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>        ref ReservationRecord record = ref _reservations[recordIndex];</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>        record.Token = PhysicalAllocatorInternals.NextToken(ref _nextToken);</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>        record.StartFrame = startFrame;</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>        record.PageCount = range.PageCount;</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>        record.Purpose = purpose;</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>        record.Active = 1;</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>        reservation = PhysicalAllocatorInternals.CreateReservation(ref record);</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>        status = PhysicalMemoryStatus.Success;</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>        return true;</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>    }</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a></span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>    /// &lt;summary&gt;Releases a live fixed reservation back to the bitmap.&lt;/summary&gt;</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>    /// &lt;nova.when&gt;Call only after the reserving subsystem has made the pages reusable.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>    /// &lt;nova.depends&gt;Reservation token returned by this manager&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the reservation token is live and released exactly once.&lt;/returns&gt;</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>    /// &lt;example&gt;&lt;code&gt;bool ok = allocator.TryReleaseReservation(reservation, out PhysicalMemoryStatus status);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>    public bool TryReleaseReservation(PhysicalReservation reservation, out PhysicalMemoryStatus status)</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>    {</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>        status = PhysicalMemoryStatus.NotInitialized;</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>        if (!_initialized) return false;</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a>        if (!PhysicalAllocatorInternals.TryFindReservationRecord(_reservations, _reservationCapacity, reservation, out int recordIndex))</span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>        {</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>            status = PhysicalMemoryStatus.ReservationNotFound;</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>            return false;</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>        }</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>        ReservationRecord record = _reservations[recordIndex];</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>        SetRange(record.StartFrame, record.PageCount, false);</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a>        _reservations[recordIndex].Active = 0;</span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>        status = PhysicalMemoryStatus.Success;</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>        return true;</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>    }</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a></span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>    /// &lt;summary&gt;Returns current bitmap allocator page accounting and largest free run.&lt;/summary&gt;</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>    /// &lt;nova.when&gt;Use for diagnostics and physical-memory pressure reporting.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>    /// &lt;nova.depends&gt;Current bitmap and record tables&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>    /// &lt;returns&gt;A current physical-memory statistics snapshot.&lt;/returns&gt;</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>    /// &lt;example&gt;&lt;code&gt;PhysicalMemoryStatistics statistics = allocator.GetStatistics();&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>    public readonly PhysicalMemoryStatistics GetStatistics()</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>    {</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>        if (!_initialized) return default;</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>        ulong freePages = 0;</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a>        ulong largest = 0;</span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a>        ulong run = 0;</span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a>        for (ulong offset = 0; offset &lt; _frameSpan; offset++)</span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a>        {</span>
+<span class="source-line" id="L241"><a class="line-number" href="#L241">241</a>            if (!IsUsedOffset(offset))</span>
+<span class="source-line" id="L242"><a class="line-number" href="#L242">242</a>            {</span>
+<span class="source-line" id="L243"><a class="line-number" href="#L243">243</a>                freePages++;</span>
+<span class="source-line" id="L244"><a class="line-number" href="#L244">244</a>                run++;</span>
+<span class="source-line" id="L245"><a class="line-number" href="#L245">245</a>                if (run &gt; largest) largest = run;</span>
+<span class="source-line" id="L246"><a class="line-number" href="#L246">246</a>            }</span>
+<span class="source-line" id="L247"><a class="line-number" href="#L247">247</a>            else run = 0;</span>
+<span class="source-line" id="L248"><a class="line-number" href="#L248">248</a>        }</span>
+<span class="source-line" id="L249"><a class="line-number" href="#L249">249</a>        CountRecords(out ulong allocatedPages, out ulong reservedPages, out int allocations, out int reservations);</span>
+<span class="source-line" id="L250"><a class="line-number" href="#L250">250</a>        return PhysicalMemoryStatistics.Create(_totalManagedPages, freePages, allocatedPages, reservedPages, largest, allocations, reservations);</span>
+<span class="source-line" id="L251"><a class="line-number" href="#L251">251</a>    }</span>
+<span class="source-line" id="L252"><a class="line-number" href="#L252">252</a></span>
+<span class="source-line" id="L253"><a class="line-number" href="#L253">253</a>    private readonly bool IsRangeFree(ulong startFrame, ulong pageCount)</span>
+<span class="source-line" id="L254"><a class="line-number" href="#L254">254</a>    {</span>
+<span class="source-line" id="L255"><a class="line-number" href="#L255">255</a>        if (pageCount == 0 || startFrame &lt; _minimumFrame) return false;</span>
+<span class="source-line" id="L256"><a class="line-number" href="#L256">256</a>        ulong offset = startFrame - _minimumFrame;</span>
+<span class="source-line" id="L257"><a class="line-number" href="#L257">257</a>        if (offset &gt; _frameSpan || pageCount &gt; _frameSpan - offset) return false;</span>
+<span class="source-line" id="L258"><a class="line-number" href="#L258">258</a>        for (ulong index = 0; index &lt; pageCount; index++)</span>
+<span class="source-line" id="L259"><a class="line-number" href="#L259">259</a>        {</span>
+<span class="source-line" id="L260"><a class="line-number" href="#L260">260</a>            if (IsUsedOffset(offset + index)) return false;</span>
+<span class="source-line" id="L261"><a class="line-number" href="#L261">261</a>        }</span>
+<span class="source-line" id="L262"><a class="line-number" href="#L262">262</a>        return true;</span>
+<span class="source-line" id="L263"><a class="line-number" href="#L263">263</a>    }</span>
+<span class="source-line" id="L264"><a class="line-number" href="#L264">264</a></span>
+<span class="source-line" id="L265"><a class="line-number" href="#L265">265</a>    private readonly bool HasAnyFreeRun(ulong pageCount)</span>
+<span class="source-line" id="L266"><a class="line-number" href="#L266">266</a>    {</span>
+<span class="source-line" id="L267"><a class="line-number" href="#L267">267</a>        ulong run = 0;</span>
+<span class="source-line" id="L268"><a class="line-number" href="#L268">268</a>        for (ulong offset = 0; offset &lt; _frameSpan; offset++)</span>
+<span class="source-line" id="L269"><a class="line-number" href="#L269">269</a>        {</span>
+<span class="source-line" id="L270"><a class="line-number" href="#L270">270</a>            if (!IsUsedOffset(offset))</span>
+<span class="source-line" id="L271"><a class="line-number" href="#L271">271</a>            {</span>
+<span class="source-line" id="L272"><a class="line-number" href="#L272">272</a>                run++;</span>
+<span class="source-line" id="L273"><a class="line-number" href="#L273">273</a>                if (run &gt;= pageCount) return true;</span>
+<span class="source-line" id="L274"><a class="line-number" href="#L274">274</a>            }</span>
+<span class="source-line" id="L275"><a class="line-number" href="#L275">275</a>            else run = 0;</span>
+<span class="source-line" id="L276"><a class="line-number" href="#L276">276</a>        }</span>
+<span class="source-line" id="L277"><a class="line-number" href="#L277">277</a>        return false;</span>
+<span class="source-line" id="L278"><a class="line-number" href="#L278">278</a>    }</span>
+<span class="source-line" id="L279"><a class="line-number" href="#L279">279</a></span>
+<span class="source-line" id="L280"><a class="line-number" href="#L280">280</a>    private readonly bool IsUsedOffset(ulong offset)</span>
+<span class="source-line" id="L281"><a class="line-number" href="#L281">281</a>    {</span>
+<span class="source-line" id="L282"><a class="line-number" href="#L282">282</a>        ulong byteIndex = offset &gt;&gt; 3;</span>
+<span class="source-line" id="L283"><a class="line-number" href="#L283">283</a>        int bit = (int)(offset &amp; 7UL);</span>
+<span class="source-line" id="L284"><a class="line-number" href="#L284">284</a>        return (_bitmap[byteIndex] &amp; (1 &lt;&lt; bit)) != 0;</span>
+<span class="source-line" id="L285"><a class="line-number" href="#L285">285</a>    }</span>
+<span class="source-line" id="L286"><a class="line-number" href="#L286">286</a></span>
+<span class="source-line" id="L287"><a class="line-number" href="#L287">287</a>    private void SetRange(ulong startFrame, ulong pageCount, bool used)</span>
+<span class="source-line" id="L288"><a class="line-number" href="#L288">288</a>    {</span>
+<span class="source-line" id="L289"><a class="line-number" href="#L289">289</a>        ulong offset = startFrame - _minimumFrame;</span>
+<span class="source-line" id="L290"><a class="line-number" href="#L290">290</a>        for (ulong index = 0; index &lt; pageCount; index++)</span>
+<span class="source-line" id="L291"><a class="line-number" href="#L291">291</a>        {</span>
+<span class="source-line" id="L292"><a class="line-number" href="#L292">292</a>            ulong current = offset + index;</span>
+<span class="source-line" id="L293"><a class="line-number" href="#L293">293</a>            ulong byteIndex = current &gt;&gt; 3;</span>
+<span class="source-line" id="L294"><a class="line-number" href="#L294">294</a>            byte mask = (byte)(1 &lt;&lt; (int)(current &amp; 7UL));</span>
+<span class="source-line" id="L295"><a class="line-number" href="#L295">295</a>            if (used) _bitmap[byteIndex] |= mask;</span>
+<span class="source-line" id="L296"><a class="line-number" href="#L296">296</a>            else _bitmap[byteIndex] &amp;= (byte)~mask;</span>
+<span class="source-line" id="L297"><a class="line-number" href="#L297">297</a>        }</span>
+<span class="source-line" id="L298"><a class="line-number" href="#L298">298</a>    }</span>
+<span class="source-line" id="L299"><a class="line-number" href="#L299">299</a></span>
+<span class="source-line" id="L300"><a class="line-number" href="#L300">300</a>    private void ClearRecords()</span>
+<span class="source-line" id="L301"><a class="line-number" href="#L301">301</a>    {</span>
+<span class="source-line" id="L302"><a class="line-number" href="#L302">302</a>        for (int index = 0; index &lt; _allocationCapacity; index++) _allocations[index].Active = 0;</span>
+<span class="source-line" id="L303"><a class="line-number" href="#L303">303</a>        for (int index = 0; index &lt; _reservationCapacity; index++) _reservations[index].Active = 0;</span>
+<span class="source-line" id="L304"><a class="line-number" href="#L304">304</a>    }</span>
+<span class="source-line" id="L305"><a class="line-number" href="#L305">305</a></span>
+<span class="source-line" id="L306"><a class="line-number" href="#L306">306</a>    private readonly void CountRecords(out ulong allocatedPages, out ulong reservedPages, out int allocations, out int reservations)</span>
+<span class="source-line" id="L307"><a class="line-number" href="#L307">307</a>    {</span>
+<span class="source-line" id="L308"><a class="line-number" href="#L308">308</a>        allocatedPages = 0;</span>
+<span class="source-line" id="L309"><a class="line-number" href="#L309">309</a>        reservedPages = 0;</span>
+<span class="source-line" id="L310"><a class="line-number" href="#L310">310</a>        allocations = 0;</span>
+<span class="source-line" id="L311"><a class="line-number" href="#L311">311</a>        reservations = 0;</span>
+<span class="source-line" id="L312"><a class="line-number" href="#L312">312</a>        for (int index = 0; index &lt; _allocationCapacity; index++)</span>
+<span class="source-line" id="L313"><a class="line-number" href="#L313">313</a>        {</span>
+<span class="source-line" id="L314"><a class="line-number" href="#L314">314</a>            if (_allocations[index].Active == 0) continue;</span>
+<span class="source-line" id="L315"><a class="line-number" href="#L315">315</a>            allocatedPages += _allocations[index].ActualPages;</span>
+<span class="source-line" id="L316"><a class="line-number" href="#L316">316</a>            allocations++;</span>
+<span class="source-line" id="L317"><a class="line-number" href="#L317">317</a>        }</span>
+<span class="source-line" id="L318"><a class="line-number" href="#L318">318</a>        for (int index = 0; index &lt; _reservationCapacity; index++)</span>
+<span class="source-line" id="L319"><a class="line-number" href="#L319">319</a>        {</span>
+<span class="source-line" id="L320"><a class="line-number" href="#L320">320</a>            if (_reservations[index].Active == 0) continue;</span>
+<span class="source-line" id="L321"><a class="line-number" href="#L321">321</a>            reservedPages += _reservations[index].PageCount;</span>
+<span class="source-line" id="L322"><a class="line-number" href="#L322">322</a>            reservations++;</span>
+<span class="source-line" id="L323"><a class="line-number" href="#L323">323</a>        }</span>
+<span class="source-line" id="L324"><a class="line-number" href="#L324">324</a>    }</span>
+<span class="source-line" id="L325"><a class="line-number" href="#L325">325</a>}</span>
+<span class="source-line" id="L326"><a class="line-number" href="#L326">326</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

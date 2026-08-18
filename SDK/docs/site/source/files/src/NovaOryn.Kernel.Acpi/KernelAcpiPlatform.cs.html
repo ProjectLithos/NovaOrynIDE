@@ -1,0 +1,322 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Acpi/KernelAcpiPlatform.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Acpi/KernelAcpiPlatform.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Kernel.Internal.X64;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Kernel.Acpi;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;summary&gt;Describes one ACPI Generic Address Structure.&lt;/summary&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>public readonly struct AcpiGenericAddress</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>{</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    internal AcpiGenericAddress(Byte addressSpace, Byte bitWidth, Byte bitOffset, Byte accessSize, UInt64 address)</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    { AddressSpace = addressSpace; BitWidth = bitWidth; BitOffset = bitOffset; AccessSize = accessSize; Address = address; }</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    /// &lt;summary&gt;Gets the ACPI address-space identifier.&lt;/summary&gt;</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    public Byte AddressSpace { get; }</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    /// &lt;summary&gt;Gets the register width in bits.&lt;/summary&gt;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    public Byte BitWidth { get; }</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    /// &lt;summary&gt;Gets the register bit offset.&lt;/summary&gt;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    public Byte BitOffset { get; }</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    /// &lt;summary&gt;Gets the ACPI access-size encoding.&lt;/summary&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    public Byte AccessSize { get; }</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    /// &lt;summary&gt;Gets the physical memory address or I/O port number.&lt;/summary&gt;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    public UInt64 Address { get; }</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    /// &lt;summary&gt;Gets whether the structure names a usable register.&lt;/summary&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    public Boolean IsPresent() =&gt; Address != 0UL &amp;&amp; (AddressSpace == 0U || AddressSpace == 1U);</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>}</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a></span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>/// &lt;summary&gt;Summarizes platform topology discovered from MADT.&lt;/summary&gt;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>public readonly struct AcpiMadtCapabilities</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>{</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    internal AcpiMadtCapabilities(Boolean initialized, UInt32 processors, UInt32 ioApics, UInt32 overrides, UInt64 localApic)</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    { Initialized = initialized; ProcessorCount = processors; IoApicCount = ioApics; InterruptOverrideCount = overrides; LocalApicAddress = localApic; }</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    /// &lt;summary&gt;Gets whether a valid MADT was discovered.&lt;/summary&gt;</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    public Boolean Initialized { get; }</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    /// &lt;summary&gt;Gets the enabled processor count.&lt;/summary&gt;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    public UInt32 ProcessorCount { get; }</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    /// &lt;summary&gt;Gets the I/O APIC count.&lt;/summary&gt;</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    public UInt32 IoApicCount { get; }</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    /// &lt;summary&gt;Gets the interrupt-source override count.&lt;/summary&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    public UInt32 InterruptOverrideCount { get; }</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    /// &lt;summary&gt;Gets the local APIC physical base.&lt;/summary&gt;</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    public UInt64 LocalApicAddress { get; }</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>}</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a></span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>/// &lt;summary&gt;Provides the MADT platform-driver view over ACPI topology.&lt;/summary&gt;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>public static class KernelAcpiMadt</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>{</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    /// &lt;summary&gt;Gets current MADT capabilities.&lt;/summary&gt;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    public static AcpiMadtCapabilities GetCapabilities()</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    {</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        Boolean present = KernelAcpi.TryGetTable(KernelAcpi.ApicSignature, out _, out UInt32 length) &amp;&amp; length &gt;= 44U;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>        KernelAcpi.TryGetLocalApicAddress(out UInt64 lapic);</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>        return new AcpiMadtCapabilities(present, KernelAcpi.GetProcessorCount(), KernelAcpi.GetIoApicCount(), KernelAcpi.GetInterruptOverrideCount(), lapic);</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    }</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    /// &lt;summary&gt;Gets one enabled processor.&lt;/summary&gt;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    public static Boolean TryGetProcessor(UInt32 index, out AcpiProcessorInfo value) =&gt; KernelAcpi.TryGetProcessor(index, out value);</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    /// &lt;summary&gt;Gets one I/O APIC.&lt;/summary&gt;</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    public static Boolean TryGetIoApic(UInt32 index, out AcpiIoApicInfo value) =&gt; KernelAcpi.TryGetIoApic(index, out value);</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    /// &lt;summary&gt;Gets one interrupt-source override.&lt;/summary&gt;</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    public static Boolean TryGetInterruptOverride(UInt32 index, out AcpiInterruptOverrideInfo value) =&gt; KernelAcpi.TryGetInterruptOverride(index, out value);</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>}</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a></span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>/// &lt;summary&gt;Provides the MCFG PCI Express platform-driver view.&lt;/summary&gt;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>public static class KernelAcpiMcfg</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>{</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    /// &lt;summary&gt;Gets the number of validated ECAM allocations.&lt;/summary&gt;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    public static UInt32 GetSegmentCount() =&gt; KernelAcpi.GetPciEcamCount();</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    /// &lt;summary&gt;Gets one ECAM allocation.&lt;/summary&gt;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    public static Boolean TryGetSegment(UInt32 index, out AcpiPciEcamInfo value) =&gt; KernelAcpi.TryGetPciEcam(index, out value);</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>}</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a></span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>/// &lt;summary&gt;Provides the HPET platform-driver view.&lt;/summary&gt;</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>public static class KernelAcpiHpet</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>{</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    /// &lt;summary&gt;Gets the firmware HPET description.&lt;/summary&gt;</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    public static Boolean TryGetDevice(out AcpiHpetInfo value) =&gt; KernelAcpi.TryGetHpet(out value);</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>}</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a></span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>/// &lt;summary&gt;Describes the Fixed ACPI Description Table power-management registers.&lt;/summary&gt;</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>public readonly struct AcpiFadtInfo</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>{</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    internal AcpiFadtInfo(UInt32 flags, UInt16 sci, UInt32 smiCommand, Byte acpiEnable, Byte acpiDisable, Byte pm1EventLength, Byte pm1ControlLength,</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        AcpiGenericAddress pm1aEvent, AcpiGenericAddress pm1bEvent, AcpiGenericAddress pm1aControl, AcpiGenericAddress pm1bControl,</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>        AcpiGenericAddress reset, Byte resetValue, UInt64 dsdt, Byte centuryRegister)</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>    { Flags = flags; SciInterrupt = sci; SmiCommandPort = smiCommand; AcpiEnableValue = acpiEnable; AcpiDisableValue = acpiDisable; Pm1EventLength = pm1EventLength; Pm1ControlLength = pm1ControlLength; Pm1aEvent = pm1aEvent; Pm1bEvent = pm1bEvent; Pm1aControl = pm1aControl; Pm1bControl = pm1bControl; ResetRegister = reset; ResetValue = resetValue; DsdtAddress = dsdt; CenturyRegister = centuryRegister; }</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>    /// &lt;summary&gt;Gets the FADT feature flags.&lt;/summary&gt;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>    public UInt32 Flags { get; }</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>    /// &lt;summary&gt;Gets the ACPI SCI interrupt.&lt;/summary&gt;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>    public UInt16 SciInterrupt { get; }</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    /// &lt;summary&gt;Gets the SMI command I/O port.&lt;/summary&gt;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>    public UInt32 SmiCommandPort { get; }</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>    /// &lt;summary&gt;Gets the firmware ACPI-enable command value.&lt;/summary&gt;</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>    public Byte AcpiEnableValue { get; }</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>    /// &lt;summary&gt;Gets the firmware ACPI-disable command value.&lt;/summary&gt;</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    public Byte AcpiDisableValue { get; }</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>    /// &lt;summary&gt;Gets the PM1 event-block byte length.&lt;/summary&gt;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>    public Byte Pm1EventLength { get; }</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>    /// &lt;summary&gt;Gets the PM1 control-block byte length.&lt;/summary&gt;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>    public Byte Pm1ControlLength { get; }</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>    /// &lt;summary&gt;Gets PM1a event registers.&lt;/summary&gt;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>    public AcpiGenericAddress Pm1aEvent { get; }</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    /// &lt;summary&gt;Gets PM1b event registers.&lt;/summary&gt;</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>    public AcpiGenericAddress Pm1bEvent { get; }</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    /// &lt;summary&gt;Gets PM1a control registers.&lt;/summary&gt;</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    public AcpiGenericAddress Pm1aControl { get; }</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    /// &lt;summary&gt;Gets PM1b control registers.&lt;/summary&gt;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    public AcpiGenericAddress Pm1bControl { get; }</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    /// &lt;summary&gt;Gets the FADT reset register.&lt;/summary&gt;</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    public AcpiGenericAddress ResetRegister { get; }</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>    /// &lt;summary&gt;Gets the FADT reset value.&lt;/summary&gt;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>    public Byte ResetValue { get; }</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>    /// &lt;summary&gt;Gets the DSDT physical address.&lt;/summary&gt;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>    public UInt64 DsdtAddress { get; }</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>    /// &lt;summary&gt;Gets the CMOS century register index advertised by ACPI, or zero when absent.&lt;/summary&gt;</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>    public Byte CenturyRegister { get; }</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>    /// &lt;summary&gt;Gets whether ACPI reset is advertised.&lt;/summary&gt;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>    public Boolean SupportsReset() =&gt; (Flags &amp; (1U &lt;&lt; 10)) != 0U &amp;&amp; ResetRegister.IsPresent();</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>}</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a></span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>/// &lt;summary&gt;Parses and exposes the Fixed ACPI Description Table.&lt;/summary&gt;</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>public static unsafe class KernelAcpiFadt</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>{</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>    private static Boolean _initialized;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>    private static AcpiFadtInfo _info;</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>    /// &lt;summary&gt;Initializes the FADT platform driver.&lt;/summary&gt;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>    public static Boolean Initialize()</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    {</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>        if (_initialized) return true;</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>        if (!KernelAcpi.TryGetTable(KernelAcpi.FadtSignature, out UInt64 address, out UInt32 length) || length &lt; 116U) return false;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>        Byte* t = (Byte*)address;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>        UInt64 dsdt = Read32(t + 40U);</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>        if (length &gt;= 148U) { UInt64 x = Read64(t + 140U); if (x != 0UL) dsdt = x; }</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>        AcpiGenericAddress pm1aEvent = LegacyGas(Read32(t + 56U), (Byte)1U, t[88]);</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>        AcpiGenericAddress pm1bEvent = LegacyGas(Read32(t + 60U), (Byte)1U, t[88]);</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>        AcpiGenericAddress pm1aControl = LegacyGas(Read32(t + 64U), (Byte)1U, t[89]);</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>        AcpiGenericAddress pm1bControl = LegacyGas(Read32(t + 68U), (Byte)1U, t[89]);</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>        if (length &gt;= 196U)</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>        {</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>            AcpiGenericAddress x1e = ReadGas(t + 148U); if (x1e.IsPresent()) pm1aEvent = x1e;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>            AcpiGenericAddress x2e = ReadGas(t + 160U); if (x2e.IsPresent()) pm1bEvent = x2e;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>            AcpiGenericAddress x1c = ReadGas(t + 172U); if (x1c.IsPresent()) pm1aControl = x1c;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>            AcpiGenericAddress x2c = ReadGas(t + 184U); if (x2c.IsPresent()) pm1bControl = x2c;</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>        }</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>        AcpiGenericAddress reset = length &gt;= 129U ? ReadGas(t + 116U) : default;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>        Byte resetValue = length &gt;= 129U ? t[128] : (Byte)0U;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>        _info = new AcpiFadtInfo(Read32(t + 112U), Read16(t + 46U), Read32(t + 48U), t[52], t[53], t[88], t[89], pm1aEvent, pm1bEvent, pm1aControl, pm1bControl, reset, resetValue, dsdt, length &gt; 108U ? t[108] : (Byte)0U);</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>        _initialized = true;</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>        return true;</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>    }</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>    /// &lt;summary&gt;Gets whether FADT initialization succeeded.&lt;/summary&gt;</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>    public static Boolean IsInitialized() =&gt; _initialized;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>    /// &lt;summary&gt;Gets the parsed FADT information.&lt;/summary&gt;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>    public static AcpiFadtInfo GetInfo() =&gt; _info;</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>    internal static AcpiGenericAddress ReadGas(Byte* p) =&gt; new AcpiGenericAddress(p[0], p[1], p[2], p[3], Read64(p + 4U));</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>    private static AcpiGenericAddress LegacyGas(UInt32 address, Byte space, Byte bytes) =&gt; address == 0U ? default : new AcpiGenericAddress(space, (Byte)(bytes * 8U), (Byte)0, bytes == 1U ? (Byte)1 : bytes == 2U ? (Byte)2 : (Byte)3, address);</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>    private static UInt16 Read16(Byte* p) =&gt; (UInt16)(p[0] | ((UInt16)p[1] &lt;&lt; 8));</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>    private static UInt32 Read32(Byte* p) =&gt; (UInt32)(p[0] | ((UInt32)p[1] &lt;&lt; 8) | ((UInt32)p[2] &lt;&lt; 16) | ((UInt32)p[3] &lt;&lt; 24));</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>    private static UInt64 Read64(Byte* p) =&gt; (UInt64)Read32(p) | ((UInt64)Read32(p + 4) &lt;&lt; 32);</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>}</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a></span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>/// &lt;summary&gt;Describes an ECDT-discovered ACPI Embedded Controller.&lt;/summary&gt;</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>public readonly struct AcpiEcInfo</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>{</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>    internal AcpiEcInfo(AcpiGenericAddress control, AcpiGenericAddress data, UInt32 uid, Byte gpe)</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>    { Control = control; Data = data; UniqueId = uid; Gpe = gpe; }</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>    /// &lt;summary&gt;Gets the EC command/status register.&lt;/summary&gt;</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>    public AcpiGenericAddress Control { get; }</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>    /// &lt;summary&gt;Gets the EC data register.&lt;/summary&gt;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>    public AcpiGenericAddress Data { get; }</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>    /// &lt;summary&gt;Gets the EC UID.&lt;/summary&gt;</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>    public UInt32 UniqueId { get; }</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>    /// &lt;summary&gt;Gets the EC GPE number.&lt;/summary&gt;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>    public Byte Gpe { get; }</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>}</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a></span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>/// &lt;summary&gt;Implements the ACPI Embedded Controller byte command protocol for ECDT-described controllers.&lt;/summary&gt;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>public static unsafe class KernelAcpiEc</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>{</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>    private const UInt32 EcdtSignature = 0x54444345U;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>    private const Byte ReadCommand = 0x80;</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>    private const Byte WriteCommand = 0x81;</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>    private const Byte OutputBufferFull = 0x01;</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>    private const Byte InputBufferFull = 0x02;</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>    private const UInt32 WaitLimit = 1000000U;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>    private static Boolean _initialized;</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>    private static AcpiEcInfo _info;</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>    /// &lt;summary&gt;Initializes the first ECDT-described embedded controller.&lt;/summary&gt;</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>    public static Boolean Initialize()</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>    {</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>        if (_initialized) return true;</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>        if (!KernelAcpi.TryGetTable(EcdtSignature, out UInt64 address, out UInt32 length) || length &lt; 65U) return false;</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>        Byte* t = (Byte*)address;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>        AcpiGenericAddress control = KernelAcpiFadt.ReadGas(t + 36U);</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>        AcpiGenericAddress data = KernelAcpiFadt.ReadGas(t + 48U);</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>        if (!control.IsPresent() || !data.IsPresent()) return false;</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>        _info = new AcpiEcInfo(control, data, Read32(t + 60U), t[64]);</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>        _initialized = true;</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>        return true;</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>    }</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>    /// &lt;summary&gt;Gets whether an ECDT embedded controller is available.&lt;/summary&gt;</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>    public static Boolean IsInitialized() =&gt; _initialized;</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>    /// &lt;summary&gt;Gets the ECDT controller information.&lt;/summary&gt;</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>    public static AcpiEcInfo GetInfo() =&gt; _info;</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>    /// &lt;summary&gt;Reads one byte from EC address space.&lt;/summary&gt;</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>    public static Boolean TryRead(Byte address, out Byte value)</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>    {</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>        value = (Byte)0; if (!_initialized || !WaitInputEmpty() || !AcpiRegisterAccess.Write(_info.Control, ReadCommand) || !WaitInputEmpty() || !AcpiRegisterAccess.Write(_info.Data, address) || !WaitOutputFull()) return false;</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>        return AcpiRegisterAccess.Read(_info.Data, out UInt64 raw) &amp;&amp; SetByte(raw, out value);</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>    }</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>    /// &lt;summary&gt;Writes one byte to EC address space.&lt;/summary&gt;</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>    public static Boolean TryWrite(Byte address, Byte value)</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>    {</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>        if (!_initialized || !WaitInputEmpty() || !AcpiRegisterAccess.Write(_info.Control, WriteCommand) || !WaitInputEmpty() || !AcpiRegisterAccess.Write(_info.Data, address) || !WaitInputEmpty()) return false;</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>        return AcpiRegisterAccess.Write(_info.Data, value);</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>    }</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>    private static Boolean WaitInputEmpty() { for (UInt32 i=0U;i&lt;WaitLimit;i++) if (AcpiRegisterAccess.Read(_info.Control,out UInt64 s) &amp;&amp; (((Byte)s &amp; InputBufferFull)==0U)) return true; return false; }</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>    private static Boolean WaitOutputFull() { for (UInt32 i=0U;i&lt;WaitLimit;i++) if (AcpiRegisterAccess.Read(_info.Control,out UInt64 s) &amp;&amp; (((Byte)s &amp; OutputBufferFull)!=0U)) return true; return false; }</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>    private static Boolean SetByte(UInt64 raw, out Byte value) { value=(Byte)raw; return true; }</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a>    private static UInt32 Read32(Byte* p) =&gt; (UInt32)(p[0] | ((UInt32)p[1]&lt;&lt;8) | ((UInt32)p[2]&lt;&lt;16) | ((UInt32)p[3]&lt;&lt;24));</span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>}</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a></span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>/// &lt;summary&gt;Describes ACPI fixed-feature power-management capability.&lt;/summary&gt;</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>public readonly struct AcpiPowerCapabilities</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>{</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>    internal AcpiPowerCapabilities(Boolean initialized, Boolean button, Boolean reset, Boolean shutdown, Byte s5a, Byte s5b)</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a>    { Initialized=initialized; PowerButtonAvailable=button; ResetAvailable=reset; ShutdownAvailable=shutdown; S5TypeA=s5a; S5TypeB=s5b; }</span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>    /// &lt;summary&gt;Gets whether FADT power management initialized.&lt;/summary&gt;</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>    public Boolean Initialized { get; }</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>    /// &lt;summary&gt;Gets whether the fixed-feature power button can be polled.&lt;/summary&gt;</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>    public Boolean PowerButtonAvailable { get; }</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>    /// &lt;summary&gt;Gets whether the FADT reset register is available.&lt;/summary&gt;</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>    public Boolean ResetAvailable { get; }</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>    /// &lt;summary&gt;Gets whether S5 shutdown values were discovered from AML.&lt;/summary&gt;</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>    public Boolean ShutdownAvailable { get; }</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>    /// &lt;summary&gt;Gets the PM1a S5 sleep type.&lt;/summary&gt;</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>    public Byte S5TypeA { get; }</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>    /// &lt;summary&gt;Gets the PM1b S5 sleep type.&lt;/summary&gt;</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>    public Byte S5TypeB { get; }</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>}</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a></span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a>/// &lt;summary&gt;Implements ACPI fixed-feature power-button, reset and S5 shutdown services.&lt;/summary&gt;</span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a>public static unsafe class KernelAcpiPower</span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a>{</span>
+<span class="source-line" id="L241"><a class="line-number" href="#L241">241</a>    private const UInt16 PowerButtonBit = (UInt16)(1U &lt;&lt; 8);</span>
+<span class="source-line" id="L242"><a class="line-number" href="#L242">242</a>    private const UInt16 SleepEnableBit = (UInt16)(1U &lt;&lt; 13);</span>
+<span class="source-line" id="L243"><a class="line-number" href="#L243">243</a>    private static Boolean _initialized;</span>
+<span class="source-line" id="L244"><a class="line-number" href="#L244">244</a>    private static Boolean _hasS5;</span>
+<span class="source-line" id="L245"><a class="line-number" href="#L245">245</a>    private static Byte _s5a;</span>
+<span class="source-line" id="L246"><a class="line-number" href="#L246">246</a>    private static Byte _s5b;</span>
+<span class="source-line" id="L247"><a class="line-number" href="#L247">247</a>    /// &lt;summary&gt;Initializes FADT power management and discovers AML _S5 sleep types.&lt;/summary&gt;</span>
+<span class="source-line" id="L248"><a class="line-number" href="#L248">248</a>    public static Boolean Initialize()</span>
+<span class="source-line" id="L249"><a class="line-number" href="#L249">249</a>    {</span>
+<span class="source-line" id="L250"><a class="line-number" href="#L250">250</a>        if (_initialized) return true;</span>
+<span class="source-line" id="L251"><a class="line-number" href="#L251">251</a>        if (!KernelAcpiFadt.Initialize()) return false;</span>
+<span class="source-line" id="L252"><a class="line-number" href="#L252">252</a>        AcpiFadtInfo f = KernelAcpiFadt.GetInfo();</span>
+<span class="source-line" id="L253"><a class="line-number" href="#L253">253</a>        if (f.SmiCommandPort != 0U &amp;&amp; f.AcpiEnableValue != 0U &amp;&amp; f.SmiCommandPort &lt;= 0xFFFFU) Native.WritePort8((UInt16)f.SmiCommandPort, f.AcpiEnableValue);</span>
+<span class="source-line" id="L254"><a class="line-number" href="#L254">254</a>        _hasS5 = TryFindS5(f.DsdtAddress, out _s5a, out _s5b);</span>
+<span class="source-line" id="L255"><a class="line-number" href="#L255">255</a>        _initialized = true;</span>
+<span class="source-line" id="L256"><a class="line-number" href="#L256">256</a>        EnablePowerButton();</span>
+<span class="source-line" id="L257"><a class="line-number" href="#L257">257</a>        return true;</span>
+<span class="source-line" id="L258"><a class="line-number" href="#L258">258</a>    }</span>
+<span class="source-line" id="L259"><a class="line-number" href="#L259">259</a>    /// &lt;summary&gt;Gets fixed-feature power-management capabilities.&lt;/summary&gt;</span>
+<span class="source-line" id="L260"><a class="line-number" href="#L260">260</a>    public static AcpiPowerCapabilities GetCapabilities()</span>
+<span class="source-line" id="L261"><a class="line-number" href="#L261">261</a>    {</span>
+<span class="source-line" id="L262"><a class="line-number" href="#L262">262</a>        AcpiFadtInfo f=KernelAcpiFadt.GetInfo();</span>
+<span class="source-line" id="L263"><a class="line-number" href="#L263">263</a>        return new AcpiPowerCapabilities(_initialized, _initialized &amp;&amp; f.Pm1aEvent.IsPresent(), _initialized &amp;&amp; f.SupportsReset(), _initialized &amp;&amp; _hasS5 &amp;&amp; f.Pm1aControl.IsPresent(), _s5a, _s5b);</span>
+<span class="source-line" id="L264"><a class="line-number" href="#L264">264</a>    }</span>
+<span class="source-line" id="L265"><a class="line-number" href="#L265">265</a>    /// &lt;summary&gt;Gets whether the fixed-feature power button has asserted its status bit and clears it when set.&lt;/summary&gt;</span>
+<span class="source-line" id="L266"><a class="line-number" href="#L266">266</a>    public static Boolean TryConsumePowerButton(out Boolean pressed)</span>
+<span class="source-line" id="L267"><a class="line-number" href="#L267">267</a>    {</span>
+<span class="source-line" id="L268"><a class="line-number" href="#L268">268</a>        pressed=false; if(!_initialized) return false; AcpiFadtInfo f=KernelAcpiFadt.GetInfo(); if(!f.Pm1aEvent.IsPresent() || f.Pm1EventLength&lt;4U) return false;</span>
+<span class="source-line" id="L269"><a class="line-number" href="#L269">269</a>        AcpiGenericAddress status=new AcpiGenericAddress(f.Pm1aEvent.AddressSpace,(Byte)16,(Byte)0,(Byte)2,f.Pm1aEvent.Address);</span>
+<span class="source-line" id="L270"><a class="line-number" href="#L270">270</a>        if(!AcpiRegisterAccess.Read(status,out UInt64 raw)) return false; pressed=(((UInt16)raw)&amp;PowerButtonBit)!=0U;</span>
+<span class="source-line" id="L271"><a class="line-number" href="#L271">271</a>        if(pressed &amp;&amp; !AcpiRegisterAccess.Write(status,PowerButtonBit)) return false; return true;</span>
+<span class="source-line" id="L272"><a class="line-number" href="#L272">272</a>    }</span>
+<span class="source-line" id="L273"><a class="line-number" href="#L273">273</a>    /// &lt;summary&gt;Requests firmware-defined ACPI reset through the FADT reset register.&lt;/summary&gt;</span>
+<span class="source-line" id="L274"><a class="line-number" href="#L274">274</a>    public static Boolean Reboot()</span>
+<span class="source-line" id="L275"><a class="line-number" href="#L275">275</a>    {</span>
+<span class="source-line" id="L276"><a class="line-number" href="#L276">276</a>        if(!_initialized) return false; AcpiFadtInfo f=KernelAcpiFadt.GetInfo(); if(!f.SupportsReset()) return false; return AcpiRegisterAccess.Write(f.ResetRegister,f.ResetValue);</span>
+<span class="source-line" id="L277"><a class="line-number" href="#L277">277</a>    }</span>
+<span class="source-line" id="L278"><a class="line-number" href="#L278">278</a>    /// &lt;summary&gt;Requests ACPI S5 soft-off using AML-discovered sleep types.&lt;/summary&gt;</span>
+<span class="source-line" id="L279"><a class="line-number" href="#L279">279</a>    public static Boolean Shutdown()</span>
+<span class="source-line" id="L280"><a class="line-number" href="#L280">280</a>    {</span>
+<span class="source-line" id="L281"><a class="line-number" href="#L281">281</a>        if(!_initialized || !_hasS5) return false; AcpiFadtInfo f=KernelAcpiFadt.GetInfo(); if(!f.Pm1aControl.IsPresent()) return false;</span>
+<span class="source-line" id="L282"><a class="line-number" href="#L282">282</a>        if(!AcpiRegisterAccess.Read(f.Pm1aControl,out UInt64 a)) return false; UInt16 av=(UInt16)(((UInt16)a &amp; ~(UInt16)(7U&lt;&lt;10)) | ((UInt16)(_s5a &amp; 7U)&lt;&lt;10) | SleepEnableBit);</span>
+<span class="source-line" id="L283"><a class="line-number" href="#L283">283</a>        if(!AcpiRegisterAccess.Write(f.Pm1aControl,av)) return false;</span>
+<span class="source-line" id="L284"><a class="line-number" href="#L284">284</a>        if(f.Pm1bControl.IsPresent()) { if(!AcpiRegisterAccess.Read(f.Pm1bControl,out UInt64 b)) return false; UInt16 bv=(UInt16)(((UInt16)b &amp; ~(UInt16)(7U&lt;&lt;10)) | ((UInt16)(_s5b &amp; 7U)&lt;&lt;10) | SleepEnableBit); if(!AcpiRegisterAccess.Write(f.Pm1bControl,bv)) return false; }</span>
+<span class="source-line" id="L285"><a class="line-number" href="#L285">285</a>        return true;</span>
+<span class="source-line" id="L286"><a class="line-number" href="#L286">286</a>    }</span>
+<span class="source-line" id="L287"><a class="line-number" href="#L287">287</a>    private static Boolean EnablePowerButton()</span>
+<span class="source-line" id="L288"><a class="line-number" href="#L288">288</a>    {</span>
+<span class="source-line" id="L289"><a class="line-number" href="#L289">289</a>        AcpiFadtInfo f=KernelAcpiFadt.GetInfo(); if(!f.Pm1aEvent.IsPresent() || f.Pm1EventLength&lt;4U) return false;</span>
+<span class="source-line" id="L290"><a class="line-number" href="#L290">290</a>        AcpiGenericAddress enable=new AcpiGenericAddress(f.Pm1aEvent.AddressSpace,(Byte)16,(Byte)0,(Byte)2,f.Pm1aEvent.Address+(UInt64)(f.Pm1EventLength/2U));</span>
+<span class="source-line" id="L291"><a class="line-number" href="#L291">291</a>        if(!AcpiRegisterAccess.Read(enable,out UInt64 raw)) return false; return AcpiRegisterAccess.Write(enable,(UInt16)((UInt16)raw|PowerButtonBit));</span>
+<span class="source-line" id="L292"><a class="line-number" href="#L292">292</a>    }</span>
+<span class="source-line" id="L293"><a class="line-number" href="#L293">293</a>    private static Boolean TryFindS5(UInt64 dsdtAddress,out Byte a,out Byte b)</span>
+<span class="source-line" id="L294"><a class="line-number" href="#L294">294</a>    {</span>
+<span class="source-line" id="L295"><a class="line-number" href="#L295">295</a>        a=(Byte)0;b=(Byte)0;if(dsdtAddress==0UL)return false;Byte* t=(Byte*)dsdtAddress;UInt32 length=Read32(t+4U);if(length&lt;36U||length&gt;16U*1024U*1024U)return false;</span>
+<span class="source-line" id="L296"><a class="line-number" href="#L296">296</a>        for(UInt32 i=36U;i+5U&lt;length;i++) if(t[i]==0x5FU&amp;&amp;t[i+1U]==0x53U&amp;&amp;t[i+2U]==0x35U&amp;&amp;t[i+3U]==0x5FU)</span>
+<span class="source-line" id="L297"><a class="line-number" href="#L297">297</a>        { UInt32 p=i+4U; if(p&lt;length&amp;&amp;t[p]==0x12U){p++; if(!SkipPkgLength(t,length,ref p)||p&gt;=length)return false; p++; if(!ReadAmlInteger(t,length,ref p,out UInt64 x)||!ReadAmlInteger(t,length,ref p,out UInt64 y))return false; a=(Byte)x;b=(Byte)y;return true;} }</span>
+<span class="source-line" id="L298"><a class="line-number" href="#L298">298</a>        return false;</span>
+<span class="source-line" id="L299"><a class="line-number" href="#L299">299</a>    }</span>
+<span class="source-line" id="L300"><a class="line-number" href="#L300">300</a>    private static Boolean SkipPkgLength(Byte* t,UInt32 length,ref UInt32 p){if(p&gt;=length)return false;Byte lead=t[p++];UInt32 follow=(UInt32)(lead&gt;&gt;6);if(follow==0U)return true;if(p+follow&gt;length)return false;p+=follow;return true;}</span>
+<span class="source-line" id="L301"><a class="line-number" href="#L301">301</a>    private static Boolean ReadAmlInteger(Byte* t,UInt32 length,ref UInt32 p,out UInt64 v){v=0UL;if(p&gt;=length)return false;Byte op=t[p++];if(op==0x00U){v=0;return true;}if(op==0x01U){v=1;return true;}if(op==0x0AU&amp;&amp;p&lt;length){v=t[p++];return true;}if(op==0x0BU&amp;&amp;p+2U&lt;=length){v=(UInt64)(t[p]|((UInt16)t[p+1U]&lt;&lt;8));p+=2U;return true;}if(op==0x0CU&amp;&amp;p+4U&lt;=length){v=Read32(t+p);p+=4U;return true;}return false;}</span>
+<span class="source-line" id="L302"><a class="line-number" href="#L302">302</a>    private static UInt32 Read32(Byte* p)=&gt;(UInt32)(p[0]|((UInt32)p[1]&lt;&lt;8)|((UInt32)p[2]&lt;&lt;16)|((UInt32)p[3]&lt;&lt;24));</span>
+<span class="source-line" id="L303"><a class="line-number" href="#L303">303</a>}</span>
+<span class="source-line" id="L304"><a class="line-number" href="#L304">304</a></span>
+<span class="source-line" id="L305"><a class="line-number" href="#L305">305</a>internal static unsafe class AcpiRegisterAccess</span>
+<span class="source-line" id="L306"><a class="line-number" href="#L306">306</a>{</span>
+<span class="source-line" id="L307"><a class="line-number" href="#L307">307</a>    internal static Boolean Read(AcpiGenericAddress gas,out UInt64 value)</span>
+<span class="source-line" id="L308"><a class="line-number" href="#L308">308</a>    {</span>
+<span class="source-line" id="L309"><a class="line-number" href="#L309">309</a>        value=0UL;if(!gas.IsPresent()||gas.BitOffset!=0U)return false;Byte width=gas.BitWidth==0U?AccessWidth(gas.AccessSize):gas.BitWidth;</span>
+<span class="source-line" id="L310"><a class="line-number" href="#L310">310</a>        if(gas.AddressSpace==1U){if(gas.Address&gt;0xFFFFUL)return false;UInt16 port=(UInt16)gas.Address;if(width&lt;=8U){if(!Native.ReadPort8(port,out Byte v))return false;value=v;return true;}if(width&lt;=16U){if(!Native.ReadPort16(port,out UInt16 v))return false;value=v;return true;}if(width&lt;=32U){if(!Native.ReadPort32(port,out UInt32 v))return false;value=v;return true;}return false;}</span>
+<span class="source-line" id="L311"><a class="line-number" href="#L311">311</a>        Byte* p=(Byte*)gas.Address;if(width&lt;=8U){value=*p;return true;}if(width&lt;=16U){value=*(UInt16*)p;return true;}if(width&lt;=32U){value=*(UInt32*)p;return true;}if(width&lt;=64U){value=*(UInt64*)p;return true;}return false;</span>
+<span class="source-line" id="L312"><a class="line-number" href="#L312">312</a>    }</span>
+<span class="source-line" id="L313"><a class="line-number" href="#L313">313</a>    internal static Boolean Write(AcpiGenericAddress gas,UInt64 value)</span>
+<span class="source-line" id="L314"><a class="line-number" href="#L314">314</a>    {</span>
+<span class="source-line" id="L315"><a class="line-number" href="#L315">315</a>        if(!gas.IsPresent()||gas.BitOffset!=0U)return false;Byte width=gas.BitWidth==0U?AccessWidth(gas.AccessSize):gas.BitWidth;</span>
+<span class="source-line" id="L316"><a class="line-number" href="#L316">316</a>        if(gas.AddressSpace==1U){if(gas.Address&gt;0xFFFFUL)return false;UInt16 port=(UInt16)gas.Address;if(width&lt;=8U)return Native.WritePort8(port,(Byte)value);if(width&lt;=16U)return Native.WritePort16(port,(UInt16)value);if(width&lt;=32U)return Native.WritePort32(port,(UInt32)value);return false;}</span>
+<span class="source-line" id="L317"><a class="line-number" href="#L317">317</a>        Byte* p=(Byte*)gas.Address;if(width&lt;=8U){*p=(Byte)value;return true;}if(width&lt;=16U){*(UInt16*)p=(UInt16)value;return true;}if(width&lt;=32U){*(UInt32*)p=(UInt32)value;return true;}if(width&lt;=64U){*(UInt64*)p=value;return true;}return false;</span>
+<span class="source-line" id="L318"><a class="line-number" href="#L318">318</a>    }</span>
+<span class="source-line" id="L319"><a class="line-number" href="#L319">319</a>    private static Byte AccessWidth(Byte accessSize)=&gt;accessSize==1U?(Byte)8U:accessSize==2U?(Byte)16U:accessSize==3U?(Byte)32U:accessSize==4U?(Byte)64U:(Byte)8U;</span>
+<span class="source-line" id="L320"><a class="line-number" href="#L320">320</a>}</span>
+<span class="source-line" id="L321"><a class="line-number" href="#L321">321</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

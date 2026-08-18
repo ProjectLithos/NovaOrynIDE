@@ -1,0 +1,77 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Kernel.Scheduler/KernelSchedulerContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Kernel.Scheduler/KernelSchedulerContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a></span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>namespace NovaOryn.Kernel.Scheduler;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a></span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>/// &lt;summary&gt;Identifies the lifecycle state of a kernel thread.&lt;/summary&gt;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>public enum KernelThreadState : Byte</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>{</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>    /// &lt;summary&gt;The slot is unused.&lt;/summary&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>    Unused = 0,</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    /// &lt;summary&gt;The thread can be selected by a scheduler.&lt;/summary&gt;</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    Ready = 1,</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    /// &lt;summary&gt;The thread is executing on a processor.&lt;/summary&gt;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    Running = 2,</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    /// &lt;summary&gt;The thread is blocked until explicitly awakened.&lt;/summary&gt;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    Blocked = 3,</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    /// &lt;summary&gt;The thread has completed and will not run again.&lt;/summary&gt;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    Terminated = 4</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>}</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a></span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>/// &lt;summary&gt;Defines the four kernel scheduling priority bands.&lt;/summary&gt;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>public enum KernelThreadPriority : Byte</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>{</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    /// &lt;summary&gt;Background work.&lt;/summary&gt;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    Low = 0,</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    /// &lt;summary&gt;Normal kernel work.&lt;/summary&gt;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    Normal = 1,</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    /// &lt;summary&gt;Latency-sensitive kernel work.&lt;/summary&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    High = 2,</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    /// &lt;summary&gt;Critical kernel infrastructure.&lt;/summary&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    Critical = 3</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>}</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a></span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>/// &lt;summary&gt;Provides an immutable public snapshot of one kernel thread.&lt;/summary&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>public readonly struct KernelThreadInfo</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>{</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    /// &lt;summary&gt;Creates a thread-information snapshot.&lt;/summary&gt;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    public KernelThreadInfo(UInt64 id, KernelThreadState state, KernelThreadPriority priority, UInt32 processor, UInt64 affinityMask, UInt64 stackBase, UInt64 stackTop, UInt64 entryPoint, UInt64 argument)</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    { Id=id; State=state; Priority=priority; ProcessorIndex=processor; AffinityMask=affinityMask; StackBase=stackBase; StackTop=stackTop; EntryPoint=entryPoint; Argument=argument; }</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;summary&gt;Gets the stable thread identifier.&lt;/summary&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    public UInt64 Id { get; }</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;summary&gt;Gets the current lifecycle state.&lt;/summary&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    public KernelThreadState State { get; }</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>    /// &lt;summary&gt;Gets the scheduling priority.&lt;/summary&gt;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    public KernelThreadPriority Priority { get; }</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>    /// &lt;summary&gt;Gets the processor currently owning the thread, or UInt32.MaxValue when not running.&lt;/summary&gt;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    public UInt32 ProcessorIndex { get; }</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    /// &lt;summary&gt;Gets the allowed-processor bit mask for logical processors 0 through 63.&lt;/summary&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>    public UInt64 AffinityMask { get; }</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>    /// &lt;summary&gt;Gets the allocated kernel-stack base.&lt;/summary&gt;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>    public UInt64 StackBase { get; }</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    /// &lt;summary&gt;Gets the exclusive kernel-stack top.&lt;/summary&gt;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    public UInt64 StackTop { get; }</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;summary&gt;Gets the initial x64 entry-point address.&lt;/summary&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    public UInt64 EntryPoint { get; }</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;summary&gt;Gets the opaque argument supplied to the entry point.&lt;/summary&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    public UInt64 Argument { get; }</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>}</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a></span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>/// &lt;summary&gt;Describes scheduler capacity and current global state.&lt;/summary&gt;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>public readonly struct KernelSchedulerCapabilities</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>{</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    /// &lt;summary&gt;Creates a scheduler-capability snapshot.&lt;/summary&gt;</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    public KernelSchedulerCapabilities(UInt32 processors, UInt32 maximumThreads, UInt32 activeThreads, UInt64 quantumNanoseconds, Boolean timerPreemption)</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    { ProcessorCount=processors; MaximumThreads=maximumThreads; ActiveThreadCount=activeThreads; QuantumNanoseconds=quantumNanoseconds; HasTimerPreemption=timerPreemption; }</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    /// &lt;summary&gt;Gets the number of processors represented by scheduler state.&lt;/summary&gt;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    public UInt32 ProcessorCount { get; }</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    /// &lt;summary&gt;Gets the fixed thread-table capacity.&lt;/summary&gt;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    public UInt32 MaximumThreads { get; }</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    /// &lt;summary&gt;Gets the number of non-unused thread records.&lt;/summary&gt;</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    public UInt32 ActiveThreadCount { get; }</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    /// &lt;summary&gt;Gets the normal scheduler quantum in nanoseconds.&lt;/summary&gt;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    public UInt64 QuantumNanoseconds { get; }</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    /// &lt;summary&gt;Gets whether the Local APIC timer can provide preemption ticks.&lt;/summary&gt;</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    public Boolean HasTimerPreemption { get; }</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>}</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

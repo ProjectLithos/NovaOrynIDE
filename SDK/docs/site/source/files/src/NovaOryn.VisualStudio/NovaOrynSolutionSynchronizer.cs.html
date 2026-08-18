@@ -1,0 +1,260 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.VisualStudio/NovaOrynSolutionSynchronizer.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.VisualStudio/NovaOrynSolutionSynchronizer.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using System;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using System.Collections.Generic;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a>using System.IO;</span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>using System.Linq;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a>using EnvDTE;</span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>using Microsoft.VisualStudio.Shell;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a></span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>namespace NovaOryn.VisualStudio;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a></span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>internal static class NovaOrynSolutionSynchronizer</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>{</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    private static bool _running;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a></span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    internal static bool EnsureSdkProjectsLoaded(DTE dte, NovaOrynOutputPane output)</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    {</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>        ThreadHelper.ThrowIfNotOnUIThread();</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>        if (_running || dte == null || dte.Solution == null || !dte.Solution.IsOpen) return false;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>        _running = true;</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>        try</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>        {</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>            HashSet&lt;string&gt; loaded = new(StringComparer.OrdinalIgnoreCase);</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>            List&lt;string&gt; novaProjects = new();</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>            foreach (Project project in dte.Solution.Projects)</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>            {</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>                CollectProject(project, loaded, novaProjects);</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>            }</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a></span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>            bool changed = false;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>            foreach (string projectFile in novaProjects)</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>            {</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>                string directory = Path.GetDirectoryName(projectFile) ?? string.Empty;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>                string sdkDirectory = Path.Combine(directory, &quot;Sdk&quot;);</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>                if (!Directory.Exists(sdkDirectory)) continue;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a></span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>                if (RefreshSdkTree(sdkDirectory, output)) changed = true;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>                if (RepairRequiredProjectReferences(projectFile, sdkDirectory, output)) changed = true;</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a></span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>                foreach (string sdkProject in Directory.EnumerateFiles(sdkDirectory, &quot;*.csproj&quot;, SearchOption.AllDirectories))</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>                {</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>                    string full = Path.GetFullPath(sdkProject);</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>                    if (loaded.Contains(full)) continue;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>                    Project added = dte.Solution.AddFromFile(full, false);</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>                    if (added == null) continue;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>                    loaded.Add(full);</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>                    changed = true;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>                    output.WriteLine($&quot;[ OK ] Loaded NovaOryn SDK project into solution: {Path.GetFileNameWithoutExtension(full)}&quot;);</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>                }</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>            }</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>            return changed || novaProjects.Count != 0;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>        }</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>        finally</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>        {</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>            _running = false;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>        }</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    }</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a></span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    private static bool RefreshSdkTree(string sdkDirectory, NovaOrynOutputPane output)</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    {</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>        ThreadHelper.ThrowIfNotOnUIThread();</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>        string installedRoot = SdkInstallationDetector.ResolveSdkRoot();</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>        string sourceSdkDirectory = Path.Combine(installedRoot, &quot;templates&quot;, &quot;NovaOrynKernel&quot;, &quot;Sdk&quot;);</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>        if (!Directory.Exists(sourceSdkDirectory))</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>        {</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>            output.WriteLine($&quot;[FAIL] Installed NovaOryn SDK template tree was not found: {sourceSdkDirectory}&quot;);</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>            return false;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>        }</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a></span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        Directory.CreateDirectory(sdkDirectory);</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>        HashSet&lt;string&gt; expected = new(StringComparer.OrdinalIgnoreCase);</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>        bool changed = false;</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>        foreach (string source in Directory.EnumerateFiles(sourceSdkDirectory, &quot;*&quot;, SearchOption.AllDirectories))</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>        {</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>            string relative = GetRelativeChildPath(sourceSdkDirectory, source);</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>            expected.Add(relative);</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>            string destination = Path.Combine(sdkDirectory, relative);</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>            Directory.CreateDirectory(Path.GetDirectoryName(destination) ?? sdkDirectory);</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>            if (File.Exists(destination) &amp;&amp; FilesEqual(source, destination)) continue;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>            File.Copy(source, destination, true);</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>            changed = true;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        }</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a></span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>        foreach (string destination in Directory.EnumerateFiles(sdkDirectory, &quot;*&quot;, SearchOption.AllDirectories))</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>        {</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>            string relative = GetRelativeChildPath(sdkDirectory, destination);</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>            if (expected.Contains(relative)) continue;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>            File.Delete(destination);</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>            changed = true;</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>        }</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a></span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>        RemoveEmptyDirectories(sdkDirectory);</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>        if (changed) output.WriteLine(&quot;[ OK ] Refreshed SDK-owned project assemblies from the installed NovaOryn template; user Kernel\\Kernel.cs was preserved.&quot;);</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>        return changed;</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>    }</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a></span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>    private static string GetRelativeChildPath(string root, string path)</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>    {</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>        string normalizedRoot = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>        string normalizedPath = Path.GetFullPath(path);</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>        if (normalizedPath.Length &lt;= normalizedRoot.Length) return Path.GetFileName(normalizedPath);</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>        return normalizedPath.Substring(normalizedRoot.Length + 1);</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    }</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a></span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    private static bool FilesEqual(string left, string right)</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    {</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>        FileInfo leftInfo = new FileInfo(left);</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>        FileInfo rightInfo = new FileInfo(right);</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>        if (leftInfo.Length != rightInfo.Length) return false;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>        byte[] leftBytes = File.ReadAllBytes(left);</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>        byte[] rightBytes = File.ReadAllBytes(right);</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>        if (leftBytes.Length != rightBytes.Length) return false;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>        for (int index = 0; index &lt; leftBytes.Length; index++)</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>        {</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>            if (leftBytes[index] != rightBytes[index]) return false;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>        }</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>        return true;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>    }</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a></span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>    private static bool RemoveEmptyDirectories(string root)</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>    {</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>        string[] directories = Directory.EnumerateDirectories(root, &quot;*&quot;, SearchOption.AllDirectories).ToArray();</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>        Array.Sort(directories, (left, right) =&gt; right.Length.CompareTo(left.Length));</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>        bool removed = false;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>        foreach (string directory in directories)</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>        {</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>            if (Directory.EnumerateFileSystemEntries(directory).Any()) continue;</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>            Directory.Delete(directory);</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>            removed = true;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>        }</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>        return removed;</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>    }</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a></span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>    private static bool RepairRequiredProjectReferences(string projectFile, string sdkDirectory, NovaOrynOutputPane output)</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>    {</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>        ThreadHelper.ThrowIfNotOnUIThread();</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>        if (!ValidateRequiredSdkFiles(sdkDirectory, output)) return false;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a></span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>        string text = File.ReadAllText(projectFile);</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>        string original = text;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>        string installedRoot = SdkInstallationDetector.ResolveSdkRoot();</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a>        string[] requiredProjects = GetRequiredProjectNames(installedRoot, output);</span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>        if (requiredProjects.Length == 0) return false;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a></span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>        const string itemGroupEnd = &quot;  &lt;/ItemGroup&gt;&quot;;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>        int insertIndex = text.IndexOf(itemGroupEnd, StringComparison.Ordinal);</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>        if (insertIndex &lt; 0)</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>        {</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>            output.WriteLine(&quot;[FAIL] NovaOryn root project is missing the expected SDK ProjectReference ItemGroup and could not be repaired automatically.&quot;);</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>            return false;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>        }</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a></span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>        foreach (string projectName in requiredProjects)</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>        {</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>            string relative = $&quot;Sdk\\{projectName}\\{projectName}.csproj&quot;;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>            if (text.IndexOf(relative, StringComparison.OrdinalIgnoreCase) &gt;= 0) continue;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>            string reference = $&quot;    &lt;ProjectReference Include=\&quot;{relative}\&quot; /&gt;&quot; + Environment.NewLine;</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>            text = text.Insert(insertIndex, reference);</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>            insertIndex += reference.Length;</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>            output.WriteLine($&quot;[ OK ] Repaired {projectName} project reference for Visual Studio design-time evaluation.&quot;);</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>        }</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a></span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>        if (string.Equals(original, text, StringComparison.Ordinal)) return false;</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>        File.WriteAllText(projectFile, text);</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>        File.SetLastWriteTimeUtc(projectFile, DateTime.UtcNow);</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>        output.WriteLine(&quot;[ OK ] NovaOryn root project reference graph repaired; Visual Studio project evaluation will refresh from the updated project file.&quot;);</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>        return true;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>    }</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a></span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a></span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>    private static string[] GetRequiredProjectNames(string installedRoot, NovaOrynOutputPane output)</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>    {</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>        ThreadHelper.ThrowIfNotOnUIThread();</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>        string templateProject = Path.Combine(installedRoot, &quot;templates&quot;, &quot;NovaOrynKernel&quot;, &quot;NovaOrynKernel.csproj&quot;);</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>        if (!File.Exists(templateProject))</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>        {</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>            output.WriteLine($&quot;[FAIL] Installed NovaOryn root project template was not found: {templateProject}&quot;);</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>            return Array.Empty&lt;string&gt;();</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>        }</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a></span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>        List&lt;string&gt; names = new();</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>        foreach (string line in File.ReadAllLines(templateProject))</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>        {</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>            const string marker = &quot;&lt;ProjectReference Include=\&quot;Sdk\\&quot;;</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>            int markerIndex = line.IndexOf(marker, StringComparison.OrdinalIgnoreCase);</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>            if (markerIndex &lt; 0) continue;</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>            int nameStart = markerIndex + marker.Length;</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>            int nameEnd = line.IndexOf(&#39;\\&#39;, nameStart);</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>            if (nameEnd &lt;= nameStart) continue;</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>            string name = line.Substring(nameStart, nameEnd - nameStart);</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>            if (names.Contains(name, StringComparer.OrdinalIgnoreCase)) continue;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>            names.Add(name);</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>        }</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a></span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>        if (names.Count != 0) return names.ToArray();</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>        output.WriteLine(&quot;[FAIL] Installed NovaOryn root project template contains no SDK ProjectReference entries and cannot be used to repair Visual Studio projects.&quot;);</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>        return Array.Empty&lt;string&gt;();</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>    }</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a></span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>    private static bool ValidateRequiredSdkFiles(string sdkDirectory, NovaOrynOutputPane output)</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>    {</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>        ThreadHelper.ThrowIfNotOnUIThread();</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>        string addressProject = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.AddressSpace&quot;, &quot;NovaOryn.Kernel.AddressSpace.csproj&quot;);</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>        string addressSource = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.AddressSpace&quot;, &quot;KernelAddressSpace.cs&quot;);</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>        string heapProject = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Heap&quot;, &quot;NovaOryn.Kernel.Heap.csproj&quot;);</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>        string heapSource = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Heap&quot;, &quot;KernelHeap.cs&quot;);</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>        string earlySource = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Heap&quot;, &quot;KernelEarlyAllocator.cs&quot;);</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>        string acpiProject = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Acpi&quot;, &quot;NovaOryn.Kernel.Acpi.csproj&quot;);</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>        string acpiSource = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Acpi&quot;, &quot;KernelAcpi.cs&quot;);</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>        string acpiPlatformSource = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Acpi&quot;, &quot;KernelAcpiPlatform.cs&quot;);</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>        string timeProject = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Time&quot;, &quot;NovaOryn.Kernel.Time.csproj&quot;);</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>        string timeSource = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Time&quot;, &quot;KernelTime.cs&quot;);</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>        string timeContracts = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Time&quot;, &quot;KernelTimeContracts.cs&quot;);</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>        string timeMath = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Time&quot;, &quot;KernelTimeMath.cs&quot;);</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>        string smpProject = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Smp&quot;, &quot;NovaOryn.Kernel.Smp.csproj&quot;);</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>        string smpSource = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Smp&quot;, &quot;KernelSmp.cs&quot;);</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>        string smpContracts = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Smp&quot;, &quot;KernelSmpContracts.cs&quot;);</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a>        string smpMath = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Smp&quot;, &quot;KernelSmpMath.cs&quot;);</span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>        string schedulerProject = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Scheduler&quot;, &quot;NovaOryn.Kernel.Scheduler.csproj&quot;);</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>        string schedulerSource = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Scheduler&quot;, &quot;KernelScheduler.cs&quot;);</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>        string schedulerContracts = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Scheduler&quot;, &quot;KernelSchedulerContracts.cs&quot;);</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>        string schedulerMath = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Scheduler&quot;, &quot;KernelSchedulerMath.cs&quot;);</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>        string protectionProject = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Protection&quot;, &quot;NovaOryn.Kernel.Protection.csproj&quot;);</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>        string protectionSource = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Protection&quot;, &quot;KernelProtection.cs&quot;);</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a>        string protectionContracts = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Protection&quot;, &quot;KernelProtectionContracts.cs&quot;);</span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>        string protectionMath = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Protection&quot;, &quot;KernelProtectionMath.cs&quot;);</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>        string systemCallsProject = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.SystemCalls&quot;, &quot;NovaOryn.Kernel.SystemCalls.csproj&quot;);</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>        string systemCallsSource = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.SystemCalls&quot;, &quot;KernelSystemCalls.cs&quot;);</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>        string systemCallsContracts = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.SystemCalls&quot;, &quot;KernelSystemCallContracts.cs&quot;);</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>        string systemCallsMath = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.SystemCalls&quot;, &quot;KernelSystemCallMath.cs&quot;);</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>        string processesProject = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Processes&quot;, &quot;NovaOryn.Kernel.Processes.csproj&quot;);</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>        string processesSource = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Processes&quot;, &quot;KernelProcesses.cs&quot;);</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>        string processesContracts = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Processes&quot;, &quot;ProcessContracts.cs&quot;);</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>        string executableMath = Path.Combine(sdkDirectory, &quot;NovaOryn.Kernel.Processes&quot;, &quot;ProcessExecutableMath.cs&quot;);</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>        if (File.Exists(addressProject) &amp;&amp; File.Exists(addressSource) &amp;&amp; File.Exists(heapProject) &amp;&amp; File.Exists(heapSource) &amp;&amp; File.Exists(earlySource) &amp;&amp; File.Exists(acpiProject) &amp;&amp; File.Exists(acpiSource) &amp;&amp; File.Exists(acpiPlatformSource) &amp;&amp; File.Exists(timeProject) &amp;&amp; File.Exists(timeSource) &amp;&amp; File.Exists(timeContracts) &amp;&amp; File.Exists(timeMath) &amp;&amp; File.Exists(smpProject) &amp;&amp; File.Exists(smpSource) &amp;&amp; File.Exists(smpContracts) &amp;&amp; File.Exists(smpMath) &amp;&amp; File.Exists(schedulerProject) &amp;&amp; File.Exists(schedulerSource) &amp;&amp; File.Exists(schedulerContracts) &amp;&amp; File.Exists(schedulerMath) &amp;&amp; File.Exists(protectionProject) &amp;&amp; File.Exists(protectionSource) &amp;&amp; File.Exists(protectionContracts) &amp;&amp; File.Exists(protectionMath) &amp;&amp; File.Exists(systemCallsProject) &amp;&amp; File.Exists(systemCallsSource) &amp;&amp; File.Exists(systemCallsContracts) &amp;&amp; File.Exists(systemCallsMath) &amp;&amp; File.Exists(processesProject) &amp;&amp; File.Exists(processesSource) &amp;&amp; File.Exists(processesContracts) &amp;&amp; File.Exists(executableMath)) return true;</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>        output.WriteLine(&quot;[FAIL] NovaOryn address-space/heap/ACPI/timing/SMP/scheduler/protection/system-call/process SDK files are missing from the generated project. Refresh the project with the current SDK.&quot;);</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>        return false;</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>    }</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a></span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a>    private static bool CollectProject(Project project, HashSet&lt;string&gt; loaded, List&lt;string&gt; novaProjects)</span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a>    {</span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a>        ThreadHelper.ThrowIfNotOnUIThread();</span>
+<span class="source-line" id="L241"><a class="line-number" href="#L241">241</a>        if (project == null) return false;</span>
+<span class="source-line" id="L242"><a class="line-number" href="#L242">242</a>        try</span>
+<span class="source-line" id="L243"><a class="line-number" href="#L243">243</a>        {</span>
+<span class="source-line" id="L244"><a class="line-number" href="#L244">244</a>            string fullName = project.FullName;</span>
+<span class="source-line" id="L245"><a class="line-number" href="#L245">245</a>            if (!string.IsNullOrWhiteSpace(fullName) &amp;&amp; File.Exists(fullName))</span>
+<span class="source-line" id="L246"><a class="line-number" href="#L246">246</a>            {</span>
+<span class="source-line" id="L247"><a class="line-number" href="#L247">247</a>                string full = Path.GetFullPath(fullName);</span>
+<span class="source-line" id="L248"><a class="line-number" href="#L248">248</a>                loaded.Add(full);</span>
+<span class="source-line" id="L249"><a class="line-number" href="#L249">249</a>                if (NovaOrynProjectRecognizer.IsNovaOrynProject(full)) novaProjects.Add(full);</span>
+<span class="source-line" id="L250"><a class="line-number" href="#L250">250</a>            }</span>
+<span class="source-line" id="L251"><a class="line-number" href="#L251">251</a>        }</span>
+<span class="source-line" id="L252"><a class="line-number" href="#L252">252</a>        catch (Exception)</span>
+<span class="source-line" id="L253"><a class="line-number" href="#L253">253</a>        {</span>
+<span class="source-line" id="L254"><a class="line-number" href="#L254">254</a>            return false;</span>
+<span class="source-line" id="L255"><a class="line-number" href="#L255">255</a>        }</span>
+<span class="source-line" id="L256"><a class="line-number" href="#L256">256</a>        return true;</span>
+<span class="source-line" id="L257"><a class="line-number" href="#L257">257</a>    }</span>
+<span class="source-line" id="L258"><a class="line-number" href="#L258">258</a>}</span>
+<span class="source-line" id="L259"><a class="line-number" href="#L259">259</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

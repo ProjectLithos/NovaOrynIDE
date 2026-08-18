@@ -1,0 +1,241 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Boot.Memory/UefiMemoryContracts.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Boot.Memory/UefiMemoryContracts.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Memory;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Boot.Memory;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>/// &lt;summary&gt;Identifies a UEFI memory descriptor type without exposing firmware-specific policy to allocators.&lt;/summary&gt;</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>/// &lt;nova.when&gt;Use in the UEFI adapter that captures the firmware memory map.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>/// &lt;nova.depends&gt;UEFI specification memory-type values&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a>public enum UefiMemoryType : uint</span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>{</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    /// &lt;summary&gt;Reserved firmware memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>    Reserved = 0,</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>    /// &lt;summary&gt;Loader executable code.&lt;/summary&gt;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>    LoaderCode = 1,</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>    /// &lt;summary&gt;Loader writable data.&lt;/summary&gt;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>    LoaderData = 2,</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a>    /// &lt;summary&gt;Boot-services executable code.&lt;/summary&gt;</span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>    BootServicesCode = 3,</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>    /// &lt;summary&gt;Boot-services writable data.&lt;/summary&gt;</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>    BootServicesData = 4,</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>    /// &lt;summary&gt;Runtime-services executable code.&lt;/summary&gt;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>    RuntimeServicesCode = 5,</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>    /// &lt;summary&gt;Runtime-services writable data.&lt;/summary&gt;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>    RuntimeServicesData = 6,</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>    /// &lt;summary&gt;Conventional allocatable memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>    ConventionalMemory = 7,</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>    /// &lt;summary&gt;Known unusable memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>    UnusableMemory = 8,</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>    /// &lt;summary&gt;ACPI reclaimable memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>    AcpiReclaimMemory = 9,</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a>    /// &lt;summary&gt;ACPI non-volatile storage.&lt;/summary&gt;</span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>    AcpiMemoryNvs = 10,</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    /// &lt;summary&gt;Memory-mapped device I/O.&lt;/summary&gt;</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a>    MemoryMappedIo = 11,</span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    /// &lt;summary&gt;Memory-mapped I/O port space.&lt;/summary&gt;</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    MemoryMappedIoPortSpace = 12,</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>    /// &lt;summary&gt;Processor abstraction-layer code.&lt;/summary&gt;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>    PalCode = 13,</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>    /// &lt;summary&gt;Byte-addressable persistent memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>    PersistentMemory = 14,</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>    /// &lt;summary&gt;Memory that has not yet been accepted by the platform.&lt;/summary&gt;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>    UnacceptedMemory = 15</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>}</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a></span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a>/// &lt;summary&gt;Defines UEFI cache, protection, persistence, and runtime attributes.&lt;/summary&gt;</span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>/// &lt;nova.when&gt;Use when retaining the exact semantics of the final firmware map.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>/// &lt;nova.depends&gt;UEFI EFI_MEMORY_ATTRIBUTE values&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>[Flags]</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>public enum UefiMemoryAttributes : ulong</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>{</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>    /// &lt;summary&gt;No firmware attribute is present.&lt;/summary&gt;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>    None = 0,</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>    /// &lt;summary&gt;Uncacheable memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    Uncacheable = 0x0000000000000001,</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a>    /// &lt;summary&gt;Write-combining memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    WriteCombining = 0x0000000000000002,</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    /// &lt;summary&gt;Write-through memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>    WriteThrough = 0x0000000000000004,</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>    /// &lt;summary&gt;Write-back memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>    WriteBack = 0x0000000000000008,</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>    /// &lt;summary&gt;Uncached-exported memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    UncachedExported = 0x0000000000000010,</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a>    /// &lt;summary&gt;Write-protected memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    WriteProtected = 0x0000000000001000,</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    /// &lt;summary&gt;Read-protected memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>    ReadProtected = 0x0000000000002000,</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>    /// &lt;summary&gt;Execute-protected memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>    ExecuteProtected = 0x0000000000004000,</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    /// &lt;summary&gt;Non-volatile memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a>    NonVolatile = 0x0000000000008000,</span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    /// &lt;summary&gt;More-reliable memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    MoreReliable = 0x0000000000010000,</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>    /// &lt;summary&gt;Read-only memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>    ReadOnly = 0x0000000000020000,</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>    /// &lt;summary&gt;Specific-purpose memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    SpecificPurpose = 0x0000000000040000,</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a>    /// &lt;summary&gt;CPU cryptographic-protection capable memory.&lt;/summary&gt;</span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    CpuCrypto = 0x0000000000080000,</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    /// &lt;summary&gt;Memory required by runtime services.&lt;/summary&gt;</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>    Runtime = 0x8000000000000000</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>}</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a></span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>/// &lt;summary&gt;Retains one typed descriptor copied from the final UEFI memory map.&lt;/summary&gt;</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>/// &lt;nova.when&gt;Use only inside the final-map workspace and immutable snapshot.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>/// &lt;nova.depends&gt;UefiMemoryType and UefiMemoryAttributes&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>public readonly record struct UefiMemoryDescriptor(</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>    UefiMemoryType Type,</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>    PhysicalAddress PhysicalStart,</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>    ulong VirtualStart,</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a>    ulong PageCount,</span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>    UefiMemoryAttributes Attributes);</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a></span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>/// &lt;summary&gt;Reports the result of a platform GetMemoryMap adapter call.&lt;/summary&gt;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>/// &lt;nova.when&gt;Use to distinguish success, capacity exhaustion, and firmware errors.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>/// &lt;nova.depends&gt;IUefiMemoryMapProvider&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>public enum UefiMemoryMapStatus</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>{</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>    /// &lt;summary&gt;The destination contains a complete current map.&lt;/summary&gt;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>    Success = 0,</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>    /// &lt;summary&gt;The preallocated destination is too small.&lt;/summary&gt;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    BufferTooSmall = 1,</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a>    /// &lt;summary&gt;Firmware returned an invalid parameter.&lt;/summary&gt;</span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    InvalidParameter = 2,</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a>    /// &lt;summary&gt;Firmware or the platform adapter failed.&lt;/summary&gt;</span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    FirmwareError = 3</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>}</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a></span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>/// &lt;summary&gt;Reports the result of ExitBootServices.&lt;/summary&gt;</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>/// &lt;nova.when&gt;Use to retry only when the map key became stale.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>/// &lt;nova.depends&gt;IUefiMemoryMapProvider&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>public enum UefiExitBootServicesStatus</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a>{</span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>    /// &lt;summary&gt;Boot services were exited successfully.&lt;/summary&gt;</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>    Success = 0,</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>    /// &lt;summary&gt;The map key became stale and the final map must be obtained again.&lt;/summary&gt;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>    InvalidMapKey = 1,</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>    /// &lt;summary&gt;Firmware rejected the operation for another reason.&lt;/summary&gt;</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>    FirmwareError = 2</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>}</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a></span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>/// &lt;summary&gt;Abstracts the architecture-specific UEFI GetMemoryMap and ExitBootServices calls.&lt;/summary&gt;</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>/// &lt;nova.when&gt;Implement in a native UEFI adapter or a deterministic test provider.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>/// &lt;nova.depends&gt;Caller-preallocated descriptor storage&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>public interface IUefiMemoryMapProvider</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a>{</span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>    /// &lt;summary&gt;Copies the current UEFI map into caller-owned storage.&lt;/summary&gt;</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>    /// &lt;nova.when&gt;Call immediately before ExitBootServices; do not allocate after success.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>    /// &lt;nova.depends&gt;UEFI GetMemoryMap&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>    /// &lt;returns&gt;The firmware map acquisition status.&lt;/returns&gt;</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>    /// &lt;example&gt;&lt;code&gt;UefiMemoryMapStatus status = provider.GetMemoryMap(buffer, out int count, out ulong key, out uint version);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>    UefiMemoryMapStatus GetMemoryMap(UefiMemoryDescriptor[] destination, out int count, out ulong mapKey, out uint descriptorVersion);</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a></span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>    /// &lt;summary&gt;Exits boot services using the key from the immediately preceding successful map call.&lt;/summary&gt;</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>    /// &lt;nova.when&gt;Call with no allocation or firmware operation between GetMemoryMap and this method.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>    /// &lt;nova.depends&gt;UEFI ExitBootServices&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>    /// &lt;returns&gt;The exit status, including stale-key retry information.&lt;/returns&gt;</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>    /// &lt;example&gt;&lt;code&gt;UefiExitBootServicesStatus status = provider.ExitBootServices(imageHandle, mapKey);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>    UefiExitBootServicesStatus ExitBootServices(ulong imageHandle, ulong mapKey);</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>}</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a></span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>/// &lt;summary&gt;Translates UEFI descriptors into architecture-independent NovaOryn descriptors.&lt;/summary&gt;</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>/// &lt;nova.when&gt;Used by FinalUefiMemoryMapSnapshot when a normaliser reads the retained map.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>/// &lt;nova.depends&gt;NovaOryn.Memory.Contracts&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>public static class UefiMemoryDescriptorMapper</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>{</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>    /// &lt;summary&gt;Attempts to translate one UEFI descriptor while rejecting overflow and misalignment.&lt;/summary&gt;</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>    /// &lt;nova.when&gt;Use for every retained firmware descriptor before normalisation.&lt;/nova.when&gt;</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>    /// &lt;nova.depends&gt;MemoryDescriptor.TryCreate&lt;/nova.depends&gt;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>    /// &lt;returns&gt;&lt;see langword=&quot;true&quot;/&gt; when the UEFI descriptor is valid and recognised.&lt;/returns&gt;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>    /// &lt;example&gt;&lt;code&gt;bool mapped = UefiMemoryDescriptorMapper.TryMap(uefi, out MemoryDescriptor descriptor);&lt;/code&gt;&lt;/example&gt;</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>    public static bool TryMap(UefiMemoryDescriptor source, out MemoryDescriptor descriptor)</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>    {</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>        MemoryType type;</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a>        MemoryRuntimeStatus runtime = MemoryRuntimeStatus.NotRuntime;</span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>        MemoryAvailability availability;</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>        switch (source.Type)</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>        {</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>            case UefiMemoryType.ConventionalMemory:</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>                type = MemoryType.UsableConventional;</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>                availability = MemoryAvailability.AvailableAfterExitBootServices;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>                break;</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>            case UefiMemoryType.LoaderCode:</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>            case UefiMemoryType.LoaderData:</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>                type = MemoryType.LoaderKernelImage;</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>                availability = MemoryAvailability.Unavailable;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>                break;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>            case UefiMemoryType.BootServicesCode:</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>            case UefiMemoryType.BootServicesData:</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>                type = MemoryType.BootServices;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>                availability = MemoryAvailability.AvailableAfterExitBootServices;</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a>                break;</span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>            case UefiMemoryType.RuntimeServicesCode:</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>                type = MemoryType.RuntimeServices;</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>                runtime = MemoryRuntimeStatus.RuntimeCode;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>                availability = MemoryAvailability.RuntimeOwned;</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>                break;</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>            case UefiMemoryType.RuntimeServicesData:</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>                type = MemoryType.RuntimeServices;</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>                runtime = MemoryRuntimeStatus.RuntimeData;</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>                availability = MemoryAvailability.RuntimeOwned;</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>                break;</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>            case UefiMemoryType.AcpiReclaimMemory:</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>                type = MemoryType.AcpiReclaimable;</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>                availability = MemoryAvailability.ReclaimableAfterAcpiInitialization;</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a>                break;</span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>            case UefiMemoryType.AcpiMemoryNvs:</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>                type = MemoryType.AcpiNvs;</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>                availability = MemoryAvailability.PermanentlyReserved;</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>                break;</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>            case UefiMemoryType.MemoryMappedIo:</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>            case UefiMemoryType.MemoryMappedIoPortSpace:</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>                type = MemoryType.MemoryMappedIo;</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>                availability = MemoryAvailability.PermanentlyReserved;</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>                break;</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>            case UefiMemoryType.UnusableMemory:</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>            case UefiMemoryType.UnacceptedMemory:</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>                type = MemoryType.BadMemory;</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>                availability = MemoryAvailability.Defective;</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>                break;</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>            case UefiMemoryType.PersistentMemory:</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>                type = MemoryType.PersistentMemory;</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a>                availability = MemoryAvailability.Unavailable;</span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>                break;</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>            default:</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>                type = MemoryType.FirmwareReserved;</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>                availability = MemoryAvailability.PermanentlyReserved;</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>                break;</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a>        }</span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a></span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>        if ((source.Attributes &amp; UefiMemoryAttributes.Runtime) != 0 &amp;&amp; runtime == MemoryRuntimeStatus.NotRuntime)</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>        {</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>            runtime = MemoryRuntimeStatus.RuntimeData;</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>            availability = MemoryAvailability.RuntimeOwned;</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>            if (type != MemoryType.MemoryMappedIo) type = MemoryType.RuntimeServices;</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a>        }</span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a></span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>        MemoryCacheAttributes attributes = TranslateAttributes(source.Attributes);</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>        return MemoryDescriptor.TryCreate(source.PhysicalStart, source.PageCount, type, attributes, runtime, availability, false, 0, out descriptor);</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>    }</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a></span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>    private static MemoryCacheAttributes TranslateAttributes(UefiMemoryAttributes source)</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>    {</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a>        MemoryCacheAttributes result = MemoryCacheAttributes.None;</span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>        if ((source &amp; UefiMemoryAttributes.Uncacheable) != 0) result |= MemoryCacheAttributes.Uncacheable;</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a>        if ((source &amp; UefiMemoryAttributes.WriteCombining) != 0) result |= MemoryCacheAttributes.WriteCombining;</span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>        if ((source &amp; UefiMemoryAttributes.WriteThrough) != 0) result |= MemoryCacheAttributes.WriteThrough;</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>        if ((source &amp; UefiMemoryAttributes.WriteBack) != 0) result |= MemoryCacheAttributes.WriteBack;</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>        if ((source &amp; UefiMemoryAttributes.UncachedExported) != 0) result |= MemoryCacheAttributes.UncachedExported;</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>        if ((source &amp; UefiMemoryAttributes.WriteProtected) != 0) result |= MemoryCacheAttributes.WriteProtected;</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>        if ((source &amp; UefiMemoryAttributes.ReadProtected) != 0) result |= MemoryCacheAttributes.ReadProtected;</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>        if ((source &amp; UefiMemoryAttributes.ExecuteProtected) != 0) result |= MemoryCacheAttributes.ExecuteProtected;</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>        if ((source &amp; UefiMemoryAttributes.NonVolatile) != 0) result |= MemoryCacheAttributes.NonVolatile;</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>        if ((source &amp; UefiMemoryAttributes.MoreReliable) != 0) result |= MemoryCacheAttributes.MoreReliable;</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a>        if ((source &amp; UefiMemoryAttributes.ReadOnly) != 0) result |= MemoryCacheAttributes.ReadOnly;</span>
+<span class="source-line" id="L235"><a class="line-number" href="#L235">235</a>        if ((source &amp; UefiMemoryAttributes.SpecificPurpose) != 0) result |= MemoryCacheAttributes.SpecificPurpose;</span>
+<span class="source-line" id="L236"><a class="line-number" href="#L236">236</a>        if ((source &amp; UefiMemoryAttributes.CpuCrypto) != 0) result |= MemoryCacheAttributes.CpuCrypto;</span>
+<span class="source-line" id="L237"><a class="line-number" href="#L237">237</a>        return result;</span>
+<span class="source-line" id="L238"><a class="line-number" href="#L238">238</a>    }</span>
+<span class="source-line" id="L239"><a class="line-number" href="#L239">239</a>}</span>
+<span class="source-line" id="L240"><a class="line-number" href="#L240">240</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>

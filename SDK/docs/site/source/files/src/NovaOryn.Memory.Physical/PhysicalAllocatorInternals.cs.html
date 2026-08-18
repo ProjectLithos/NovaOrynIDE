@@ -1,0 +1,235 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>src/NovaOryn.Memory.Physical/PhysicalAllocatorInternals.cs · Nova Oryn OS SDK</title><link rel="stylesheet" href="../../../../assets/site.css"><script defer src="../../../../assets/search-index.js"></script><script defer src="../../../../assets/site.js"></script></head><body><header><a class="brand" href="../../../../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../../../../guides/Getting-Started.html">Guides</a><a href="../../../../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../../../../" placeholder="Type a public item"><div id="search-results"></div></label></header><main><p class="eyebrow">PUBLIC SDK SOURCE</p><h1>src/NovaOryn.Memory.Physical/PhysicalAllocatorInternals.cs</h1><p><a href="../../../../source/index.html">Source index</a></p><pre class="source-code"><code><span class="source-line" id="L1"><a class="line-number" href="#L1">1</a>using NovaOryn.Memory;</span>
+<span class="source-line" id="L2"><a class="line-number" href="#L2">2</a>using NovaOryn.Primitives;</span>
+<span class="source-line" id="L3"><a class="line-number" href="#L3">3</a></span>
+<span class="source-line" id="L4"><a class="line-number" href="#L4">4</a>namespace NovaOryn.Memory.Physical;</span>
+<span class="source-line" id="L5"><a class="line-number" href="#L5">5</a></span>
+<span class="source-line" id="L6"><a class="line-number" href="#L6">6</a>internal static unsafe class PhysicalAllocatorInternals</span>
+<span class="source-line" id="L7"><a class="line-number" href="#L7">7</a>{</span>
+<span class="source-line" id="L8"><a class="line-number" href="#L8">8</a>    internal const ulong PageSize = 4096UL;</span>
+<span class="source-line" id="L9"><a class="line-number" href="#L9">9</a></span>
+<span class="source-line" id="L10"><a class="line-number" href="#L10">10</a>    internal static bool TryGetManagedFrameBounds(NormalisedMemoryMap map, out ulong minimumFrame, out ulong maximumFrameExclusive, out ulong managedPages, out int usableDescriptorCount)</span>
+<span class="source-line" id="L11"><a class="line-number" href="#L11">11</a>    {</span>
+<span class="source-line" id="L12"><a class="line-number" href="#L12">12</a>        minimumFrame = ulong.MaxValue;</span>
+<span class="source-line" id="L13"><a class="line-number" href="#L13">13</a>        maximumFrameExclusive = 0;</span>
+<span class="source-line" id="L14"><a class="line-number" href="#L14">14</a>        managedPages = 0;</span>
+<span class="source-line" id="L15"><a class="line-number" href="#L15">15</a>        usableDescriptorCount = 0;</span>
+<span class="source-line" id="L16"><a class="line-number" href="#L16">16</a>        if (map is null || map.Count &lt; 1) return false;</span>
+<span class="source-line" id="L17"><a class="line-number" href="#L17">17</a></span>
+<span class="source-line" id="L18"><a class="line-number" href="#L18">18</a>        for (int index = 0; index &lt; map.Count; index++)</span>
+<span class="source-line" id="L19"><a class="line-number" href="#L19">19</a>        {</span>
+<span class="source-line" id="L20"><a class="line-number" href="#L20">20</a>            if (!map.TryGetDescriptor(index, out MemoryDescriptor descriptor)) return false;</span>
+<span class="source-line" id="L21"><a class="line-number" href="#L21">21</a>            if (descriptor.Availability != MemoryAvailability.AvailableAfterExitBootServices) continue;</span>
+<span class="source-line" id="L22"><a class="line-number" href="#L22">22</a>            ulong startFrame = descriptor.PhysicalStart.Value / PageSize;</span>
+<span class="source-line" id="L23"><a class="line-number" href="#L23">23</a>            if (descriptor.PageCount &gt; ulong.MaxValue - startFrame) return false;</span>
+<span class="source-line" id="L24"><a class="line-number" href="#L24">24</a>            ulong endFrame = startFrame + descriptor.PageCount;</span>
+<span class="source-line" id="L25"><a class="line-number" href="#L25">25</a>            if (startFrame &lt; minimumFrame) minimumFrame = startFrame;</span>
+<span class="source-line" id="L26"><a class="line-number" href="#L26">26</a>            if (endFrame &gt; maximumFrameExclusive) maximumFrameExclusive = endFrame;</span>
+<span class="source-line" id="L27"><a class="line-number" href="#L27">27</a>            if (managedPages &gt; ulong.MaxValue - descriptor.PageCount) return false;</span>
+<span class="source-line" id="L28"><a class="line-number" href="#L28">28</a>            managedPages += descriptor.PageCount;</span>
+<span class="source-line" id="L29"><a class="line-number" href="#L29">29</a>            usableDescriptorCount++;</span>
+<span class="source-line" id="L30"><a class="line-number" href="#L30">30</a>        }</span>
+<span class="source-line" id="L31"><a class="line-number" href="#L31">31</a></span>
+<span class="source-line" id="L32"><a class="line-number" href="#L32">32</a>        return usableDescriptorCount &gt; 0 &amp;&amp; minimumFrame &lt; maximumFrameExclusive;</span>
+<span class="source-line" id="L33"><a class="line-number" href="#L33">33</a>    }</span>
+<span class="source-line" id="L34"><a class="line-number" href="#L34">34</a></span>
+<span class="source-line" id="L35"><a class="line-number" href="#L35">35</a>    internal static bool TryGetRequestFrameWindow(PhysicalAllocationRequest request, out ulong minimumFrame, out ulong maximumFrameExclusive)</span>
+<span class="source-line" id="L36"><a class="line-number" href="#L36">36</a>    {</span>
+<span class="source-line" id="L37"><a class="line-number" href="#L37">37</a>        minimumFrame = request.MinimumAddress.Value / PageSize;</span>
+<span class="source-line" id="L38"><a class="line-number" href="#L38">38</a>        maximumFrameExclusive = request.MaximumAddressExclusive.Value == 0</span>
+<span class="source-line" id="L39"><a class="line-number" href="#L39">39</a>            ? (ulong.MaxValue / PageSize) + 1UL</span>
+<span class="source-line" id="L40"><a class="line-number" href="#L40">40</a>            : request.MaximumAddressExclusive.Value / PageSize;</span>
+<span class="source-line" id="L41"><a class="line-number" href="#L41">41</a>        if (request.PageCount == 0 || request.AlignmentPages == 0) return false;</span>
+<span class="source-line" id="L42"><a class="line-number" href="#L42">42</a>        if ((request.AlignmentPages &amp; (request.AlignmentPages - 1)) != 0) return false;</span>
+<span class="source-line" id="L43"><a class="line-number" href="#L43">43</a>        return maximumFrameExclusive &gt; minimumFrame;</span>
+<span class="source-line" id="L44"><a class="line-number" href="#L44">44</a>    }</span>
+<span class="source-line" id="L45"><a class="line-number" href="#L45">45</a></span>
+<span class="source-line" id="L46"><a class="line-number" href="#L46">46</a>    internal static bool TryAlignFrame(ulong frame, ulong alignmentPages, out ulong alignedFrame)</span>
+<span class="source-line" id="L47"><a class="line-number" href="#L47">47</a>    {</span>
+<span class="source-line" id="L48"><a class="line-number" href="#L48">48</a>        alignedFrame = 0;</span>
+<span class="source-line" id="L49"><a class="line-number" href="#L49">49</a>        if (alignmentPages == 0 || (alignmentPages &amp; (alignmentPages - 1)) != 0) return false;</span>
+<span class="source-line" id="L50"><a class="line-number" href="#L50">50</a>        ulong mask = alignmentPages - 1;</span>
+<span class="source-line" id="L51"><a class="line-number" href="#L51">51</a>        if (frame &gt; ulong.MaxValue - mask) return false;</span>
+<span class="source-line" id="L52"><a class="line-number" href="#L52">52</a>        alignedFrame = (frame + mask) &amp; ~mask;</span>
+<span class="source-line" id="L53"><a class="line-number" href="#L53">53</a>        return true;</span>
+<span class="source-line" id="L54"><a class="line-number" href="#L54">54</a>    }</span>
+<span class="source-line" id="L55"><a class="line-number" href="#L55">55</a></span>
+<span class="source-line" id="L56"><a class="line-number" href="#L56">56</a>    internal static bool FitsWindow(ulong startFrame, ulong pageCount, ulong minimumFrame, ulong maximumFrameExclusive)</span>
+<span class="source-line" id="L57"><a class="line-number" href="#L57">57</a>    {</span>
+<span class="source-line" id="L58"><a class="line-number" href="#L58">58</a>        if (pageCount == 0 || startFrame &lt; minimumFrame) return false;</span>
+<span class="source-line" id="L59"><a class="line-number" href="#L59">59</a>        if (startFrame &gt; ulong.MaxValue - pageCount) return false;</span>
+<span class="source-line" id="L60"><a class="line-number" href="#L60">60</a>        ulong endFrame = startFrame + pageCount;</span>
+<span class="source-line" id="L61"><a class="line-number" href="#L61">61</a>        return endFrame &lt;= maximumFrameExclusive;</span>
+<span class="source-line" id="L62"><a class="line-number" href="#L62">62</a>    }</span>
+<span class="source-line" id="L63"><a class="line-number" href="#L63">63</a></span>
+<span class="source-line" id="L64"><a class="line-number" href="#L64">64</a>    internal static ulong NextToken(ref ulong nextToken)</span>
+<span class="source-line" id="L65"><a class="line-number" href="#L65">65</a>    {</span>
+<span class="source-line" id="L66"><a class="line-number" href="#L66">66</a>        nextToken++;</span>
+<span class="source-line" id="L67"><a class="line-number" href="#L67">67</a>        if (nextToken == 0) nextToken++;</span>
+<span class="source-line" id="L68"><a class="line-number" href="#L68">68</a>        return nextToken;</span>
+<span class="source-line" id="L69"><a class="line-number" href="#L69">69</a>    }</span>
+<span class="source-line" id="L70"><a class="line-number" href="#L70">70</a></span>
+<span class="source-line" id="L71"><a class="line-number" href="#L71">71</a>    internal static bool TryCreateRange(ulong startFrame, ulong pageCount, out PhysicalFrameRange range)</span>
+<span class="source-line" id="L72"><a class="line-number" href="#L72">72</a>    {</span>
+<span class="source-line" id="L73"><a class="line-number" href="#L73">73</a>        range = default;</span>
+<span class="source-line" id="L74"><a class="line-number" href="#L74">74</a>        if (startFrame &gt; ulong.MaxValue / PageSize) return false;</span>
+<span class="source-line" id="L75"><a class="line-number" href="#L75">75</a>        return PhysicalFrameRange.TryCreate(new PhysicalAddress(startFrame * PageSize), pageCount, out range);</span>
+<span class="source-line" id="L76"><a class="line-number" href="#L76">76</a>    }</span>
+<span class="source-line" id="L77"><a class="line-number" href="#L77">77</a></span>
+<span class="source-line" id="L78"><a class="line-number" href="#L78">78</a>    internal static int CeilLog2(ulong value)</span>
+<span class="source-line" id="L79"><a class="line-number" href="#L79">79</a>    {</span>
+<span class="source-line" id="L80"><a class="line-number" href="#L80">80</a>        if (value &lt;= 1) return 0;</span>
+<span class="source-line" id="L81"><a class="line-number" href="#L81">81</a>        int order = 0;</span>
+<span class="source-line" id="L82"><a class="line-number" href="#L82">82</a>        ulong current = 1;</span>
+<span class="source-line" id="L83"><a class="line-number" href="#L83">83</a>        while (current &lt; value &amp;&amp; order &lt; 63)</span>
+<span class="source-line" id="L84"><a class="line-number" href="#L84">84</a>        {</span>
+<span class="source-line" id="L85"><a class="line-number" href="#L85">85</a>            current &lt;&lt;= 1;</span>
+<span class="source-line" id="L86"><a class="line-number" href="#L86">86</a>            order++;</span>
+<span class="source-line" id="L87"><a class="line-number" href="#L87">87</a>        }</span>
+<span class="source-line" id="L88"><a class="line-number" href="#L88">88</a>        return order;</span>
+<span class="source-line" id="L89"><a class="line-number" href="#L89">89</a>    }</span>
+<span class="source-line" id="L90"><a class="line-number" href="#L90">90</a></span>
+<span class="source-line" id="L91"><a class="line-number" href="#L91">91</a>    internal static int FloorLog2(ulong value)</span>
+<span class="source-line" id="L92"><a class="line-number" href="#L92">92</a>    {</span>
+<span class="source-line" id="L93"><a class="line-number" href="#L93">93</a>        if (value == 0) return -1;</span>
+<span class="source-line" id="L94"><a class="line-number" href="#L94">94</a>        int order = 0;</span>
+<span class="source-line" id="L95"><a class="line-number" href="#L95">95</a>        while (value &gt; 1)</span>
+<span class="source-line" id="L96"><a class="line-number" href="#L96">96</a>        {</span>
+<span class="source-line" id="L97"><a class="line-number" href="#L97">97</a>            value &gt;&gt;= 1;</span>
+<span class="source-line" id="L98"><a class="line-number" href="#L98">98</a>            order++;</span>
+<span class="source-line" id="L99"><a class="line-number" href="#L99">99</a>        }</span>
+<span class="source-line" id="L100"><a class="line-number" href="#L100">100</a>        return order;</span>
+<span class="source-line" id="L101"><a class="line-number" href="#L101">101</a>    }</span>
+<span class="source-line" id="L102"><a class="line-number" href="#L102">102</a></span>
+<span class="source-line" id="L103"><a class="line-number" href="#L103">103</a>    internal static ulong BlockPages(int order) =&gt; 1UL &lt;&lt; order;</span>
+<span class="source-line" id="L104"><a class="line-number" href="#L104">104</a></span>
+<span class="source-line" id="L105"><a class="line-number" href="#L105">105</a>    internal static bool TryAlignWorkspaceBytes(ulong value, out ulong aligned)</span>
+<span class="source-line" id="L106"><a class="line-number" href="#L106">106</a>    {</span>
+<span class="source-line" id="L107"><a class="line-number" href="#L107">107</a>        aligned = 0;</span>
+<span class="source-line" id="L108"><a class="line-number" href="#L108">108</a>        if (value &gt; ulong.MaxValue - 7UL) return false;</span>
+<span class="source-line" id="L109"><a class="line-number" href="#L109">109</a>        aligned = (value + 7UL) &amp; ~7UL;</span>
+<span class="source-line" id="L110"><a class="line-number" href="#L110">110</a>        return true;</span>
+<span class="source-line" id="L111"><a class="line-number" href="#L111">111</a>    }</span>
+<span class="source-line" id="L112"><a class="line-number" href="#L112">112</a></span>
+<span class="source-line" id="L113"><a class="line-number" href="#L113">113</a>    internal static bool TryWorkspaceBytes(ulong primaryBytes, int allocationCapacity, int reservationCapacity, out ulong requiredBytes)</span>
+<span class="source-line" id="L114"><a class="line-number" href="#L114">114</a>    {</span>
+<span class="source-line" id="L115"><a class="line-number" href="#L115">115</a>        requiredBytes = 0;</span>
+<span class="source-line" id="L116"><a class="line-number" href="#L116">116</a>        if (allocationCapacity &lt; 1 || reservationCapacity &lt; 0) return false;</span>
+<span class="source-line" id="L117"><a class="line-number" href="#L117">117</a>        ulong allocationBytes = (ulong)allocationCapacity * (ulong)sizeof(AllocationRecord);</span>
+<span class="source-line" id="L118"><a class="line-number" href="#L118">118</a>        ulong reservationBytes = (ulong)reservationCapacity * (ulong)sizeof(ReservationRecord);</span>
+<span class="source-line" id="L119"><a class="line-number" href="#L119">119</a>        if (primaryBytes &gt; ulong.MaxValue - allocationBytes) return false;</span>
+<span class="source-line" id="L120"><a class="line-number" href="#L120">120</a>        ulong total = primaryBytes + allocationBytes;</span>
+<span class="source-line" id="L121"><a class="line-number" href="#L121">121</a>        if (total &gt; ulong.MaxValue - reservationBytes) return false;</span>
+<span class="source-line" id="L122"><a class="line-number" href="#L122">122</a>        requiredBytes = total + reservationBytes;</span>
+<span class="source-line" id="L123"><a class="line-number" href="#L123">123</a>        return true;</span>
+<span class="source-line" id="L124"><a class="line-number" href="#L124">124</a>    }</span>
+<span class="source-line" id="L125"><a class="line-number" href="#L125">125</a></span>
+<span class="source-line" id="L126"><a class="line-number" href="#L126">126</a>    internal static bool TryPartition(PhysicalAllocatorWorkspace workspace, ulong primaryBytes, int allocationCapacity, int reservationCapacity, out byte* primary, out AllocationRecord* allocations, out ReservationRecord* reservations)</span>
+<span class="source-line" id="L127"><a class="line-number" href="#L127">127</a>    {</span>
+<span class="source-line" id="L128"><a class="line-number" href="#L128">128</a>        primary = null;</span>
+<span class="source-line" id="L129"><a class="line-number" href="#L129">129</a>        allocations = null;</span>
+<span class="source-line" id="L130"><a class="line-number" href="#L130">130</a>        reservations = null;</span>
+<span class="source-line" id="L131"><a class="line-number" href="#L131">131</a>        if (!TryWorkspaceBytes(primaryBytes, allocationCapacity, reservationCapacity, out ulong requiredBytes)) return false;</span>
+<span class="source-line" id="L132"><a class="line-number" href="#L132">132</a>        if (workspace.Address == 0 || workspace.ByteLength &lt; requiredBytes || requiredBytes &gt; long.MaxValue) return false;</span>
+<span class="source-line" id="L133"><a class="line-number" href="#L133">133</a>        byte* baseAddress = (byte*)workspace.Address;</span>
+<span class="source-line" id="L134"><a class="line-number" href="#L134">134</a>        primary = baseAddress;</span>
+<span class="source-line" id="L135"><a class="line-number" href="#L135">135</a>        allocations = (AllocationRecord*)(baseAddress + (long)primaryBytes);</span>
+<span class="source-line" id="L136"><a class="line-number" href="#L136">136</a>        ulong allocationBytes = (ulong)allocationCapacity * (ulong)sizeof(AllocationRecord);</span>
+<span class="source-line" id="L137"><a class="line-number" href="#L137">137</a>        reservations = (ReservationRecord*)(baseAddress + (long)(primaryBytes + allocationBytes));</span>
+<span class="source-line" id="L138"><a class="line-number" href="#L138">138</a>        return true;</span>
+<span class="source-line" id="L139"><a class="line-number" href="#L139">139</a>    }</span>
+<span class="source-line" id="L140"><a class="line-number" href="#L140">140</a></span>
+<span class="source-line" id="L141"><a class="line-number" href="#L141">141</a>    internal static bool TryFindFreeAllocationRecord(AllocationRecord* records, int capacity, out int index)</span>
+<span class="source-line" id="L142"><a class="line-number" href="#L142">142</a>    {</span>
+<span class="source-line" id="L143"><a class="line-number" href="#L143">143</a>        index = -1;</span>
+<span class="source-line" id="L144"><a class="line-number" href="#L144">144</a>        for (int current = 0; current &lt; capacity; current++)</span>
+<span class="source-line" id="L145"><a class="line-number" href="#L145">145</a>        {</span>
+<span class="source-line" id="L146"><a class="line-number" href="#L146">146</a>            if (records[current].Active == 0)</span>
+<span class="source-line" id="L147"><a class="line-number" href="#L147">147</a>            {</span>
+<span class="source-line" id="L148"><a class="line-number" href="#L148">148</a>                index = current;</span>
+<span class="source-line" id="L149"><a class="line-number" href="#L149">149</a>                return true;</span>
+<span class="source-line" id="L150"><a class="line-number" href="#L150">150</a>            }</span>
+<span class="source-line" id="L151"><a class="line-number" href="#L151">151</a>        }</span>
+<span class="source-line" id="L152"><a class="line-number" href="#L152">152</a>        return false;</span>
+<span class="source-line" id="L153"><a class="line-number" href="#L153">153</a>    }</span>
+<span class="source-line" id="L154"><a class="line-number" href="#L154">154</a></span>
+<span class="source-line" id="L155"><a class="line-number" href="#L155">155</a>    internal static bool TryFindAllocationRecord(AllocationRecord* records, int capacity, PhysicalAllocation allocation, out int index)</span>
+<span class="source-line" id="L156"><a class="line-number" href="#L156">156</a>    {</span>
+<span class="source-line" id="L157"><a class="line-number" href="#L157">157</a>        index = -1;</span>
+<span class="source-line" id="L158"><a class="line-number" href="#L158">158</a>        for (int current = 0; current &lt; capacity; current++)</span>
+<span class="source-line" id="L159"><a class="line-number" href="#L159">159</a>        {</span>
+<span class="source-line" id="L160"><a class="line-number" href="#L160">160</a>            if (records[current].Active != 0 &amp;&amp;</span>
+<span class="source-line" id="L161"><a class="line-number" href="#L161">161</a>                records[current].Token == allocation.Token &amp;&amp;</span>
+<span class="source-line" id="L162"><a class="line-number" href="#L162">162</a>                records[current].StartFrame * PageSize == allocation.Range.Start.Value &amp;&amp;</span>
+<span class="source-line" id="L163"><a class="line-number" href="#L163">163</a>                records[current].ActualPages == allocation.Range.PageCount)</span>
+<span class="source-line" id="L164"><a class="line-number" href="#L164">164</a>            {</span>
+<span class="source-line" id="L165"><a class="line-number" href="#L165">165</a>                index = current;</span>
+<span class="source-line" id="L166"><a class="line-number" href="#L166">166</a>                return true;</span>
+<span class="source-line" id="L167"><a class="line-number" href="#L167">167</a>            }</span>
+<span class="source-line" id="L168"><a class="line-number" href="#L168">168</a>        }</span>
+<span class="source-line" id="L169"><a class="line-number" href="#L169">169</a>        return false;</span>
+<span class="source-line" id="L170"><a class="line-number" href="#L170">170</a>    }</span>
+<span class="source-line" id="L171"><a class="line-number" href="#L171">171</a></span>
+<span class="source-line" id="L172"><a class="line-number" href="#L172">172</a>    internal static bool TryFindFreeReservationRecord(ReservationRecord* records, int capacity, out int index)</span>
+<span class="source-line" id="L173"><a class="line-number" href="#L173">173</a>    {</span>
+<span class="source-line" id="L174"><a class="line-number" href="#L174">174</a>        index = -1;</span>
+<span class="source-line" id="L175"><a class="line-number" href="#L175">175</a>        for (int current = 0; current &lt; capacity; current++)</span>
+<span class="source-line" id="L176"><a class="line-number" href="#L176">176</a>        {</span>
+<span class="source-line" id="L177"><a class="line-number" href="#L177">177</a>            if (records[current].Active == 0)</span>
+<span class="source-line" id="L178"><a class="line-number" href="#L178">178</a>            {</span>
+<span class="source-line" id="L179"><a class="line-number" href="#L179">179</a>                index = current;</span>
+<span class="source-line" id="L180"><a class="line-number" href="#L180">180</a>                return true;</span>
+<span class="source-line" id="L181"><a class="line-number" href="#L181">181</a>            }</span>
+<span class="source-line" id="L182"><a class="line-number" href="#L182">182</a>        }</span>
+<span class="source-line" id="L183"><a class="line-number" href="#L183">183</a>        return false;</span>
+<span class="source-line" id="L184"><a class="line-number" href="#L184">184</a>    }</span>
+<span class="source-line" id="L185"><a class="line-number" href="#L185">185</a></span>
+<span class="source-line" id="L186"><a class="line-number" href="#L186">186</a>    internal static bool TryFindReservationRecord(ReservationRecord* records, int capacity, PhysicalReservation reservation, out int index)</span>
+<span class="source-line" id="L187"><a class="line-number" href="#L187">187</a>    {</span>
+<span class="source-line" id="L188"><a class="line-number" href="#L188">188</a>        index = -1;</span>
+<span class="source-line" id="L189"><a class="line-number" href="#L189">189</a>        for (int current = 0; current &lt; capacity; current++)</span>
+<span class="source-line" id="L190"><a class="line-number" href="#L190">190</a>        {</span>
+<span class="source-line" id="L191"><a class="line-number" href="#L191">191</a>            if (records[current].Active != 0 &amp;&amp;</span>
+<span class="source-line" id="L192"><a class="line-number" href="#L192">192</a>                records[current].Token == reservation.Token &amp;&amp;</span>
+<span class="source-line" id="L193"><a class="line-number" href="#L193">193</a>                records[current].StartFrame * PageSize == reservation.Range.Start.Value &amp;&amp;</span>
+<span class="source-line" id="L194"><a class="line-number" href="#L194">194</a>                records[current].PageCount == reservation.Range.PageCount)</span>
+<span class="source-line" id="L195"><a class="line-number" href="#L195">195</a>            {</span>
+<span class="source-line" id="L196"><a class="line-number" href="#L196">196</a>                index = current;</span>
+<span class="source-line" id="L197"><a class="line-number" href="#L197">197</a>                return true;</span>
+<span class="source-line" id="L198"><a class="line-number" href="#L198">198</a>            }</span>
+<span class="source-line" id="L199"><a class="line-number" href="#L199">199</a>        }</span>
+<span class="source-line" id="L200"><a class="line-number" href="#L200">200</a>        return false;</span>
+<span class="source-line" id="L201"><a class="line-number" href="#L201">201</a>    }</span>
+<span class="source-line" id="L202"><a class="line-number" href="#L202">202</a></span>
+<span class="source-line" id="L203"><a class="line-number" href="#L203">203</a>    internal static PhysicalAllocation CreateAllocation(ref AllocationRecord record)</span>
+<span class="source-line" id="L204"><a class="line-number" href="#L204">204</a>    {</span>
+<span class="source-line" id="L205"><a class="line-number" href="#L205">205</a>        if (!TryCreateRange(record.StartFrame, record.ActualPages, out PhysicalFrameRange range)) return default;</span>
+<span class="source-line" id="L206"><a class="line-number" href="#L206">206</a>        return new PhysicalAllocation(range, record.RequestedPages, record.Token, record.Purpose);</span>
+<span class="source-line" id="L207"><a class="line-number" href="#L207">207</a>    }</span>
+<span class="source-line" id="L208"><a class="line-number" href="#L208">208</a></span>
+<span class="source-line" id="L209"><a class="line-number" href="#L209">209</a>    internal static PhysicalReservation CreateReservation(ref ReservationRecord record)</span>
+<span class="source-line" id="L210"><a class="line-number" href="#L210">210</a>    {</span>
+<span class="source-line" id="L211"><a class="line-number" href="#L211">211</a>        if (!TryCreateRange(record.StartFrame, record.PageCount, out PhysicalFrameRange range)) return default;</span>
+<span class="source-line" id="L212"><a class="line-number" href="#L212">212</a>        return new PhysicalReservation(range, record.Token, record.Purpose);</span>
+<span class="source-line" id="L213"><a class="line-number" href="#L213">213</a>    }</span>
+<span class="source-line" id="L214"><a class="line-number" href="#L214">214</a>}</span>
+<span class="source-line" id="L215"><a class="line-number" href="#L215">215</a></span>
+<span class="source-line" id="L216"><a class="line-number" href="#L216">216</a>internal struct AllocationRecord</span>
+<span class="source-line" id="L217"><a class="line-number" href="#L217">217</a>{</span>
+<span class="source-line" id="L218"><a class="line-number" href="#L218">218</a>    internal ulong Token;</span>
+<span class="source-line" id="L219"><a class="line-number" href="#L219">219</a>    internal ulong StartFrame;</span>
+<span class="source-line" id="L220"><a class="line-number" href="#L220">220</a>    internal ulong RequestedPages;</span>
+<span class="source-line" id="L221"><a class="line-number" href="#L221">221</a>    internal ulong ActualPages;</span>
+<span class="source-line" id="L222"><a class="line-number" href="#L222">222</a>    internal PhysicalMemoryPurpose Purpose;</span>
+<span class="source-line" id="L223"><a class="line-number" href="#L223">223</a>    internal byte Active;</span>
+<span class="source-line" id="L224"><a class="line-number" href="#L224">224</a>}</span>
+<span class="source-line" id="L225"><a class="line-number" href="#L225">225</a></span>
+<span class="source-line" id="L226"><a class="line-number" href="#L226">226</a>internal struct ReservationRecord</span>
+<span class="source-line" id="L227"><a class="line-number" href="#L227">227</a>{</span>
+<span class="source-line" id="L228"><a class="line-number" href="#L228">228</a>    internal ulong Token;</span>
+<span class="source-line" id="L229"><a class="line-number" href="#L229">229</a>    internal ulong StartFrame;</span>
+<span class="source-line" id="L230"><a class="line-number" href="#L230">230</a>    internal ulong PageCount;</span>
+<span class="source-line" id="L231"><a class="line-number" href="#L231">231</a>    internal PhysicalMemoryPurpose Purpose;</span>
+<span class="source-line" id="L232"><a class="line-number" href="#L232">232</a>    internal byte Active;</span>
+<span class="source-line" id="L233"><a class="line-number" href="#L233">233</a>}</span>
+<span class="source-line" id="L234"><a class="line-number" href="#L234">234</a></span>
+</code></pre></main><footer>Generated from NovaOryn 0.29.0 source.</footer></body></html>
