@@ -6,6 +6,7 @@
     <ProjectReference Include="..\NovaOryn.Kernel.Ps2\NovaOryn.Kernel.Ps2.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Time\NovaOryn.Kernel.Time.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.TimerDispatch\NovaOryn.Kernel.TimerDispatch.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Drivers\NovaOryn.Kernel.Drivers.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Memory\NovaOryn.Kernel.Memory.csproj" />
   </ItemGroup>

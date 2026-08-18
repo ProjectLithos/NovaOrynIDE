@@ -295,11 +295,36 @@ public static class KernelConsole
     /// <summary>Confirms that the console is ready for decoded input delivered by the active input driver.</summary>
     public static Boolean ServiceInput() => _initialized;
 
-    /// <summary>Runs the post-boot interrupt-driven idle loop. Input is serviced by timer/interrupt dispatch, not by polling here.</summary>
+    private static unsafe delegate*<Boolean> _inputService;
+
+    /// <summary>Installs the SDK-owned decoded-input service used by the interactive shell.</summary>
+    public static unsafe Boolean SetInputService(delegate*<Boolean> service)
+    {
+        _inputService = service;
+        return true;
+    }
+
+    /// <summary>Writes one IDE control record to the primary serial/debug channel without rendering it on the guest framebuffer.</summary>
+    public static Boolean WriteHostControl(String command)
+    {
+        if (!_initialized || command == null) return false;
+        const String prefix = "[[NOVAORYN:";
+        const String suffix = "]]\r\n";
+        for (Int32 i = 0; i < prefix.Length; i++) if (!Native.WriteSerial((Byte)prefix[i])) return false;
+        for (Int32 i = 0; i < command.Length; i++) if (!Native.WriteSerial((Byte)command[i])) return false;
+        for (Int32 i = 0; i < suffix.Length; i++) if (!Native.WriteSerial((Byte)suffix[i])) return false;
+        return true;
+    }
+
+    /// <summary>Runs the post-boot interrupt-driven idle loop while servicing the SDK-owned input bridge before each halt.</summary>
     public static Boolean RunInteractive()
     {
         if (!_initialized) return false;
-        while (true) if (!Native.WaitForInterrupt()) return false;
+        while (true)
+        {
+            if (_inputService != null && !_inputService()) return false;
+            if (!Native.WaitForInterrupt()) return false;
+        }
     }
 
     /// <summary>Attaches an optional post-boot serial mirror while preserving COM1 as the primary debug transport.</summary>

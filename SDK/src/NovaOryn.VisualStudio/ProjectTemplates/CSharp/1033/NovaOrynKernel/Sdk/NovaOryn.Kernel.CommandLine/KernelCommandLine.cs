@@ -5,6 +5,7 @@ using NovaOryn.Kernel.Heap;
 using NovaOryn.Kernel.Memory;
 using NovaOryn.Kernel.Drivers;
 using NovaOryn.Kernel.Time;
+using NovaOryn.Kernel.TimerDispatch;
 
 namespace NovaOryn.Kernel.CommandLine;
 
@@ -15,7 +16,9 @@ public static unsafe class KernelCommandLine
     private static KernelHeapAllocation _inputAllocation;
     private static Byte* _input;
     private static UInt32 _length;
+    private static UInt32 _inputTimerHandle;
     private static Boolean _initialized;
+    private static Boolean _copyAllArmed;
 
     /// <summary>Initializes the command line and writes the initial prompt.</summary>
     public static Boolean Initialize()
@@ -23,8 +26,18 @@ public static unsafe class KernelCommandLine
         if (_initialized) return true;
         if (!KernelHeap.IsInitialized() || !KernelHeap.TryAllocate(MaximumCommandBytes, 16UL, true, out _inputAllocation)) return false;
         _input=(Byte*)(nuint)_inputAllocation.Address;
-        _length=0U; _initialized=true;
+        _length=0U; _copyAllArmed=false; _initialized=true;
+        // Own the PS/2 -> shell bridge in the SDK, not in generated user HAL source.
+        // Existing projects therefore receive working input as soon as their SDK bridge is refreshed.
+        if (KernelPs2.IsInitialized())
+        {
+            if (!KernelPs2.SetKeyboardEventHandler(&HandlePs2KeyboardEvent)) return false;
+            if (!KernelTimerDispatch.Register(1000000UL, &ServiceInputTimer, 0UL, out _inputTimerHandle)) return false;
+        }
+        if (!KernelConsole.SetInputService(&ServiceInputNow)) return false;
+        if (!KernelConsole.WriteHostControl("SHELL_BEGIN")) return false;
         if(!KernelConsole.WriteLine("Commands: help, clear, echo, info, uptime, memory, drivers, devices, font, buffering, keyboard")) return false;
+        if(!KernelConsole.WriteLine("Shell input bridge: SDK-owned PS/2 service active. Ctrl+A then Ctrl+C copies all shell output.")) return false;
         if(!KernelConsole.SetCaretEnabled(true)) return false;
         return WritePrompt();
     }
@@ -43,6 +56,52 @@ public static unsafe class KernelCommandLine
 
     /// <summary>Gets the number of bytes currently entered at the prompt.</summary>
     public static UInt32 InputLength => _length;
+
+    private static Boolean ServiceInputTimer(UInt64 cookie) => ServiceInputNow();
+
+    /// <summary>Services the SDK-owned keyboard bridge immediately; also called directly from the interactive idle loop.</summary>
+    public static Boolean ServiceInputNow()
+    {
+        if (!_initialized) return false;
+        if (!KernelPs2.IsInitialized()) return true;
+        return KernelPs2.Service();
+    }
+
+    private static Boolean HandlePs2KeyboardEvent(Ps2KeyboardEvent input)
+    {
+        if (!input.Pressed) return true;
+        if (input.Control && input.Key == Ps2Key.A)
+        {
+            _copyAllArmed = true;
+            return KernelConsole.WriteHostControl("SHELL_SELECT_ALL");
+        }
+        if (input.Control && input.Key == Ps2Key.C)
+        {
+            if (_copyAllArmed)
+            {
+                _copyAllArmed = false;
+                return KernelConsole.WriteHostControl("SHELL_COPY_ALL");
+            }
+            return CancelCurrentCommand();
+        }
+        _copyAllArmed = false;
+        if (input.Key == Ps2Key.Up) return KernelConsole.ScrollUp();
+        if (input.Key == Ps2Key.Down) return KernelConsole.ScrollDown();
+        if (input.Control && input.Key == Ps2Key.D1) return KernelConsole.SetFramebufferBufferCount(1U);
+        if (input.Control && input.Key == Ps2Key.D2) return KernelConsole.SetFramebufferBufferCount(2U);
+        if (input.Control && input.Key == Ps2Key.D3) return KernelConsole.SetFramebufferBufferCount(3U);
+        if (input.Alt && input.Key == Ps2Key.D1) return KernelConsole.SetFontPreset(1U);
+        if (input.Alt && input.Key == Ps2Key.D2) return KernelConsole.SetFontPreset(2U);
+        if (input.Alt && input.Key == Ps2Key.D3) return KernelConsole.SetFontPreset(3U);
+        return HandleCharacter(input.Character);
+    }
+
+    private static Boolean CancelCurrentCommand()
+    {
+        _length = 0U;
+        if (!KernelConsole.WriteLine("^C")) return false;
+        return WritePrompt();
+    }
 
     private static Boolean Backspace()
     {
