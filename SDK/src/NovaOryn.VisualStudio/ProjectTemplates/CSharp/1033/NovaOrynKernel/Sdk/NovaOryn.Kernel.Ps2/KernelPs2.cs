@@ -69,6 +69,7 @@ public static unsafe class KernelPs2
     }
 
     /// <summary>Gets current device and layout capabilities.</summary>
+    public static Boolean IsInitialized()=>_initialized;
     public static Ps2Capabilities GetCapabilities()=>new(_controller,_keyboard,_mouse,_layout,_keyboardEvents,_mousePackets);
     /// <summary>Gets the active installed keyboard layout.</summary>
     public static KeyboardLayout GetKeyboardLayout()=>_layout;

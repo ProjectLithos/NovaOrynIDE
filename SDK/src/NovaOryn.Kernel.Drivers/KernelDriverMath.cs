@@ -7,7 +7,7 @@ public static class KernelDriverMath
     public static Boolean Matches(KernelDriverMatchRule rule, KernelDeviceIdentifier device)
     { if(rule.MatchBus&&rule.Bus!=device.Bus)return false; if(rule.MatchVendor&&rule.VendorId!=device.VendorId)return false; if(rule.MatchDevice&&rule.DeviceId!=device.DeviceId)return false; return rule.ClassMask==0U||(rule.ClassCode&rule.ClassMask)==(device.ClassCode&rule.ClassMask); }
     public static Boolean IsValidResource(KernelDeviceResource resource)
-    { if(resource.Type==KernelDeviceResourceType.None)return false; if(resource.Length==0UL)return resource.Type==KernelDeviceResourceType.Interrupt; return resource.Start<=UInt64.MaxValue-(resource.Length-1UL); }
+    { if(resource.Type==KernelDeviceResourceType.None)return false; if(resource.Length==0UL)return resource.Type==KernelDeviceResourceType.Interrupt||resource.Type==KernelDeviceResourceType.Dma; return resource.Start<=UInt64.MaxValue-(resource.Length-1UL); }
     public static Boolean IsValidInterruptRequest(KernelDriverInterruptRequest request) => request.Device.Value!=0U&&request.Priority<=15U;
     public static Boolean IsSingleCapability(KernelDriverCapability capability) { UInt64 value=(UInt64)capability; return value!=0UL&&(value&(value-1UL))==0UL&&value<=((UInt64)KernelDriverCapability.Filesystem); }
     public static Boolean IsValidCapabilityRequest(KernelDriverCapabilityRequest request)

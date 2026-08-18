@@ -1,30 +1,49 @@
-NovaOryn IDE 0.4.1 changed files
-Base: 0.4.0
+NovaOryn IDE 0.4.2 changed files
+Base: 0.4.1
 
-Build-NovaOrynIDE.bat
 ChangedFiles.txt
-NovaOryn-IDE-0.4.1-ReleaseValidation.json
+applications/electron/package.json
+Build-NovaOrynIDE.bat
+docs/Release-0.4.2.md
+NovaOryn-IDE-0.4.2-ReleaseValidation.json
+package.json
+packages/novaoryn-ide/package.json
+packages/novaoryn-ide/src/browser/novaoryn-target-manager-widget.tsx
+packages/novaoryn-ide/src/browser/novaoryn-widget.tsx
+packages/novaoryn-ide/src/node/novaoryn-project-service.ts
 Run-NovaOrynIDE.bat
+SDK/docs/Kernel-Runtime-Contract-Integration.md
+SDK/NovaOryn-SourceManifest.json
 SDK/NovaOryn.SdkManifest.json
-SDK/docs/Driver-Capability-Model.md
-SDK/src/NovaOryn.Kernel.Drivers/KernelDriverContracts.cs
+SDK/NovaOryn.SubsystemContracts.json
+SDK/src/NovaOryn.Kernel.Bootstrap/Kernel.cs
+SDK/src/NovaOryn.Kernel.Bootstrap/KernelSubsystemRuntime.cs
+SDK/src/NovaOryn.Kernel.Bootstrap/NovaOryn.Kernel.Bootstrap.csproj
 SDK/src/NovaOryn.Kernel.Drivers/KernelDriverMath.cs
 SDK/src/NovaOryn.Kernel.Drivers/KernelDrivers.cs
-SDK/src/NovaOryn.Kernel.SubsystemContracts/SubsystemContracts.cs
-SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Drivers/KernelDriverContracts.cs
+SDK/src/NovaOryn.Kernel.E1000/KernelE1000.cs
+SDK/src/NovaOryn.Kernel.Pci/KernelPci.cs
+SDK/src/NovaOryn.Kernel.Ps2/KernelPs2.cs
+SDK/src/NovaOryn.Kernel.Rtl8168/KernelRtl8168.cs
+SDK/src/NovaOryn.Kernel.Virtio.Gpu/KernelVirtioGpu.cs
+SDK/src/NovaOryn.Kernel.Virtio/KernelVirtio.cs
 SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Drivers/KernelDriverMath.cs
 SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Drivers/KernelDrivers.cs
-SDK/tests/NovaOryn.Drivers.Tests/Program.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.E1000/KernelE1000.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Pci/KernelPci.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Ps2/KernelPs2.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Rtl8168/KernelRtl8168.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/KernelVirtioGpu.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio/KernelVirtio.cs
 Security-Baseline.json
-VERSION
 Validate-NovaOrynIDEDependencies.ps1
 Verify-NovaOrynIDEAuthoritativeConfiguration.cjs
 Verify-NovaOrynIDEBinarySymbols.cjs
 Verify-NovaOrynIDEDriverCapabilities.cjs
-Verify-NovaOrynIDEDriverCentre.cjs
 Verify-NovaOrynIDEGitPublish.cjs
 Verify-NovaOrynIDEImageDiskExplorer.cjs
 Verify-NovaOrynIDEInterruptApic.cjs
+Verify-NovaOrynIDEKernelRuntimeIntegration.cjs
 Verify-NovaOrynIDEMemoryLocals.cjs
 Verify-NovaOrynIDEMemoryMap.cjs
 Verify-NovaOrynIDEPageHeapCrash.cjs
@@ -34,12 +53,4 @@ Verify-NovaOrynIDESubsystemContracts.cjs
 Verify-NovaOrynIDESyscalls.cjs
 Verify-NovaOrynIDETargetManager.cjs
 Verify-NovaOrynIDEWorkspaceStartup.cjs
-applications/electron/package.json
-docs/Release-0.4.1.md
-package.json
-packages/novaoryn-ide/package.json
-packages/novaoryn-ide/src/browser/novaoryn-driver-centre-widget.tsx
-packages/novaoryn-ide/src/browser/novaoryn-target-manager-widget.tsx
-packages/novaoryn-ide/src/browser/novaoryn-widget.tsx
-packages/novaoryn-ide/src/common/novaoryn-protocol.ts
-packages/novaoryn-ide/src/node/novaoryn-project-service.ts
+VERSION

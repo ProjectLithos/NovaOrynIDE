@@ -457,6 +457,13 @@ public static unsafe class Kernel
         if (!KernelConsole.WriteUInt64(networking.Sockets)) return false;
         if (!KernelConsole.WriteLine("")) return false;
         if (!KernelConsole.WriteLine("Networking online; Ethernet + ARP + IPv4 + ICMP + UDP + TCP with VirtIO-net, Intel E1000/E1000e and Realtek RTL8168/RTL8111 ready.")) return false;
+        if (!KernelSubsystemRuntime.ValidateAll(out UInt32 readySubsystems,out UInt32 degradedSubsystems)) return false;
+        if (!KernelConsole.Write("Formal subsystem contracts 1.0 active; ready/degraded: ")) return false;
+        if (!KernelConsole.WriteUInt64(readySubsystems)) return false;
+        if (!KernelConsole.Write(" / ")) return false;
+        if (!KernelConsole.WriteUInt64(degradedSubsystems)) return false;
+        if (!KernelConsole.WriteLine(". Kernel runtime is gated by the public subsystem boundaries.")) return false;
+        if (!KernelConsole.WriteLine("Capability policy active: driver declarations are privilege ceilings; bound devices run only with kernel-issued grants.")) return false;
         if (!KernelConsole.WriteLine("Interactive console ready. Defaults: font 3, buffering auto (double for text).")) return false;
         if (!KernelCommandLine.Initialize()) return false;
         if (!KernelInterruptDispatch.Enable()) return false;

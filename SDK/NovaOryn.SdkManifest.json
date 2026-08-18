@@ -32,13 +32,15 @@
     "compatibilityChecker": "Compare-NovaOrynApiCompatibility.ps1",
     "subsystemContracts": "1.0",
     "subsystemContractManifest": "NovaOryn.SubsystemContracts.json",
-    "driverCapabilityModel": "1.0"
+    "driverCapabilityModel": "1.1",
+    "subsystemRuntimeIntegration": "1.0"
   },
   "rules": {
     "majorApiChange": "Breaking public API changes require a new API major version.",
     "minorApiChange": "Additive public API changes may increment the API minor version.",
     "abi": "Kernel/driver/syscall/debug ABI versions are independently versioned.",
     "consumers": "Drivers and applications must declare the API/ABI versions they were built against.",
-    "driverCapabilities": "Drivers declare a maximum privilege set; the kernel must issue and validate explicit per-binding capability grants before privileged driver operations."
+    "driverCapabilities": "Drivers declare a maximum privilege set; the kernel issues per-binding grants from discovered device resources and privileged operations require live grants.",
+    "subsystemRuntime": "Kernel boot validates all formal subsystem contracts against the live implementations before exposing the interactive runtime."
   }
 }

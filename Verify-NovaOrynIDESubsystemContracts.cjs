@@ -12,4 +12,4 @@ for(const [id,intf] of expected){const e=map.subsystems.find(x=>x.id===id);ok(`$
 ok('common status/version boundary',source.includes('KernelSubsystemStatus')&&source.includes('IsCompatible(UInt16 requiredMajor, UInt16 requiredMinor)'));
 ok('documentation',fs.existsSync(path.join(sdk,'docs','Kernel-Subsystem-Contracts.md')));
 ok('offline API-browser guide',fs.existsSync(path.join(sdk,'docs','site','guides','Kernel-Subsystem-Contracts.html')));
-if(bad)process.exit(1); console.log('[ OK ] NovaOryn IDE 0.4.1 formal kernel subsystem contract verified.');
+if(bad)process.exit(1); console.log('[ OK ] NovaOryn IDE 0.4.2 formal kernel subsystem contract verified.');

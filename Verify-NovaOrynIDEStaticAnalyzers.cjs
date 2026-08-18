@@ -15,7 +15,7 @@ must('packages/novaoryn-ide/src/browser/novaoryn-static-analyzer-widget.tsx', 'O
 must('packages/novaoryn-ide/src/browser/novaoryn-frontend-module.ts', 'NovaOrynStaticAnalyzerWidget', 'static analyzer widget registration');
 must('packages/novaoryn-ide/src/browser/novaoryn-contribution.ts', 'NovaOrynCommands.ANALYZERS', 'static analyzer Engineering menu command');
 must('packages/novaoryn-ide/src/browser/novaoryn-static-analyzer-widget.tsx', 'this.update();', 'initial analyzer render request');
-console.log('[ OK ] NovaOryn IDE 0.4.1 OS-specific static analyzer contract verified.');
+console.log('[ OK ] NovaOryn IDE 0.4.2 OS-specific static analyzer contract verified.');
 
 must('packages/novaoryn-ide/src/browser/novaoryn-static-analyzer-widget.tsx', 'setProjectPath(projectPath: string | undefined)', 'explicit analyzer OS-path hand-off');
 must('packages/novaoryn-ide/src/browser/novaoryn-static-analyzer-widget.tsx', '?? this.projectPath', 'workspace-path fallback');

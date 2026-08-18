@@ -65,7 +65,16 @@ public static unsafe class KernelDrivers
     public static Boolean TryBindDevice(KernelDeviceHandle device,out KernelDriverHandle driver)
     {
         driver=default;if(!TryDevice(device,out DeviceRecord* d)||d->BoundDriver!=0U)return false;KernelDeviceIdentifier identifier=Identifier(d);
-        for(Int32 i=0;i<(Int32)_driverCapacity;i++){DriverRecord* r=Driver(i);if(r->Used==0||!KernelDriverMath.Matches(Rule(r),identifier))continue;KernelDriverHandle candidate=new((UInt32)i+1U);KernelDriverDeviceContext context=new(device,candidate,identifier);delegate*<KernelDriverDeviceContext*,Boolean> probe=(delegate*<KernelDriverDeviceContext*,Boolean>)(void*)r->Probe;if(!probe(&context))continue;d->State=(Byte)KernelDeviceState.Probed;d->BoundDriver=candidate.Value;d->State=(Byte)KernelDeviceState.Bound;r->State=(Byte)KernelDriverState.Active;_boundCount++;driver=candidate;return true;}return false;
+        for(Int32 i=0;i<(Int32)_driverCapacity;i++)
+        {
+            DriverRecord* r=Driver(i);if(r->Used==0||!KernelDriverMath.Matches(Rule(r),identifier))continue;
+            KernelDriverHandle candidate=new((UInt32)i+1U);KernelDriverDeviceContext context=new(device,candidate,identifier);
+            delegate*<KernelDriverDeviceContext*,Boolean> probe=(delegate*<KernelDriverDeviceContext*,Boolean>)(void*)r->Probe;if(!probe(&context))continue;
+            d->State=(Byte)KernelDeviceState.Probed;d->BoundDriver=candidate.Value;d->State=(Byte)KernelDeviceState.Bound;r->State=(Byte)KernelDriverState.Active;
+            if(r->DeclaredCapabilities!=0UL&&!GrantDeclaredCapabilities(&context,d,r)){d->BoundDriver=0U;d->State=(Byte)KernelDeviceState.Registered;continue;}
+            _boundCount++;driver=candidate;return true;
+        }
+        return false;
     }
 
     public static Boolean StartDevice(KernelDeviceHandle device)
@@ -80,6 +89,55 @@ public static unsafe class KernelDrivers
     /// <summary>Gets the privilege declaration registered for a driver.</summary>
     public static Boolean TryGetDeclaredCapabilities(KernelDriverHandle driver,out KernelDriverCapabilityDeclaration declaration)
     { declaration=default;if(!TryDriver(driver,out DriverRecord* r))return false;declaration=new KernelDriverCapabilityDeclaration((KernelDriverCapability)r->DeclaredCapabilities);return true; }
+
+
+    /// <summary>Gets whether a bound driver currently owns a live grant for the requested capability.</summary>
+    public static Boolean HasCapabilityGrant(KernelDriverDeviceContext context,KernelDriverCapability capability)
+    {
+        if(!KernelDriverMath.IsSingleCapability(capability)||!TryBound(context.Device,out DeviceRecord* d,out _,out KernelDriverDeviceContext actual)||actual.Driver.Value!=context.Driver.Value)return false;
+        UInt64 bit=(UInt64)capability;for(Int32 i=0;i<d->GrantCount;i++)if((d->GrantCapability[i]&bit)==bit)return true;return false;
+    }
+
+    /// <summary>Returns one live grant owned by a bound driver for a requested capability.</summary>
+    public static Boolean TryGetCapabilityGrant(KernelDriverDeviceContext context,KernelDriverCapability capability,out KernelDriverCapabilityGrant grant)
+    {
+        grant=default;if(!KernelDriverMath.IsSingleCapability(capability)||!TryBound(context.Device,out DeviceRecord* d,out _,out KernelDriverDeviceContext actual)||actual.Driver.Value!=context.Driver.Value)return false;
+        UInt64 bit=(UInt64)capability;for(Int32 i=0;i<d->GrantCount;i++)if((d->GrantCapability[i]&bit)==bit){grant=new KernelDriverCapabilityGrant(d->GrantToken[i],context.Device,context.Driver,capability,d->GrantStart[i],d->GrantLength[i],(KernelDriverCapabilityAccess)d->GrantAccess[i]);return true;}return false;
+    }
+
+    /// <summary>Applies kernel policy to the complete declaration when a driver binds. Declarations are ceilings; grants are the actual authority.</summary>
+    private static Boolean GrantDeclaredCapabilities(KernelDriverDeviceContext* context,DeviceRecord* d,DriverRecord* r)
+    {
+        if(context==null)return false;UInt64 declared=r->DeclaredCapabilities;
+        if(!GrantGlobalIfDeclared(*context,declared,KernelDriverCapability.PciConfig))return false;
+        if(!GrantGlobalIfDeclared(*context,declared,KernelDriverCapability.Timers))return false;
+        if(!GrantGlobalIfDeclared(*context,declared,KernelDriverCapability.Networking))return false;
+        if(!GrantGlobalIfDeclared(*context,declared,KernelDriverCapability.Filesystem))return false;
+        if(!GrantGlobalIfDeclared(*context,declared,KernelDriverCapability.Dma))return false;
+        for(Int32 i=0;i<d->ResourceCount;i++)
+        {
+            KernelDeviceResourceType type=(KernelDeviceResourceType)d->ResourceType[i];UInt64 start=d->ResourceStart[i],length=d->ResourceLength[i];
+            if(type==KernelDeviceResourceType.Memory)
+            {
+                if((declared&(UInt64)KernelDriverCapability.Mmio)!=0UL&&!TryGrantCapability(*context,new KernelDriverCapabilityRequest(KernelDriverCapability.Mmio,start,length,KernelDriverCapabilityAccess.ReadWrite),out _))return false;
+                if((declared&(UInt64)KernelDriverCapability.PhysicalMemory)!=0UL&&!TryGrantCapability(*context,new KernelDriverCapabilityRequest(KernelDriverCapability.PhysicalMemory,start,length,KernelDriverCapabilityAccess.ReadWrite),out _))return false;
+            }
+            else if(type==KernelDeviceResourceType.IoPort&&(declared&(UInt64)KernelDriverCapability.PortIo)!=0UL)
+            { if(!TryGrantCapability(*context,new KernelDriverCapabilityRequest(KernelDriverCapability.PortIo,start,length,KernelDriverCapabilityAccess.ReadWrite),out _))return false; }
+        }
+        if((declared&(UInt64)KernelDriverCapability.Interrupt)!=0UL&&!TryGrantCapability(*context,new KernelDriverCapabilityRequest(KernelDriverCapability.Interrupt,0UL,0UL,KernelDriverCapabilityAccess.ReadWrite),out _))return false;
+        if((declared&(UInt64)KernelDriverCapability.Msi)!=0UL&&!TryGrantCapability(*context,new KernelDriverCapabilityRequest(KernelDriverCapability.Msi,0UL,0UL,KernelDriverCapabilityAccess.ReadWrite),out _))return false;
+        if((declared&(UInt64)KernelDriverCapability.MsiX)!=0UL&&!TryGrantCapability(*context,new KernelDriverCapabilityRequest(KernelDriverCapability.MsiX,0UL,0UL,KernelDriverCapabilityAccess.ReadWrite),out _))return false;
+        return AllDeclaredCapabilitiesGranted(d,declared);
+    }
+
+    private static Boolean AllDeclaredCapabilitiesGranted(DeviceRecord* d,UInt64 declared)
+    {
+        UInt64 granted=0UL;for(Int32 i=0;i<d->GrantCount;i++)granted|=d->GrantCapability[i];return (granted&declared)==declared;
+    }
+
+    private static Boolean GrantGlobalIfDeclared(KernelDriverDeviceContext context,UInt64 declared,KernelDriverCapability capability)
+    { if((declared&(UInt64)capability)==0UL)return true;return TryGrantCapability(context,new KernelDriverCapabilityRequest(capability,0UL,0UL,KernelDriverCapabilityAccess.ReadWrite),out _); }
 
     /// <summary>Explicitly grants one declared capability to a bound driver/device pair after kernel policy validation.</summary>
     public static Boolean TryGrantCapability(KernelDriverDeviceContext context,KernelDriverCapabilityRequest request,out KernelDriverCapabilityGrant grant)
