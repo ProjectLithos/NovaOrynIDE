@@ -1,23 +1,27 @@
-NovaOryn IDE 0.4.0 changed files
+NovaOryn IDE 0.4.1 changed files
+Base: 0.4.0
 
-.gitignore
-Audit-NovaOrynIDE.bat
 Build-NovaOrynIDE.bat
-Install-NovaOrynIDEToolchain.ps1
+ChangedFiles.txt
+NovaOryn-IDE-0.4.1-ReleaseValidation.json
 Run-NovaOrynIDE.bat
-SDK/NovaOryn-SourceManifest.json
 SDK/NovaOryn.SdkManifest.json
-SDK/NovaOryn.SubsystemContracts.json
-SDK/NovaOryn.sln
-SDK/docs/Kernel-Subsystem-Contracts.md
-SDK/docs/site/guides/Kernel-Subsystem-Contracts.html
-SDK/src/NovaOryn.Kernel.SubsystemContracts/NovaOryn.Kernel.SubsystemContracts.csproj
+SDK/docs/Driver-Capability-Model.md
+SDK/src/NovaOryn.Kernel.Drivers/KernelDriverContracts.cs
+SDK/src/NovaOryn.Kernel.Drivers/KernelDriverMath.cs
+SDK/src/NovaOryn.Kernel.Drivers/KernelDrivers.cs
 SDK/src/NovaOryn.Kernel.SubsystemContracts/SubsystemContracts.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Drivers/KernelDriverContracts.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Drivers/KernelDriverMath.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Drivers/KernelDrivers.cs
+SDK/tests/NovaOryn.Drivers.Tests/Program.cs
 Security-Baseline.json
 VERSION
 Validate-NovaOrynIDEDependencies.ps1
 Verify-NovaOrynIDEAuthoritativeConfiguration.cjs
 Verify-NovaOrynIDEBinarySymbols.cjs
+Verify-NovaOrynIDEDriverCapabilities.cjs
+Verify-NovaOrynIDEDriverCentre.cjs
 Verify-NovaOrynIDEGitPublish.cjs
 Verify-NovaOrynIDEImageDiskExplorer.cjs
 Verify-NovaOrynIDEInterruptApic.cjs
@@ -31,9 +35,11 @@ Verify-NovaOrynIDESyscalls.cjs
 Verify-NovaOrynIDETargetManager.cjs
 Verify-NovaOrynIDEWorkspaceStartup.cjs
 applications/electron/package.json
-docs/Release-0.4.0.md
+docs/Release-0.4.1.md
 package.json
 packages/novaoryn-ide/package.json
+packages/novaoryn-ide/src/browser/novaoryn-driver-centre-widget.tsx
 packages/novaoryn-ide/src/browser/novaoryn-target-manager-widget.tsx
 packages/novaoryn-ide/src/browser/novaoryn-widget.tsx
+packages/novaoryn-ide/src/common/novaoryn-protocol.ts
 packages/novaoryn-ide/src/node/novaoryn-project-service.ts

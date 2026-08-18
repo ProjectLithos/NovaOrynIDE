@@ -94,6 +94,8 @@ public interface IKernelDriverContract : IKernelSubsystemContract
     Boolean TryStart(UInt64 bindingId);
     Boolean TryStop(UInt64 bindingId);
     Boolean TryReset(UInt64 bindingId);
+    Boolean TryGrantCapability(UInt64 bindingId, UInt64 capability, UInt64 start, UInt64 length, UInt32 access, out UInt64 grantToken);
+    Boolean TryRevokeCapability(UInt64 bindingId, UInt64 grantToken);
 }
 
 /// <summary>Formal filesystem/VFS boundary. Filesystems remain providers below this interface.</summary>

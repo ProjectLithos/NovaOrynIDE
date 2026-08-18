@@ -28,15 +28,17 @@
   "contracts": {
     "publicApiBaseline": "NovaOryn.ApiBaseline.json",
     "apiPolicy": "NovaOryn.ApiContract.json",
-    "driverManifestSchema": 1,
+    "driverManifestSchema": 2,
     "compatibilityChecker": "Compare-NovaOrynApiCompatibility.ps1",
     "subsystemContracts": "1.0",
-    "subsystemContractManifest": "NovaOryn.SubsystemContracts.json"
+    "subsystemContractManifest": "NovaOryn.SubsystemContracts.json",
+    "driverCapabilityModel": "1.0"
   },
   "rules": {
     "majorApiChange": "Breaking public API changes require a new API major version.",
     "minorApiChange": "Additive public API changes may increment the API minor version.",
     "abi": "Kernel/driver/syscall/debug ABI versions are independently versioned.",
-    "consumers": "Drivers and applications must declare the API/ABI versions they were built against."
+    "consumers": "Drivers and applications must declare the API/ABI versions they were built against.",
+    "driverCapabilities": "Drivers declare a maximum privilege set; the kernel must issue and validate explicit per-binding capability grants before privileged driver operations."
   }
 }

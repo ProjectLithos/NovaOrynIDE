@@ -337,10 +337,10 @@ export interface NovaOrynConfigurationResult {
 
 
 export type NovaOrynDriverTemplateKind = 'pci' | 'usb' | 'virtio' | 'platform';
-export type NovaOrynDriverCapability = 'mmio' | 'pio' | 'interrupts' | 'msi' | 'msix' | 'dma' | 'timers';
+export type NovaOrynDriverCapability = 'mmio' | 'pio' | 'interrupts' | 'msi' | 'msix' | 'dma' | 'pci-config' | 'physical-memory' | 'timers' | 'networking' | 'filesystem';
 
 export interface NovaOrynDriverManifest {
-    schemaVersion: 1;
+    schemaVersion: 1 | 2;
     name: string;
     kind: NovaOrynDriverTemplateKind;
     version: string;

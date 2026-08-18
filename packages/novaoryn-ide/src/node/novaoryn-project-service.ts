@@ -41,6 +41,7 @@ import {
     NovaOrynProfilerCpu,
     NovaOrynProfilerCounter,
     NovaOrynDriverDescriptor,
+    NovaOrynDriverCapability,
     NovaOrynDriverManifest,
     NovaOrynCreateDriverRequest,
     NovaOrynCreateDriverResult,
@@ -79,7 +80,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.4.0';
+const NOVAORYN_IDE_VERSION = '0.4.1';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -581,8 +582,8 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             try { await fs.access(target); return { success: false, error: `Driver project ${safeName} already exists.` }; } catch { }
             await fs.mkdir(target, { recursive: true });
             const sdkContract = await this.readSdkContractVersions();
-            const capabilities = Array.from(new Set((request.capabilities ?? []).filter(value => ['mmio','pio','interrupts','msi','msix','dma','timers'].includes(value))));
-            const manifest: NovaOrynDriverManifest = { schemaVersion: 1, name: safeName, kind: request.kind, version: '0.1.0', sdkApiVersion: sdkContract.apiVersion, driverAbiVersion: sdkContract.driverAbiVersion, capabilities, description: request.description?.trim() || undefined };
+            const capabilities = Array.from(new Set((request.capabilities ?? []).filter(value => ['mmio','pio','interrupts','msi','msix','dma','pci-config','physical-memory','timers','networking','filesystem'].includes(value))));
+            const manifest: NovaOrynDriverManifest = { schemaVersion: 2, name: safeName, kind: request.kind, version: '0.1.0', sdkApiVersion: sdkContract.apiVersion, driverAbiVersion: sdkContract.driverAbiVersion, capabilities, description: request.description?.trim() || undefined };
             if (request.kind === 'pci') { manifest.vendorId = this.normaliseHexId(request.vendorId); manifest.deviceId = this.normaliseHexId(request.deviceId); }
             if (request.kind === 'usb') { manifest.usbVendorId = this.normaliseHexId(request.usbVendorId); manifest.usbProductId = this.normaliseHexId(request.usbProductId); }
             if (request.kind === 'virtio' && Number.isInteger(request.virtioDeviceId)) manifest.virtioDeviceId = Math.max(0, Number(request.virtioDeviceId));
@@ -745,7 +746,11 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             { capability: 'msi', regex: /\bMSI\b|\bMsi\b/, label: 'MSI' },
             { capability: 'msix', regex: /\bMSI-X\b|\bMSIX\b|\bMsiX\b|\bMsix\b/, label: 'MSI-X' },
             { capability: 'dma', regex: /\bDMA\b|\bDma\b/, label: 'DMA' },
-            { capability: 'timers', regex: /\b(?:KernelTimer|TimerBroker|HighResolutionTimer)\b/, label: 'timer' }
+            { capability: 'timers', regex: /\b(?:KernelTimer|TimerBroker|HighResolutionTimer)\b/, label: 'timer' },
+            { capability: 'pci-config', regex: /\b(?:KernelPci\.(?:TryRead|TryWrite)|PciConfig)\b/, label: 'PCI configuration' },
+            { capability: 'physical-memory', regex: /\b(?:KernelPhysicalMemory|PhysicalMemory)\b/, label: 'physical memory' },
+            { capability: 'networking', regex: /\b(?:KernelNetworking|Socket|NetworkInterface)\b/, label: 'networking' },
+            { capability: 'filesystem', regex: /\b(?:KernelStorage|KernelVfs|FileSystem|Filesystem)\b/, label: 'filesystem' }
         ];
         for (const entry of driverEntries) {
             if (!entry.isDirectory()) continue;
@@ -1288,7 +1293,9 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             ? `// PCI match: vendor ${manifest.vendorId ?? 'any'}, device ${manifest.deviceId ?? 'any'}`
             : manifest.kind === 'usb' ? `// USB match: VID ${manifest.usbVendorId ?? 'any'}, PID ${manifest.usbProductId ?? 'any'}`
             : manifest.kind === 'virtio' ? `// VirtIO device id: ${manifest.virtioDeviceId ?? 0}` : '// Platform-device driver';
-        return `using System;\nusing NovaOryn.Kernel.Drivers;\n\nnamespace ${ns};\n\n/// <summary>${manifest.description || `${name} NovaOryn device driver.`}</summary>\npublic static unsafe class ${this.namespace(name)}Driver\n{\n    ${match}\n    public const string DriverAbiVersion = ${JSON.stringify(manifest.driverAbiVersion)};\n\n    /// <summary>Registers this driver with the NovaOryn driver framework.</summary>\n    public static Boolean Initialize()\n    {\n        // TODO: replace the generic match rule with the device identifiers from NovaOryn.Driver.json.\n        KernelDriverMatchRule rule = new(KernelDeviceBus.Synthetic, false, 0, false, 0, false, 0U, 0U);\n        KernelDriverCallbacks callbacks = new(&Probe, &Start, &Stop, &Remove, &Interrupt);\n        return KernelDrivers.RegisterDriver(rule, callbacks, out _);\n    }\n\n    private static Boolean Probe(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Start(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Stop(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Remove(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Interrupt(KernelDriverDeviceContext* context, UInt64 cookie) => context != null;\n}\n`;
+        const capabilityNames: Record<NovaOrynDriverCapability, string> = { 'mmio':'Mmio','pio':'PortIo','interrupts':'Interrupt','msi':'Msi','msix':'MsiX','dma':'Dma','pci-config':'PciConfig','physical-memory':'PhysicalMemory','timers':'Timers','networking':'Networking','filesystem':'Filesystem' };
+        const capabilityExpression = manifest.capabilities.length ? manifest.capabilities.map(cap => `KernelDriverCapability.${capabilityNames[cap]}`).join(' | ') : 'KernelDriverCapability.None';
+        return `using System;\nusing NovaOryn.Kernel.Drivers;\n\nnamespace ${ns};\n\n/// <summary>${manifest.description || `${name} NovaOryn device driver.`}</summary>\npublic static unsafe class ${this.namespace(name)}Driver\n{\n    ${match}\n    public const string DriverAbiVersion = ${JSON.stringify(manifest.driverAbiVersion)};\n\n    /// <summary>Registers this driver and its maximum allowed privilege declaration.</summary>\n    public static Boolean Initialize()\n    {\n        // TODO: replace the generic match rule with the device identifiers from NovaOryn.Driver.json.\n        KernelDriverMatchRule rule = new(KernelDeviceBus.Synthetic, false, 0, false, 0, false, 0U, 0U);\n        KernelDriverCallbacks callbacks = new(&Probe, &Start, &Stop, &Remove, &Interrupt);\n        KernelDriverCapabilityDeclaration declaration = new(${capabilityExpression});\n        return KernelDrivers.RegisterDriver(rule, callbacks, declaration, out _);\n    }\n\n    private static Boolean Probe(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Start(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Stop(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Remove(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Interrupt(KernelDriverDeviceContext* context, UInt64 cookie) => context != null;\n}\n`;
     }
 
     protected driverReadme(manifest: NovaOrynDriverManifest): string {
@@ -1375,7 +1382,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.4.0 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.4.1 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -1955,7 +1962,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.4.0 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.4.1 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);

@@ -65,6 +65,62 @@ public readonly struct KernelDriverHandle { public KernelDriverHandle(UInt32 val
 public readonly struct KernelDeviceHandle { public KernelDeviceHandle(UInt32 value) { Value=value; } public UInt32 Value { get; } }
 public readonly struct KernelDriverInterruptHandle { public KernelDriverInterruptHandle(UInt64 value) { Value=value; } public UInt64 Value { get; } }
 
+[Flags]
+public enum KernelDriverCapability : UInt64
+{
+    None=0UL,
+    Mmio=1UL<<0,
+    PortIo=1UL<<1,
+    Interrupt=1UL<<2,
+    Msi=1UL<<3,
+    MsiX=1UL<<4,
+    Dma=1UL<<5,
+    PciConfig=1UL<<6,
+    PhysicalMemory=1UL<<7,
+    Timers=1UL<<8,
+    Networking=1UL<<9,
+    Filesystem=1UL<<10
+}
+
+public enum KernelDriverCapabilityAccess : Byte { None=0, Read=1, Write=2, ReadWrite=3, Execute=4 }
+
+/// <summary>Declares the complete privilege set a driver is allowed to request.</summary>
+public readonly struct KernelDriverCapabilityDeclaration
+{
+    public KernelDriverCapabilityDeclaration(KernelDriverCapability capabilities) { Capabilities=capabilities; }
+    public KernelDriverCapability Capabilities { get; }
+    public Boolean Contains(KernelDriverCapability capability) => capability!=KernelDriverCapability.None && (Capabilities&capability)==capability;
+    public static KernelDriverCapabilityDeclaration None => new(KernelDriverCapability.None);
+}
+
+/// <summary>Requests one concrete capability. Range is mandatory for MMIO, port I/O and physical-memory grants.</summary>
+public readonly struct KernelDriverCapabilityRequest
+{
+    public KernelDriverCapabilityRequest(KernelDriverCapability capability, UInt64 start, UInt64 length, KernelDriverCapabilityAccess access, UInt64 flags=0UL)
+    { Capability=capability; Start=start; Length=length; Access=access; Flags=flags; }
+    public KernelDriverCapability Capability { get; }
+    public UInt64 Start { get; }
+    public UInt64 Length { get; }
+    public KernelDriverCapabilityAccess Access { get; }
+    public UInt64 Flags { get; }
+}
+
+/// <summary>Opaque kernel-issued proof that a driver/device binding was granted one capability.</summary>
+public readonly struct KernelDriverCapabilityGrant
+{
+    public KernelDriverCapabilityGrant(UInt64 token, KernelDeviceHandle device, KernelDriverHandle driver, KernelDriverCapability capability, UInt64 start, UInt64 length, KernelDriverCapabilityAccess access)
+    { Token=token; Device=device; Driver=driver; Capability=capability; Start=start; Length=length; Access=access; }
+    public UInt64 Token { get; }
+    public KernelDeviceHandle Device { get; }
+    public KernelDriverHandle Driver { get; }
+    public KernelDriverCapability Capability { get; }
+    public UInt64 Start { get; }
+    public UInt64 Length { get; }
+    public KernelDriverCapabilityAccess Access { get; }
+    public Boolean IsValid => Token!=0UL;
+}
+
+
 public readonly struct KernelDriverDeviceContext
 {
     public KernelDriverDeviceContext(KernelDeviceHandle device, KernelDriverHandle driver, KernelDeviceIdentifier identifier) { Device=device; Driver=driver; Identifier=identifier; }

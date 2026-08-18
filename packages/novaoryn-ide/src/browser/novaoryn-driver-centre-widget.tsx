@@ -66,7 +66,7 @@ export class NovaOrynDriverCentreWidget extends ReactWidget {
     }
 
     protected render(): React.ReactNode {
-        const caps: NovaOrynDriverCapability[] = ['mmio','pio','interrupts','msi','msix','dma','timers'];
+        const caps: NovaOrynDriverCapability[] = ['mmio','pio','interrupts','msi','msix','dma','pci-config','physical-memory','timers','networking','filesystem'];
         return <div className='novaoryn-tool-page'>
             <div className='novaoryn-tool-header'><div><h2>Driver Development Centre</h2><p>Create NovaOryn driver projects with explicit device IDs, SDK/ABI metadata, capabilities and individual test programs.</p></div><button className='theia-button' onClick={() => void this.refresh()}>Refresh</button></div>
             {!this.root() && <p>Open a NovaOryn operating system to develop drivers.</p>}
@@ -78,14 +78,14 @@ export class NovaOrynDriverCentreWidget extends ReactWidget {
                         {this.kind === 'usb' && <>{this.field('USB Vendor ID', this.usbVendorId, v => this.usbVendorId = v, '0x1234')}{this.field('USB Product ID', this.usbProductId, v => this.usbProductId = v, '0x5678')}</>}
                         {this.kind === 'virtio' && this.field('VirtIO Device ID', this.virtioDeviceId, v => this.virtioDeviceId = v, '1')}
                     </div>
-                    <div className='novaoryn-driver-capabilities'><strong>Requested capabilities</strong>{caps.map(cap => <label key={cap}><input type='checkbox' checked={this.capabilities.has(cap)} onChange={() => this.toggleCapability(cap)} />{cap.toUpperCase()}</label>)}</div>
+                    <div className='novaoryn-driver-capabilities'><strong>Declared capabilities</strong>{caps.map(cap => <label key={cap}><input type='checkbox' checked={this.capabilities.has(cap)} onChange={() => this.toggleCapability(cap)} />{cap.toUpperCase()}</label>)}</div>
                     <label className='novaoryn-driver-test-option'><input type='checkbox' checked={this.createTestProject} onChange={e => { this.createTestProject = e.target.checked; this.update(); }} />Create an individual Test Explorer project</label>
                     <button className='theia-button main' disabled={!this.name.trim()} onClick={() => void this.create()}>Create Driver Project</button>
                 </section>
                 <section><h3>Driver Inventory <span className='novaoryn-count'>{this.drivers.length}</span></h3>{this.loading && <p>Scanning drivers…</p>}
                     <div className='novaoryn-driver-list'>{this.drivers.map(driver => <div className='novaoryn-driver-card' key={driver.id}><div><strong>{driver.name}</strong><span className='novaoryn-driver-kind'>{driver.kind}</span>{driver.configured && <span className='novaoryn-driver-configured'>configured</span>}</div><small>{driver.projectPath}</small>{driver.manifest && <div className='novaoryn-driver-meta'>API {driver.manifest.sdkApiVersion} · Driver ABI {driver.manifest.driverAbiVersion} · {driver.manifest.capabilities.join(', ') || 'no capabilities'}</div>}</div>)}</div>
                 </section>
-                <section className='novaoryn-driver-runtime'><h3>Runtime inspection</h3><p>MMIO ranges, IRQ/MSI/MSI-X routing and DMA mappings are inspected from the NovaOryn Debug and Hardware views when the kernel is paused. The Driver Centre keeps the driver's declared capabilities and device IDs alongside that runtime state.</p></section>
+                <section className='novaoryn-driver-runtime'><h3>Runtime inspection</h3><p>MMIO ranges, IRQ/MSI/MSI-X routing and DMA mappings are inspected from the NovaOryn Debug and Hardware views when the kernel is paused. The Driver Centre keeps the driver's declared maximum privilege set and device IDs alongside that runtime state. NovaOryn Kernel issues concrete capability grants only after the driver is bound to a matching device.</p></section>
             </>}
         </div>;
     }
