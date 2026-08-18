@@ -82,6 +82,19 @@ public static unsafe class KernelScheduler
         _activeThreads++; threadId=r->Id; return true;
     }
 
+    /// <summary>Gets the thread currently executing on the calling processor.</summary>
+    public static Boolean TryGetCurrentThreadId(out UInt64 threadId)
+    {
+        threadId=0UL;
+        if (!_initialized || _cpus==null || !KernelSmp.TryGetCurrentProcessor(out KernelProcessorState cpu) || cpu.Index>=_processorCount) return false;
+        UInt32 slot=(_cpus+cpu.Index)->CurrentSlot;
+        if (slot==0xFFFFFFFFU || slot>=MaximumThreads) return false;
+        ThreadRecord* record=_threads+slot;
+        if (record->Id==0UL || record->State==(UInt32)KernelThreadState.Unused || record->State==(UInt32)KernelThreadState.Terminated) return false;
+        threadId=record->Id;
+        return true;
+    }
+
     /// <summary>Gets a stable snapshot of a thread.</summary>
     public static Boolean TryGetThread(UInt64 threadId, out KernelThreadInfo info)
     {

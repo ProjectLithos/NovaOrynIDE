@@ -17,7 +17,7 @@ public static class KernelSubsystemContractVersion
 public enum KernelSubsystemId : Byte
 {
     Memory=1, Interrupts=2, Scheduler=3, Processes=4, Syscalls=5, Drivers=6,
-    Filesystem=7, Networking=8, Graphics=9, Input=10, Time=11, Power=12, Smp=13
+    Filesystem=7, Networking=8, Graphics=9, Input=10, Time=11, Power=12, Smp=13, Diagnostics=14, Security=15, Synchronization=16, Tests=17
 }
 
 /// <summary>Reports whether one subsystem implementation is ready for clients.</summary>

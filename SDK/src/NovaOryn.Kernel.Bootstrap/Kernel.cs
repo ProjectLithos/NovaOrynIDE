@@ -1,5 +1,6 @@
 using System;
 using NovaOryn.Kernel.Console;
+using NovaOryn.Kernel.Contracts;
 using NovaOryn.Kernel.CommandLine;
 using NovaOryn.Kernel.Platform.X64;
 using NovaOryn.Kernel.Memory;
@@ -201,6 +202,7 @@ public static unsafe class Kernel
         if (!KernelConsole.WriteHex(earlyAddress)) return false;
         if (!KernelConsole.WriteLine("")) return false;
         Boolean heapReady = KernelHeap.Initialize();
+        if (heapReady && !KernelLog.Configure(new KernelConsoleLogSink(), new KernelLogContextProvider(), KernelLogLevel.Info)) return false;
         if (!KernelConsole.Write("Kernel heap status: ")) return false;
         if (!KernelConsole.WriteLine(KernelHeap.GetLastStatusName())) return false;
         if (!heapReady) return false;
@@ -243,7 +245,7 @@ public static unsafe class Kernel
         if (!KernelConsole.Write("AP trampoline: ")) return false;
         if (!KernelConsole.WriteHex(KernelSmp.GetCapabilities().TrampolineAddress)) return false;
         if (!KernelConsole.WriteLine("")) return false;
-        if (!KernelConsole.WriteLine("SMP and per-CPU state online.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","SMP and per-CPU state online.")) return false;
         if (!KernelScheduler.Initialize()) return false;
         if (!KernelConsole.Write("Scheduler threads active: ")) return false;
         if (!KernelConsole.WriteUInt64(KernelScheduler.GetActiveThreadCount())) return false;
@@ -253,7 +255,7 @@ public static unsafe class Kernel
         if (!KernelConsole.WriteLine("")) return false;
         if (!KernelConsole.Write("Timer preemption: ")) return false;
         if (!KernelConsole.WriteLine(KernelScheduler.GetCapabilities().HasTimerPreemption ? "available" : "cooperative only")) return false;
-        if (!KernelConsole.WriteLine("Scheduler and threads online.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","Scheduler and threads online.")) return false;
         if (!KernelProtection.Initialize()) return false;
         KernelProtectionCapabilities protection = KernelProtection.GetCapabilities();
         if (!KernelConsole.Write("User range: ")) return false;
@@ -272,7 +274,7 @@ public static unsafe class Kernel
         if (!KernelConsole.Write(protection.SmepEnabled ? "on" : (protection.SmepSupported ? "available" : "unsupported"))) return false;
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteLine(protection.SmapSupported ? "available for syscall copy guards" : "unsupported")) return false;
-        if (!KernelConsole.WriteLine("User/kernel separation online.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","User/kernel separation online.")) return false;
         if (!KernelSystemCalls.Initialize()) return false;
         if (!KernelSystemCalls.RegisterGet(33U, &GetFontPresetSyscall)) return false;
         if (!KernelSystemCalls.RegisterSet(33U, &SetFontPresetSyscall)) return false;
@@ -284,7 +286,7 @@ public static unsafe class Kernel
         if (!KernelConsole.WriteLine("")) return false;
         if (!KernelConsole.Write("SMAP guarded user copies: ")) return false;
         if (!KernelConsole.WriteLine(systemCalls.SmapEnabled ? "enabled" : "not supported")) return false;
-        if (!KernelConsole.WriteLine("System calls online.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","System calls online.")) return false;
         if (!KernelPs2.Initialize()) return false;
         if (!KernelPs2.SetKeyboardEventHandler(&HandleKeyboardEvent)) return false;
         Ps2Capabilities ps2 = KernelPs2.GetCapabilities();
@@ -296,8 +298,8 @@ public static unsafe class Kernel
         if (!KernelConsole.WriteLine(ps2.Mouse ? "on" : "off")) return false;
         if (!KernelConsole.Write("Keyboard layout: ")) return false;
         if (!KernelConsole.WriteLine(KeyboardLayouts.GetName(ps2.Layout))) return false;
-        if (!KernelConsole.WriteLine("Keyboard layouts loaded: English_UK, English_USA.")) return false;
-        if (!KernelConsole.WriteLine("Keyboard repeat: software controlled; 300 ms delay, 40 ms interval; key-up cancels immediately.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","Keyboard layouts loaded: English_UK, English_USA.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","Keyboard repeat: software controlled; 300 ms delay, 40 ms interval; key-up cancels immediately.")) return false;
         if (!KernelProcesses.Initialize()) return false;
         KernelProcessCapabilities processes = KernelProcesses.GetCapabilities();
         if (!KernelConsole.Write("Processes ready/max: ")) return false;
@@ -305,12 +307,12 @@ public static unsafe class Kernel
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteUInt64(processes.MaximumProcesses)) return false;
         if (!KernelConsole.WriteLine("")) return false;
-        if (!KernelConsole.WriteLine("Executable loading: ELF64 + PE32+ x64; private user address spaces online.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","Executable loading: ELF64 + PE32+ x64; private user address spaces online.")) return false;
         if (!KernelInterruptDispatch.Initialize()) return false;
         if (!KernelTimerDispatch.Initialize()) return false;
         if (!KernelTimerDispatch.Register(1000000UL, &ServiceConsoleInput, 0UL, out _)) return false;
         if (!KernelTimerDispatch.Register(2000000UL, &ServiceNetworkAdapters, 0UL, out _)) return false;
-        if (!KernelConsole.WriteLine("Interrupt and timer dispatch online; background polling disabled.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","Interrupt and timer dispatch online; background polling disabled.")) return false;
         if (!KernelDrivers.Initialize()) return false;
         if (!KernelPci.Initialize()) return false;
         if (!KernelXhci.Initialize()) return false;
@@ -351,10 +353,10 @@ public static unsafe class Kernel
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteUInt64(pci.EcamSegments)) return false;
         if (!KernelConsole.WriteLine("")) return false;
-        if (!KernelConsole.WriteLine("PCI configuration, BAR discovery, capabilities, MSI/MSI-X discovery and MMIO mapping online.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","PCI configuration, BAR discovery, capabilities, MSI/MSI-X discovery and MMIO mapping online.")) return false;
         if (!KernelConsole.WriteLine(drivers.RegistryMode == KernelDriverRegistryMode.Dynamic ? "Driver framework online; heap-backed registries grow dynamically." : "Driver framework online; fixed registry policy active.")) return false;
         if (!KernelStorage.Initialize()) return false;
-        if (!KernelConsole.WriteLine("Filesystem providers: none selected by the base kernel; add the filesystem project(s) required by this OS.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","Filesystem providers: none selected by the base kernel; add the filesystem project(s) required by this OS.")) return false;
         if (!UsbHub.Initialize()) return false;
         if (!UsbHub.EnumerateDownstream()) return false;
         if (!UsbHid.Initialize()) return false;
@@ -447,7 +449,7 @@ public static unsafe class Kernel
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteUInt64(storage.Mounts)) return false;
         if (!KernelConsole.WriteLine("")) return false;
-        if (!KernelConsole.WriteLine("Storage/VFS online; MBR + GPT discovery, FAT32 and VirtIO block ready.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","Storage/VFS online; MBR + GPT discovery, FAT32 and VirtIO block ready.")) return false;
         KernelNetworkCapabilities networking = KernelNetworking.GetCapabilities();
         if (!KernelConsole.Write("Networking interfaces/routes/sockets: ")) return false;
         if (!KernelConsole.WriteUInt64(networking.Interfaces)) return false;
@@ -456,15 +458,15 @@ public static unsafe class Kernel
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteUInt64(networking.Sockets)) return false;
         if (!KernelConsole.WriteLine("")) return false;
-        if (!KernelConsole.WriteLine("Networking online; Ethernet + ARP + IPv4 + ICMP + UDP + TCP with VirtIO-net, Intel E1000/E1000e and Realtek RTL8168/RTL8111 ready.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","Networking online; Ethernet + ARP + IPv4 + ICMP + UDP + TCP with VirtIO-net, Intel E1000/E1000e and Realtek RTL8168/RTL8111 ready.")) return false;
         if (!KernelSubsystemRuntime.ValidateAll(out UInt32 readySubsystems,out UInt32 degradedSubsystems)) return false;
         if (!KernelConsole.Write("Formal subsystem contracts 1.0 active; ready/degraded: ")) return false;
         if (!KernelConsole.WriteUInt64(readySubsystems)) return false;
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteUInt64(degradedSubsystems)) return false;
         if (!KernelConsole.WriteLine(". Kernel runtime is gated by the public subsystem boundaries.")) return false;
-        if (!KernelConsole.WriteLine("Capability policy active: driver declarations are privilege ceilings; bound devices run only with kernel-issued grants.")) return false;
-        if (!KernelConsole.WriteLine("Interactive console ready. Defaults: font 3, buffering auto (double for text).")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","Capability policy active: driver declarations are privilege ceilings; bound devices run only with kernel-issued grants.")) return false;
+        if (!KernelLog.Info("kernel","Kernel.KMain","Interactive console ready. Defaults: font 3, buffering auto (double for text).")) return false;
         if (!KernelCommandLine.Initialize()) return false;
         if (!KernelInterruptDispatch.Enable()) return false;
         return KernelConsole.RunInteractive();

@@ -340,12 +340,18 @@ export type NovaOrynDriverTemplateKind = 'pci' | 'usb' | 'virtio' | 'platform';
 export type NovaOrynDriverCapability = 'mmio' | 'pio' | 'interrupts' | 'msi' | 'msix' | 'dma' | 'pci-config' | 'physical-memory' | 'timers' | 'networking' | 'filesystem';
 
 export interface NovaOrynDriverManifest {
-    schemaVersion: 1 | 2;
+    schemaVersion: 1 | 2 | 3;
     name: string;
     kind: NovaOrynDriverTemplateKind;
     version: string;
     sdkApiVersion: string;
     driverAbiVersion: string;
+    architecture?: 'any' | 'x64' | 'arm64';
+    minimumNovaOrynVersion?: string;
+    ids?: string[];
+    dependencies?: string[];
+    permissions?: NovaOrynDriverCapability[];
+    signing?: { state: 'unsigned' | 'development' | 'signed' | 'trusted' | 'revoked'; algorithm?: string; signerId?: string; digest?: string; };
     vendorId?: string;
     deviceId?: string;
     subsystemVendorId?: string;
@@ -357,6 +363,10 @@ export interface NovaOrynDriverManifest {
     capabilities: NovaOrynDriverCapability[];
     description?: string;
 }
+
+export type NovaOrynDeviceBus = 'platform' | 'pci' | 'usb' | 'acpi' | 'virtual' | 'logical';
+export type NovaOrynDeviceLifecycleState = 'discovered' | 'probing' | 'probed' | 'binding' | 'bound' | 'starting' | 'started' | 'stopping' | 'stopped' | 'resetting' | 'suspending' | 'suspended' | 'resuming' | 'failed' | 'recovering' | 'removing' | 'removed';
+export interface NovaOrynDeviceTreeNode { id: string; parentId?: string; bus: NovaOrynDeviceBus; name: string; state: NovaOrynDeviceLifecycleState; driverId?: string; vendorId?: string; deviceId?: string; classCode?: string; location?: string; children: NovaOrynDeviceTreeNode[]; }
 
 export interface NovaOrynDriverDescriptor {
     id: string;

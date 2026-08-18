@@ -2,10 +2,18 @@ using System;
 
 namespace NovaOryn.Kernel.Drivers;
 
-public enum KernelDeviceBus : Byte { Unknown=0, Platform=1, Pci=2, Usb=3, Virtio=4, Acpi=5, Synthetic=6 }
+public enum KernelDeviceBus : Byte { Unknown=0, Platform=1, Pci=2, Usb=3, Virtio=4, Acpi=5, Virtual=6, Logical=7, Synthetic=8 }
 public enum KernelDeviceResourceType : Byte { None=0, Memory=1, IoPort=2, Interrupt=3, Dma=4, BusSpecific=5 }
-public enum KernelDeviceState : Byte { Registered=1, Probed=2, Bound=3, Started=4, Stopped=5, Failed=6 }
-public enum KernelDriverState : Byte { Registered=1, Active=2, Removing=3 }
+public enum KernelDeviceState : Byte
+{
+    Registered=1, Discovered=2, Probing=3, Probed=4, Binding=5, Bound=6, Starting=7, Started=8,
+    Stopping=9, Stopped=10, Resetting=11, Suspending=12, Suspended=13, Resuming=14,
+    Failed=15, Recovering=16, Removing=17, Removed=18
+}
+public enum KernelDriverState : Byte { Registered=1, Active=2, Suspended=3, Failed=4, Recovering=5, Removing=6 }
+public enum KernelDriverLifecycleStage : Byte { Discover=1, Probe=2, Bind=3, Start=4, Stop=5, Reset=6, Suspend=7, Resume=8, Remove=9, Fail=10, Recover=11 }
+public enum KernelDriverFailureCode : UInt32 { None=0, ProbeFailed=1, BindFailed=2, StartFailed=3, StopFailed=4, ResetFailed=5, SuspendFailed=6, ResumeFailed=7, RemovedUnexpectedly=8, DeviceFault=9, Timeout=10, ResourceFailure=11, CapabilityFailure=12, InternalError=0xFFFF }
+
 
 /// <summary>Selects whether driver/device tables grow from the kernel heap or stay at an explicitly fixed capacity.</summary>
 public enum KernelDriverRegistryMode : Byte { Dynamic=0, Fixed=1 }
@@ -65,6 +73,62 @@ public readonly struct KernelDriverHandle { public KernelDriverHandle(UInt32 val
 public readonly struct KernelDeviceHandle { public KernelDeviceHandle(UInt32 value) { Value=value; } public UInt32 Value { get; } }
 public readonly struct KernelDriverInterruptHandle { public KernelDriverInterruptHandle(UInt64 value) { Value=value; } public UInt64 Value { get; } }
 
+[Flags]
+public enum KernelDriverCapability : UInt64
+{
+    None=0UL,
+    Mmio=1UL<<0,
+    PortIo=1UL<<1,
+    Interrupt=1UL<<2,
+    Msi=1UL<<3,
+    MsiX=1UL<<4,
+    Dma=1UL<<5,
+    PciConfig=1UL<<6,
+    PhysicalMemory=1UL<<7,
+    Timers=1UL<<8,
+    Networking=1UL<<9,
+    Filesystem=1UL<<10
+}
+
+public enum KernelDriverCapabilityAccess : Byte { None=0, Read=1, Write=2, ReadWrite=3, Execute=4 }
+
+/// <summary>Declares the complete privilege set a driver is allowed to request.</summary>
+public readonly struct KernelDriverCapabilityDeclaration
+{
+    public KernelDriverCapabilityDeclaration(KernelDriverCapability capabilities) { Capabilities=capabilities; }
+    public KernelDriverCapability Capabilities { get; }
+    public Boolean Contains(KernelDriverCapability capability) => capability!=KernelDriverCapability.None && (Capabilities&capability)==capability;
+    public static KernelDriverCapabilityDeclaration None => new(KernelDriverCapability.None);
+}
+
+/// <summary>Requests one concrete capability. Range is mandatory for MMIO, port I/O and physical-memory grants.</summary>
+public readonly struct KernelDriverCapabilityRequest
+{
+    public KernelDriverCapabilityRequest(KernelDriverCapability capability, UInt64 start, UInt64 length, KernelDriverCapabilityAccess access, UInt64 flags=0UL)
+    { Capability=capability; Start=start; Length=length; Access=access; Flags=flags; }
+    public KernelDriverCapability Capability { get; }
+    public UInt64 Start { get; }
+    public UInt64 Length { get; }
+    public KernelDriverCapabilityAccess Access { get; }
+    public UInt64 Flags { get; }
+}
+
+/// <summary>Opaque kernel-issued proof that a driver/device binding was granted one capability.</summary>
+public readonly struct KernelDriverCapabilityGrant
+{
+    public KernelDriverCapabilityGrant(UInt64 token, KernelDeviceHandle device, KernelDriverHandle driver, KernelDriverCapability capability, UInt64 start, UInt64 length, KernelDriverCapabilityAccess access)
+    { Token=token; Device=device; Driver=driver; Capability=capability; Start=start; Length=length; Access=access; }
+    public UInt64 Token { get; }
+    public KernelDeviceHandle Device { get; }
+    public KernelDriverHandle Driver { get; }
+    public KernelDriverCapability Capability { get; }
+    public UInt64 Start { get; }
+    public UInt64 Length { get; }
+    public KernelDriverCapabilityAccess Access { get; }
+    public Boolean IsValid => Token!=0UL;
+}
+
+
 public readonly struct KernelDriverDeviceContext
 {
     public KernelDriverDeviceContext(KernelDeviceHandle device, KernelDriverHandle driver, KernelDeviceIdentifier identifier) { Device=device; Driver=driver; Identifier=identifier; }
@@ -105,13 +169,79 @@ public readonly struct KernelDriverCapabilities
     public Boolean InterruptBrokerInstalled { get; }
 }
 
+/// <summary>One immutable view of a node in NovaOryn's authoritative device tree. The IDE Hardware Tree consumes this same model.</summary>
+public readonly struct KernelDeviceNode
+{
+    public KernelDeviceNode(KernelDeviceHandle handle,KernelDeviceHandle parent,KernelDeviceHandle firstChild,KernelDeviceHandle nextSibling,KernelDeviceIdentifier identifier,KernelDeviceState state,KernelDriverHandle driver,KernelDriverFailureCode failure)
+    { Handle=handle;Parent=parent;FirstChild=firstChild;NextSibling=nextSibling;Identifier=identifier;State=state;Driver=driver;Failure=failure; }
+    public KernelDeviceHandle Handle { get; }
+    public KernelDeviceHandle Parent { get; }
+    public KernelDeviceHandle FirstChild { get; }
+    public KernelDeviceHandle NextSibling { get; }
+    public KernelDeviceIdentifier Identifier { get; }
+    public KernelDeviceState State { get; }
+    public KernelDriverHandle Driver { get; }
+    public KernelDriverFailureCode Failure { get; }
+}
+
+public enum KernelDriverArchitecture : Byte { Any=0, X64=1, Arm64=2 }
+public enum KernelDriverSigningState : Byte { Unsigned=0, Development=1, Signed=2, Trusted=3, Revoked=4 }
+
+/// <summary>Versioned package metadata required for every distributable NovaOryn driver.</summary>
+public readonly struct KernelDriverPackageManifest
+{
+    public KernelDriverPackageManifest(UInt32 schemaVersion,String id,String name,String version,KernelDriverArchitecture architecture,String minimumNovaOrynVersion,String sdkApiVersion,String driverAbiVersion,String[] deviceIds,String[] dependencies,KernelDriverCapability permissions,KernelDriverSigningState signingState,String signingAlgorithm,String signerId,String signatureDigest)
+    { SchemaVersion=schemaVersion;Id=id;Name=name;Version=version;Architecture=architecture;MinimumNovaOrynVersion=minimumNovaOrynVersion;SdkApiVersion=sdkApiVersion;DriverAbiVersion=driverAbiVersion;DeviceIds=deviceIds;Dependencies=dependencies;Permissions=permissions;SigningState=signingState;SigningAlgorithm=signingAlgorithm;SignerId=signerId;SignatureDigest=signatureDigest; }
+    public UInt32 SchemaVersion { get; }
+    public String Id { get; }
+    public String Name { get; }
+    public String Version { get; }
+    public KernelDriverArchitecture Architecture { get; }
+    public String MinimumNovaOrynVersion { get; }
+    public String SdkApiVersion { get; }
+    public String DriverAbiVersion { get; }
+    public String[] DeviceIds { get; }
+    public String[] Dependencies { get; }
+    public KernelDriverCapability Permissions { get; }
+    public KernelDriverSigningState SigningState { get; }
+    public String SigningAlgorithm { get; }
+    public String SignerId { get; }
+    public String SignatureDigest { get; }
+}
+
+public readonly struct KernelDriverLifecycleEvent
+{
+    public KernelDriverLifecycleEvent(KernelDeviceHandle device,KernelDriverHandle driver,KernelDriverLifecycleStage stage,KernelDeviceState previousState,KernelDeviceState currentState,KernelDriverFailureCode failureCode,UInt64 sequence)
+    { Device=device;Driver=driver;Stage=stage;PreviousState=previousState;CurrentState=currentState;FailureCode=failureCode;Sequence=sequence; }
+    public KernelDeviceHandle Device { get; }
+    public KernelDriverHandle Driver { get; }
+    public KernelDriverLifecycleStage Stage { get; }
+    public KernelDeviceState PreviousState { get; }
+    public KernelDeviceState CurrentState { get; }
+    public KernelDriverFailureCode FailureCode { get; }
+    public UInt64 Sequence { get; }
+}
+
 public readonly unsafe struct KernelDriverCallbacks
 {
+    public readonly delegate*<KernelDriverDeviceContext*, Boolean> Discover;
     public readonly delegate*<KernelDriverDeviceContext*, Boolean> Probe;
+    public readonly delegate*<KernelDriverDeviceContext*, Boolean> Bind;
     public readonly delegate*<KernelDriverDeviceContext*, Boolean> Start;
     public readonly delegate*<KernelDriverDeviceContext*, Boolean> Stop;
+    public readonly delegate*<KernelDriverDeviceContext*, Boolean> Reset;
+    public readonly delegate*<KernelDriverDeviceContext*, Boolean> Suspend;
+    public readonly delegate*<KernelDriverDeviceContext*, Boolean> Resume;
     public readonly delegate*<KernelDriverDeviceContext*, Boolean> Remove;
+    public readonly delegate*<KernelDriverDeviceContext*, KernelDriverFailureCode, Boolean> Fail;
+    public readonly delegate*<KernelDriverDeviceContext*, Boolean> Recover;
     public readonly delegate*<KernelDriverDeviceContext*, UInt64, Boolean> Interrupt;
+
+    /// <summary>Compatibility constructor for existing NovaOryn drivers. New lifecycle callbacks remain optional.</summary>
     public KernelDriverCallbacks(delegate*<KernelDriverDeviceContext*, Boolean> probe, delegate*<KernelDriverDeviceContext*, Boolean> start, delegate*<KernelDriverDeviceContext*, Boolean> stop, delegate*<KernelDriverDeviceContext*, Boolean> remove, delegate*<KernelDriverDeviceContext*, UInt64, Boolean> interrupt)
-    { Probe=probe; Start=start; Stop=stop; Remove=remove; Interrupt=interrupt; }
+    { Discover=null;Probe=probe;Bind=null;Start=start;Stop=stop;Reset=null;Suspend=null;Resume=null;Remove=remove;Fail=null;Recover=null;Interrupt=interrupt; }
+
+    /// <summary>Complete professional driver lifecycle contract.</summary>
+    public KernelDriverCallbacks(delegate*<KernelDriverDeviceContext*, Boolean> discover,delegate*<KernelDriverDeviceContext*, Boolean> probe,delegate*<KernelDriverDeviceContext*, Boolean> bind,delegate*<KernelDriverDeviceContext*, Boolean> start,delegate*<KernelDriverDeviceContext*, Boolean> stop,delegate*<KernelDriverDeviceContext*, Boolean> reset,delegate*<KernelDriverDeviceContext*, Boolean> suspend,delegate*<KernelDriverDeviceContext*, Boolean> resume,delegate*<KernelDriverDeviceContext*, Boolean> remove,delegate*<KernelDriverDeviceContext*, KernelDriverFailureCode, Boolean> fail,delegate*<KernelDriverDeviceContext*, Boolean> recover,delegate*<KernelDriverDeviceContext*, UInt64, Boolean> interrupt)
+    { Discover=discover;Probe=probe;Bind=bind;Start=start;Stop=stop;Reset=reset;Suspend=suspend;Resume=resume;Remove=remove;Fail=fail;Recover=recover;Interrupt=interrupt; }
 }

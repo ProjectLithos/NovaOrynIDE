@@ -1,36 +1,17 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Getting Started · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"><script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../guides/Getting-Started.html">Guides</a><a href="../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../" placeholder="Type a public item"><div id="search-results"></div></label></header><main>
-<h1>Getting Started</h1>
-<p>Nova Oryn OS SDK builds user-owned freestanding C# operating-system kernels with the repository-pinned .NET NativeAOT toolchain. The SDK keeps architecture, boot, memory, interrupt, device, storage, networking, graphics and user/kernel facilities in reusable assemblies so the generated kernel can remain high-level.</p>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Getting Started · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="Getting-Started.html">Guides</a><a href="../index.html">API</a></nav></header><main><h1>Getting Started</h1>
+<p>Nova Oryn OS SDK compiles user-owned freestanding C# kernels with the repository-pinned .NET NativeAOT compiler.</p>
+<h2>Create a kernel project</h2>
+<p>Install the Visual Studio extension with `Install-NovaOrynVSIX.bat`, then create a NovaOryn Kernel 0.0.43 project. The editable project is kept outside the SDK source tree.</p>
 <h2>Kernel entry point</h2>
-<pre><code>[KernelEntry]
+<pre><code>
+[KernelEntry]
 public static bool KMain(BootContext boot)
 {
-    // Initialise only the facilities selected by this OS configuration.
+    // Initialise the facilities selected by your operating system.
     return CPU.Halt();
-}</code></pre>
-<p>The public kernel entry is <code>KMain(BootContext)</code>. Low-level processor, port-I/O, page-table and device-register work is owned by SDK assemblies rather than being embedded in the user kernel entry file.</p>
+}
+</code></pre>
 <h2>Build and run</h2>
-<p>NovaOryn supports command-line builds and IDE-driven builds. Use the generated build scripts for the project being developed; QEMU execution is a separate run step unless the selected workflow explicitly requests it. In the NovaOryn IDE, the run control can select debug or non-debug execution.</p>
-<h2>Recommended initialization order</h2>
-<ol>
-<li>Boot context, console and final firmware memory-map hand-off.</li>
-<li>Physical memory, virtual memory and kernel address-space policy.</li>
-<li>Early allocator and heap.</li>
-<li>ACPI, interrupt controllers, timers and SMP.</li>
-<li>Scheduler, protection boundary, system calls and processes.</li>
-<li>Driver framework, PCI/PCIe, storage, networking, USB and graphics drivers.</li>
-<li>Userland services and shell/GUI components selected by the OS configuration.</li>
-</ol>
-<h2>Current 0.29.0 SDK coverage</h2>
-<p>This documentation set indexes 77 source projects and 2,126 public items. The generated API pages are authoritative for the public declarations present in this SDK snapshot; the guides explain how the major subsystems fit together.</p>
-<h2>Start with these guides</h2>
-<ul>
-<li><a href="SDK-Architecture.html">SDK architecture and kernel boundaries</a></li>
-<li><a href="Memory-Management.html">Memory management</a></li>
-<li><a href="Interrupts-and-Timers.html">Interrupts and timers</a></li>
-<li><a href="System-Calls.html">System calls</a></li>
-<li><a href="Drivers-PCI-and-VirtIO.html">Drivers, PCI and VirtIO</a></li>
-<li><a href="USB.html">USB</a></li>
-<li><a href="Graphics-and-Console.html">Graphics and console</a></li>
-</ul>
-</main><footer>Updated documentation for NovaOryn 0.29.0 SDK source.</footer></body></html>
+<p>Use Ctrl+F5 to build and run without the debugger, or F5 for the NovaOryn debugging path. A normal command-line build uses `Build-NovaOryn.bat`; pass `-Run` through the PowerShell entry point when QEMU should start.</p>
+<h2>Read the API reference</h2>
+<p>The Assemblies pages list every detected public item. Each API page shows its declaration, purpose, use guidance, dependencies, return contract, example and source location when those details exist in the source documentation.</p></main><footer>Nova Oryn OS SDK 0.0.43</footer></body></html>

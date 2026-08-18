@@ -1,15 +1,17 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "product": "NovaOryn OS SDK",
-  "sdkVersion": "0.38.0",
-  "apiVersion": "1.0",
+  "sdkVersion": "0.40.0",
+  "apiVersion": "1.1",
   "abiVersion": "1.0",
   "compatibilityPolicy": "additive-within-major",
   "architectures": [
-    "x64"
+    "x64",
+    "arm64-planned"
   ],
   "projectSchemaVersions": [
-    2
+    2,
+    3
   ],
   "abi": {
     "kernel": "1.0",
@@ -28,12 +30,29 @@
   "contracts": {
     "publicApiBaseline": "NovaOryn.ApiBaseline.json",
     "apiPolicy": "NovaOryn.ApiContract.json",
-    "driverManifestSchema": 2,
+    "driverManifestSchema": 3,
     "compatibilityChecker": "Compare-NovaOrynApiCompatibility.ps1",
     "subsystemContracts": "1.0",
     "subsystemContractManifest": "NovaOryn.SubsystemContracts.json",
-    "driverCapabilityModel": "1.1",
-    "subsystemRuntimeIntegration": "1.0"
+    "driverCapabilityModel": "1.2",
+    "subsystemRuntimeIntegration": "1.0",
+    "driverLifecycle": "1.0",
+    "deviceTree": "1.0",
+    "structuredLogging": "1.1",
+    "kernelTelemetry": "1.0",
+    "crashDump": "1.0",
+    "panic": "1.0",
+    "testFramework": "1.0",
+    "faultInjection": "1.0",
+    "packageFormat": "1.0",
+    "executableFormat": "1.0",
+    "vfs": "1.0",
+    "networkStack": "1.0",
+    "powerManagement": "1.0",
+    "timekeeping": "1.0",
+    "buildProvenance": "1.0",
+    "sdkDoctor": "1.0",
+    "commandLineSdk": "1.0"
   },
   "rules": {
     "majorApiChange": "Breaking public API changes require a new API major version.",
@@ -42,5 +61,14 @@
     "consumers": "Drivers and applications must declare the API/ABI versions they were built against.",
     "driverCapabilities": "Drivers declare a maximum privilege set; the kernel issues per-binding grants from discovered device resources and privileged operations require live grants.",
     "subsystemRuntime": "Kernel boot validates all formal subsystem contracts against the live implementations before exposing the interactive runtime."
-  }
+  },
+  "supportedDriverFormats": [
+    "novaoryn-driver-manifest-v3"
+  ],
+  "supportedPackageFormats": [
+    "novaoryn-package-v1"
+  ],
+  "supportedExecutableFormats": [
+    "novaoryn-executable-v1"
+  ]
 }

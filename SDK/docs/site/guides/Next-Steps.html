@@ -1,15 +1,11 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Next Steps · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"><script defer src="../assets/search-index.js"></script><script defer src="../assets/site.js"></script></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="../guides/Getting-Started.html">Guides</a><a href="../index.html#assemblies">API</a></nav><label class="search"><span>Search</span><input id="site-search" data-root="../" placeholder="Type a public item"><div id="search-results"></div></label></header><main>
-<h1>Next steps</h1>
-<p>NovaOryn 0.29.0 already covers the major bootstrap-to-device path: memory management, ACPI, APIC-family interrupt routing, timers, SMP, scheduling, privilege separation, three syscall methodologies, process loading, driver registration, PCI/PCIe, storage, networking, USB, GOP graphics and VirtIO GPU.</p>
-<h2>Highest-value next SDK work</h2>
-<ul>
-<li><strong>Debugging and diagnostics:</strong> structured traces, assertions, fault/crash capture, symbol-aware stack diagnostics and test harnesses.</li>
-<li><strong>Complete API documentation:</strong> many generated public items still show “Documentation pending”; strict documentation builds should progressively drive that count to zero.</li>
-<li><strong>Filesystem breadth and write support:</strong> retain the generic VFS/provider design while expanding beyond the current initial FAT32 reader.</li>
-<li><strong>Graphics:</strong> continue using generic framebuffer + VirtIO GPU for the common graphics contract before attempting vendor-sized Intel/AMD/NVIDIA driver projects.</li>
-<li><strong>USB depth:</strong> harden xHCI enumeration, hubs, HID and mass-storage behavior across more real controllers and devices.</li>
-<li><strong>Architecture expansion:</strong> complete native ARM64 mechanisms behind the existing architecture contracts without weakening x64 abstractions.</li>
-</ul>
-<h2>Keep policy outside the mechanism</h2>
-<p>Future work should continue the current direction: user-owned project configuration decides what belongs in a monolithic, microkernel or hybrid OS, while the SDK exposes reusable mechanisms and stable .NET-compatible contracts.</p>
-</main><footer>Updated documentation for NovaOryn 0.29.0 SDK source.</footer></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Next Steps · Nova Oryn OS SDK</title><link rel="stylesheet" href="../assets/site.css"></head><body><header><a class="brand" href="../index.html">Nova Oryn <span>OS SDK</span></a><nav><a href="Getting-Started.html">Guides</a><a href="../index.html">API</a></nav></header><main><h1>SDK Next Steps</h1>
+<h2>0.0.43 — Public API completion</h2>
+<p>Audit intended end-user assemblies, make accidental implementation details internal, document every supported public item, add examples and enable strict documentation validation.</p>
+<h2>0.0.44 — SDK reference packaging</h2>
+<p>Package reference assemblies, architecture assets, templates and offline documentation behind one controlled SDK reference model.</p>
+<h2>0.0.45 — Architecture abstraction</h2>
+<p>Complete the architecture-neutral contracts and isolate x64-specific implementations before beginning the ARM64 QEMU virt target.</p>
+<h2>0.0.46 — Memory foundations</h2>
+<p>Add boot memory-map contracts, physical-page allocators, early allocation and replaceable heap designs.</p>
+<h2>0.0.47 and later</h2>
+<p>Build interrupt/event foundations, Get/Set/Event system calls, scheduling, processes, executable services, drivers and filesystems as user-selectable SDK facilities.</p></main><footer>Nova Oryn OS SDK 0.0.43</footer></body></html>

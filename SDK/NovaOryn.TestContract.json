@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kinds": [
+    "kernel",
+    "unit",
+    "integration",
+    "boot",
+    "driver",
+    "stress",
+    "fault-injection",
+    "hardware-simulation"
+  ],
+  "faults": [
+    "allocation-failure",
+    "io-timeout",
+    "dropped-interrupt",
+    "device-reset",
+    "bad-dma",
+    "corrupt-packet",
+    "page-fault",
+    "cpu-offline",
+    "filesystem-error"
+  ]
+}

@@ -21,6 +21,7 @@ static int MainEntry(string[] args)
     if (mainProjectPath is null) return 1;
     if (!MigrateLegacyRootKernel(output)) return 1;
     if (!MigrateKernelBootstrapContract(output)) return 1;
+    if (!MigrateIdeGeneratedMinimalKernel(output, template)) return 1;
     if (!MigrateUnsupportedFreestandingFormatting(output)) return 1;
     if (!MigrateAddressSpaceDiagnostics(output)) return 1;
     if (!MigrateGeneratedFramebufferFontSize(output)) return 1;
@@ -403,6 +404,70 @@ static int FindClassKeywordForKMain(string source)
     }
 
     return -1;
+}
+
+static bool MigrateIdeGeneratedMinimalKernel(string output, string template)
+{
+    string kernelPath = Path.Combine(output, "Kernel", "Kernel.cs");
+    if (!File.Exists(kernelPath)) return true;
+
+    string source = File.ReadAllText(kernelPath);
+    if (!IsIdeGeneratedMinimalKernel(source)) return true;
+
+    string templateKernelPath = Path.Combine(template, "Kernel", "Kernel.cs");
+    if (!File.Exists(templateKernelPath))
+    {
+        Console.Error.WriteLine($"[FAIL] Full NovaOryn kernel bootstrap template is missing: {templateKernelPath}");
+        return false;
+    }
+
+    string replacement = File.ReadAllText(templateKernelPath);
+    if (string.IsNullOrWhiteSpace(replacement) ||
+        !replacement.Contains("BootStartup.Initialize(boot)", StringComparison.Ordinal) ||
+        !replacement.Contains("HardwareAbstractionLayer.Initialize()", StringComparison.Ordinal) ||
+        !replacement.Contains("KernelCommandLine.Initialize()", StringComparison.Ordinal))
+    {
+        Console.Error.WriteLine($"[FAIL] Full NovaOryn kernel bootstrap template is incomplete: {templateKernelPath}");
+        return false;
+    }
+
+    File.WriteAllText(kernelPath, replacement);
+    Console.WriteLine($"[ OK ] Migrated IDE-generated minimal Kernel.cs to the full NovaOryn runtime bootstrap: {kernelPath}");
+    return true;
+}
+
+static bool IsIdeGeneratedMinimalKernel(string source)
+{
+    // This recognises only the small Kernel.cs emitted by NovaOryn IDE 0.4.2 and
+    // earlier.  User-written kernels are deliberately left untouched.
+    if (source.Length > 2200) return false;
+    string[] required = new[]
+    {
+        "public static Boolean KMain(BootContext boot)",
+        "private const UInt32 ConsoleFontSize = 32U;",
+        "KernelConsole.Initialize(boot, ConsoleFontSize)",
+        "boot.HasFinalMemoryMap()",
+        "KernelPlatform.InitializeDescriptors()",
+        "KernelPlatform.InitializeInterrupts()",
+        "KernelPlatform.DisableLegacyPic()",
+        "return KernelPlatform.Halt();"
+    };
+    foreach (string item in required)
+        if (!source.Contains(item, StringComparison.Ordinal)) return false;
+
+    string[] fullRuntimeMarkers = new[]
+    {
+        "BootStartup.Initialize(boot)",
+        "HardwareAbstractionLayer.Initialize()",
+        "KernelSystemCalls.Initialize()",
+        "KernelScheduler.Initialize()",
+        "KernelProcesses.Initialize()",
+        "KernelConsole.RunInteractive()"
+    };
+    foreach (string item in fullRuntimeMarkers)
+        if (source.Contains(item, StringComparison.Ordinal)) return false;
+
+    return true;
 }
 
 static bool MigrateUnsupportedFreestandingFormatting(string output)

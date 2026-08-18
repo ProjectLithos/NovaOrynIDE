@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "apiVersion": "1.0",
+  "apiVersion": "1.1",
   "policy": "additive-within-major",
   "publicAssemblyPrefix": "NovaOryn.",
   "breakingChanges": [

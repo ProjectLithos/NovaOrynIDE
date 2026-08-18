@@ -10,7 +10,7 @@ namespace NovaOryn.Kernel.Bootstrap;
 /// <summary>Defines the high-level NovaOryn kernel entry and delegates startup to Boot and HAL.</summary>
 public static class Kernel
 {
-    /// <summary>Boots the core runtime, initializes hardware, then enters the interactive console.</summary>
+    /// <summary>Boots the configured NovaOryn runtime, initializes hardware/services, then enters the interactive console.</summary>
     public static Boolean KMain(BootContext boot)
     {
         if (!BootStartup.Initialize(boot)) return false;

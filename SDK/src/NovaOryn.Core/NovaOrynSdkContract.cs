@@ -4,10 +4,10 @@ namespace NovaOryn.Core;
 public static class NovaOrynSdkContract
 {
     /// <summary>Gets the NovaOryn SDK product release version.</summary>
-    public const string SdkVersion = "0.38.0";
+    public const string SdkVersion = "0.40.0";
 
     /// <summary>Gets the stable NovaOryn public API contract version.</summary>
-    public const string ApiVersion = "1.0";
+    public const string ApiVersion = "1.1";
 
     /// <summary>Gets the overall NovaOryn binary ABI contract version.</summary>
     public const string AbiVersion = "1.0";

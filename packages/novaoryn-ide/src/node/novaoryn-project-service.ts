@@ -80,7 +80,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.4.2';
+const NOVAORYN_IDE_VERSION = '0.4.5';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -583,7 +583,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await fs.mkdir(target, { recursive: true });
             const sdkContract = await this.readSdkContractVersions();
             const capabilities = Array.from(new Set((request.capabilities ?? []).filter(value => ['mmio','pio','interrupts','msi','msix','dma','pci-config','physical-memory','timers','networking','filesystem'].includes(value))));
-            const manifest: NovaOrynDriverManifest = { schemaVersion: 2, name: safeName, kind: request.kind, version: '0.1.0', sdkApiVersion: sdkContract.apiVersion, driverAbiVersion: sdkContract.driverAbiVersion, capabilities, description: request.description?.trim() || undefined };
+            const manifest: NovaOrynDriverManifest = { schemaVersion: 3, name: safeName, kind: request.kind, version: '0.1.0', sdkApiVersion: sdkContract.apiVersion, driverAbiVersion: sdkContract.driverAbiVersion, architecture: 'x64', minimumNovaOrynVersion: sdkContract.sdkVersion, ids: [], dependencies: [], capabilities, permissions: capabilities, signing: { state: 'unsigned' }, description: request.description?.trim() || undefined };
             if (request.kind === 'pci') { manifest.vendorId = this.normaliseHexId(request.vendorId); manifest.deviceId = this.normaliseHexId(request.deviceId); }
             if (request.kind === 'usb') { manifest.usbVendorId = this.normaliseHexId(request.usbVendorId); manifest.usbProductId = this.normaliseHexId(request.usbProductId); }
             if (request.kind === 'virtio' && Number.isInteger(request.virtioDeviceId)) manifest.virtioDeviceId = Math.max(0, Number(request.virtioDeviceId));
@@ -768,6 +768,12 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                         const loc = location(text, found.index);
                         add('NOA5001', 'error', 'driver-capability', `${manifest.name} uses ${use.label} functionality but does not declare the '${use.capability}' capability in NovaOryn.Driver.json.`, filePath, loc.line, loc.column, 'driver-capability-declaration');
                     }
+                }
+                const privilegedDriverApi = /\b(?:KernelPci\.(?:TryRead|TryWrite|TryMap)|KernelPhysicalMemory\.|Native\.(?:In|Out|ReadModelSpecificRegister|WriteModelSpecificRegister)|KernelAddressSpace\.TryPhysicalToDirectMap)\b/g;
+                const rawAccess = privilegedDriverApi.exec(text);
+                if (rawAccess && !/\bKernelDrivers\.(?:TryGetCapabilityGrant|ValidateCapabilityGrant)\b/.test(text)) {
+                    const loc = location(text, rawAccess.index);
+                    add('NOA5002', 'error', 'driver-capability', `${manifest.name} calls a privileged raw kernel API without first obtaining or validating a live KernelDriverCapabilityGrant for the operation.`, filePath, loc.line, loc.column, 'driver-capability-live-grant');
                 }
             }
         }
@@ -1271,11 +1277,11 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         return !!relative && !relative.startsWith('..') && !path.isAbsolute(relative);
     }
 
-    protected async readSdkContractVersions(): Promise<{ apiVersion: string; driverAbiVersion: string }> {
+    protected async readSdkContractVersions(): Promise<{ sdkVersion: string; apiVersion: string; driverAbiVersion: string }> {
         try {
-            const raw = JSON.parse(await fs.readFile(path.join(NOVAORYN_SDK_ROOT, 'NovaOryn.SdkManifest.json'), 'utf8')) as { apiVersion?: string; abi?: { driver?: string } };
-            return { apiVersion: raw.apiVersion || '1.0', driverAbiVersion: raw.abi?.driver || '1.0' };
-        } catch { return { apiVersion: '1.0', driverAbiVersion: '1.0' }; }
+            const raw = JSON.parse(await fs.readFile(path.join(NOVAORYN_SDK_ROOT, 'NovaOryn.SdkManifest.json'), 'utf8')) as { sdkVersion?: string; apiVersion?: string; abi?: { driver?: string } };
+            return { sdkVersion: raw.sdkVersion || '0.40.0', apiVersion: raw.apiVersion || '1.0', driverAbiVersion: raw.abi?.driver || '1.0' };
+        } catch { return { sdkVersion: '0.40.0', apiVersion: '1.0', driverAbiVersion: '1.0' }; }
     }
 
     protected normaliseHexId(value?: string): string | undefined {
@@ -1295,7 +1301,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             : manifest.kind === 'virtio' ? `// VirtIO device id: ${manifest.virtioDeviceId ?? 0}` : '// Platform-device driver';
         const capabilityNames: Record<NovaOrynDriverCapability, string> = { 'mmio':'Mmio','pio':'PortIo','interrupts':'Interrupt','msi':'Msi','msix':'MsiX','dma':'Dma','pci-config':'PciConfig','physical-memory':'PhysicalMemory','timers':'Timers','networking':'Networking','filesystem':'Filesystem' };
         const capabilityExpression = manifest.capabilities.length ? manifest.capabilities.map(cap => `KernelDriverCapability.${capabilityNames[cap]}`).join(' | ') : 'KernelDriverCapability.None';
-        return `using System;\nusing NovaOryn.Kernel.Drivers;\n\nnamespace ${ns};\n\n/// <summary>${manifest.description || `${name} NovaOryn device driver.`}</summary>\npublic static unsafe class ${this.namespace(name)}Driver\n{\n    ${match}\n    public const string DriverAbiVersion = ${JSON.stringify(manifest.driverAbiVersion)};\n\n    /// <summary>Registers this driver and its maximum allowed privilege declaration.</summary>\n    public static Boolean Initialize()\n    {\n        // TODO: replace the generic match rule with the device identifiers from NovaOryn.Driver.json.\n        KernelDriverMatchRule rule = new(KernelDeviceBus.Synthetic, false, 0, false, 0, false, 0U, 0U);\n        KernelDriverCallbacks callbacks = new(&Probe, &Start, &Stop, &Remove, &Interrupt);\n        KernelDriverCapabilityDeclaration declaration = new(${capabilityExpression});\n        return KernelDrivers.RegisterDriver(rule, callbacks, declaration, out _);\n    }\n\n    private static Boolean Probe(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Start(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Stop(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Remove(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Interrupt(KernelDriverDeviceContext* context, UInt64 cookie) => context != null;\n}\n`;
+        return `using System;\nusing NovaOryn.Kernel.Drivers;\n\nnamespace ${ns};\n\n/// <summary>${manifest.description || `${name} NovaOryn device driver.`}</summary>\npublic static unsafe class ${this.namespace(name)}Driver\n{\n    ${match}\n    public const string DriverAbiVersion = ${JSON.stringify(manifest.driverAbiVersion)};\n\n    /// <summary>Registers this driver and its maximum allowed privilege declaration.</summary>\n    public static Boolean Initialize()\n    {\n        // TODO: replace the generic match rule with the device identifiers from NovaOryn.Driver.json.\n        KernelDriverMatchRule rule = new(KernelDeviceBus.Synthetic, false, 0, false, 0, false, 0U, 0U);\n        KernelDriverCallbacks callbacks = new(&Discover, &Probe, &Bind, &Start, &Stop, &Reset, &Suspend, &Resume, &Remove, &Fail, &Recover, &Interrupt);\n        KernelDriverCapabilityDeclaration declaration = new(${capabilityExpression});\n        return KernelDrivers.RegisterDriver(rule, callbacks, declaration, out _);\n    }\n\n    private static Boolean Discover(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Probe(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Bind(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Start(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Stop(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Reset(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Suspend(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Resume(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Remove(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Fail(KernelDriverDeviceContext* context, KernelDriverFailureCode failure) => context != null;\n    private static Boolean Recover(KernelDriverDeviceContext* context) => context != null;\n    private static Boolean Interrupt(KernelDriverDeviceContext* context, UInt64 cookie) => context != null;\n}\n`;
     }
 
     protected driverReadme(manifest: NovaOrynDriverManifest): string {
@@ -1382,7 +1388,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.4.2 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.4.5 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -1962,7 +1968,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.4.2 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.4.5 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -3984,8 +3990,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     }
 
     protected kernelSource(configuration: NovaOrynProjectConfiguration): string {
-        const namespaceName = this.namespace(configuration.name);
-        return `using System;\nusing NovaOryn.Kernel.Console;\nusing NovaOryn.Kernel.Platform.X64;\n\nnamespace ${namespaceName}.Kernel;\n\npublic static class Kernel\n{\n    private const UInt32 ConsoleFontSize = 32U;\n\n    public static Boolean KMain(BootContext boot)\n    {\n        if (!KernelConsole.Initialize(boot, ConsoleFontSize)) return false;\n        if (!KernelConsole.WriteLine(${JSON.stringify(configuration.name + ' KMain started.')})) return false;\n        if (!boot.HasFinalMemoryMap()) return false;\n        if (!KernelPlatform.InitializeDescriptors()) return false;\n        if (!KernelPlatform.InitializeInterrupts()) return false;\n        if (!KernelPlatform.DisableLegacyPic()) return false;\n        return KernelPlatform.Halt();\n    }\n}\n`;
+        return `using System;\nusing NovaOryn.Kernel.Console;\nusing NovaOryn.Kernel.CommandLine;\nusing NovaOryn.Kernel.InterruptDispatch;\nusing NovaOryn.Kernel.Bootstrap.Boot;\nusing NovaOryn.Kernel.Bootstrap.HAL;\n\nnamespace NovaOryn.Kernel.Bootstrap;\n\n/// <summary>Defines the high-level NovaOryn kernel entry and delegates startup to Boot and HAL.</summary>\npublic static class Kernel\n{\n    /// <summary>Boots the configured NovaOryn runtime, initializes hardware/services, then enters the interactive console.</summary>\n    public static Boolean KMain(BootContext boot)\n    {\n        if (!BootStartup.Initialize(boot)) return false;\n        if (!HardwareAbstractionLayer.Initialize()) return false;\n        if (!KernelConsole.WriteLine(\"Interactive console ready. Defaults: font 3, buffering auto (double for text).\")) return false;\n        if (!KernelCommandLine.Initialize()) return false;\n        if (!KernelInterruptDispatch.Enable()) return false;\n        return KernelConsole.RunInteractive();\n    }\n}\n`;
     }
 
     protected sdkProjectManifest(configuration: NovaOrynProjectConfiguration): string {

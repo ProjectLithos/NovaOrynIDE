@@ -20,6 +20,13 @@ public static class KernelDriverMath
     }
     public static Boolean RangeContains(UInt64 outerStart,UInt64 outerLength,UInt64 innerStart,UInt64 innerLength)
     { if(outerLength==0UL||innerLength==0UL)return false;if(outerStart>UInt64.MaxValue-(outerLength-1UL)||innerStart>UInt64.MaxValue-(innerLength-1UL))return false;UInt64 outerEnd=outerStart+outerLength-1UL;UInt64 innerEnd=innerStart+innerLength-1UL;return innerStart>=outerStart&&innerEnd<=outerEnd; }
+    /// <summary>Returns whether an issued grant access mode covers the requested operation.</summary>
+    public static Boolean AccessCovers(KernelDriverCapabilityAccess granted,KernelDriverCapabilityAccess requested)
+    {
+        if(granted==KernelDriverCapabilityAccess.None||requested==KernelDriverCapabilityAccess.None)return false;
+        if(granted==requested)return true;
+        return granted==KernelDriverCapabilityAccess.ReadWrite&&(requested==KernelDriverCapabilityAccess.Read||requested==KernelDriverCapabilityAccess.Write);
+    }
     public static Boolean IsValidOptions(KernelDriverFrameworkOptions options)
     {
         if(options.InitialDriverCapacity==0U||options.InitialDeviceCapacity==0U)return false;
