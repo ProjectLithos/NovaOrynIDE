@@ -1,4 +1,4 @@
-# NovaOryn SDK 0.41.2
+# NovaOryn SDK 0.41.3
 
 Native source-debug map generation now consumes CodeView `DEBUG_S_LINES` records directly through `llvm-pdbutil dump -l`.
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
- <Metadata><Identity Id="NovaOryn.VisualStudio" Version="0.41.2" Language="en-US" Publisher="Project Lithos"/><DisplayName>NovaOryn OS SDK</DisplayName><Description xml:space="preserve">NovaOryn Visual Studio integration with independent kernel, driver, userland, library, service, and test project templates.</Description></Metadata>
+ <Metadata><Identity Id="NovaOryn.VisualStudio" Version="0.41.3" Language="en-US" Publisher="Project Lithos"/><DisplayName>NovaOryn OS SDK</DisplayName><Description xml:space="preserve">NovaOryn Visual Studio integration with independent kernel, driver, userland, library, service, and test project templates.</Description></Metadata>
  <Installation><InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,)"><ProductArchitecture>amd64</ProductArchitecture></InstallationTarget><InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="[17.0,)"><ProductArchitecture>amd64</ProductArchitecture></InstallationTarget><InstallationTarget Id="Microsoft.VisualStudio.Enterprise" Version="[17.0,)"><ProductArchitecture>amd64</ProductArchitecture></InstallationTarget></Installation>
  <Dependencies><Dependency Id="Microsoft.Framework.NDP" DisplayName=".NET Framework" Version="[4.7.2,)"/></Dependencies>
  <Prerequisites><Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,)" DisplayName="Visual Studio core editor"/></Prerequisites>

@@ -1,5 +1,6 @@
 using System;
 using NovaOryn.Kernel.Console;
+using NovaOryn.Kernel.CommandLine;
 using NovaOryn.Kernel.Processes;
 using NovaOryn.Kernel.InterruptDispatch;
 using NovaOryn.Kernel.TimerDispatch;
@@ -37,6 +38,11 @@ namespace NovaOryn.Kernel.Bootstrap.HAL;
 /// <summary>Initializes only hardware/service families assigned to the kernel by the authoritative NovaOryn configuration.</summary>
 public static unsafe class HardwareAbstractionLayer
 {
+#if NOVAORYN_KERNELAREA_INPUT
+    private static UInt32 _inputTimerHandle;
+    private static UInt64 _keyboardIrqHandle;
+    private static UInt64 _mouseIrqHandle;
+#endif
     /// <summary>Starts configured kernel-domain mechanisms and leaves userland-domain services for process/service startup.</summary>
     public static Boolean Initialize()
     {
@@ -61,12 +67,23 @@ public static unsafe class HardwareAbstractionLayer
         if (!KernelConsole.Write(ps2.Keyboard ? "keyboard" : "no keyboard")) return false;
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteLine(ps2.Mouse ? "mouse" : "no mouse")) return false;
+        // The hardware driver decodes scan codes; the HAL bridges decoded events into the
+        // common command-line input path. A timer-service drain is always installed so
+        // interactive input remains live even on firmware with unusual legacy IRQ routing.
+        if (!KernelPs2.SetKeyboardEventHandler(&HandlePs2KeyboardEvent)) return false;
+        if (!KernelTimerDispatch.Register(1000000UL, &ServiceInput, 0UL, out _inputTimerHandle)) return false;
 #endif
 
 #if NOVAORYN_KERNELAREA_DRIVERS
         if (!KernelDrivers.Initialize()) return false;
         if (!KernelPci.Initialize()) return false;
         if (!KernelInterruptBroker.Initialize()) return false;
+#if NOVAORYN_KERNELAREA_INPUT
+        Boolean keyboardIrq = KernelInterruptBroker.RegisterLegacyGsi(1U, false, false, &HandlePs2Interrupt, 0UL, out _keyboardIrqHandle);
+        Boolean mouseIrq = !KernelPs2.GetCapabilities().Mouse || KernelInterruptBroker.RegisterLegacyGsi(12U, false, false, &HandlePs2Interrupt, 0UL, out _mouseIrqHandle);
+        Boolean ps2Irqs = keyboardIrq && mouseIrq && KernelPs2.SetHardwareInterrupts(true);
+        if (!KernelConsole.WriteLine(ps2Irqs ? "PS/2 input: hardware IRQ delivery active (timer drain retained as safety net)." : "PS/2 input: timer-dispatch drain active.")) return false;
+#endif
         if (!KernelVirtioGpu.Initialize()) return false;
         KernelDriverCapabilities drivers = KernelDrivers.GetCapabilities();
         PciCapabilities pci = KernelPci.GetCapabilities();
@@ -109,10 +126,58 @@ public static unsafe class HardwareAbstractionLayer
         if (!UsbHub.Initialize()) return false;
         if (!UsbHub.EnumerateDownstream()) return false;
         if (!UsbHid.Initialize()) return false;
+#if NOVAORYN_KERNELAREA_INPUT
+        if (!UsbHid.SetKeyboardEventHandler(&HandleUsbKeyboardEvent)) return false;
+#endif
         if (!UsbMassStorage.Initialize()) return false;
         if (!KernelConsole.WriteLine("Kernel-domain USB services online.")) return false;
 #endif
 
         return true;
     }
+#if NOVAORYN_KERNELAREA_INPUT
+    private static Boolean ServiceInput(UInt64 cookie)
+    {
+        Boolean ok = KernelPs2.Service();
+#if NOVAORYN_KERNELAREA_USB
+        if (UsbHid.IsInitialized()) ok = UsbHid.Service() & ok;
+#endif
+        return ok;
+    }
+
+    private static Boolean HandlePs2Interrupt(Byte vector, UInt64 cookie) => KernelPs2.Service();
+
+    private static Boolean HandlePs2KeyboardEvent(Ps2KeyboardEvent input)
+    {
+        if (!input.Pressed) return true;
+        if (input.Key == Ps2Key.Up) return KernelConsole.ScrollUp();
+        if (input.Key == Ps2Key.Down) return KernelConsole.ScrollDown();
+        if (input.Control && input.Key == Ps2Key.D1) return KernelConsole.SetFramebufferBufferCount(1U);
+        if (input.Control && input.Key == Ps2Key.D2) return KernelConsole.SetFramebufferBufferCount(2U);
+        if (input.Control && input.Key == Ps2Key.D3) return KernelConsole.SetFramebufferBufferCount(3U);
+        if (input.Alt && input.Key == Ps2Key.D1) return KernelConsole.SetFontPreset(1U);
+        if (input.Alt && input.Key == Ps2Key.D2) return KernelConsole.SetFontPreset(2U);
+        if (input.Alt && input.Key == Ps2Key.D3) return KernelConsole.SetFontPreset(3U);
+        return KernelCommandLine.HandleCharacter(input.Character);
+    }
+
+#if NOVAORYN_KERNELAREA_USB
+    private static Boolean HandleUsbKeyboardEvent(UsbHidKeyboardEvent input)
+    {
+        if (!input.Pressed) return true;
+        if (input.Usage == 82U) return KernelConsole.ScrollUp();
+        if (input.Usage == 81U) return KernelConsole.ScrollDown();
+        Boolean control = (input.Modifiers & 0x11U) != 0U;
+        Boolean alt = (input.Modifiers & 0x44U) != 0U;
+        if (control && input.Usage == 30U) return KernelConsole.SetFramebufferBufferCount(1U);
+        if (control && input.Usage == 31U) return KernelConsole.SetFramebufferBufferCount(2U);
+        if (control && input.Usage == 32U) return KernelConsole.SetFramebufferBufferCount(3U);
+        if (alt && input.Usage == 30U) return KernelConsole.SetFontPreset(1U);
+        if (alt && input.Usage == 31U) return KernelConsole.SetFontPreset(2U);
+        if (alt && input.Usage == 32U) return KernelConsole.SetFontPreset(3U);
+        return KernelCommandLine.HandleCharacter(input.Character);
+    }
+#endif
+#endif
+
 }

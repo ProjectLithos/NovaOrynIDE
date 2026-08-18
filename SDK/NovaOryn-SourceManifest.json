@@ -1,5 +1,5 @@
 {
-  "version": "0.41.2",
+  "version": "0.41.3",
   "files": [
     {
       "path": "Assets/Fonts/LinuxKernel/LinuxKernelFonts.json",
@@ -1367,12 +1367,12 @@
       "sha256": "647f241cc1cbb7758bea75d3dff6ccdbbb2b80db79e57554cc43fd3a5fca49da"
     },
     {
-      "path": "docs/Release-0.4.8.md",
+      "path": "docs/Release-0.4.9.md",
       "size": 489,
       "sha256": "04a3348d700ae9001c151f58626b48e629872bcba7d1b8a3b5b3b8138fb54ed5"
     },
     {
-      "path": "docs/Release-0.4.8.md",
+      "path": "docs/Release-0.4.9.md",
       "size": 489,
       "sha256": "04a3348d700ae9001c151f58626b48e629872bcba7d1b8a3b5b3b8138fb54ed5"
     },
@@ -1392,7 +1392,7 @@
       "sha256": "470159146fe0053da4e4aacc42a34229717a9168cf5c8b6850f9077fc489fb44"
     },
     {
-      "path": "docs/Release-0.41.2.md",
+      "path": "docs/Release-0.41.3.md",
       "size": 434,
       "sha256": "e5c373e2468f011bdae93ad355c6059656b1f29803af5141a41f1fe87109c36f"
     },

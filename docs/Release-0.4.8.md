@@ -1,4 +1,4 @@
-# NovaOryn IDE 0.4.8
+# NovaOryn IDE 0.4.9
 
 Debug source-map generation no longer sends every native instruction address through `llvm-symbolizer`.
 

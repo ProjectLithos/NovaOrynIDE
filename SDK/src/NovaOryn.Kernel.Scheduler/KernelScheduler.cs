@@ -36,6 +36,9 @@ public static unsafe class KernelScheduler
     public static Boolean Initialize()
     {
         if (_initialized) return true;
+        // NativeAOT uses --nopreinitstatics: establish non-zero runtime defaults explicitly.
+        _nextThreadId = 1UL;
+        _quantum = DefaultQuantumNanoseconds;
         if (!KernelSmp.IsInitialized() || !KernelTime.IsInitialized) return false;
         _processorCount = KernelSmp.GetProcessorCount();
         if (_processorCount == 0U) return false;

@@ -12,8 +12,8 @@ public static unsafe class KernelPs2
 
     private const UInt16 DataPort=0x60, StatusPort=0x64, CommandPort=0x64;
     private const UInt32 KeyboardLayoutService=32U;
-    private static Boolean _controller,_keyboard,_mouse,_extended,_shiftL,_shiftR,_controlL,_controlR,_altL,_altR,_caps;
-    private static KeyboardLayout _layout=KeyboardLayout.English_UK;
+    private static Boolean _initialized,_controller,_keyboard,_mouse,_extended,_shiftL,_shiftR,_controlL,_controlR,_altL,_altR,_caps;
+    private static KeyboardLayout _layout;
     private static UInt64 _keyboardEvents,_mousePackets,_pressedLow,_pressedHigh;
     private static Byte _mouseIndex; private static Byte _m0,_m1,_m2;
     private static Ps2KeyboardEvent _lastKeyboard; private static Ps2MouseState _mouseState;
@@ -23,6 +23,8 @@ public static unsafe class KernelPs2
     public static Boolean Initialize()
     {
         // NativeAOT is invoked with --nopreinitstatics, so establish every runtime default explicitly.
+        if (_initialized) return true;
+        _controller=false; _keyboard=false; _mouse=false;
         _layout=KeyboardLayout.English_UK;
         _extended=false;_shiftL=false;_shiftR=false;_controlL=false;_controlR=false;_altL=false;_altR=false;_caps=false;
         _pressedLow=0UL;_pressedHigh=0UL;
@@ -44,7 +46,9 @@ public static unsafe class KernelPs2
         if(!WriteCommand(0x20)||!ReadData(out config)) return false;
         config=(Byte)((config | 0x40) & ~0x03); // translate keyboard Set-2 input to Set-1; service both ports by polling
         if(!WriteCommand(0x60)||!WriteData(config)) return false;
-        return KernelSystemCalls.RegisterGet(KeyboardLayoutService,&GetLayoutSyscall) && KernelSystemCalls.RegisterSet(KeyboardLayoutService,&SetLayoutSyscall);
+        if (!KernelSystemCalls.RegisterGet(KeyboardLayoutService,&GetLayoutSyscall) || !KernelSystemCalls.RegisterSet(KeyboardLayoutService,&SetLayoutSyscall)) return false;
+        _initialized=true;
+        return true;
     }
 
     /// <summary>Services all currently buffered i8042 keyboard and mouse bytes without blocking.</summary>

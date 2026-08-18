@@ -1,6 +1,6 @@
 {
   "baseVersion": "0.39.0",
-  "version": "0.41.2",
+  "version": "0.41.3",
   "summary": "Structured kernel logging runtime: active post-heap KernelLog, multi-sink routing, severity filtering, live CPU/thread/timestamp context, statistics and boot milestone migration.",
   "changedFiles": [
     "Directory.Build.props",
@@ -8,7 +8,7 @@
     "README.md",
     "Verify-NovaOrynSdkContract.ps1",
     "docs/NovaOryn.Documentation.json",
-    "docs/Release-0.41.2.md",
+    "docs/Release-0.41.3.md",
     "src/NovaOryn.Core/NovaOrynSdkContract.cs",
     "src/NovaOryn.Kernel.Bootstrap/Kernel.cs",
     "src/NovaOryn.Kernel.Bootstrap/KernelStructuredLogging.cs",
