@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using NovaOryn.ProjectModel;
 
 return MainEntry(args);
@@ -132,9 +133,10 @@ static int MainEntry(string[] args)
         string toolDirectory = Path.GetDirectoryName(Path.GetFullPath(llvmNm)) ?? string.Empty;
         string llvmObjdump = Path.Combine(toolDirectory, "llvm-objdump.exe");
         string llvmSymbolizer = Path.Combine(toolDirectory, "llvm-symbolizer.exe");
-        if (!File.Exists(llvmObjdump) || !File.Exists(llvmSymbolizer))
+        string llvmPdbUtil = Path.Combine(toolDirectory, "llvm-pdbutil.exe");
+        if (!File.Exists(llvmObjdump) || !File.Exists(llvmSymbolizer) || !File.Exists(llvmPdbUtil))
         {
-            return Fail($"LLVM source-debug tools are required for Debug builds. Expected: {llvmObjdump} and {llvmSymbolizer}");
+            return Fail($"LLVM source-debug tools are required for Debug builds. Expected: {llvmObjdump}, {llvmSymbolizer}, and {llvmPdbUtil}");
         }
 
         string entryObject = Path.Combine(nativeRoot, "Entry.obj");
@@ -160,7 +162,7 @@ static int MainEntry(string[] args)
         ulong resumeAddress = anchorAddress + (resumeObjectAddress - anchorObjectAddress);
 
         string sourceMap = Path.Combine(project.OutputDirectory, "NovaOryn.DebugSymbols.json");
-        SourceLineEntry[] entries = BuildSourceLineMap(llvmObjdump, llvmSymbolizer, output, pdb);
+        SourceLineEntry[] entries = BuildSourceLineMap(llvmObjdump, llvmSymbolizer, llvmPdbUtil, output, pdb);
         if (entries.Length == 0)
         {
             return Fail("Native PDB contains no source line mappings. ILC Debug compilation must preserve managed sequence points.");
@@ -169,7 +171,7 @@ static int MainEntry(string[] args)
         File.WriteAllText(sourceMap, JsonSerializer.Serialize(new
         {
             schemaVersion = 1,
-            productVersion = "0.41.1",
+            productVersion = "0.41.2",
             image = Path.GetFullPath(output),
             pdb = Path.GetFullPath(pdb),
             anchor = new
@@ -192,8 +194,25 @@ static int MainEntry(string[] args)
     return 0;
 }
 
-static SourceLineEntry[] BuildSourceLineMap(string llvmObjdump, string llvmSymbolizer, string image, string pdb)
+static SourceLineEntry[] BuildSourceLineMap(string llvmObjdump, string llvmSymbolizer, string llvmPdbUtil, string image, string pdb)
 {
+    // PDB CodeView line tables already contain exactly the information NovaOryn
+    // needs for source breakpoints: source file, source line and section-relative
+    // code address. Reading that table is O(number of sequence points), whereas
+    // symbolizing every disassembled instruction is O(number of instructions) and
+    // made even modest kernels feed 100,000+ addresses through llvm-symbolizer.
+    //
+    // llvm-pdbutil dump -l is the primary path. It uses LLVM's native PDB reader,
+    // so it does not require DIA and does not need to repeatedly query the PDB.
+    if (TryBuildSourceLineMapFromPdb(llvmPdbUtil, image, pdb, out SourceLineEntry[] pdbEntries, out string pdbDiagnostic))
+    {
+        Console.WriteLine($"[ OK ] Direct PDB source-line extraction: {pdbEntries.Length} mapping(s). No per-instruction symbolization required.");
+        return pdbEntries;
+    }
+
+    Console.WriteLine($"[WARN] Direct PDB line-table extraction was unavailable: {pdbDiagnostic}");
+    Console.WriteLine("[INFO] Falling back to bounded llvm-symbolizer source mapping.");
+
     ProcessResult disassembly = Capture(llvmObjdump, ["-d", "--no-show-raw-insn", image]);
     if (disassembly.ExitCode != 0)
     {
@@ -220,32 +239,24 @@ static SourceLineEntry[] BuildSourceLineMap(string llvmObjdump, string llvmSymbo
         throw new InvalidOperationException("llvm-objdump did not report any executable instruction addresses.");
     }
 
-    // Do not stream the complete address set through llvm-symbolizer stdin. On
-    // Windows llvm-symbolizer can terminate before StreamWriter has flushed the
-    // complete payload (for example when PDB loading fails), which used to turn
-    // the useful child-process diagnostic into an unhandled broken-pipe IOException.
-    // llvm-symbolizer accepts addresses as positional arguments, so use bounded
-    // command-line batches instead.
-    //
-    // LLVM releases differ in how an explicit PDB override is exposed. The LLVM
-    // 22.1.8 toolchain pinned by NovaOryn does not accept --pdb even though newer
-    // llvm-symbolizer builds do. Probe the installed executable rather than assuming
-    // that option exists. When --pdb is unavailable, the PE/COFF CodeView debug
-    // directory in MinimalKernel.efi identifies the linked PDB beside the image.
+    // The fallback is intentionally bounded. A missing/corrupt line table must not
+    // make a Debug build spend minutes symbolizing an entire kernel instruction by
+    // instruction. For small images retain exact legacy behaviour; for large images
+    // fail with a useful diagnostic so the PDB problem can be fixed directly.
+    const int MaxFallbackAddresses = 20000;
+    if (addresses.Count > MaxFallbackAddresses)
+    {
+        throw new InvalidOperationException(
+            $"The native PDB line table could not be read and the legacy symbolizer fallback would require {addresses.Count} instruction addresses (safety limit {MaxFallbackAddresses}). " +
+            "NovaOryn stopped source-map generation instead of appearing to hang. " + pdbDiagnostic);
+    }
+
     ProcessResult symbolizerHelp = Capture(llvmSymbolizer, ["--help"]);
     bool supportsExplicitPdb = symbolizerHelp.Output.Contains("--pdb", StringComparison.Ordinal);
     Console.WriteLine(supportsExplicitPdb
         ? "[INFO] llvm-symbolizer explicit PDB override: supported."
         : "[INFO] llvm-symbolizer explicit PDB override: unavailable; using the EFI CodeView PDB reference.");
 
-    // Resolve the complete address set in one llvm-symbolizer process. Loading a
-    // NativeAOT PDB is the expensive part; restarting llvm-symbolizer for every
-    // address batch repeatedly reloads the same PDB and can appear to hang for
-    // minutes on Windows. A single process also avoids command-line length limits.
-    //
-    // The process wrapper reads stdout/stderr before writing stdin, uses asynchronous
-    // input, and has a hard timeout. Therefore a broken PDB/symbolizer can no longer
-    // freeze the whole NovaOryn Debug build indefinitely.
     List<string> arguments =
     [
         "--output-style=JSON",
@@ -258,27 +269,195 @@ static SourceLineEntry[] BuildSourceLineMap(string llvmObjdump, string llvmSymbo
     }
 
     string symbolizerInput = string.Join(Environment.NewLine, addresses) + Environment.NewLine;
-    Console.WriteLine($"[INFO] Generating source-line debug map for {addresses.Count} native instruction address(es) in one llvm-symbolizer session (120 second timeout).");
-    ProcessResult symbolized = CaptureWithInput(llvmSymbolizer, arguments, symbolizerInput, 120000);
+    Console.WriteLine($"[INFO] Fallback source mapping for {addresses.Count} native instruction address(es) (60 second timeout).");
+    ProcessResult symbolized = CaptureWithInput(llvmSymbolizer, arguments, symbolizerInput, 60000);
     if (symbolized.TimedOut)
     {
         throw new InvalidOperationException(
-            $"llvm-symbolizer timed out after 120 seconds while generating the source debug map for {addresses.Count} addresses. The process was terminated so the NovaOryn build cannot stall indefinitely. Output: {symbolized.Output}");
+            $"llvm-symbolizer timed out after 60 seconds while generating the fallback source debug map for {addresses.Count} addresses. The process was terminated. Output: {symbolized.Output}");
     }
     if (symbolized.ExitCode != 0)
     {
         throw new InvalidOperationException(
-            $"llvm-symbolizer failed while generating the source debug map (exit {symbolized.ExitCode}): {symbolized.Output}");
+            $"llvm-symbolizer failed while generating the fallback source debug map (exit {symbolized.ExitCode}): {symbolized.Output}");
     }
 
     Dictionary<string, SourceLineEntry> unique = new(StringComparer.OrdinalIgnoreCase);
     AddSymbolizerJson(symbolized.Output, unique);
-
     return unique.Values
         .OrderBy(entry => entry.SourcePath, StringComparer.OrdinalIgnoreCase)
         .ThenBy(entry => entry.Line)
         .ThenBy(entry => ParseHexAddress(entry.LinkedAddress))
         .ToArray();
+}
+
+static bool TryBuildSourceLineMapFromPdb(string llvmPdbUtil, string image, string pdb, out SourceLineEntry[] entries, out string diagnostic)
+{
+    entries = [];
+    diagnostic = string.Empty;
+
+    if (!TryGetPeSectionLayout(image, out ulong imageBase, out ulong[] sectionRvas, out diagnostic))
+    {
+        return false;
+    }
+
+    ProcessResult result = CaptureWithInput(llvmPdbUtil, ["dump", "-l", pdb], null, 30000);
+    if (result.TimedOut)
+    {
+        diagnostic = "llvm-pdbutil timed out after 30 seconds while reading the CodeView line table.";
+        return false;
+    }
+    if (result.ExitCode != 0)
+    {
+        diagnostic = $"llvm-pdbutil dump -l failed with exit code {result.ExitCode}: {TrimDiagnostic(result.Output)}";
+        return false;
+    }
+
+    Dictionary<string, SourceLineEntry> unique = new(StringComparer.OrdinalIgnoreCase);
+    string? currentSource = null;
+    int currentSection = 0;
+
+    Regex sourceRegex = new(@"^\s*(?<path>.+?)\s+\((?:SHA-256|SHA-1|MD5):\s*[0-9A-Fa-f]+\)\s*$", RegexOptions.CultureInvariant);
+    Regex sourceNoChecksumRegex = new(@"^\s*(?<path>.+?)\s+\(no checksum\)\s*$", RegexOptions.CultureInvariant);
+    Regex blockRegex = new(@"^\s*(?<segment>[0-9A-Fa-f]{4}):(?<begin>[0-9A-Fa-f]{8})-(?<end>[0-9A-Fa-f]{8}),", RegexOptions.CultureInvariant);
+    Regex lineRegex = new(@"(?<!\S)(?<line>\d+|NSI)\s+(?<offset>[0-9A-Fa-f]{8})\s+[ !](?=\s|$)", RegexOptions.CultureInvariant);
+
+    foreach (string raw in result.Output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+    {
+        Match source = sourceRegex.Match(raw);
+        if (!source.Success)
+        {
+            source = sourceNoChecksumRegex.Match(raw);
+        }
+        if (source.Success)
+        {
+            currentSource = NormalizeSourcePath(source.Groups["path"].Value.Trim());
+            continue;
+        }
+
+        Match block = blockRegex.Match(raw);
+        if (block.Success)
+        {
+            currentSection = int.Parse(block.Groups["segment"].Value, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            continue;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentSource) || currentSection <= 0 || currentSection > sectionRvas.Length)
+        {
+            continue;
+        }
+
+        foreach (Match line in lineRegex.Matches(raw))
+        {
+            if (string.Equals(line.Groups["line"].Value, "NSI", StringComparison.OrdinalIgnoreCase) ||
+                !int.TryParse(line.Groups["line"].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int lineNumber) ||
+                lineNumber <= 0 ||
+                !ulong.TryParse(line.Groups["offset"].Value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong sectionOffset))
+            {
+                continue;
+            }
+
+            ulong linkedAddress = checked(imageBase + sectionRvas[currentSection - 1] + sectionOffset);
+            string key = currentSource + "|" + lineNumber.ToString(CultureInfo.InvariantCulture);
+            if (!unique.TryGetValue(key, out SourceLineEntry? existing) || linkedAddress < ParseHexAddress(existing.LinkedAddress))
+            {
+                unique[key] = new SourceLineEntry(currentSource, lineNumber, $"0x{linkedAddress:x}");
+            }
+        }
+    }
+
+    if (unique.Count == 0)
+    {
+        diagnostic = "llvm-pdbutil returned no parseable source line/address records. The NativeAOT PDB may not contain DEBUG_S_LINES records.";
+        return false;
+    }
+
+    entries = unique.Values
+        .OrderBy(entry => entry.SourcePath, StringComparer.OrdinalIgnoreCase)
+        .ThenBy(entry => entry.Line)
+        .ThenBy(entry => ParseHexAddress(entry.LinkedAddress))
+        .ToArray();
+    return true;
+}
+
+static bool TryGetPeSectionLayout(string image, out ulong imageBase, out ulong[] sectionRvas, out string diagnostic)
+{
+    imageBase = 0;
+    sectionRvas = [];
+    diagnostic = string.Empty;
+    try
+    {
+        using FileStream stream = File.OpenRead(image);
+        using BinaryReader reader = new(stream, Encoding.UTF8, leaveOpen: false);
+        if (stream.Length < 0x100)
+        {
+            diagnostic = "EFI image is too small to contain a PE32+ section table.";
+            return false;
+        }
+        stream.Position = 0x3c;
+        int peOffset = reader.ReadInt32();
+        if (peOffset < 0 || peOffset + 24 > stream.Length)
+        {
+            diagnostic = "EFI image has an invalid PE header offset.";
+            return false;
+        }
+        stream.Position = peOffset;
+        if (reader.ReadUInt32() != 0x00004550)
+        {
+            diagnostic = "EFI image does not contain a PE signature.";
+            return false;
+        }
+        reader.ReadUInt16(); // Machine
+        ushort sectionCount = reader.ReadUInt16();
+        stream.Position += 12; // timestamp, symbol table, symbol count
+        ushort optionalHeaderSize = reader.ReadUInt16();
+        reader.ReadUInt16(); // characteristics
+        long optionalHeader = stream.Position;
+        if (optionalHeader + optionalHeaderSize > stream.Length || optionalHeaderSize < 32)
+        {
+            diagnostic = "EFI image has an invalid PE optional header.";
+            return false;
+        }
+        ushort magic = reader.ReadUInt16();
+        if (magic != 0x20b)
+        {
+            diagnostic = $"EFI debug image is not PE32+ (optional-header magic 0x{magic:x}).";
+            return false;
+        }
+        stream.Position = optionalHeader + 24;
+        imageBase = reader.ReadUInt64();
+
+        long sectionTable = optionalHeader + optionalHeaderSize;
+        if (sectionCount == 0 || sectionTable + (sectionCount * 40L) > stream.Length)
+        {
+            diagnostic = "EFI image has an invalid PE section table.";
+            return false;
+        }
+
+        sectionRvas = new ulong[sectionCount];
+        for (int i = 0; i < sectionCount; i++)
+        {
+            stream.Position = sectionTable + (i * 40L) + 12;
+            sectionRvas[i] = reader.ReadUInt32();
+        }
+        return true;
+    }
+    catch (Exception ex)
+    {
+        diagnostic = $"Could not read PE section layout: {ex.Message}";
+        return false;
+    }
+}
+
+static string NormalizeSourcePath(string path)
+{
+    try { return Path.GetFullPath(path); } catch { return path; }
+}
+
+static string TrimDiagnostic(string value)
+{
+    string text = value.Replace('\r', ' ').Replace('\n', ' ').Trim();
+    return text.Length <= 800 ? text : text[..800] + "...";
 }
 
 static void AddSymbolizerJson(string output, Dictionary<string, SourceLineEntry> unique)

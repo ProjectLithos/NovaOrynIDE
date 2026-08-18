@@ -9,6 +9,8 @@ const inspector = fs.readFileSync(path.join(root, 'packages/novaoryn-ide/src/bro
 const css = fs.readFileSync(path.join(root, 'packages/novaoryn-ide/src/browser/style/novaoryn.css'), 'utf8');
 const interruptsAsm = fs.readFileSync(path.join(root, 'SDK/native/x64/Interrupts.asm'), 'utf8');
 
+const linker = fs.readFileSync(path.join(root, 'SDK/src/NovaOryn.Linker/Program.cs'), 'utf8');
+
 function requireText(text, needle, message) {
   if (!text.includes(needle)) throw new Error(message);
 }
@@ -49,4 +51,9 @@ requireText(inspector, 'Mixed C# / x64 Disassembly', 'Debug inspector must show 
 requireText(inspector, 'Exception / Panic Breakpoints', 'Debug inspector must expose exception/panic breakpoint controls.');
 requireText(css, '#novaoryn-title-logo', 'NovaOryn title-bar logo styling is missing.');
 
-console.log('[ OK ] NovaOryn source stepping, mixed disassembly, exception/panic breakpoints, title logo and native debug-inspection contract verified.');
+requireText(linker, 'llvm-pdbutil.exe', 'Direct PDB line-table extraction tool is missing.');
+requireText(linker, '[ OK ] Direct PDB source-line extraction:', 'Direct PDB source-line mapping path is missing.');
+requireText(linker, 'TryGetPeSectionLayout', 'PDB section offsets must be translated through the linked PE section table.');
+requireText(linker, 'MaxFallbackAddresses = 20000', 'Legacy per-instruction symbolizer fallback must be bounded.');
+
+console.log('[ OK ] NovaOryn IDE 0.4.8 source debugging, direct PDB line mapping, stepping, mixed disassembly and native debug-inspection contract verified.');
