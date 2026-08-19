@@ -189,33 +189,70 @@ public static unsafe class KernelCommandLine
 
     private static Boolean Memory()
     {
-        KernelPhysicalMemoryStatistics stats=KernelPhysicalMemory.GetStatistics();
-        if(!KernelConsole.Write("managed/free/allocated/reserved = ")) return false;
-        if(!KernelConsole.WriteByteSize(stats.ManagedPages*4096UL) || !KernelConsole.Write(" / ")) return false;
-        if(!KernelConsole.WriteByteSize(stats.FreePages*4096UL) || !KernelConsole.Write(" / ")) return false;
-        if(!KernelConsole.WriteByteSize(stats.AllocatedPages*4096UL) || !KernelConsole.Write(" / ")) return false;
-        if(!KernelConsole.WriteByteSize(stats.ReservedPages*4096UL)) return false;
-        return KernelConsole.WriteLine("");
+        KernelPhysicalMemoryStatistics s=KernelPhysicalMemory.GetStatistics();
+        UInt64 page=4096UL;
+        if(!KernelConsole.WriteLine("Physical memory")) return false;
+        if(!WriteMemoryLine("  Managed        : ",s.ManagedPages*page)) return false;
+        if(!WriteMemoryLine("  In use         : ",s.AllocatedPages*page)) return false;
+        if(!WriteMemoryLine("  Free           : ",s.FreePages*page)) return false;
+        if(!WriteMemoryLine("  Reserved       : ",s.ReservedPages*page)) return false;
+        if(!WriteMemoryLine("  Largest extent : ",s.LargestFreeExtentPages*page)) return false;
+        if(!KernelConsole.Write("  Free extents   : ")||!KernelConsole.WriteUInt64((UInt64)s.FreeExtentCount)||!KernelConsole.WriteLine("")) return false;
+        if(!KernelConsole.Write("  Allocations    : ")||!KernelConsole.WriteUInt64((UInt64)s.LiveAllocationCount)||!KernelConsole.WriteLine("")) return false;
+        if(s.ManagedPages!=0UL){UInt64 usedPercent=(s.AllocatedPages*100UL)/s.ManagedPages;if(!KernelConsole.Write("  Usage          : ")||!KernelConsole.WriteUInt64(usedPercent)||!KernelConsole.WriteLine("%"))return false;}
+        return true;
     }
+
+    private static Boolean WriteMemoryLine(String label,UInt64 bytes)
+    { return KernelConsole.Write(label)&&KernelConsole.WriteByteSize(bytes)&&KernelConsole.WriteLine(""); }
 
     private static Boolean Drivers()
     {
         KernelDriverCapabilities c=KernelDrivers.GetCapabilities();
-        if(!KernelConsole.Write("drivers registered/active = ")) return false;
-        if(!KernelConsole.WriteUInt64(c.RegisteredDrivers) || !KernelConsole.Write(" / ")) return false;
-        if(!KernelConsole.WriteUInt64(c.StartedDevices)) return false;
-        return KernelConsole.WriteLine("");
+        if(!KernelConsole.Write("Drivers: registered ")||!KernelConsole.WriteUInt64(c.RegisteredDrivers)||!KernelConsole.Write(", active devices ")||!KernelConsole.WriteUInt64(c.StartedDevices)||!KernelConsole.WriteLine(""))return false;
+        UInt32 shown=0U;
+        for(UInt32 value=1U;value<=c.DriverCapacity;value++)
+        {
+            KernelDriverHandle handle=new(value);
+            if(!KernelDrivers.TryGetDriverInfo(handle,out KernelDriverInfo info))continue;
+            if(!KernelConsole.Write("  #")||!KernelConsole.WriteUInt64(value)||!KernelConsole.Write(" "))return false;
+            if(info.NameLength!=0U){for(UInt32 i=0U;i<info.NameLength;i++){if(!KernelDrivers.TryGetDriverNameByte(handle,i,out Byte b)||!KernelConsole.Write(b))return false;}}else if(!KernelConsole.Write("unnamed-driver"))return false;
+            if(!KernelConsole.Write("  state=")||!WriteDriverState(info.State)||!KernelConsole.Write("  bus=")||!WriteBus(info.MatchRule.Bus))return false;
+            if(info.MatchRule.MatchVendor){if(!KernelConsole.Write("  vendor=")||!KernelConsole.WriteHex(info.MatchRule.VendorId))return false;}
+            if(info.MatchRule.MatchDevice){if(!KernelConsole.Write("  device=")||!KernelConsole.WriteHex(info.MatchRule.DeviceId))return false;}
+            if(!KernelConsole.WriteLine(""))return false;shown++;
+        }
+        if(shown==0U)return KernelConsole.WriteLine("  (no registered drivers)");
+        return true;
     }
 
     private static Boolean Devices()
     {
         KernelDriverCapabilities c=KernelDrivers.GetCapabilities();
-        if(!KernelConsole.Write("devices registered/bound/started = ")) return false;
-        if(!KernelConsole.WriteUInt64(c.RegisteredDevices) || !KernelConsole.Write(" / ")) return false;
-        if(!KernelConsole.WriteUInt64(c.BoundDevices) || !KernelConsole.Write(" / ")) return false;
-        if(!KernelConsole.WriteUInt64(c.StartedDevices)) return false;
-        return KernelConsole.WriteLine("");
+        if(!KernelConsole.Write("Devices: registered ")||!KernelConsole.WriteUInt64(c.RegisteredDevices)||!KernelConsole.Write(", bound ")||!KernelConsole.WriteUInt64(c.BoundDevices)||!KernelConsole.Write(", started ")||!KernelConsole.WriteUInt64(c.StartedDevices)||!KernelConsole.WriteLine(""))return false;
+        UInt32 shown=0U;
+        for(UInt32 value=1U;value<=c.DeviceCapacity;value++)
+        {
+            KernelDeviceHandle handle=new(value);
+            if(!KernelDrivers.TryGetDevice(handle,out KernelDeviceIdentifier id,out KernelDeviceState state,out KernelDriverHandle driver))continue;
+            if(!KernelConsole.Write("  #")||!KernelConsole.WriteUInt64(value)||!KernelConsole.Write(" ")||!WriteBus(id.Bus)||!KernelConsole.Write("  state=")||!WriteDeviceState(state))return false;
+            if(id.VendorId!=0U||id.DeviceId!=0U){if(!KernelConsole.Write("  id=")||!KernelConsole.WriteHex(id.VendorId)||!KernelConsole.Write(":")||!KernelConsole.WriteHex(id.DeviceId))return false;}
+            if(id.ClassCode!=0U){if(!KernelConsole.Write("  class=")||!KernelConsole.WriteHex(id.ClassCode))return false;}
+            if(driver.Value!=0U){if(!KernelConsole.Write("  driver=#")||!KernelConsole.WriteUInt64(driver.Value))return false;}
+            if(!KernelConsole.WriteLine(""))return false;shown++;
+        }
+        if(shown==0U)return KernelConsole.WriteLine("  (no discovered devices)");
+        return true;
     }
+
+    private static Boolean WriteBus(KernelDeviceBus bus)
+    {
+        if(bus==KernelDeviceBus.Pci)return KernelConsole.Write("PCI");if(bus==KernelDeviceBus.Usb)return KernelConsole.Write("USB");if(bus==KernelDeviceBus.Acpi)return KernelConsole.Write("ACPI");if(bus==KernelDeviceBus.Platform)return KernelConsole.Write("platform");if(bus==KernelDeviceBus.Virtio)return KernelConsole.Write("VirtIO");if(bus==KernelDeviceBus.Virtual)return KernelConsole.Write("virtual");if(bus==KernelDeviceBus.Logical)return KernelConsole.Write("logical");if(bus==KernelDeviceBus.Synthetic)return KernelConsole.Write("synthetic");return KernelConsole.Write("unknown");
+    }
+    private static Boolean WriteDriverState(KernelDriverState state)
+    { if(state==KernelDriverState.Active)return KernelConsole.Write("active");if(state==KernelDriverState.Registered)return KernelConsole.Write("registered");if(state==KernelDriverState.Suspended)return KernelConsole.Write("suspended");if(state==KernelDriverState.Failed)return KernelConsole.Write("failed");if(state==KernelDriverState.Recovering)return KernelConsole.Write("recovering");if(state==KernelDriverState.Removing)return KernelConsole.Write("removing");return KernelConsole.Write("unknown"); }
+    private static Boolean WriteDeviceState(KernelDeviceState state)
+    { if(state==KernelDeviceState.Started)return KernelConsole.Write("started");if(state==KernelDeviceState.Bound)return KernelConsole.Write("bound");if(state==KernelDeviceState.Discovered)return KernelConsole.Write("discovered");if(state==KernelDeviceState.Suspended)return KernelConsole.Write("suspended");if(state==KernelDeviceState.Stopped)return KernelConsole.Write("stopped");if(state==KernelDeviceState.Failed)return KernelConsole.Write("failed");if(state==KernelDeviceState.Probed)return KernelConsole.Write("probed");return KernelConsole.Write("other"); }
 
     private static Boolean Font(Byte* arg, UInt32 n)
     {

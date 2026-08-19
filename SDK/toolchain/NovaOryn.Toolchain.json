@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "productVersion": "0.41.7",
+  "productVersion": "0.41.8",
   "dotNetSdk": {
     "version": "10.0.302",
     "installDirectory": ".toolchain/DotNet"

@@ -171,7 +171,7 @@ static int MainEntry(string[] args)
         File.WriteAllText(sourceMap, JsonSerializer.Serialize(new
         {
             schemaVersion = 1,
-            productVersion = "0.41.7",
+            productVersion = "0.41.8",
             image = Path.GetFullPath(output),
             pdb = Path.GetFullPath(pdb),
             anchor = new

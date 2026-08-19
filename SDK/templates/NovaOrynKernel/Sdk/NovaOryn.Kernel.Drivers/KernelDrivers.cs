@@ -8,7 +8,8 @@ public static unsafe class KernelDrivers
 {
     private const Int32 ResourcesPerDevice=8;
     private const Int32 GrantsPerDevice=16;
-    private struct DriverRecord { internal Byte Used,State,Bus,MatchBus,MatchVendor,MatchDevice; internal UInt16 Vendor,Device; internal UInt32 ClassCode,ClassMask; internal UInt64 DeclaredCapabilities,Discover,Probe,Bind,Start,Stop,Reset,Suspend,Resume,Remove,Fail,Recover,Interrupt; }
+    private const Int32 DriverNameBytes=48;
+    private struct DriverRecord { internal Byte Used,State,Bus,MatchBus,MatchVendor,MatchDevice,NameLength; internal UInt16 Vendor,Device; internal UInt32 ClassCode,ClassMask; internal UInt64 DeclaredCapabilities,Discover,Probe,Bind,Start,Stop,Reset,Suspend,Resume,Remove,Fail,Recover,Interrupt; internal fixed Byte Name[DriverNameBytes]; }
     private struct DeviceRecord { internal Byte Used,State,Bus,Revision,ResourceCount,GrantCount; internal UInt16 Vendor,Device,SubsystemVendor,Subsystem; internal UInt32 ClassCode,Location,BoundDriver,Parent,FirstChild,NextSibling,FailureCode; internal fixed Byte ResourceType[ResourcesPerDevice]; internal fixed UInt64 ResourceStart[ResourcesPerDevice]; internal fixed UInt64 ResourceLength[ResourcesPerDevice]; internal fixed UInt64 ResourceFlags[ResourcesPerDevice]; internal fixed UInt64 GrantToken[GrantsPerDevice]; internal fixed UInt64 GrantCapability[GrantsPerDevice]; internal fixed UInt64 GrantStart[GrantsPerDevice]; internal fixed UInt64 GrantLength[GrantsPerDevice]; internal fixed Byte GrantAccess[GrantsPerDevice]; }
 
     private static DriverRecord* _drivers; private static DeviceRecord* _devices;
@@ -37,15 +38,19 @@ public static unsafe class KernelDrivers
     public static KernelDriverCapabilities GetCapabilities()=>new(_initialized,_mode,_driverCount,_deviceCount,_boundCount,_startedCount,_driverCapacity,_deviceCapacity,_maximumDrivers,_maximumDevices,ResourcesPerDevice,_interruptRequestBroker!=0UL&&_interruptReleaseBroker!=0UL);
 
     public static Boolean RegisterDriver(KernelDriverMatchRule rule,KernelDriverCallbacks callbacks,out KernelDriverHandle handle)
-        => RegisterDriver(rule,callbacks,KernelDriverCapabilityDeclaration.None,out handle);
-
-    /// <summary>Registers a driver together with the maximum privilege set it may ever request.</summary>
+        => RegisterDriver(null,rule,callbacks,KernelDriverCapabilityDeclaration.None,out handle);
     public static Boolean RegisterDriver(KernelDriverMatchRule rule,KernelDriverCallbacks callbacks,KernelDriverCapabilityDeclaration declaration,out KernelDriverHandle handle)
+        => RegisterDriver(null,rule,callbacks,declaration,out handle);
+    public static Boolean RegisterDriver(String name,KernelDriverMatchRule rule,KernelDriverCallbacks callbacks,out KernelDriverHandle handle)
+        => RegisterDriver(name,rule,callbacks,KernelDriverCapabilityDeclaration.None,out handle);
+
+    /// <summary>Registers a named driver together with the maximum privilege set it may ever request.</summary>
+    public static Boolean RegisterDriver(String name,KernelDriverMatchRule rule,KernelDriverCallbacks callbacks,KernelDriverCapabilityDeclaration declaration,out KernelDriverHandle handle)
     {
         handle=default;if(!_initialized||callbacks.Probe==null||callbacks.Start==null||callbacks.Stop==null||callbacks.Remove==null)return false;
         Int32 slot=FindFreeDriver(); if(slot<0){if(!GrowDrivers())return false;slot=FindFreeDriver();if(slot<0)return false;}
         DriverRecord* r=Driver(slot);Clear((Byte*)r,sizeof(DriverRecord));r->Used=1;r->State=(Byte)KernelDriverState.Registered;r->Bus=(Byte)rule.Bus;r->MatchBus=rule.MatchBus?(Byte)1:(Byte)0;r->Vendor=rule.VendorId;r->MatchVendor=rule.MatchVendor?(Byte)1:(Byte)0;r->Device=rule.DeviceId;r->MatchDevice=rule.MatchDevice?(Byte)1:(Byte)0;r->ClassCode=rule.ClassCode;r->ClassMask=rule.ClassMask;
-        r->DeclaredCapabilities=(UInt64)declaration.Capabilities;r->Discover=(UInt64)(void*)callbacks.Discover;r->Probe=(UInt64)(void*)callbacks.Probe;r->Bind=(UInt64)(void*)callbacks.Bind;r->Start=(UInt64)(void*)callbacks.Start;r->Stop=(UInt64)(void*)callbacks.Stop;r->Reset=(UInt64)(void*)callbacks.Reset;r->Suspend=(UInt64)(void*)callbacks.Suspend;r->Resume=(UInt64)(void*)callbacks.Resume;r->Remove=(UInt64)(void*)callbacks.Remove;r->Fail=(UInt64)(void*)callbacks.Fail;r->Recover=(UInt64)(void*)callbacks.Recover;r->Interrupt=(UInt64)(void*)callbacks.Interrupt;_driverCount++;handle=new KernelDriverHandle((UInt32)slot+1U);return true;
+        CopyDriverName(r,name);r->DeclaredCapabilities=(UInt64)declaration.Capabilities;r->Discover=(UInt64)(void*)callbacks.Discover;r->Probe=(UInt64)(void*)callbacks.Probe;r->Bind=(UInt64)(void*)callbacks.Bind;r->Start=(UInt64)(void*)callbacks.Start;r->Stop=(UInt64)(void*)callbacks.Stop;r->Reset=(UInt64)(void*)callbacks.Reset;r->Suspend=(UInt64)(void*)callbacks.Suspend;r->Resume=(UInt64)(void*)callbacks.Resume;r->Remove=(UInt64)(void*)callbacks.Remove;r->Fail=(UInt64)(void*)callbacks.Fail;r->Recover=(UInt64)(void*)callbacks.Recover;r->Interrupt=(UInt64)(void*)callbacks.Interrupt;_driverCount++;handle=new KernelDriverHandle((UInt32)slot+1U);return true;
     }
 
     public static Boolean UnregisterDriver(KernelDriverHandle handle)
@@ -123,6 +128,13 @@ public static unsafe class KernelDrivers
     public static Boolean TryGetFirstChild(KernelDeviceHandle parent,out KernelDeviceHandle child){child=default;if(!TryDevice(parent,out DeviceRecord* d)||d->FirstChild==0U)return false;child=new KernelDeviceHandle(d->FirstChild);return true;}
     public static Boolean TryGetNextSibling(KernelDeviceHandle device,out KernelDeviceHandle sibling){sibling=default;if(!TryDevice(device,out DeviceRecord* d)||d->NextSibling==0U)return false;sibling=new KernelDeviceHandle(d->NextSibling);return true;}
     public static Boolean InstallLifecycleSink(delegate*<KernelDriverLifecycleEvent*,Boolean> sink){_lifecycleSink=(UInt64)(void*)sink;return sink!=null;}
+
+    /// <summary>Gets a snapshot of one registered driver by handle.</summary>
+    public static Boolean TryGetDriverInfo(KernelDriverHandle driver,out KernelDriverInfo info)
+    { info=default;if(!TryDriver(driver,out DriverRecord* r))return false;info=new KernelDriverInfo(driver,(KernelDriverState)r->State,Rule(r),(KernelDriverCapability)r->DeclaredCapabilities,r->NameLength);return true; }
+    /// <summary>Reads one ASCII byte from a driver's stable display name without allocating a managed string.</summary>
+    public static Boolean TryGetDriverNameByte(KernelDriverHandle driver,UInt32 index,out Byte value)
+    { value=0;if(!TryDriver(driver,out DriverRecord* r)||index>=r->NameLength)return false;value=r->Name[index];return true; }
 
     /// <summary>Gets the privilege declaration registered for a driver.</summary>
     public static Boolean TryGetDeclaredCapabilities(KernelDriverHandle driver,out KernelDriverCapabilityDeclaration declaration)
@@ -255,6 +267,7 @@ public static unsafe class KernelDrivers
     private static Boolean TryDriver(KernelDriverHandle handle,out DriverRecord* record){record=null;Int32 i=(Int32)handle.Value-1;if(!_initialized||i<0||(UInt32)i>=_driverCapacity)return false;DriverRecord* r=Driver(i);if(r->Used==0)return false;record=r;return true;}
     private static Boolean TryDevice(KernelDeviceHandle handle,out DeviceRecord* record){record=null;Int32 i=(Int32)handle.Value-1;if(!_initialized||i<0||(UInt32)i>=_deviceCapacity)return false;DeviceRecord* d=Device(i);if(d->Used==0)return false;record=d;return true;}
     private static Boolean TryBound(KernelDeviceHandle device,out DeviceRecord* d,out DriverRecord* r,out KernelDriverDeviceContext context){r=null;context=default;if(!TryDevice(device,out d)||d->BoundDriver==0U)return false;r=Driver((Int32)d->BoundDriver-1);if(r->Used==0)return false;context=new KernelDriverDeviceContext(device,new KernelDriverHandle(d->BoundDriver),Identifier(d));return true;}
+    private static void CopyDriverName(DriverRecord* r,String name){if(r==null||name==null)return;Int32 n=name.Length;if(n>DriverNameBytes)n=DriverNameBytes;for(Int32 i=0;i<n;i++){Char c=name[i];r->Name[i]=(Byte)(c>=32&&c<=126?c:'?');}r->NameLength=(Byte)n;}
     private static KernelDeviceIdentifier Identifier(DeviceRecord* d)=>new((KernelDeviceBus)d->Bus,d->Vendor,d->Device,d->SubsystemVendor,d->Subsystem,d->ClassCode,d->Revision,d->Location);
     private static KernelDriverMatchRule Rule(DriverRecord* r)=>new((KernelDeviceBus)r->Bus,r->MatchBus!=0,r->Vendor,r->MatchVendor!=0,r->Device,r->MatchDevice!=0,r->ClassCode,r->ClassMask);
     private static DriverRecord* Driver(Int32 slot)=>_drivers+slot; private static DeviceRecord* Device(Int32 slot)=>_devices+slot;

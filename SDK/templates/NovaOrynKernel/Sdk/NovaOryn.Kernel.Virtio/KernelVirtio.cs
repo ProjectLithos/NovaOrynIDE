@@ -40,7 +40,7 @@ public static unsafe class KernelVirtio
     {
         if(_initialized)return true;if(!KernelPci.IsInitialized()||!KernelDrivers.IsInitialized()||!KernelHeap.IsInitialized()||!KernelStorage.IsInitialized()||!KernelNetworking.IsInitialized())return false;
         if(!AllocateRecords(16U,out _deviceAllocation,out _devices))return false;_capacity=16U;_count=0U;_blockCount=0U;_networkCount=0U;_consoleCount=0U;_rngCount=0U;
-        KernelDriverMatchRule rule=new(KernelDeviceBus.Pci,true,VirtioVendorId,true,0,false,0U,0U);KernelDriverCallbacks callbacks=new(&Probe,&Start,&Stop,&Remove,&Interrupt);if(!KernelDrivers.RegisterDriver(rule,callbacks,out _driverHandle))return false;
+        KernelDriverMatchRule rule=new(KernelDeviceBus.Pci,true,VirtioVendorId,true,0,false,0U,0U);KernelDriverCallbacks callbacks=new(&Probe,&Start,&Stop,&Remove,&Interrupt);KernelDriverCapabilityDeclaration declaration=new(KernelDriverCapability.Mmio|KernelDriverCapability.Dma|KernelDriverCapability.PciConfig|KernelDriverCapability.Networking|KernelDriverCapability.Filesystem);if(!KernelDrivers.RegisterDriver("VirtIO PCI",rule,callbacks,declaration,out _driverHandle))return false;
         UInt32 pciCount=KernelPci.GetDeviceCount();for(UInt32 i=0;i<pciCount;i++)
         {
             if(!KernelPci.TryGetDevice(i,out PciDeviceInfo pci)||pci.VendorId!=VirtioVendorId)continue;

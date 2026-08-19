@@ -131,14 +131,28 @@ public static class KernelConsole
         return Write(" Hz");
     }
 
-    /// <summary>Writes a duration expressed in nanoseconds using ns, us, ms, or s as appropriate.</summary>
+    /// <summary>Writes a duration expressed in nanoseconds using compact human-readable day/hour/minute/second units.</summary>
     public static Boolean WriteDurationNanoseconds(UInt64 nanoseconds)
     {
-        if (nanoseconds >= 1000000000UL) return WriteScaled(nanoseconds, 1000000000UL, " s");
-        if (nanoseconds >= 1000000UL) return WriteScaled(nanoseconds, 1000000UL, " ms");
-        if (nanoseconds >= 1000UL) return WriteScaled(nanoseconds, 1000UL, " us");
-        if (!WriteUInt64(nanoseconds)) return false;
+        const UInt64 second=1000000000UL, minute=60UL*second, hour=60UL*minute, day=24UL*hour;
+        if(nanoseconds>=day) return WriteDurationParts(nanoseconds,day,"d",hour,"h",minute,"m",second,"s");
+        if(nanoseconds>=hour) return WriteDurationParts(nanoseconds,hour,"h",minute,"m",second,"s",0UL,"");
+        if(nanoseconds>=minute) return WriteDurationParts(nanoseconds,minute,"m",second,"s",0UL,"",0UL,"");
+        if(nanoseconds>=second) return WriteScaled(nanoseconds,second," s");
+        if(nanoseconds>=1000000UL) return WriteScaled(nanoseconds,1000000UL," ms");
+        if(nanoseconds>=1000UL) return WriteScaled(nanoseconds,1000UL," us");
+        if(!WriteUInt64(nanoseconds)) return false;
         return Write(" ns");
+    }
+
+    private static Boolean WriteDurationParts(UInt64 value,UInt64 first,String firstSuffix,UInt64 second,String secondSuffix,UInt64 third,String thirdSuffix,UInt64 fourth,String fourthSuffix)
+    {
+        UInt64 remaining=value;
+        if(first!=0UL){UInt64 part=remaining/first;remaining%=first;if(!WriteUInt64(part)||!Write(firstSuffix))return false;}
+        if(second!=0UL){UInt64 part=remaining/second;remaining%=second;if(!Write(" ")||!WriteUInt64(part)||!Write(secondSuffix))return false;}
+        if(third!=0UL){UInt64 part=remaining/third;remaining%=third;if(!Write(" ")||!WriteUInt64(part)||!Write(thirdSuffix))return false;}
+        if(fourth!=0UL){UInt64 part=remaining/fourth;if(!Write(" ")||!WriteUInt64(part)||!Write(fourthSuffix))return false;}
+        return true;
     }
 
     private static Boolean WriteScaled(UInt64 value, UInt64 divisor, String suffix)

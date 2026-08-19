@@ -7,8 +7,8 @@ SDK/NovaOryn-SourceManifest.json
 SDK/NovaOryn.SdkManifest.json
 SDK/README.md
 SDK/Verify-NovaOrynSdkContract.ps1
-SDK/docs/Release-0.4.13.md
-SDK/docs/Release-0.41.7.md
+SDK/docs/Release-0.4.14.md
+SDK/docs/Release-0.41.8.md
 SDK/src/NovaOryn.Core/NovaOrynSdkContract.cs
 SDK/src/NovaOryn.ImageBuilder/Program.cs
 SDK/src/NovaOryn.Linker/Program.cs
@@ -31,7 +31,7 @@ Verify-NovaOrynIDEShellClipboard.cjs
 Verify-NovaOrynIDESourceDebug.cjs
 Verify-NovaOrynIDETargetManager.cjs
 applications/electron/package.json
-docs/Release-0.4.13.md
+docs/Release-0.4.14.md
 package.json
 packages/novaoryn-ide/package.json
 packages/novaoryn-ide/src/browser/novaoryn-target-manager-widget.tsx

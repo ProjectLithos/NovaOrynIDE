@@ -33,7 +33,7 @@ public static unsafe class KernelVirtioGpu
     {
         if(_initialized)return true;if(!KernelPci.IsInitialized()||!KernelDrivers.IsInitialized()||!KernelHeap.IsInitialized()||!KernelGraphics.IsInitialized())return false;
         if(!AllocateRecords(4U,out _allocation,out _devices))return false;_capacity=4U;
-        KernelDriverMatchRule rule=new(KernelDeviceBus.Pci,true,VirtioVendorId,true,0,false,0U,0U);KernelDriverCallbacks callbacks=new(&Probe,&Start,&Stop,&Remove,&Interrupt);if(!KernelDrivers.RegisterDriver(rule,callbacks,out _driver))return false;
+        KernelDriverMatchRule rule=new(KernelDeviceBus.Pci,true,VirtioVendorId,true,0,false,0U,0U);KernelDriverCallbacks callbacks=new(&Probe,&Start,&Stop,&Remove,&Interrupt);KernelDriverCapabilityDeclaration declaration=new(KernelDriverCapability.Mmio|KernelDriverCapability.Dma|KernelDriverCapability.PciConfig);if(!KernelDrivers.RegisterDriver("VirtIO GPU",rule,callbacks,declaration,out _driver))return false;
         UInt32 pciCount=KernelPci.GetDeviceCount();for(UInt32 i=0;i<pciCount;i++){if(!KernelPci.TryGetDevice(i,out PciDeviceInfo pci)||!IsGpu(pci))continue;if(KernelDrivers.TryGetDevice(pci.DeviceHandle,out _,out _,out KernelDriverHandle bound)&&bound.Value!=0U)continue;if(KernelDrivers.TryBindDevice(pci.DeviceHandle,out KernelDriverHandle driver)&&driver.Value==_driver.Value)KernelDrivers.StartDevice(pci.DeviceHandle);}
         _initialized=true;return true;
     }

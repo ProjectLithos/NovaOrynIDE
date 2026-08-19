@@ -71,6 +71,18 @@ public readonly struct KernelDriverMatchRule
 
 public readonly struct KernelDriverHandle { public KernelDriverHandle(UInt32 value) { Value=value; } public UInt32 Value { get; } }
 public readonly struct KernelDeviceHandle { public KernelDeviceHandle(UInt32 value) { Value=value; } public UInt32 Value { get; } }
+
+/// <summary>Immutable runtime view of one registered driver.</summary>
+public readonly struct KernelDriverInfo
+{
+    public KernelDriverInfo(KernelDriverHandle handle,KernelDriverState state,KernelDriverMatchRule matchRule,KernelDriverCapability capabilities,UInt32 nameLength)
+    { Handle=handle;State=state;MatchRule=matchRule;Capabilities=capabilities;NameLength=nameLength; }
+    public KernelDriverHandle Handle { get; }
+    public KernelDriverState State { get; }
+    public KernelDriverMatchRule MatchRule { get; }
+    public KernelDriverCapability Capabilities { get; }
+    public UInt32 NameLength { get; }
+}
 public readonly struct KernelDriverInterruptHandle { public KernelDriverInterruptHandle(UInt64 value) { Value=value; } public UInt64 Value { get; } }
 
 [Flags]
