@@ -32,7 +32,9 @@ public static class KernelLog
     public static Boolean RemoveAllSinks(){for(Int32 i=0;i<MaximumSinks;i++)_sinks[i]=null;return true;}
     public static Boolean SetMinimumLevel(KernelLogLevel minimum){_minimum=minimum;return true;}
     public static KernelLogLevel GetMinimumLevel()=>_minimum;
+    public static Boolean IsConfigured(){for(Int32 i=0;i<MaximumSinks;i++)if(_sinks[i]!=null)return true;return false;}
     public static KernelLogStatistics GetStatistics()=>new KernelLogStatistics(_trace,_debug,_info,_warning,_error,_critical,_dropped);
+    public static Boolean ResetStatistics(){_trace=_debug=_info=_warning=_error=_critical=_dropped=0UL;return true;}
 
     public static Boolean Write(KernelLogLevel level,String subsystem,String source,String message)
     {

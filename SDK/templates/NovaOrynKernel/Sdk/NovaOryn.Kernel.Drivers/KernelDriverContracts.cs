@@ -2,7 +2,15 @@ using System;
 
 namespace NovaOryn.Kernel.Drivers;
 
-public enum KernelDeviceBus : Byte { Unknown=0, Platform=1, Pci=2, Usb=3, Virtio=4, Acpi=5, Virtual=6, Logical=7, Synthetic=8 }
+/// <summary>Canonical NovaOryn device-tree classes. Every discoverable object belongs to one of these six models.</summary>
+public enum KernelDeviceBus : Byte
+{
+    Unknown=0, Platform=1, Pci=2, Usb=3, Acpi=4, Virtual=5, Logical=6,
+    /// <summary>Compatibility alias: VirtIO devices are virtual devices in the unified tree.</summary>
+    Virtio=Virtual,
+    /// <summary>Compatibility alias: synthetic devices are logical devices in the unified tree.</summary>
+    Synthetic=Logical
+}
 public enum KernelDeviceResourceType : Byte { None=0, Memory=1, IoPort=2, Interrupt=3, Dma=4, BusSpecific=5 }
 public enum KernelDeviceState : Byte
 {
@@ -194,6 +202,16 @@ public readonly struct KernelDeviceNode
     public KernelDeviceState State { get; }
     public KernelDriverHandle Driver { get; }
     public KernelDriverFailureCode Failure { get; }
+}
+
+
+/// <summary>Summary of the authoritative unified device tree used by the kernel and IDE Hardware Tree.</summary>
+public readonly struct KernelDeviceTreeSnapshot
+{
+    public KernelDeviceTreeSnapshot(UInt64 generation,UInt32 totalNodes,UInt32 rootNodes,UInt32 pciNodes,UInt32 usbNodes,UInt32 acpiNodes,UInt32 platformNodes,UInt32 virtualNodes,UInt32 logicalNodes)
+    { Generation=generation;TotalNodes=totalNodes;RootNodes=rootNodes;PciNodes=pciNodes;UsbNodes=usbNodes;AcpiNodes=acpiNodes;PlatformNodes=platformNodes;VirtualNodes=virtualNodes;LogicalNodes=logicalNodes; }
+    public UInt64 Generation { get; } public UInt32 TotalNodes { get; } public UInt32 RootNodes { get; }
+    public UInt32 PciNodes { get; } public UInt32 UsbNodes { get; } public UInt32 AcpiNodes { get; } public UInt32 PlatformNodes { get; } public UInt32 VirtualNodes { get; } public UInt32 LogicalNodes { get; }
 }
 
 public enum KernelDriverArchitecture : Byte { Any=0, X64=1, Arm64=2 }

@@ -17,7 +17,7 @@ public static unsafe class KernelDrivers
     private static UInt32 _driverCapacity,_deviceCapacity,_maximumDrivers,_maximumDevices;
     private static KernelDriverRegistryMode _mode; private static Boolean _initialized;
     private static UInt32 _driverCount,_deviceCount,_boundCount,_startedCount;
-    private static UInt64 _interruptRequestBroker,_interruptReleaseBroker; private static UInt64 _nextCapabilityGrantToken=1UL,_lifecycleSequence=1UL; private static UInt64 _lifecycleSink;
+    private static UInt64 _interruptRequestBroker,_interruptReleaseBroker; private static UInt64 _nextCapabilityGrantToken=1UL,_lifecycleSequence=1UL; private static UInt64 _lifecycleSink,_deviceTreeGeneration=1UL;
 
     /// <summary>Initializes a dynamically growing registry backed by the already-online kernel heap.</summary>
     public static Boolean Initialize() => Initialize(KernelDriverFrameworkOptions.DynamicDefault);
@@ -31,7 +31,7 @@ public static unsafe class KernelDrivers
         if(!AllocateDriverTable(options.InitialDriverCapacity,out _driverAllocation,out _drivers))return false;
         if(!AllocateDeviceTable(options.InitialDeviceCapacity,out _deviceAllocation,out _devices)){KernelHeap.TryRelease(_driverAllocation);_drivers=null;_driverAllocation=default;return false;}
         _driverCapacity=options.InitialDriverCapacity; _deviceCapacity=options.InitialDeviceCapacity;
-        _driverCount=0U;_deviceCount=0U;_boundCount=0U;_startedCount=0U;_interruptRequestBroker=0UL;_interruptReleaseBroker=0UL;_initialized=true;return true;
+        _driverCount=0U;_deviceCount=0U;_boundCount=0U;_startedCount=0U;_deviceTreeGeneration=1UL;_interruptRequestBroker=0UL;_interruptReleaseBroker=0UL;_initialized=true;return true;
     }
 
     public static Boolean IsInitialized()=>_initialized;
@@ -62,7 +62,7 @@ public static unsafe class KernelDrivers
     public static Boolean DiscoverDevice(KernelDeviceIdentifier identifier,KernelDeviceHandle parent,out KernelDeviceHandle handle)
     {
         handle=default;if(!_initialized||identifier.Bus==KernelDeviceBus.Unknown)return false;if(parent.Value!=0U&&!TryDevice(parent,out _))return false;Int32 slot=FindFreeDevice();if(slot<0){if(!GrowDevices())return false;slot=FindFreeDevice();if(slot<0)return false;}
-        DeviceRecord* d=Device(slot);Clear((Byte*)d,sizeof(DeviceRecord));d->Used=1;d->State=(Byte)KernelDeviceState.Discovered;d->Bus=(Byte)identifier.Bus;d->Vendor=identifier.VendorId;d->Device=identifier.DeviceId;d->SubsystemVendor=identifier.SubsystemVendorId;d->Subsystem=identifier.SubsystemId;d->ClassCode=identifier.ClassCode;d->Revision=identifier.Revision;d->Location=identifier.Location;d->Parent=parent.Value;_deviceCount++;handle=new KernelDeviceHandle((UInt32)slot+1U);
+        DeviceRecord* d=Device(slot);Clear((Byte*)d,sizeof(DeviceRecord));d->Used=1;d->State=(Byte)KernelDeviceState.Discovered;d->Bus=(Byte)identifier.Bus;d->Vendor=identifier.VendorId;d->Device=identifier.DeviceId;d->SubsystemVendor=identifier.SubsystemVendorId;d->Subsystem=identifier.SubsystemId;d->ClassCode=identifier.ClassCode;d->Revision=identifier.Revision;d->Location=identifier.Location;d->Parent=parent.Value;_deviceCount++;_deviceTreeGeneration++;handle=new KernelDeviceHandle((UInt32)slot+1U);
         if(parent.Value!=0U){DeviceRecord* p=Device((Int32)parent.Value-1);d->NextSibling=p->FirstChild;p->FirstChild=handle.Value;}EmitLifecycle(handle,default,KernelDriverLifecycleStage.Discover,KernelDeviceState.Registered,KernelDeviceState.Discovered,KernelDriverFailureCode.None);return true;
     }
 
@@ -119,7 +119,7 @@ public static unsafe class KernelDrivers
     }
     public static Boolean RemoveDevice(KernelDeviceHandle device)
     {
-        if(!TryDevice(device,out DeviceRecord* d))return false;UInt32 bound=d->BoundDriver;KernelDeviceState previous=(KernelDeviceState)d->State;if(bound!=0U){if((d->State==(Byte)KernelDeviceState.Started||d->State==(Byte)KernelDeviceState.Suspended)&&!StopDevice(device))return false;DriverRecord* r=Driver((Int32)bound-1);KernelDriverDeviceContext context=new(device,new KernelDriverHandle(bound),Identifier(d));d->State=(Byte)KernelDeviceState.Removing;delegate*<KernelDriverDeviceContext*,Boolean> remove=(delegate*<KernelDriverDeviceContext*,Boolean>)(void*)r->Remove;if(!remove(&context))return false;RevokeAllCapabilities(d);if(_boundCount>0U)_boundCount--;EmitLifecycle(device,new KernelDriverHandle(bound),KernelDriverLifecycleStage.Remove,previous,KernelDeviceState.Removed,KernelDriverFailureCode.None);}UnlinkFromParent(device,d);Clear((Byte*)d,sizeof(DeviceRecord));_deviceCount--;return true;
+        if(!TryDevice(device,out DeviceRecord* d))return false;UInt32 bound=d->BoundDriver;KernelDeviceState previous=(KernelDeviceState)d->State;if(bound!=0U){if((d->State==(Byte)KernelDeviceState.Started||d->State==(Byte)KernelDeviceState.Suspended)&&!StopDevice(device))return false;DriverRecord* r=Driver((Int32)bound-1);KernelDriverDeviceContext context=new(device,new KernelDriverHandle(bound),Identifier(d));d->State=(Byte)KernelDeviceState.Removing;delegate*<KernelDriverDeviceContext*,Boolean> remove=(delegate*<KernelDriverDeviceContext*,Boolean>)(void*)r->Remove;if(!remove(&context))return false;RevokeAllCapabilities(d);if(_boundCount>0U)_boundCount--;EmitLifecycle(device,new KernelDriverHandle(bound),KernelDriverLifecycleStage.Remove,previous,KernelDeviceState.Removed,KernelDriverFailureCode.None);}UnlinkFromParent(device,d);Clear((Byte*)d,sizeof(DeviceRecord));_deviceCount--;_deviceTreeGeneration++;return true;
     }
     public static Boolean TryGetDevice(KernelDeviceHandle device,out KernelDeviceIdentifier identifier,out KernelDeviceState state,out KernelDriverHandle driver)
     { identifier=default;state=default;driver=default;if(!TryDevice(device,out DeviceRecord* d))return false;identifier=Identifier(d);state=(KernelDeviceState)d->State;driver=new KernelDriverHandle(d->BoundDriver);return true; }
@@ -127,6 +127,18 @@ public static unsafe class KernelDrivers
     { node=default;if(!TryDevice(device,out DeviceRecord* d))return false;node=new KernelDeviceNode(device,new KernelDeviceHandle(d->Parent),new KernelDeviceHandle(d->FirstChild),new KernelDeviceHandle(d->NextSibling),Identifier(d),(KernelDeviceState)d->State,new KernelDriverHandle(d->BoundDriver),(KernelDriverFailureCode)d->FailureCode);return true; }
     public static Boolean TryGetFirstChild(KernelDeviceHandle parent,out KernelDeviceHandle child){child=default;if(!TryDevice(parent,out DeviceRecord* d)||d->FirstChild==0U)return false;child=new KernelDeviceHandle(d->FirstChild);return true;}
     public static Boolean TryGetNextSibling(KernelDeviceHandle device,out KernelDeviceHandle sibling){sibling=default;if(!TryDevice(device,out DeviceRecord* d)||d->NextSibling==0U)return false;sibling=new KernelDeviceHandle(d->NextSibling);return true;}
+
+    /// <summary>Gets a stable slot-ordered node so tooling can snapshot the exact kernel device tree without bus-specific enumeration.</summary>
+    public static Boolean TryGetDeviceNodeByIndex(UInt32 index,out KernelDeviceNode node)
+    { node=default;if(!_initialized)return false;UInt32 seen=0U;for(UInt32 i=0U;i<_deviceCapacity;i++){DeviceRecord* d=Device((Int32)i);if(d->Used==0)continue;if(seen++!=index)continue;KernelDeviceHandle h=new(i+1U);return TryGetDeviceNode(h,out node);}return false; }
+
+    /// <summary>Gets a root node by root index. A root has no parent; children are linked through the same node contract.</summary>
+    public static Boolean TryGetRootDevice(UInt32 rootIndex,out KernelDeviceNode node)
+    { node=default;if(!_initialized)return false;UInt32 seen=0U;for(UInt32 i=0U;i<_deviceCapacity;i++){DeviceRecord* d=Device((Int32)i);if(d->Used==0||d->Parent!=0U)continue;if(seen++!=rootIndex)continue;return TryGetDeviceNode(new KernelDeviceHandle(i+1U),out node);}return false; }
+
+    /// <summary>Returns counts for the six canonical device classes represented by the authoritative tree.</summary>
+    public static KernelDeviceTreeSnapshot GetDeviceTreeSnapshot()
+    { UInt32 roots=0,pci=0,usb=0,acpi=0,platform=0,virtuals=0,logical=0;if(_initialized)for(UInt32 i=0U;i<_deviceCapacity;i++){DeviceRecord* d=Device((Int32)i);if(d->Used==0)continue;if(d->Parent==0U)roots++;switch((KernelDeviceBus)d->Bus){case KernelDeviceBus.Pci:pci++;break;case KernelDeviceBus.Usb:usb++;break;case KernelDeviceBus.Acpi:acpi++;break;case KernelDeviceBus.Platform:platform++;break;case KernelDeviceBus.Virtual:virtuals++;break;case KernelDeviceBus.Logical:logical++;break;}}return new KernelDeviceTreeSnapshot(_deviceTreeGeneration,_deviceCount,roots,pci,usb,acpi,platform,virtuals,logical); }
     public static Boolean InstallLifecycleSink(delegate*<KernelDriverLifecycleEvent*,Boolean> sink){_lifecycleSink=(UInt64)(void*)sink;return sink!=null;}
 
     /// <summary>Gets a snapshot of one registered driver by handle.</summary>

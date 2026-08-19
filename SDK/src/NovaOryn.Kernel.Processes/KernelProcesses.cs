@@ -25,13 +25,15 @@ public static unsafe class KernelProcesses
 #pragma warning disable CS0169
     private static ProcessTable _table;
 #pragma warning restore CS0169
-    private static UInt64 _nextId=1UL; private static UInt32 _active; private static Boolean _initialized;
+    private static UInt64 _nextId=1UL; private static UInt64 _currentProcessId; private static UInt32 _active; private static Boolean _initialized;
 
     /// <summary>Initializes the process facility after paging, protection and system calls are ready.</summary>
     public static Boolean Initialize()
     { if(_initialized)return true; if(!KernelAddressSpace.IsInitialized()||!KernelProtection.IsInitialized()||!KernelSystemCalls.IsInitialized())return false; _initialized=true; return true; }
     public static Boolean IsInitialized() => _initialized;
     public static UInt32 GetActiveProcessCount() => _active;
+    /// <summary>Gets the process currently owning the calling execution context, or zero while executing a kernel-only thread.</summary>
+    public static Boolean TryGetCurrentProcessId(out UInt64 processId) { processId=_currentProcessId; return _initialized && processId!=0UL; }
     public static KernelProcessCapabilities GetCapabilities() => new(MaximumProcesses,_active,ProcessExecutableMath.MaximumSegments,DefaultStackBytes,true,true);
 
     /// <summary>Validates an x64 ELF64 or PE32+ image, builds a private lower-half address space and creates its initial user stack.</summary>
@@ -72,8 +74,8 @@ public static unsafe class KernelProcesses
     public static Boolean TryStart(UInt64 processId, UInt64 argument)
     {
         ProcessRecord* r=Find(processId); if(r==null || r->State!=(UInt32)KernelProcessState.Ready)return false; UInt64 kernelRoot=KernelVirtualMemory.GetRootPhysicalAddress();
-        if(!Native.WritePageTableRoot(r->Root))return false; r->State=(UInt32)KernelProcessState.Running;
-        if(Native.EnterUserMode(r->Entry,r->StackTop,argument))return true; Native.WritePageTableRoot(kernelRoot); r->State=(UInt32)KernelProcessState.Faulted; return false;
+        if(!Native.WritePageTableRoot(r->Root))return false; r->State=(UInt32)KernelProcessState.Running; _currentProcessId=r->Id;
+        if(Native.EnterUserMode(r->Entry,r->StackTop,argument))return true; _currentProcessId=0UL; Native.WritePageTableRoot(kernelRoot); r->State=(UInt32)KernelProcessState.Faulted; return false;
     }
 
     private static Boolean LoadSegments(Byte* image, UInt64 length, ProcessExecutableInfo executable, UInt64 root, ProcessRecord* r, KernelPhysicalAllocation* tables, ref UInt32 tableCount)

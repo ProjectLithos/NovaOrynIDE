@@ -3,6 +3,7 @@ using NovaOryn.Kernel.Console;
 using NovaOryn.Kernel.Contracts;
 using NovaOryn.Kernel.Smp;
 using NovaOryn.Kernel.Scheduler;
+using NovaOryn.Kernel.Processes;
 using NovaOryn.Kernel.Time;
 
 namespace NovaOryn.Kernel.Bootstrap;
@@ -61,7 +62,9 @@ public sealed class KernelLogContextProvider : IKernelLogContextProvider
         if (KernelScheduler.IsInitialized())
             KernelScheduler.TryGetCurrentThreadId(out threadId);
 
-        // Process ownership is intentionally zero for kernel-only threads until a scheduler/process binding exists.
+        if (KernelProcesses.IsInitialized())
+            KernelProcesses.TryGetCurrentProcessId(out processId);
+
         return true;
     }
 }

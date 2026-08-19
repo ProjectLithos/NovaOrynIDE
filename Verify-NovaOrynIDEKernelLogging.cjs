@@ -2,27 +2,40 @@ const fs=require('fs');
 const path=require('path');
 const root=__dirname;
 function read(p){return fs.readFileSync(path.join(root,p),'utf8');}
-function requireText(text,needle,label){if(!text.includes(needle)){console.error(`[FAIL] ${label}`);process.exit(1);} console.log(`[ OK ] ${label}`);}
-const contracts=read('SDK/src/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs');
-const runtime=read('SDK/src/NovaOryn.Kernel.SubsystemContracts/KernelDiagnosticsRuntime.cs');
-const boot=read('SDK/src/NovaOryn.Kernel.Bootstrap/Kernel.cs');
-const sink=read('SDK/src/NovaOryn.Kernel.Bootstrap/KernelStructuredLogging.cs');
-const scheduler=read('SDK/src/NovaOryn.Kernel.Scheduler/KernelScheduler.cs');
-const manifest=read('SDK/NovaOryn.SdkManifest.json');
-[
- [contracts,'KernelLogLevel : Byte { Trace=0, Debug=1, Info=2, Warning=3, Error=4, Critical=5 }','six structured log levels'],
- [contracts,'KernelLogStatistics','log statistics contract'],
- [runtime,'MaximumSinks=4','multi-sink logging'],
- [runtime,'SetMinimumLevel','runtime level filter'],
- [runtime,'GetStatistics','runtime statistics'],
- [sink,'[thread=','thread field emitted'],
- [sink,'[process=','process field emitted'],
- [sink,'record.TimestampNanoseconds','timestamp emitted'],
- [sink,'record.Subsystem','subsystem emitted'],
- [sink,'record.Source','source emitted'],
- [scheduler,'TryGetCurrentThreadId','live scheduler thread context'],
- [boot,'KernelLog.Configure(new KernelConsoleLogSink(), diagnosticsContext, KernelLogLevel.Info)','boot logging configured'],
- [boot,'KernelLog.Info("kernel","Kernel.KMain","SMP and per-CPU state online.")','boot milestones use structured log'],
- [manifest,'"structuredLogging": "1.1"','SDK manifest logging contract 1.1']
-].forEach(x=>requireText(x[0],x[1],x[2]));
-console.log('[ OK ] NovaOryn structured kernel logging verified (14 checks).');
+const checks=[];
+function has(file,needle,label){checks.push([label,read(file).includes(needle)]);}
+const contracts='SDK/src/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs';
+const runtime='SDK/src/NovaOryn.Kernel.SubsystemContracts/KernelDiagnosticsRuntime.cs';
+const sink='SDK/src/NovaOryn.Kernel.Bootstrap/KernelStructuredLogging.cs';
+const boot='SDK/src/NovaOryn.Kernel.Bootstrap/Kernel.cs';
+const processes='SDK/src/NovaOryn.Kernel.Processes/KernelProcesses.cs';
+has(contracts,'KernelLogLevel : Byte { Trace=0, Debug=1, Info=2, Warning=3, Error=4, Critical=5 }','Trace/Debug/Info/Warning/Error/Critical levels');
+has(contracts,'public String Subsystem { get; }','subsystem field');
+has(contracts,'public UInt32 Cpu { get; }','CPU field');
+has(contracts,'public UInt64 ThreadId { get; }','thread field');
+has(contracts,'public UInt64 ProcessId { get; }','process field');
+has(contracts,'public UInt64 TimestampNanoseconds { get; }','timestamp field');
+has(contracts,'public String Source { get; }','source field');
+has(runtime,'MaximumSinks=4','multi-sink logging');
+has(runtime,'SetMinimumLevel','runtime level filter');
+has(runtime,'ResetStatistics','resettable log statistics');
+has(runtime,'public static Boolean Trace(','Trace API');
+has(runtime,'public static Boolean Critical(','Critical API');
+has(sink,'[thread=','console sink emits thread');
+has(sink,'[process=','console sink emits process');
+has(sink,'record.TimestampNanoseconds','console sink emits timestamp');
+has(sink,'record.Subsystem','console sink emits subsystem');
+has(sink,'record.Source','console sink emits source');
+has(sink,'KernelScheduler.TryGetCurrentThreadId(out threadId)','live scheduler thread context');
+has(sink,'KernelProcesses.TryGetCurrentProcessId(out processId)','live process context');
+has(processes,'TryGetCurrentProcessId(out UInt64 processId)','process execution-context API');
+has(processes,'_currentProcessId=r->Id','user process ownership captured');
+has(boot,'KernelLog.Configure(new KernelConsoleLogSink(), diagnosticsContext, KernelLogLevel.Trace)','logging configured immediately after console startup');
+has(boot,'KernelLog.Info("bootstrap","Kernel.KMain","NovaOryn KMain started.")','first boot diagnostic uses structured logging');
+has(boot,'KernelLog.Debug("architecture","Kernel.KMain","GDT and TSS installed.")','debug-level boot diagnostic');
+has('SDK/NovaOryn.SdkManifest.json','"structuredLogging": "2.0"','SDK manifest structured logging 2.0');
+const b=read(boot);
+checks.push(['legacy KMain startup WriteLine removed',!b.includes('KernelConsole.WriteLine("NovaOryn KMain started.")')]);
+let bad=false;for(const [label,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${label}`);if(!ok)bad=true;}
+if(bad)process.exit(1);
+console.log(`[ OK ] NovaOryn IDE 0.7.1 structured kernel logging contract verified (${checks.length} checks).`);

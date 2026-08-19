@@ -73,6 +73,9 @@ import {
     NovaOrynDiskVolume,
     NovaOrynDiskEntry,
     NovaOrynDiskReadResult,
+    NovaOrynDeviceBus,
+    NovaOrynDeviceTreeNode,
+    NovaOrynDeviceTreeSnapshot,
     NovaOrynProjectService
 } from '../common/novaoryn-protocol';
 
@@ -80,7 +83,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.5.0';
+const NOVAORYN_IDE_VERSION = '0.7.1';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -537,6 +540,54 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     }
 
 
+
+    async inspectDeviceTree(projectPath: string): Promise<NovaOrynDeviceTreeSnapshot> {
+        const result = await this.readProjectConfiguration(projectPath);
+        if (!result.success || !result.configuration) {
+            return { schemaVersion: 1, generation: 0, source: 'configuration', roots: [], counts: { total: 0, pci: 0, usb: 0, acpi: 0, platform: 0, virtual: 0, logical: 0 }, message: result.error || 'Open a NovaOryn operating system to inspect its device tree.' };
+        }
+        const c = result.configuration;
+        let sequence = 1;
+        const counts = { total: 0, pci: 0, usb: 0, acpi: 0, platform: 0, virtual: 0, logical: 0 };
+        const classify = (name: string, fallback: NovaOrynDeviceBus = 'platform'): NovaOrynDeviceBus => {
+            const text = name.toLowerCase();
+            if (text.includes('usb') || text.includes('xhci') || text.includes('ehci') || text.includes('hid')) return 'usb';
+            if (text.includes('pci') || text.includes('pcie') || text.includes('nvme') || text.includes('ahci') || text.includes('sata') || text.includes('e1000') || text.includes('rtl') || text.includes('i219') || text.includes('i225')) return 'pci';
+            if (text.includes('acpi') || text.includes('hpet') || text.includes('fadt') || text.includes('madt') || text.includes('mcfg')) return 'acpi';
+            if (text.includes('virtio') || text.includes('qemu')) return 'virtual';
+            return fallback;
+        };
+        const node = (bus: NovaOrynDeviceBus, name: string, children: NovaOrynDeviceTreeNode[] = [], parentId?: string): NovaOrynDeviceTreeNode => {
+            const id = `device-${sequence++}`;
+            counts.total++; counts[bus]++;
+            const n: NovaOrynDeviceTreeNode = { id, parentId, bus, name, state: 'discovered', children: [] };
+            n.children = children.map(child => ({ ...child, parentId: id }));
+            return n;
+        };
+        const childNodes = (items: string[], fallback: NovaOrynDeviceBus = 'platform') => items.map(item => node(classify(item, fallback), item));
+        const platformChildren: NovaOrynDeviceTreeNode[] = [
+            node('platform', `CPU — ${c.targetArchitecture}`),
+            node('logical', c.smp ? 'SMP / per-CPU topology' : 'Single CPU topology'),
+            node('logical', `Interrupt model — ${c.interruptModel}`),
+            ...childNodes(c.timers, 'platform')
+        ];
+        const roots: NovaOrynDeviceTreeNode[] = [
+            node('platform', 'Platform devices', platformChildren),
+            node('pci', 'PCI / PCIe devices', childNodes([...c.drivers, ...c.storageControllers, ...c.networkDrivers].filter(x => classify(x) === 'pci'), 'pci')),
+            node('usb', 'USB devices', childNodes([...c.drivers, ...c.input].filter(x => classify(x) === 'usb'), 'usb')),
+            node('acpi', 'ACPI devices', childNodes([...c.drivers, ...c.timers].filter(x => classify(x) === 'acpi'), 'acpi')),
+            node('virtual', 'Virtual devices', childNodes([...c.drivers, ...c.graphics, ...c.networkDrivers, ...c.storageControllers].filter(x => classify(x) === 'virtual'), 'virtual')),
+            node('logical', 'Logical devices', [
+                node('logical', `Network stack — ${c.networkStack}`),
+                ...childNodes(c.graphics.filter(x => classify(x) !== 'virtual'), 'logical'),
+                ...childNodes(c.input.filter(x => classify(x) !== 'usb'), 'logical'),
+                ...(c.audio === 'none' ? [] : [node('logical', `Audio — ${c.audio}`)])
+            ])
+        ];
+        const fixParents = (parent: NovaOrynDeviceTreeNode): void => { for (const child of parent.children) { child.parentId = parent.id; fixParents(child); } };
+        roots.forEach(fixParents);
+        return { schemaVersion: 1, generation: Date.now(), source: 'configuration', roots, counts };
+    }
 
     async listDrivers(projectPath: string): Promise<NovaOrynDriverDescriptor[]> {
         const projectRoot = path.resolve(projectPath);
@@ -1388,7 +1439,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.5.0 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.7.1 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -1987,7 +2038,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.5.0 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.7.1 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);

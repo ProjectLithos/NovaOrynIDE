@@ -53,15 +53,19 @@ public static unsafe class Kernel
     public static Boolean KMain(BootContext boot)
     {
         if (!KernelConsole.Initialize(boot)) return false;
-        if (!KernelConsole.WriteLine("NovaOryn KMain started.")) return false;
-        if (!boot.HasFinalMemoryMap()) return false;
-        if (!KernelConsole.WriteLine("Final UEFI memory map retained; ExitBootServices succeeded.")) return false;
+        KernelLogContextProvider diagnosticsContext = new KernelLogContextProvider();
+        if (!KernelLog.Configure(new KernelConsoleLogSink(), diagnosticsContext, KernelLogLevel.Trace)) return false;
+        if (!KernelTelemetry.Configure(new KernelConsoleTelemetrySink(), diagnosticsContext)) return false;
+        if (!KernelLog.Trace("console","Kernel.KMain","Kernel console initialized; structured diagnostic routing begins.")) return false;
+        if (!KernelLog.Info("bootstrap","Kernel.KMain","NovaOryn KMain started.")) return false;
+        if (!boot.HasFinalMemoryMap()) { KernelLog.Critical("boot","Kernel.KMain","Final UEFI memory map is missing; kernel startup cannot continue."); return false; }
+        if (!KernelLog.Info("boot","Kernel.KMain","Final UEFI memory map retained; ExitBootServices succeeded.")) return false;
         if (!KernelPlatform.InitializeDescriptors()) return false;
-        if (!KernelConsole.WriteLine("GDT and TSS installed.")) return false;
+        if (!KernelLog.Debug("architecture","Kernel.KMain","GDT and TSS installed.")) return false;
         if (!KernelPlatform.InitializeInterrupts()) return false;
-        if (!KernelConsole.WriteLine("IDT with 256 vectors installed.")) return false;
+        if (!KernelLog.Debug("interrupts","Kernel.KMain","IDT with 256 vectors installed.")) return false;
         if (!KernelPlatform.DisableLegacyPic()) return false;
-        if (!KernelConsole.WriteLine("Legacy PIC masked; APIC/MSI controller layer ready.")) return false;
+        if (!KernelLog.Info("interrupts","Kernel.KMain","Legacy PIC masked; APIC/MSI controller layer ready.")) return false;
         if (!KernelAcpi.Initialize(boot)) return false;
         if (!KernelConsole.Write("ACPI status: ")) return false;
         if (!KernelConsole.WriteLine(KernelAcpi.GetLastStatusName())) return false;
@@ -98,6 +102,7 @@ public static unsafe class Kernel
         if (!KernelAcpiFadt.Initialize()) return false;
         if (!KernelAcpiPower.Initialize()) return false;
         Boolean ecReady = KernelAcpiEc.Initialize();
+        if (!ecReady) KernelLog.Warning("acpi","Kernel.KMain","ACPI embedded controller was not advertised by ECDT; continuing without EC services.");
         AcpiPowerCapabilities power = KernelAcpiPower.GetCapabilities();
         if (!KernelConsole.Write("ACPI FADT power reset/shutdown/button: ")) return false;
         if (!KernelConsole.Write(power.ResetAvailable ? "yes" : "no")) return false;
@@ -107,7 +112,7 @@ public static unsafe class Kernel
         if (!KernelConsole.WriteLine(power.PowerButtonAvailable ? "yes" : "no")) return false;
         if (!KernelConsole.Write("ACPI embedded controller: ")) return false;
         if (!KernelConsole.WriteLine(ecReady ? "ECDT online" : "not advertised by ECDT")) return false;
-        if (!KernelConsole.WriteLine("ACPI MADT, MCFG, HPET, FADT and platform power services online.")) return false;
+        if (!KernelLog.Info("acpi","Kernel.KMain","ACPI MADT, MCFG, HPET, FADT and platform power services online.")) return false;
         if (!KernelTime.Initialize()) return false;
         KernelTimeCapabilities timeCapabilities = KernelTime.GetCapabilities();
         if (!KernelConsole.Write("HPET: ")) return false;
@@ -156,7 +161,7 @@ public static unsafe class Kernel
             if (!KernelConsole.WriteLine("")) return false;
         }
         else if (!KernelConsole.WriteLine("unavailable")) return false;
-        if (!KernelConsole.WriteLine("HPET, Local APIC timer, TSC, RTC/CMOS and invariant-TSC clock source online.")) return false;
+        if (!KernelLog.Info("time","Kernel.KMain","HPET, Local APIC timer, TSC, RTC/CMOS and invariant-TSC clock source online.")) return false;
         if (!KernelPhysicalMemory.Initialize(boot)) return false;
         KernelPhysicalMemoryStatistics physicalMemory = KernelPhysicalMemory.GetStatistics();
         if (!KernelConsole.Write("Physical memory managed/free/reserved: ")) return false;
@@ -166,14 +171,15 @@ public static unsafe class Kernel
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteByteSize(physicalMemory.ReservedPages * 4096UL)) return false;
         if (!KernelConsole.WriteLine("")) return false;
-        if (!KernelConsole.WriteLine("Physical memory manager initialized from final UEFI map.")) return false;
+        if (!KernelLog.Info("memory","Kernel.KMain","Physical memory manager initialized from final UEFI map.")) return false;
         if (!KernelVirtualMemory.Initialize()) return false;
-        if (!KernelConsole.WriteLine("Virtual memory manager attached to active x64 page tables.")) return false;
+        if (!KernelLog.Info("virtual-memory","Kernel.KMain","Virtual memory manager attached to active x64 page tables.")) return false;
         Boolean addressSpaceReady = KernelAddressSpace.Initialize();
         if (!KernelConsole.Write("Kernel address-space status: ")) return false;
         if (!KernelConsole.WriteLine(KernelAddressSpace.GetLastStatusName())) return false;
         if (!addressSpaceReady)
         {
+            KernelLog.Error("virtual-memory","Kernel.KMain","Kernel address-space initialization failed.");
             if (!KernelConsole.Write("Virtual memory status: ")) return false;
             if (!KernelConsole.WriteLine(KernelVirtualMemory.GetLastStatusName())) return false;
             return false;
@@ -204,15 +210,13 @@ public static unsafe class Kernel
         Boolean heapReady = KernelHeap.Initialize();
         if (heapReady)
         {
-            KernelLogContextProvider diagnosticsContext = new KernelLogContextProvider();
-            if (!KernelLog.Configure(new KernelConsoleLogSink(), diagnosticsContext, KernelLogLevel.Info)) return false;
-            if (!KernelTelemetry.Configure(new KernelConsoleTelemetrySink(), diagnosticsContext)) return false;
             KernelTelemetry.KernelBootEvent("Kernel heap", 8UL, KernelBootPhase.End, KernelHeap.GetLastStatusName());
             KernelTelemetry.KernelDiagnosticEvent("telemetry", "runtime-online", 0UL, "Structured kernel telemetry v1.1 online");
+            if (!KernelLog.Info("logging","Kernel.KMain","Structured kernel logging is online with CPU/thread/process/time/source context.")) return false;
         }
         if (!KernelConsole.Write("Kernel heap status: ")) return false;
         if (!KernelConsole.WriteLine(KernelHeap.GetLastStatusName())) return false;
-        if (!heapReady) return false;
+        if (!heapReady) { KernelLog.Critical("heap","Kernel.KMain","Kernel heap initialization failed; dynamic kernel services cannot start."); return false; }
         if (!KernelGraphics.Initialize()) return false;
         if (!FirmwareFramebuffer.Register(boot.GetFramebufferAddress(), boot.GetFramebufferSize(), boot.GetFramebufferWidth(), boot.GetFramebufferHeight(), boot.GetFramebufferPitchInPixels(), boot.GetFramebufferPixelFormat(), out KernelGraphicsDisplayHandle firmwareDisplay)) return false;
         if (!KernelConsole.Write("Generic framebuffer registered: ")) return false;

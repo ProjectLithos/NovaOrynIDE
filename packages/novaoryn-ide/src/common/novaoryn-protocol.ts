@@ -368,6 +368,8 @@ export interface NovaOrynDriverManifest {
 export type NovaOrynDeviceBus = 'platform' | 'pci' | 'usb' | 'acpi' | 'virtual' | 'logical';
 export type NovaOrynDeviceLifecycleState = 'discovered' | 'probing' | 'probed' | 'binding' | 'bound' | 'starting' | 'started' | 'stopping' | 'stopped' | 'resetting' | 'suspending' | 'suspended' | 'resuming' | 'failed' | 'recovering' | 'removing' | 'removed';
 export interface NovaOrynDeviceTreeNode { id: string; parentId?: string; bus: NovaOrynDeviceBus; name: string; state: NovaOrynDeviceLifecycleState; driverId?: string; vendorId?: string; deviceId?: string; classCode?: string; location?: string; children: NovaOrynDeviceTreeNode[]; }
+export interface NovaOrynDeviceTreeCounts { total: number; pci: number; usb: number; acpi: number; platform: number; virtual: number; logical: number; }
+export interface NovaOrynDeviceTreeSnapshot { schemaVersion: 1; generation: number; source: 'configuration' | 'runtime'; roots: NovaOrynDeviceTreeNode[]; counts: NovaOrynDeviceTreeCounts; message?: string; }
 
 export interface NovaOrynDriverDescriptor {
     id: string;
@@ -768,6 +770,7 @@ export interface NovaOrynProjectService {
     listOperatingSystems(): Promise<NovaOrynOperatingSystem[]>;
     createProject(configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
     readProjectConfiguration(projectPath: string): Promise<NovaOrynConfigurationResult>;
+    inspectDeviceTree(projectPath: string): Promise<NovaOrynDeviceTreeSnapshot>;
     reconfigureProject(projectPath: string, configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
     runOperatingSystem(projectPath: string, mode: NovaOrynRunMode, breakpoints?: NovaOrynBreakpointRequest[], exceptionBreakpoints?: NovaOrynExceptionBreakpointSettings): Promise<NovaOrynRunResult>;
     readRunOutput(sessionId: string, offset: number): Promise<NovaOrynRunOutput>;
