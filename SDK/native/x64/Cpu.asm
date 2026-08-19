@@ -7,6 +7,8 @@ global NovaOrynX64EnableInterrupts
 global NovaOrynX64AreInterruptsEnabled
 global NovaOrynX64Halt
 global NovaOrynX64Pause
+global NovaOrynX64CapturePanicContext
+global NovaOrynX64PanicDebuggerBreak
 global NovaOrynX64WaitForInterrupt
 global NovaOrynX64WritePort8
 global NovaOrynX64ReadPort8
@@ -53,6 +55,27 @@ NovaOrynX64WaitForInterrupt:
     ret
 NovaOrynX64Pause:
     pause
+    mov al, 1
+    ret
+
+; RCX=&rip, RDX=&rsp, R8=&rbp, R9=&flags, [rsp+40]=&cr3 (Microsoft x64 ABI)
+NovaOrynX64CapturePanicContext:
+    mov r10, [rsp]              ; managed caller return address
+    mov [rcx], r10
+    lea r10, [rsp + 8]          ; caller stack immediately after the return address
+    mov [rdx], r10
+    mov [r8], rbp
+    pushfq
+    pop r10
+    mov [r9], r10
+    mov r11, [rsp + 40]
+    mov r10, cr3
+    mov [r11], r10
+    mov al, 1
+    ret
+
+NovaOrynX64PanicDebuggerBreak:
+    int3
     mov al, 1
     ret
 NovaOrynX64WritePort8:

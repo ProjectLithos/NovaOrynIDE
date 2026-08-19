@@ -83,7 +83,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.9.0';
+const NOVAORYN_IDE_VERSION = '0.10.0';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -479,6 +479,7 @@ interface RunSession {
     exceptionBreakpoints: NovaOrynExceptionBreakpointSettings;
     exceptionBreakpointAddresses: Map<bigint, number>;
     panicBreakpointAddress?: bigint;
+    panicDebuggerBreakAddress?: bigint;
     nativeVariables?: NativeVariableLocation[];
     nativeVariablesMessage?: string;
     selectedThreadId?: string;
@@ -1541,7 +1542,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.9.0 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.10.0 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -2155,7 +2156,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.9.0 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.10.0 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -2485,7 +2486,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 return { success: true, dump, document: parsed as NovaOrynCrashDumpDocument, state, pageTable, heap, memory };
             }
 
-            // Pre-0.9.0 IDE dumps are retained as a documented legacy import path.
+            // Pre-0.10.0 IDE dumps are retained as a documented legacy import path.
             if (parsed.schemaVersion === 1 && parsed.debugState) {
                 const state: NovaOrynDebugState = {
                     ...parsed.debugState,
@@ -2812,6 +2813,11 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         try {
             const mapText = await fs.readFile(mapPath, 'utf8');
             session.exceptionBreakpointAddresses.clear();
+            session.panicDebuggerBreakAddress = undefined;
+            const panicDebugLinked = this.findLinkedSymbolAddress(mapText, 'NovaOrynX64PanicDebuggerBreak');
+            if (panicDebugLinked !== undefined) {
+                session.panicDebuggerBreakAddress = panicDebugLinked + session.relocationDelta;
+            }
             if (session.exceptionBreakpoints.vectors.length > 0) {
                 const armed: number[] = [];
                 const unavailable: number[] = [];
@@ -2988,6 +2994,24 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
 
             const rip = await this.readRip(session.gdb);
             const candidates = [rip, rip > 0n ? rip - 1n : rip];
+
+            if (session.panicDebuggerBreakAddress && candidates.some(candidate => candidate === session.panicDebuggerBreakAddress)) {
+                session.debug = {
+                    ...session.debug,
+                    paused: true,
+                    exceptionVector: 3,
+                    exceptionName: 'Kernel panic debugger break',
+                    message: 'Kernel panic debugger break reached. A versioned NOCD crash dump is being captured before the configured halt/reboot policy continues.'
+                };
+                await this.populatePausedDebugData(session, rip);
+                const dump = await this.captureCrashDump(session.sessionId, 'Kernel panic');
+                if (!dump.success) {
+                    session.output += `[WARN] Automatic kernel-panic crash dump failed: ${dump.error}\r\n`;
+                } else if (dump.dump) {
+                    session.output += `[ OK ] Automatic kernel-panic crash dump: ${dump.dump.path}\r\n`;
+                }
+                return;
+            }
 
             const exceptionHit = candidates
                 .map(candidate => ({ address: candidate, vector: session.exceptionBreakpointAddresses.get(candidate) }))

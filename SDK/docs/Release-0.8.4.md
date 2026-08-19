@@ -1,6 +1,6 @@
-# NovaOryn 0.9.0
+# NovaOryn 0.10.0
 
-NovaOryn 0.9.0 adds automatic scrolling to the framebuffer console used for kernel output in the QEMU display.
+NovaOryn 0.10.0 adds automatic scrolling to the framebuffer console used for kernel output in the QEMU display.
 
 ## Framebuffer scrolling
 

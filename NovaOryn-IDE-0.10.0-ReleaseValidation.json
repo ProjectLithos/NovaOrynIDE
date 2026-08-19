@@ -1,0 +1,43 @@
+{
+  "release": "NovaOryn IDE 0.10.0",
+  "feature": "Kernel panic framework",
+  "panicRecord": [
+    "reason/code",
+    "message",
+    "CPU",
+    "thread",
+    "process",
+    "call stack",
+    "registers",
+    "optional NOCD crash dump",
+    "optional debugger break",
+    "controlled halt/reboot policy"
+  ],
+  "freestandingSafety": {
+    "managedBackendInterfaceUsedByBootKernel": false,
+    "rawFunctionPointers": true,
+    "staticLastPanicSnapshot": true
+  },
+  "debugger": {
+    "x64Int3PanicBreak": true,
+    "automaticNocdCapture": true,
+    "continueAfterDebuggerBreak": true
+  },
+  "policy": [
+    "Halt",
+    "Reboot",
+    "DebuggerThenHalt",
+    "DebuggerThenReboot"
+  ],
+  "validation": {
+    "panicContractVerifier": "PASS",
+    "modifiedIdeTypeScriptTranspile": "PASS",
+    "sourceTemplateParity": "PASS",
+    "versionConsistency": {
+      "package.json": "0.10.0",
+      "applications/electron/package.json": "0.10.0",
+      "packages/novaoryn-ide/package.json": "0.10.0"
+    },
+    "windowsNativeBuild": "Run Build-NovaOrynIDE.bat on Windows for final NativeAOT/link validation."
+  }
+}

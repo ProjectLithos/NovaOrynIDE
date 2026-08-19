@@ -1,5 +1,5 @@
 {
-  "release": "NovaOryn IDE 0.9.0",
+  "release": "NovaOryn IDE 0.10.0",
   "baseRelease": "0.8.1",
   "purpose": "Correct structured telemetry context capture against the actual freestanding SMP, scheduler and process APIs.",
   "rootCause": [
@@ -20,9 +20,9 @@
     "generatedKernelTemplateTransport": "PASS",
     "visualStudioKernelTemplateTransport": "PASS",
     "versionConsistency": {
-      "package.json": "0.9.0",
-      "applications/electron/package.json": "0.9.0",
-      "packages/novaoryn-ide/package.json": "0.9.0"
+      "package.json": "0.10.0",
+      "applications/electron/package.json": "0.10.0",
+      "packages/novaoryn-ide/package.json": "0.10.0"
     },
     "changedFileCount": 32,
     "deletedFileCount": 0,

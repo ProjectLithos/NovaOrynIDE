@@ -25,6 +25,7 @@ public static unsafe class BootStartup
     {
         if (!KernelConsole.Initialize(boot)) return false;
         if (!KernelStructuredLogging.Initialize()) return false;
+        if (!KernelPanicTransport.Initialize()) return false;
         if (!KernelStructuredLogging.TraceLine("console","BootStartup.Initialize","Kernel console initialized; structured diagnostic routing begins.")) return false;
         if (!KernelStructuredLogging.InfoLine("bootstrap","BootStartup.Initialize","NovaOryn KMain started.")) return false;
         if (!boot.HasFinalMemoryMap()) return false;

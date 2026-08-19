@@ -17,8 +17,8 @@ check(svc.includes("magic: 'NOCD'"),"IDE writer emits NOCD");
 check(svc.includes("formatVersion: { major: 1, minor: 0 }"),"IDE writer emits format v1.0");
 for(const name of ["cpuState","registers","stack","pageTables","processes","modules","heap","memoryRanges","panic","drivers"])
   check(svc.includes(`${name}: {`),`IDE writer emits ${name} section`);
-check(svc.includes("parsed.schemaVersion === 1 && parsed.debugState"),"legacy pre-0.9.0 reader retained");
+check(svc.includes("parsed.schemaVersion === 1 && parsed.debugState"),"legacy pre-0.10.0 reader retained");
 check(svc.includes("if (major !== 1)"),"unsupported major versions rejected");
 check(docs.includes("Readers must ignore **unknown section kinds** and **unknown fields**"),"forward compatibility documented");
-check(docs.includes("Pre-0.9.0") || docs.includes("pre-0.9.0"),"legacy compatibility documented");
+check(docs.includes("Pre-0.10.0") || docs.includes("pre-0.10.0"),"legacy compatibility documented");
 if(failed)process.exitCode=1; else console.log("[ OK ] NovaOryn Crash Dump format contract verified.");

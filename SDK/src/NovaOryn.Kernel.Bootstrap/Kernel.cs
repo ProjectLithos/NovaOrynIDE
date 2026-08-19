@@ -54,6 +54,7 @@ public static unsafe class Kernel
     {
         if (!KernelConsole.Initialize(boot)) return false;
         if (!KernelStructuredLogging.Initialize()) return false;
+        if (!KernelPanicTransport.Initialize()) return false;
         if (!KernelStructuredLogging.TraceLine("console","Kernel.KMain","Kernel console initialized; structured diagnostic routing begins.")) return false;
         if (!KernelStructuredLogging.InfoLine("bootstrap","Kernel.KMain","NovaOryn KMain started.")) return false;
         if (!boot.HasFinalMemoryMap()) { KernelStructuredLogging.CriticalLine("boot","Kernel.KMain","Final UEFI memory map is missing; kernel startup cannot continue."); return false; }

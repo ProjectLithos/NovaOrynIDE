@@ -114,9 +114,75 @@ public static unsafe class KernelTelemetry
     public static Boolean KernelDiagnosticEvent(String subsystem,String name,UInt64 timestamp,UInt64 code,String detail)=>Emit(KernelTelemetryKind.DiagnosticEvent,subsystem,name,timestamp,code,0,detail);
 }
 
-public static class KernelPanic
+public static unsafe class KernelPanic
 {
-    private static IKernelPanicBackend _backend; private static Boolean _panicking;
-    public static Boolean Configure(IKernelPanicBackend backend){_backend=backend;return backend!=null;}
-    public static Boolean Raise(KernelPanicInfo info){if(_panicking)return false;_panicking=true;KernelLog.Critical("panic","KernelPanic",info.Reason??String.Empty);KernelLog.Critical("panic","KernelPanic",info.Message??String.Empty);if(_backend==null)return false;Boolean ok=_backend.TryCaptureRegisters(info);ok=_backend.TryCaptureCallStack(info)&&ok;if(info.WriteCrashDump)ok=_backend.TryWriteCrashDump(info)&&ok;if(info.BreakDebugger)ok=_backend.TryBreakDebugger(info)&&ok;return _backend.TryHaltOrReboot(info)&&ok;}
+    // Panic handling must continue to work when the heap, GC or interface dispatch is damaged.
+    // The freestanding path therefore stores only raw managed function pointers and value types.
+    private static delegate* managed<UInt32*,UInt64*,UInt64*,UInt64*,UInt64*,UInt64*,Boolean> _context;
+    private static delegate* managed<KernelPanicRegisters*,Boolean> _registers;
+    private static delegate* managed<KernelPanicCallStack*,Boolean> _callStack;
+    private static delegate* managed<KernelPanicInfo*,KernelPanicRegisters*,KernelPanicCallStack*,Boolean> _crashDump;
+    private static delegate* managed<KernelPanicInfo*,Boolean> _debugBreak;
+    private static delegate* managed<Boolean> _halt;
+    private static delegate* managed<Boolean> _reboot;
+    private static Boolean _configured,_panicking,_hasSnapshot;
+    private static KernelPanicSnapshot _last;
+
+    public static Boolean ConfigureFreestanding(
+        delegate* managed<UInt32*,UInt64*,UInt64*,UInt64*,UInt64*,UInt64*,Boolean> context,
+        delegate* managed<KernelPanicRegisters*,Boolean> registers,
+        delegate* managed<KernelPanicCallStack*,Boolean> callStack,
+        delegate* managed<KernelPanicInfo*,KernelPanicRegisters*,KernelPanicCallStack*,Boolean> crashDump,
+        delegate* managed<KernelPanicInfo*,Boolean> debugBreak,
+        delegate* managed<Boolean> halt,
+        delegate* managed<Boolean> reboot)
+    {
+        if(context==null||registers==null||callStack==null||halt==null)return false;
+        _context=context;_registers=registers;_callStack=callStack;_crashDump=crashDump;_debugBreak=debugBreak;_halt=halt;_reboot=reboot;_configured=true;return true;
+    }
+
+    public static Boolean IsConfigured()=>_configured;
+    public static Boolean IsPanicking()=>_panicking;
+    public static Boolean TryGetLastSnapshot(out KernelPanicSnapshot snapshot){snapshot=_last;return _hasSnapshot;}
+    public static Boolean ResetForTesting(){_panicking=false;_hasSnapshot=false;_last=default;return true;}
+
+    public static Boolean Raise(KernelPanicCode code,String reason,String message,Boolean writeCrashDump=true,Boolean breakDebugger=true,KernelPanicPolicy policy=KernelPanicPolicy.DebuggerThenHalt)
+    {
+        UInt32 cpu=0;UInt64 thread=0,process=0,rip=0,rsp=0,time=0;
+        if(_context!=null)_context(&cpu,&thread,&process,&rip,&rsp,&time);
+        return Raise(new KernelPanicInfo((UInt32)code,reason??String.Empty,message??String.Empty,cpu,thread,process,rip,rsp,writeCrashDump,breakDebugger,policy),time);
+    }
+
+    public static Boolean Raise(KernelPanicInfo info)=>Raise(info,0UL);
+
+    private static Boolean Raise(KernelPanicInfo info,UInt64 timestamp)
+    {
+        if(_panicking)return false;
+        _panicking=true;
+
+        KernelPanicRegisters registers=default;
+        KernelPanicCallStack stack=default;
+        Boolean registerOk=_registers!=null&&_registers(&registers);
+        Boolean stackOk=_callStack!=null&&_callStack(&stack);
+        if(timestamp==0UL)timestamp=registers.Rip!=0UL?registers.Rip:1UL;
+        _last=new KernelPanicSnapshot(info,registers,stack,timestamp);
+        _hasSnapshot=true;
+
+        // Structured telemetry is best effort; failure must never prevent terminal handling.
+        KernelTelemetry.KernelDiagnosticEvent("panic","raised",(UInt64)info.Code,info.Reason??String.Empty);
+        KernelTelemetry.KernelTrace("panic","message",info.Message??String.Empty);
+
+        Boolean ok=registerOk&&stackOk;
+        if(info.WriteCrashDump&&_crashDump!=null)ok=_crashDump(&info,&registers,&stack)&&ok;
+
+        Boolean wantsDebugger=info.BreakDebugger||info.Policy==KernelPanicPolicy.DebuggerThenHalt||info.Policy==KernelPanicPolicy.DebuggerThenReboot;
+        if(wantsDebugger&&_debugBreak!=null)ok=_debugBreak(&info)&&ok;
+
+        Boolean wantsReboot=info.Policy==KernelPanicPolicy.Reboot||info.Policy==KernelPanicPolicy.DebuggerThenReboot;
+        if(wantsReboot&&_reboot!=null&&_reboot())return ok;
+
+        // A failed/unsupported reboot always degrades safely to a terminal halt.
+        if(_halt!=null)return _halt()&&ok;
+        return false;
+    }
 }

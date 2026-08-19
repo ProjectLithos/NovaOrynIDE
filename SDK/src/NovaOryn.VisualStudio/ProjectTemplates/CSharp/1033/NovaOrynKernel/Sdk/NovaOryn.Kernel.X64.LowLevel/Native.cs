@@ -34,6 +34,15 @@ public static class Native
     public static extern Boolean DisableLegacyPic();
 
 
+
+    /// <summary>Captures the caller-visible RIP, RSP, RBP, RFLAGS and CR3 for panic diagnostics.</summary>
+    [DllImport("*", EntryPoint = "NovaOrynX64CapturePanicContext", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern Boolean CapturePanicContext(out UInt64 instructionPointer, out UInt64 stackPointer, out UInt64 framePointer, out UInt64 flags, out UInt64 pageTableRoot);
+
+    /// <summary>Raises x64 INT3 so an attached debugger can stop on a kernel panic and then continue.</summary>
+    [DllImport("*", EntryPoint = "NovaOrynX64PanicDebuggerBreak", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern Boolean PanicDebuggerBreak();
+
     /// <summary>Reads the active x64 CR3 page-table root physical address.</summary>
     [DllImport("*", EntryPoint = "NovaOrynX64ReadPageTableRoot", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern UInt64 ReadPageTableRoot();

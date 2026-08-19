@@ -166,14 +166,90 @@ public readonly struct KernelCrashDriverState
     public String Id{get;} public String Name{get;} public UInt32 State{get;} public UInt64 DeviceId{get;} public String Detail{get;}
 }
 
-public enum KernelPanicPolicy : Byte { Halt=0,Reboot=1,DebuggerThenHalt=2,DebuggerThenReboot=3 }
+/// <summary>Defines the terminal action taken after a kernel panic has been recorded.</summary>
+public enum KernelPanicPolicy : Byte
+{
+    Halt=0,
+    Reboot=1,
+    DebuggerThenHalt=2,
+    DebuggerThenReboot=3
+}
+
+/// <summary>Stable panic reason codes used by the kernel and SDK.</summary>
+public enum KernelPanicCode : UInt32
+{
+    Unknown=0,
+    AssertionFailed=1,
+    UnhandledException=2,
+    DoubleFault=3,
+    MachineCheck=4,
+    PageFault=5,
+    GeneralProtectionFault=6,
+    OutOfMemory=7,
+    HeapCorruption=8,
+    SchedulerFailure=9,
+    DriverFailure=10,
+    FilesystemFailure=11,
+    SecurityViolation=12,
+    WatchdogExpired=13,
+    UserRequested=14
+}
+
+/// <summary>Architecture-neutral register snapshot attached to a panic.</summary>
+public readonly struct KernelPanicRegisters
+{
+    public KernelPanicRegisters(
+        UInt64 rax,UInt64 rbx,UInt64 rcx,UInt64 rdx,UInt64 rsi,UInt64 rdi,
+        UInt64 rbp,UInt64 rsp,UInt64 r8,UInt64 r9,UInt64 r10,UInt64 r11,
+        UInt64 r12,UInt64 r13,UInt64 r14,UInt64 r15,UInt64 rip,UInt64 flags,UInt64 cr3)
+    { Rax=rax;Rbx=rbx;Rcx=rcx;Rdx=rdx;Rsi=rsi;Rdi=rdi;Rbp=rbp;Rsp=rsp;R8=r8;R9=r9;R10=r10;R11=r11;R12=r12;R13=r13;R14=r14;R15=r15;Rip=rip;Flags=flags;Cr3=cr3; }
+    public UInt64 Rax{get;} public UInt64 Rbx{get;} public UInt64 Rcx{get;} public UInt64 Rdx{get;}
+    public UInt64 Rsi{get;} public UInt64 Rdi{get;} public UInt64 Rbp{get;} public UInt64 Rsp{get;}
+    public UInt64 R8{get;} public UInt64 R9{get;} public UInt64 R10{get;} public UInt64 R11{get;}
+    public UInt64 R12{get;} public UInt64 R13{get;} public UInt64 R14{get;} public UInt64 R15{get;}
+    public UInt64 Rip{get;} public UInt64 Flags{get;} public UInt64 Cr3{get;}
+}
+
+/// <summary>Allocation-free top-of-stack snapshot. Zero values mean no frame was captured.</summary>
+public readonly struct KernelPanicCallStack
+{
+    public KernelPanicCallStack(UInt32 count,UInt64 frame0,UInt64 frame1,UInt64 frame2,UInt64 frame3,UInt64 frame4,UInt64 frame5,UInt64 frame6,UInt64 frame7)
+    {Count=count;Frame0=frame0;Frame1=frame1;Frame2=frame2;Frame3=frame3;Frame4=frame4;Frame5=frame5;Frame6=frame6;Frame7=frame7;}
+    public UInt32 Count{get;}
+    public UInt64 Frame0{get;} public UInt64 Frame1{get;} public UInt64 Frame2{get;} public UInt64 Frame3{get;}
+    public UInt64 Frame4{get;} public UInt64 Frame5{get;} public UInt64 Frame6{get;} public UInt64 Frame7{get;}
+}
+
+/// <summary>Complete structured kernel-panic description.</summary>
 public readonly struct KernelPanicInfo
 {
     public KernelPanicInfo(UInt32 code,String reason,String message,UInt32 cpu,UInt64 threadId,UInt64 processId,UInt64 instructionPointer,UInt64 stackPointer,Boolean writeCrashDump,Boolean breakDebugger,KernelPanicPolicy policy)
     { Code=code;Reason=reason;Message=message;Cpu=cpu;ThreadId=threadId;ProcessId=processId;InstructionPointer=instructionPointer;StackPointer=stackPointer;WriteCrashDump=writeCrashDump;BreakDebugger=breakDebugger;Policy=policy; }
-    public UInt32 Code{get;} public String Reason{get;} public String Message{get;} public UInt32 Cpu{get;} public UInt64 ThreadId{get;} public UInt64 ProcessId{get;} public UInt64 InstructionPointer{get;} public UInt64 StackPointer{get;} public Boolean WriteCrashDump{get;} public Boolean BreakDebugger{get;} public KernelPanicPolicy Policy{get;}
+    public UInt32 Code{get;} public String Reason{get;} public String Message{get;} public UInt32 Cpu{get;}
+    public UInt64 ThreadId{get;} public UInt64 ProcessId{get;} public UInt64 InstructionPointer{get;} public UInt64 StackPointer{get;}
+    public Boolean WriteCrashDump{get;} public Boolean BreakDebugger{get;} public KernelPanicPolicy Policy{get;}
 }
-public interface IKernelPanicBackend { Boolean TryCaptureCallStack(KernelPanicInfo info); Boolean TryCaptureRegisters(KernelPanicInfo info); Boolean TryWriteCrashDump(KernelPanicInfo info); Boolean TryBreakDebugger(KernelPanicInfo info); Boolean TryHaltOrReboot(KernelPanicInfo info); }
+
+/// <summary>Last panic snapshot retained in static kernel memory for debugger/offline inspection.</summary>
+public readonly struct KernelPanicSnapshot
+{
+    public KernelPanicSnapshot(KernelPanicInfo info,KernelPanicRegisters registers,KernelPanicCallStack callStack,UInt64 timestampNanoseconds)
+    {Info=info;Registers=registers;CallStack=callStack;TimestampNanoseconds=timestampNanoseconds;}
+    public KernelPanicInfo Info{get;} public KernelPanicRegisters Registers{get;} public KernelPanicCallStack CallStack{get;} public UInt64 TimestampNanoseconds{get;}
+}
+
+/// <summary>
+/// Hosted panic backend contract. The freestanding kernel uses KernelPanic.ConfigureFreestanding
+/// so the panic path never depends on managed-object allocation or interface dispatch.
+/// </summary>
+public interface IKernelPanicBackend
+{
+    Boolean TryCaptureCallStack(KernelPanicInfo info);
+    Boolean TryCaptureRegisters(KernelPanicInfo info);
+    Boolean TryWriteCrashDump(KernelPanicInfo info);
+    Boolean TryBreakDebugger(KernelPanicInfo info);
+    Boolean TryHaltOrReboot(KernelPanicInfo info);
+}
 
 public enum KernelTestKind : Byte { Kernel=1,Unit=2,Integration=3,Boot=4,Driver=5,Stress=6,FaultInjection=7,HardwareSimulation=8 }
 public enum KernelTestResult : Byte { NotRun=0,Passed=1,Failed=2,Skipped=3,Timeout=4 }
