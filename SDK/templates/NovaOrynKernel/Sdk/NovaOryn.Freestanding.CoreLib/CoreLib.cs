@@ -8,6 +8,9 @@ namespace System
 
         /// <summary>Returns the freestanding type name used when no more specific value formatter is available.</summary>
         public virtual String ToString() => "System.Object";
+
+        /// <summary>Determines whether two object references identify the same managed object.</summary>
+        public static Boolean ReferenceEquals(Object first, Object second) => first == second;
     }
     public struct Void { }
     public struct Boolean
@@ -15,7 +18,12 @@ namespace System
         /// <summary>Returns the normal .NET Boolean text without allocating a new string.</summary>
         public override String ToString() => this ? "True" : "False";
     }
-    public struct Char { }
+    public struct Char
+    {
+        /// <summary>Returns whether the character is one of the ASCII whitespace characters supported during freestanding bootstrap.</summary>
+        public static Boolean IsWhiteSpace(Char value)
+            => value == ' ' || value == '\t' || value == '\r' || value == '\n' || value == '\f' || value == '\v';
+    }
     public struct SByte { public const SByte MinValue = -128; public const SByte MaxValue = 127; }
     public struct Byte { public const Byte MinValue = 0; public const Byte MaxValue = 255; }
     public struct Int16 { public const Int16 MinValue = -32768; public const Int16 MaxValue = 32767; }
@@ -76,12 +84,16 @@ namespace System
             }
         }
     }
+    #pragma warning disable CS0660, CS0661 // Freestanding String supplies ordinal operators; Object equality/hash expansion is staged separately.
     public sealed unsafe class String
     {
 #pragma warning disable CS0649 // NativeAOT materializes string objects and populates these runtime layout fields.
         private readonly Int32 _stringLength;
         private Char _firstChar;
 #pragma warning restore CS0649
+
+        /// <summary>Represents the empty string. This is the canonical zero-length string literal and requires no managed allocation.</summary>
+        public static String Empty => "";
 
         public Int32 Length
         {
@@ -90,6 +102,81 @@ namespace System
 
         /// <summary>Returns this string instance.</summary>
         public override String ToString() => this;
+
+        /// <summary>Returns true when the value is null or has zero characters.</summary>
+        public static Boolean IsNullOrEmpty(String value)
+            => Object.ReferenceEquals(value, null) || value._stringLength == 0;
+
+        /// <summary>Returns true when the value is null, empty, or contains only bootstrap-safe ASCII whitespace.</summary>
+        public static Boolean IsNullOrWhiteSpace(String value)
+        {
+            if (Object.ReferenceEquals(value, null) || value._stringLength == 0) return true;
+            for (Int32 index = 0; index < value._stringLength; index++)
+                if (!Char.IsWhiteSpace(value[index])) return false;
+            return true;
+        }
+
+        /// <summary>Performs ordinal string equality without allocation or culture services.</summary>
+        public static Boolean Equals(String first, String second)
+        {
+            if (Object.ReferenceEquals(first, second)) return true;
+            if (Object.ReferenceEquals(first, null) || Object.ReferenceEquals(second, null)) return false;
+            if (first._stringLength != second._stringLength) return false;
+            for (Int32 index = 0; index < first._stringLength; index++)
+                if (first[index] != second[index]) return false;
+            return true;
+        }
+
+        /// <summary>Performs ordinal string equality.</summary>
+        public Boolean Equals(String other) => Equals(this, other);
+
+        public static Boolean operator ==(String first, String second) => Equals(first, second);
+        public static Boolean operator !=(String first, String second) => !Equals(first, second);
+
+        /// <summary>Returns an ordinal comparison result compatible with the sign semantics of System.String.CompareOrdinal.</summary>
+        public static Int32 CompareOrdinal(String first, String second)
+        {
+            if (Object.ReferenceEquals(first, second)) return 0;
+            if (Object.ReferenceEquals(first, null)) return -1;
+            if (Object.ReferenceEquals(second, null)) return 1;
+            Int32 length = first._stringLength < second._stringLength ? first._stringLength : second._stringLength;
+            for (Int32 index = 0; index < length; index++)
+            {
+                Int32 difference = (Int32)first[index] - (Int32)second[index];
+                if (difference != 0) return difference;
+            }
+            return first._stringLength - second._stringLength;
+        }
+
+        /// <summary>Finds a character using ordinal comparison.</summary>
+        public Int32 IndexOf(Char value)
+        {
+            for (Int32 index = 0; index < _stringLength; index++)
+                if (this[index] == value) return index;
+            return -1;
+        }
+
+        /// <summary>Returns whether this string contains the specified character.</summary>
+        public Boolean Contains(Char value) => IndexOf(value) >= 0;
+
+        /// <summary>Returns whether this string starts with the supplied value using ordinal comparison.</summary>
+        public Boolean StartsWith(String value)
+        {
+            if (Object.ReferenceEquals(value, null) || value._stringLength > _stringLength) return false;
+            for (Int32 index = 0; index < value._stringLength; index++)
+                if (this[index] != value[index]) return false;
+            return true;
+        }
+
+        /// <summary>Returns whether this string ends with the supplied value using ordinal comparison.</summary>
+        public Boolean EndsWith(String value)
+        {
+            if (Object.ReferenceEquals(value, null) || value._stringLength > _stringLength) return false;
+            Int32 offset = _stringLength - value._stringLength;
+            for (Int32 index = 0; index < value._stringLength; index++)
+                if (this[offset + index] != value[index]) return false;
+            return true;
+        }
 
         public Char this[Int32 index]
         {
@@ -103,6 +190,7 @@ namespace System
             }
         }
     }
+    #pragma warning restore CS0660, CS0661
     public abstract class Delegate { }
     public abstract class MulticastDelegate : Delegate { }
     public class Attribute { }

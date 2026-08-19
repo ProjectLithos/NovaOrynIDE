@@ -119,5 +119,5 @@ public static class KernelPanic
 {
     private static IKernelPanicBackend _backend; private static Boolean _panicking;
     public static Boolean Configure(IKernelPanicBackend backend){_backend=backend;return backend!=null;}
-    public static Boolean Raise(KernelPanicInfo info){if(_panicking)return false;_panicking=true;KernelLog.Critical("panic","KernelPanic",info.Reason+": "+info.Message);if(_backend==null)return false;Boolean ok=_backend.TryCaptureRegisters(info);ok=_backend.TryCaptureCallStack(info)&&ok;if(info.WriteCrashDump)ok=_backend.TryWriteCrashDump(info)&&ok;if(info.BreakDebugger)ok=_backend.TryBreakDebugger(info)&&ok;return _backend.TryHaltOrReboot(info)&&ok;}
+    public static Boolean Raise(KernelPanicInfo info){if(_panicking)return false;_panicking=true;KernelLog.Critical("panic","KernelPanic",info.Reason??String.Empty);KernelLog.Critical("panic","KernelPanic",info.Message??String.Empty);if(_backend==null)return false;Boolean ok=_backend.TryCaptureRegisters(info);ok=_backend.TryCaptureCallStack(info)&&ok;if(info.WriteCrashDump)ok=_backend.TryWriteCrashDump(info)&&ok;if(info.BreakDebugger)ok=_backend.TryBreakDebugger(info)&&ok;return _backend.TryHaltOrReboot(info)&&ok;}
 }
