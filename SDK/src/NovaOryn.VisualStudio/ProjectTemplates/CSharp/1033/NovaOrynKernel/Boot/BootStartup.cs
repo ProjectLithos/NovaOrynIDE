@@ -13,6 +13,7 @@ using NovaOryn.Kernel.Scheduler;
 using NovaOryn.Kernel.Protection;
 using NovaOryn.Kernel.SystemCalls;
 using NovaOryn.Kernel.Graphics;
+using NovaOryn.Kernel.Bootstrap;
 
 namespace NovaOryn.Kernel.Bootstrap.Boot;
 
@@ -202,7 +203,7 @@ public static unsafe class BootStartup
         Boolean heapReady = KernelHeap.Initialize();
         if (heapReady)
         {
-            if (!KernelTelemetry.Configure(new KernelConsoleTelemetrySink(), new KernelTelemetryContextProvider())) return false;
+            if (!KernelTelemetry.ConfigureFreestanding(&KernelTelemetryTransport.TryEmit, &KernelTelemetryTransport.TryGetContext)) return false;
             KernelTelemetry.KernelBootEvent("Kernel heap", 8UL, KernelBootPhase.End, KernelHeap.GetLastStatusName());
             KernelTelemetry.KernelDiagnosticEvent("telemetry", "runtime-online", 0UL, "Structured kernel telemetry v1.1 online");
         }

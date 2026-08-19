@@ -65,46 +65,38 @@ public static class KernelLog
     public static Boolean Critical(String subsystem,String source,String message)=>Write(KernelLogLevel.Critical,subsystem,source,message);
 }
 
-public static class KernelTelemetry
+public static unsafe class KernelTelemetry
 {
-    private const Int32 MaximumSinks=4;
-    // Fixed reference slots keep telemetry usable before NovaOryn brings a managed runtime type-cast layer online.
-    private static IKernelTelemetrySink _sink0,_sink1,_sink2,_sink3;
-    private static IKernelLogContextProvider _context;
+    // The freestanding kernel does not have the NativeAOT managed object/GC helpers
+    // (RhpAssignRef/RhpCheckedAssignRef/interface dispatch). Keep the official telemetry
+    // API allocation-free by routing records through a raw managed function pointer.
+    // The richer IKernelTelemetrySink/KernelTelemetryEvent contracts remain available to
+    // hosted tooling, but the boot kernel never stores managed sink objects or dispatches
+    // interfaces.
+    private static delegate* managed<KernelTelemetryKind,String,String,UInt64,UInt64,UInt64,UInt64,String,UInt32,UInt64,UInt64,Boolean> _emit;
+    private static delegate* managed<UInt32*,UInt64*,UInt64*,UInt64*,Boolean> _context;
     private static UInt64 _sequence=1,_trace,_profile,_boot,_counter,_diagnostic,_dropped;
 
-    public static Boolean Configure(IKernelTelemetrySink sink){return Configure(sink,null);}
-    public static Boolean Configure(IKernelTelemetrySink sink,IKernelLogContextProvider context)
+    public static Boolean ConfigureFreestanding(
+        delegate* managed<KernelTelemetryKind,String,String,UInt64,UInt64,UInt64,UInt64,String,UInt32,UInt64,UInt64,Boolean> emit,
+        delegate* managed<UInt32*,UInt64*,UInt64*,UInt64*,Boolean> context)
     {
-        if(sink==null)return false;
-        RemoveAllSinks();_sink0=sink;_context=context;return true;
+        if(emit==null)return false;
+        _emit=emit;_context=context;return true;
     }
-    public static Boolean AddSink(IKernelTelemetrySink sink)
-    {
-        if(sink==null)return false;
-        if(_sink0==sink||_sink1==sink||_sink2==sink||_sink3==sink)return true;
-        if(_sink0==null){_sink0=sink;return true;}
-        if(_sink1==null){_sink1=sink;return true;}
-        if(_sink2==null){_sink2=sink;return true;}
-        if(_sink3==null){_sink3=sink;return true;}
-        return false;
-    }
-    public static Boolean RemoveAllSinks(){_sink0=_sink1=_sink2=_sink3=null;return true;}
+    public static Boolean IsConfigured()=>_emit!=null;
+    public static Boolean RemoveAllSinks(){_emit=null;_context=null;return true;}
     public static KernelTelemetryStatistics GetStatistics()=>new KernelTelemetryStatistics(_trace,_profile,_boot,_counter,_diagnostic,_dropped);
     public static Boolean ResetStatistics(){_trace=_profile=_boot=_counter=_diagnostic=_dropped=0;return true;}
 
     public static Boolean Emit(KernelTelemetryKind kind,String subsystem,String name,UInt64 timestamp,UInt64 value0=0,UInt64 value1=0,String detail="")
     {
         UInt32 cpu=0;UInt64 thread=0,process=0,contextTime=0;
-        if(_context!=null)_context.TryGetContext(out cpu,out thread,out process,out contextTime);
+        if(_context!=null)_context(&cpu,&thread,&process,&contextTime);
         if(timestamp==0)timestamp=contextTime;
-        KernelTelemetryEvent record=new KernelTelemetryEvent(kind,subsystem??String.Empty,name??String.Empty,timestamp,value0,value1,_sequence++,detail??String.Empty,cpu,thread,process);
-        Boolean any=false,ok=true;
-        if(_sink0!=null){any=true;if(!_sink0.TryEmit(record))ok=false;}
-        if(_sink1!=null){any=true;if(!_sink1.TryEmit(record))ok=false;}
-        if(_sink2!=null){any=true;if(!_sink2.TryEmit(record))ok=false;}
-        if(_sink3!=null){any=true;if(!_sink3.TryEmit(record))ok=false;}
-        Count(kind);if(!any||!ok)_dropped++;return any&&ok;
+        UInt64 sequence=_sequence++;
+        Boolean ok=_emit!=null&&_emit(kind,subsystem??String.Empty,name??String.Empty,timestamp,value0,value1,sequence,detail??String.Empty,cpu,thread,process);
+        Count(kind);if(!ok)_dropped++;return ok;
     }
     private static Boolean Count(KernelTelemetryKind kind)
     {

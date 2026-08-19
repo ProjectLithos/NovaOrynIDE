@@ -10,18 +10,19 @@ const generatedProject=read('SDK/templates/NovaOrynKernel/NovaOrynKernel.csproj'
 const generatedBoot=read('SDK/templates/NovaOrynKernel/Boot/BootStartup.cs');
 const generatedTransport=read('SDK/templates/NovaOrynKernel/Boot/KernelTelemetryTransport.cs');
 
-has('telemetry multi-sink runtime',runtime,'MaximumSinks=4');
-has('telemetry context provider',runtime,'IKernelLogContextProvider _context');
+has('allocation-free freestanding telemetry runtime',runtime,'ConfigureFreestanding(');
+has('function-pointer telemetry transport',runtime,'delegate* managed<KernelTelemetryKind');
+has('function-pointer context provider',runtime,'delegate* managed<UInt32*');
 has('telemetry statistics',contracts,'KernelTelemetryStatistics');
 has('telemetry CPU/thread/process context',contracts,'public UInt32 Cpu');
 has('boot phase contract',contracts,'KernelBootPhase');
 has('KernelTrace API',runtime,'KernelTrace(');has('KernelProfile API',runtime,'KernelProfile(');has('KernelBootEvent API',runtime,'KernelBootEvent(');has('KernelCounter API',runtime,'KernelCounter(');has('KernelDiagnosticEvent API',runtime,'KernelDiagnosticEvent(');
-has('console telemetry sink',bootstrap,'KernelConsoleTelemetrySink');
+has('static freestanding telemetry transport',bootstrap,'static unsafe class KernelTelemetryTransport');
 has('TRACE wire protocol',bootstrap,'case KernelTelemetryKind.Trace:return \"TRACE\"');has('PROFILE wire protocol',bootstrap,'case KernelTelemetryKind.Profile:return \"PROFILE\"');has('BOOT wire protocol',bootstrap,'case KernelTelemetryKind.BootEvent:return \"BOOT\"');has('COUNTER wire protocol',bootstrap,'case KernelTelemetryKind.Counter:return \"COUNTER\"');has('DIAGNOSTIC wire protocol',bootstrap,'case KernelTelemetryKind.DiagnosticEvent:return \"DIAGNOSTIC\"');
-has('kernel configures telemetry',kernel,'KernelTelemetry.Configure(new KernelConsoleTelemetrySink()');
+has('kernel configures freestanding telemetry',kernel,'KernelTelemetry.ConfigureFreestanding(&KernelTelemetryTransport.TryEmit');
 has('kernel emits boot telemetry',kernel,'KernelTelemetry.KernelBootEvent');
 has('kernel emits trace telemetry',kernel,'KernelTelemetry.KernelTrace');
-has('kernel emits counters',kernel,'KernelTelemetry.KernelCounter');has('generated kernel compiles telemetry transport',generatedProject,'Boot\\KernelTelemetryTransport.cs');has('generated kernel configures telemetry',generatedBoot,'KernelTelemetry.Configure(new KernelConsoleTelemetrySink()');has('generated telemetry transport ships',generatedTransport,'class KernelConsoleTelemetrySink');
+has('kernel emits counters',kernel,'KernelTelemetry.KernelCounter');has('generated kernel compiles telemetry transport',generatedProject,'Boot\\KernelTelemetryTransport.cs');has('generated kernel configures telemetry',generatedBoot,'KernelTelemetry.ConfigureFreestanding(&KernelTelemetryTransport.TryEmit');has('generated telemetry transport ships',generatedTransport,'static unsafe class KernelTelemetryTransport');
 has('IDE consumes nanosecond timestamps',ide,"values['timestamp_ns']");
 has('IDE consumes nanosecond durations',ide,"'duration_ns'");has('IDE consumes counters directly',ide,"kind === 'COUNTER'");has('IDE consumes diagnostics directly',ide,"kind === 'DIAGNOSTIC'");has('text boot inference becomes compatibility fallback',ide,'!session.structuredTelemetrySeen');
 checks.push(['SDK manifest telemetry 1.1',manifest.contracts.kernelTelemetry==='1.1']);checks.push(['SDK version 0.42.0',manifest.sdkVersion==='0.42.0']);checks.push(['API version 1.2',manifest.apiVersion==='1.2']);
