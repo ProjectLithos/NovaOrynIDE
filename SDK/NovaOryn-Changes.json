@@ -1,5 +1,5 @@
 {
-  "version": "0.41.8",
+  "version": "0.41.9",
   "files": [
     "Directory.Build.props",
     "NovaOryn-Changes.json",
@@ -7,8 +7,8 @@
     "NovaOryn.SdkManifest.json",
     "README.md",
     "Verify-NovaOrynSdkContract.ps1",
-    "docs/Release-0.4.14.md",
-    "docs/Release-0.41.8.md",
+    "docs/Release-0.4.15.md",
+    "docs/Release-0.41.9.md",
     "src/NovaOryn.Core/NovaOrynSdkContract.cs",
     "src/NovaOryn.ImageBuilder/Program.cs",
     "src/NovaOryn.Kernel.CommandLine/KernelCommandLine.cs",

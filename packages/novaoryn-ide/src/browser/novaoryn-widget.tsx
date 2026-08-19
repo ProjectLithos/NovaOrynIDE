@@ -137,7 +137,7 @@ export class NovaOrynWidget extends BaseWidget {
         art.setAttribute('aria-label', 'NovaOryn IDE logo');
         card.appendChild(art);
 
-        card.appendChild(this.element('h1', undefined, 'NovaOryn IDE 0.4.14'));
+        card.appendChild(this.element('h1', undefined, 'NovaOryn IDE 0.4.15'));
         const intro = this.element('p');
         intro.append('All NovaOryn operating systems are stored beneath ');
         const root = this.element('strong', undefined, NOVAORYN_OS_ROOT);
@@ -178,7 +178,7 @@ export class NovaOrynWidget extends BaseWidget {
         const page = this.element('div', 'novaoryn-page');
         const card = this.element('div', 'novaoryn-card novaoryn-card-wide');
         card.appendChild(this.element('div', 'novaoryn-brand', 'NOVAORYN'));
-        card.appendChild(this.element('h1', undefined, this.reconfiguringProjectPath ? `Reconfigure ${c.name}` : 'NovaOryn OS 0.4.14'));
+        card.appendChild(this.element('h1', undefined, this.reconfiguringProjectPath ? `Reconfigure ${c.name}` : 'NovaOryn OS 0.4.15'));
         card.appendChild(this.element('p', 'novaoryn-version', 'Authoritative operating-system configuration'));
         card.appendChild(this.element('p', undefined, this.reconfiguringProjectPath
             ? 'Change the generated kernel/OS structure below. User-owned source files, including Kernel\\Kernel.cs, are preserved.'

@@ -44,14 +44,19 @@ if (!service.includes("path.join(projectRoot, 'NovaOrynProject.json')")) missing
 if (!service.includes('NOVAORYN_MANIFEST=') || !service.includes('NovaOrynProject.json')) missing.push('SDK manifest launcher path');
 if (!service.includes('public static Boolean KMain(BootContext boot)')) missing.push('SDK-compatible KMain signature');
 if (!service.includes('if not exist "%NOVAORYN_PROJECT%\\\\NovaOryn.json" (')) missing.push('separator-safe NovaOryn.json launcher check');
-if (!service.includes("const NOVAORYN_IDE_VERSION = '0.4.14'")) missing.push('0.4.14 generator version');
-if (!widget.includes('NovaOryn OS 0.4.14')) missing.push('0.4.14 configurator version');
+if (!service.includes("const NOVAORYN_IDE_VERSION = '0.4.15'")) missing.push('0.4.15 generator version');
+if (!widget.includes('NovaOryn OS 0.4.15')) missing.push('0.4.15 configurator version');
 if (!protocol.includes("export type NovaOrynRunMode = 'run' | 'debug'")) missing.push('Run/Debug mode protocol');
 if (!service.includes('NovaOryn IDE will attach the debugger transport for the active target') || !service.includes("'-Run -Configuration Release'")) missing.push('SDK Run/Debug configuration handoff');
 if (!service.includes('DebuggingEnabled() => DebugBuild && DebuggingConfigured')) missing.push('generated effective debugging gate');
 if (!service.includes('EffectiveDebugging() => DebuggingEnabled() ? Debugging() : System.Array.Empty<string>()')) missing.push('generated effective debugging feature selection');
 if (!service.includes('NOVAORYN_DEBUG_ENABLED=0') || !service.includes('NOVAORYN_DEBUG_FEATURES=')) missing.push('Run.bat debug environment contract');
 if (!service.includes('NOVAORYN_DEBUG_SERIAL_LOG') || !service.includes('NOVAORYN_DEBUG_KERNEL_DIAGNOSTICS') || !service.includes('NOVAORYN_DEBUG_SYMBOLS') || !service.includes('NOVAORYN_DEBUG_PANIC_DUMP')) missing.push('per-feature debug environment flags');
+
+if (!service.includes("path.join(projectRoot, 'NovaOryn.Configuration.json')") || !service.includes('sdkConfigurationJson(configuration)')) missing.push('IDE-to-SDK authoritative configuration JSON refresh');
+if (!service.includes("path.join(projectRoot, 'NovaOryn.Configuration.props')") || !service.includes('sdkConfigurationProps(configuration)')) missing.push('IDE-to-MSBuild authoritative kernel-model props refresh');
+if (!service.includes('KernelModel: this.sdkKernelModel(configuration)')) missing.push('SDK compatibility manifest KernelModel handoff');
+if (!service.includes("NOVAORYN_KERNEL_${model.toUpperCase()}")) missing.push('kernel-model compile constant generation');
 if (!service.includes('EnableOnlyInDebugConfiguration: true') || !service.includes('ConfiguredFeatures: [...configuration.debugging]')) missing.push('SDK manifest debugging contract');
 if (!service.includes("mode === 'debug' ? 'Debug' : 'Run'")) missing.push('toolbar backend Run/Debug dispatch');
 if (!toolbar.includes("window.localStorage.setItem(RUN_MODE_STORAGE_KEY, this.runMode)")) missing.push('persistent toolbar mode');

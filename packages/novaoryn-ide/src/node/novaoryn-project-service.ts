@@ -80,7 +80,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.4.14';
+const NOVAORYN_IDE_VERSION = '0.4.15';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -1388,7 +1388,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.4.14 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.4.15 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -1987,7 +1987,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.4.14 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.4.15 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -3681,6 +3681,9 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
 
             await fs.mkdir(path.join(projectRoot, 'Configuration'), { recursive: true });
             await fs.writeFile(path.join(projectRoot, 'NovaOryn.json'), this.configurationJson(authoritativeConfiguration), 'utf8');
+            await fs.writeFile(path.join(projectRoot, 'NovaOryn.Configuration.json'), this.sdkConfigurationJson(authoritativeConfiguration), 'utf8');
+            await fs.writeFile(path.join(projectRoot, 'NovaOryn.Configuration.props'), this.sdkConfigurationProps(authoritativeConfiguration), 'utf8');
+            await fs.writeFile(path.join(projectRoot, 'NovaOryn.Configuration.targets'), this.sdkConfigurationTargets(authoritativeConfiguration), 'utf8');
             await fs.writeFile(path.join(projectRoot, 'NovaOryn.ProjectGraph.json'), this.projectGraphJson(authoritativeConfiguration, generatedProjects), 'utf8');
             await fs.writeFile(path.join(projectRoot, 'NovaOrynProject.json'), this.sdkProjectManifest(authoritativeConfiguration), 'utf8');
             await fs.writeFile(path.join(projectRoot, 'Configuration', 'GeneratedConfiguration.cs'), this.generatedConfigurationSource(authoritativeConfiguration), 'utf8');
@@ -3722,6 +3725,9 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
 
             await fs.mkdir(path.join(projectRoot, 'Configuration'), { recursive: true });
             await fs.writeFile(path.join(projectRoot, 'NovaOryn.json'), this.configurationJson(authoritativeConfiguration), 'utf8');
+            await fs.writeFile(path.join(projectRoot, 'NovaOryn.Configuration.json'), this.sdkConfigurationJson(authoritativeConfiguration), 'utf8');
+            await fs.writeFile(path.join(projectRoot, 'NovaOryn.Configuration.props'), this.sdkConfigurationProps(authoritativeConfiguration), 'utf8');
+            await fs.writeFile(path.join(projectRoot, 'NovaOryn.Configuration.targets'), this.sdkConfigurationTargets(authoritativeConfiguration), 'utf8');
             await fs.writeFile(path.join(projectRoot, 'NovaOryn.ProjectGraph.json'), this.projectGraphJson(authoritativeConfiguration, generatedProjects), 'utf8');
             await fs.writeFile(path.join(projectRoot, 'NovaOrynProject.json'), this.sdkProjectManifest(authoritativeConfiguration), 'utf8');
             await fs.writeFile(path.join(projectRoot, 'Configuration', 'GeneratedConfiguration.cs'), this.generatedConfigurationSource(authoritativeConfiguration), 'utf8');
@@ -4042,6 +4048,94 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         return `using System;\nusing NovaOryn.Kernel.Console;\nusing NovaOryn.Kernel.CommandLine;\nusing NovaOryn.Kernel.InterruptDispatch;\nusing NovaOryn.Kernel.Bootstrap.Boot;\nusing NovaOryn.Kernel.Bootstrap.HAL;\n\nnamespace NovaOryn.Kernel.Bootstrap;\n\n/// <summary>Defines the high-level NovaOryn kernel entry and delegates startup to Boot and HAL.</summary>\npublic static class Kernel\n{\n    /// <summary>Boots the configured NovaOryn runtime, initializes hardware/services, then enters the interactive console.</summary>\n    public static Boolean KMain(BootContext boot)\n    {\n        if (!BootStartup.Initialize(boot)) return false;\n        if (!HardwareAbstractionLayer.Initialize()) return false;\n        if (!KernelConsole.WriteLine(\"Interactive console ready. Defaults: font 3, buffering auto (double for text).\")) return false;\n        if (!KernelCommandLine.Initialize()) return false;\n        if (!KernelInterruptDispatch.Enable()) return false;\n        return KernelConsole.RunInteractive();\n    }\n}\n`;
     }
 
+    protected sdkKernelModel(configuration: NovaOrynProjectConfiguration): 'Monolithic' | 'Microkernel' | 'Hybrid' {
+        return configuration.kernelArchitecture === 'microkernel' ? 'Microkernel'
+            : configuration.kernelArchitecture === 'hybrid' ? 'Hybrid' : 'Monolithic';
+    }
+
+    protected sdkConfigurationJson(configuration: NovaOrynProjectConfiguration): string {
+        return JSON.stringify({
+            Version: 3,
+            Completed: true,
+            Architecture: configuration.targetArchitecture === 'x86_64' ? 'x64' : configuration.targetArchitecture,
+            KernelModel: this.sdkKernelModel(configuration),
+            BootProtocol: configuration.bootArchitecture === 'uefi' ? 'Uefi' : configuration.bootArchitecture,
+            // The IDE configuration describes supplied/generated components directly rather than
+            // Visual Studio's "development areas" inversion. Keep this empty and let the explicit
+            // MSBuild execution-domain properties below be authoritative for kernel inclusion.
+            WorkAreas: []
+        }, null, 2) + '\n';
+    }
+
+    protected sdkKernelAreas(configuration: NovaOrynProjectConfiguration): Record<string, boolean> {
+        const model = this.sdkKernelModel(configuration);
+        const monolithic = model === 'Monolithic';
+        const hybrid = model === 'Hybrid';
+        return {
+            Shell: false,
+            GUI: false,
+            Drivers: monolithic || hybrid,
+            HAL: true,
+            Audio: false,
+            Filesystems: monolithic && configuration.filesystem !== 'none',
+            Storage: monolithic && configuration.storageControllers.length > 0,
+            Networking: monolithic && configuration.networkStack !== 'none',
+            USB: monolithic && configuration.drivers.some(value => value.startsWith('usb-')),
+            Input: monolithic || hybrid,
+            Processes: true,
+            Scheduler: configuration.scheduler !== 'none',
+            SystemCalls: true,
+            Security: true,
+            Diagnostics: configuration.debugging.length > 0,
+            Tests: false
+        };
+    }
+
+    protected sdkConfigurationProps(configuration: NovaOrynProjectConfiguration): string {
+        const model = this.sdkKernelModel(configuration);
+        const architecture = configuration.targetArchitecture === 'x86_64' ? 'x64' : configuration.targetArchitecture;
+        const boot = configuration.bootArchitecture === 'uefi' ? 'Uefi' : configuration.bootArchitecture;
+        const areas = this.sdkKernelAreas(configuration);
+        const names = Object.keys(areas);
+        const constants = [
+            `NOVAORYN_ARCH_${architecture.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`,
+            `NOVAORYN_KERNEL_${model.toUpperCase()}`,
+            ...names.filter(name => areas[name]).map(name => `NOVAORYN_WORKAREA_${name.replace(/[^A-Za-z0-9]/g, '_').toUpperCase()}`),
+            ...names.filter(name => areas[name]).map(name => `NOVAORYN_KERNELAREA_${name.replace(/[^A-Za-z0-9]/g, '_').toUpperCase()}`)
+        ];
+        const defaultDomain = model === 'Microkernel' ? 'Userland' : model === 'Hybrid' ? 'Mixed' : 'Kernel';
+        const propertyLines = names.map(name => `    <NovaOrynKernelArea${name.replace(/[^A-Za-z0-9]/g, '')}>${areas[name] ? 'true' : 'false'}</NovaOrynKernelArea${name.replace(/[^A-Za-z0-9]/g, '')}>`);
+        return [
+            '<Project>',
+            '  <!-- Generated from IDE-authoritative NovaOryn.json. Do not hand-edit. -->',
+            '  <PropertyGroup>',
+            '    <NovaOrynConfigurationVersion>3</NovaOrynConfigurationVersion>',
+            `    <NovaOrynTargetArchitecture>${architecture}</NovaOrynTargetArchitecture>`,
+            `    <NovaOrynKernelModel>${model}</NovaOrynKernelModel>`,
+            `    <NovaOrynBootProtocol>${boot}</NovaOrynBootProtocol>`,
+            '    <NovaOrynConfigurationCompleted>true</NovaOrynConfigurationCompleted>',
+            `    <NovaOrynDefaultExecutionDomain>${defaultDomain}</NovaOrynDefaultExecutionDomain>`,
+            ...propertyLines,
+            `    <DefineConstants>$(DefineConstants);${constants.join(';')}</DefineConstants>`,
+            '  </PropertyGroup>',
+            '</Project>',
+            ''
+        ].join('\n');
+    }
+
+    protected sdkConfigurationTargets(configuration: NovaOrynProjectConfiguration): string {
+        // The IDE project graph describes service/driver/userland projects. The freestanding kernel
+        // project links only SDK kernel modules selected by NovaOryn.Configuration.props; generated
+        // workspace placeholders must never be pulled into the NativeAOT kernel accidentally.
+        return [
+            '<Project>',
+            '  <!-- IDE workspace topology is recorded in NovaOryn.ProjectGraph.json. -->',
+            '  <ItemGroup />',
+            '</Project>',
+            ''
+        ].join('\n');
+    }
+
     protected sdkProjectManifest(configuration: NovaOrynProjectConfiguration): string {
         const targetArchitecture = configuration.targetArchitecture === 'x86_64' ? 'x64' : configuration.targetArchitecture;
         const bootProtocol = configuration.bootArchitecture === 'uefi' ? 'Uefi' : configuration.bootArchitecture;
@@ -4050,6 +4144,10 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             ProjectFile: 'Sdk/NovaOryn.Kernel.Entry.X64/NovaOryn.Kernel.Entry.X64.csproj',
             TargetArchitecture: targetArchitecture,
             BootProtocol: bootProtocol,
+            KernelModel: this.sdkKernelModel(configuration),
+            ConfigurationFile: 'NovaOryn.Configuration.json',
+            ConfigurationProps: 'NovaOryn.Configuration.props',
+            ConfigurationTargets: 'NovaOryn.Configuration.targets',
             KernelEntry: 'KMain',
             RuntimePack: 'NovaOryn.RuntimePack.X64.Bootstrap',
             OutputDirectory: 'Artifacts',
@@ -4172,6 +4270,11 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     protected async refreshSdkBridge(projectRoot: string): Promise<void> {
         const configurationPath = path.join(projectRoot, 'NovaOryn.json');
         const configuration = JSON.parse(await fs.readFile(configurationPath, 'utf8')) as NovaOrynProjectConfiguration;
+        // NovaOryn.json is the IDE-authoritative configuration. Rebuild every SDK compatibility
+        // artifact on open/run so stale Monolithic metadata can never override a Microkernel/Hybrid selection.
+        await fs.writeFile(path.join(projectRoot, 'NovaOryn.Configuration.json'), this.sdkConfigurationJson(configuration), 'utf8');
+        await fs.writeFile(path.join(projectRoot, 'NovaOryn.Configuration.props'), this.sdkConfigurationProps(configuration), 'utf8');
+        await fs.writeFile(path.join(projectRoot, 'NovaOryn.Configuration.targets'), this.sdkConfigurationTargets(configuration), 'utf8');
         await fs.writeFile(path.join(projectRoot, 'NovaOrynProject.json'), this.sdkProjectManifest(configuration), 'utf8');
         await fs.writeFile(path.join(projectRoot, 'Build.bat'), this.buildBatch(), 'utf8');
         await fs.writeFile(path.join(projectRoot, 'Run.bat'), this.runBatch(configuration), 'utf8');

@@ -125,7 +125,10 @@ static int MainEntry(string[] args)
         }
     }
 
-    // NovaOryn.Configuration.json is authoritative. The manifest is generated output and must never override it during refresh.
+    // NovaOryn.Configuration.json is authoritative for Visual Studio-generated projects.
+    // NovaOryn IDE projects additionally carry NovaOryn.json; it is the IDE-authoritative
+    // configuration and is applied after compatibility metadata so stale manifests/props
+    // can never silently revert Microkernel or Hybrid to Monolithic during refresh.
     string configurationPath = Path.Combine(output, "NovaOryn.Configuration.json");
     string[] developmentAreas = Array.Empty<string>();
     if (File.Exists(configurationPath))
@@ -149,6 +152,38 @@ static int MainEntry(string[] args)
         catch (JsonException)
         {
             Console.Error.WriteLine($"[FAIL] NovaOryn configuration is malformed: {configurationPath}");
+            return 1;
+        }
+    }
+
+
+    string ideConfigurationPath = Path.Combine(output, "NovaOryn.json");
+    if (File.Exists(ideConfigurationPath))
+    {
+        try
+        {
+            using JsonDocument ideConfigurationDocument = JsonDocument.Parse(File.ReadAllText(ideConfigurationPath));
+            JsonElement ideRoot = ideConfigurationDocument.RootElement;
+            if (ideRoot.TryGetProperty("targetArchitecture", out JsonElement architectureElement) && !string.IsNullOrWhiteSpace(architectureElement.GetString()))
+            {
+                string configured = architectureElement.GetString()!;
+                targetArchitecture = string.Equals(configured, "x86_64", StringComparison.OrdinalIgnoreCase) ? "x64" : configured;
+            }
+            if (ideRoot.TryGetProperty("kernelArchitecture", out JsonElement modelElement) && !string.IsNullOrWhiteSpace(modelElement.GetString()))
+            {
+                string configured = modelElement.GetString()!;
+                kernelModel = string.Equals(configured, "microkernel", StringComparison.OrdinalIgnoreCase) ? "Microkernel"
+                    : string.Equals(configured, "hybrid", StringComparison.OrdinalIgnoreCase) ? "Hybrid" : "Monolithic";
+            }
+            if (ideRoot.TryGetProperty("bootArchitecture", out JsonElement bootElement) && !string.IsNullOrWhiteSpace(bootElement.GetString()))
+            {
+                string configured = bootElement.GetString()!;
+                bootProtocol = string.Equals(configured, "uefi", StringComparison.OrdinalIgnoreCase) ? "Uefi" : configured;
+            }
+        }
+        catch (JsonException)
+        {
+            Console.Error.WriteLine($"[FAIL] NovaOryn IDE configuration is malformed: {ideConfigurationPath}");
             return 1;
         }
     }
