@@ -83,7 +83,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.7.7';
+const NOVAORYN_IDE_VERSION = '0.8.0';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -491,6 +491,7 @@ interface RunSession {
     serialDisplayPending?: string;
     startedAtMs: number;
     telemetryBuffer: string;
+    structuredTelemetrySeen?: boolean;
     traceEvents: NovaOrynTraceEvent[];
     bootStages: Map<string, NovaOrynBootStage>;
     currentBootStage?: string;
@@ -1440,7 +1441,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.7.7 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.8.0 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -2054,7 +2055,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.7.7 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.8.0 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -4259,13 +4260,13 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         for (const raw of lines) {
             const line = raw.trim(); if (!line) continue;
             const now = this.elapsedMs(session);
-            if (this.ingestStructuredTelemetry(session, line, now)) continue;
-            this.ingestBootMilestone(session, line, now);
+            if (this.ingestStructuredTelemetry(session, line, now)) { session.structuredTelemetrySeen = true; continue; }
+            if (!session.structuredTelemetrySeen) this.ingestBootMilestone(session, line, now);
         }
     }
 
     protected ingestStructuredTelemetry(session: RunSession, line: string, now: number): boolean {
-        const match = /^\[NOVAORYN:(TRACE|BOOT|PROFILE)\]\s*(.*)$/i.exec(line); if (!match) return false;
+        const match = /^\[NOVAORYN:(TRACE|BOOT|PROFILE|COUNTER|DIAGNOSTIC)\]\s*(.*)$/i.exec(line); if (!match) return false;
         const kind = match[1].toUpperCase(); const values = this.parseTelemetryFields(match[2]);
         const timestamp = values['timestamp_ns'] !== undefined ? Number(values['timestamp_ns']) / 1_000_000 : Number(values['ms'] ?? values['timestamp_ms'] ?? now); const cpu = values['cpu'] !== undefined ? Number(values['cpu']) : undefined;
         if (kind === 'BOOT') {
@@ -4276,6 +4277,17 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         }
         if (kind === 'TRACE') {
             this.pushTraceEvent(session, { id: 0, timestampMs: Number.isFinite(timestamp) ? timestamp : now, category: this.traceCategory(values['category']), name: values['name'] ?? values['event'] ?? 'event', phase: this.tracePhase(values['phase']), cpuIndex: Number.isFinite(cpu) ? cpu : undefined, durationMs: this.numberField(values, 'duration_ms') ?? (this.numberField(values, 'duration_ns') !== undefined ? this.numberField(values, 'duration_ns')! / 1_000_000 : undefined), details: values['details'] });
+            return true;
+        }
+        if (kind === 'COUNTER') {
+            const name = values['name'] ?? 'counter'; const category = values['category'] ?? 'kernel'; const value = this.numberField(values, 'value') ?? 0;
+            const counter = session.profileCounters.get(name) ?? { category, count: 0, totalDurationMs: 0 }; counter.category = category; counter.count = value; session.profileCounters.set(name, counter);
+            this.pushTraceEvent(session, { id: 0, timestampMs: Number.isFinite(timestamp) ? timestamp : now, category: this.traceCategory(category), name, phase: 'instant', cpuIndex: Number.isFinite(cpu) ? cpu : undefined, details: `counter=${value}` });
+            return true;
+        }
+        if (kind === 'DIAGNOSTIC') {
+            const code = this.numberField(values, 'code') ?? 0; const details = values['details'] ? `${values['details']} (code ${code})` : `diagnostic code ${code}`;
+            this.pushTraceEvent(session, { id: 0, timestampMs: Number.isFinite(timestamp) ? timestamp : now, category: 'diagnostic', name: values['name'] ?? 'diagnostic', phase: 'instant', cpuIndex: Number.isFinite(cpu) ? cpu : undefined, details, severity: code === 0 ? 'info' : 'warning' });
             return true;
         }
         const subtype = (values['kind'] ?? values['type'] ?? 'sample').toLowerCase();

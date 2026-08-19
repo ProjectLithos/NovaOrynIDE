@@ -200,6 +200,12 @@ public static unsafe class BootStartup
         if (!KernelConsole.WriteHex(earlyAddress)) return false;
         if (!KernelConsole.WriteLine("")) return false;
         Boolean heapReady = KernelHeap.Initialize();
+        if (heapReady)
+        {
+            if (!KernelTelemetry.Configure(new KernelConsoleTelemetrySink(), new KernelTelemetryContextProvider())) return false;
+            KernelTelemetry.KernelBootEvent("Kernel heap", 8UL, KernelBootPhase.End, KernelHeap.GetLastStatusName());
+            KernelTelemetry.KernelDiagnosticEvent("telemetry", "runtime-online", 0UL, "Structured kernel telemetry v1.1 online");
+        }
         if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"boot-detail","BootStartup.Initialize")) return false;
         if (!KernelConsole.Write("Kernel heap status: ")) return false;
         if (!KernelConsole.WriteLine(KernelHeap.GetLastStatusName())) return false;

@@ -208,6 +208,7 @@ public static unsafe class Kernel
         Boolean heapReady = KernelHeap.Initialize();
         if (heapReady)
         {
+            if (!KernelTelemetry.Configure(new KernelConsoleTelemetrySink(), new KernelTelemetryContextProvider())) return false;
             KernelTelemetry.KernelBootEvent("Kernel heap", 8UL, KernelBootPhase.End, KernelHeap.GetLastStatusName());
             KernelTelemetry.KernelDiagnosticEvent("telemetry", "runtime-online", 0UL, "Structured kernel telemetry v1.1 online");
             if (!KernelStructuredLogging.InfoLine("logging","Kernel.KMain","Structured kernel logging is online with CPU/thread/process/time/source context.")) return false;

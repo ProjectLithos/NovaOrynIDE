@@ -11,4 +11,4 @@ const ps2=read('SDK/src/NovaOryn.Kernel.Ps2/KernelPs2.cs');
 checks.push(['PS/2 explicit initialized state',ps2.includes('private static Boolean _initialized,')&&ps2.includes('_initialized=true;')]);
 const sched=read('SDK/src/NovaOryn.Kernel.Scheduler/KernelScheduler.cs');
 checks.push(['scheduler nopreinit defaults',sched.includes('_nextThreadId = 1UL;')&&sched.includes('_quantum = DefaultQuantumNanoseconds;')]);
-let bad=false;for(const [n,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${n}`);if(!ok)bad=true;}if(bad)process.exit(1);console.log(`[ OK ] NovaOryn IDE 0.7.7 interactive console/input bridge verified (${checks.length} checks).`);
+let bad=false;for(const [n,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${n}`);if(!ok)bad=true;}if(bad)process.exit(1);console.log(`[ OK ] NovaOryn IDE 0.8.0 interactive console/input bridge verified (${checks.length} checks).`);
