@@ -341,6 +341,7 @@ export type NovaOrynDriverCapability = 'mmio' | 'pio' | 'interrupts' | 'msi' | '
 
 export interface NovaOrynDriverManifest {
     schemaVersion: 1 | 2 | 3;
+    id: string;
     name: string;
     kind: NovaOrynDriverTemplateKind;
     version: string;

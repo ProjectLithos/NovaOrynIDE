@@ -17,6 +17,7 @@
   <TemplateContent>
     <Project File="Template.csproj" ReplaceParameters="true" TargetFileName="$safeprojectname$.csproj">
       <ProjectItem ReplaceParameters="true" OpenInEditor="true" TargetFileName="DriverProgram.cs">DriverProgram.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="true" TargetFileName="NovaOryn.Driver.json">NovaOryn.Driver.json</ProjectItem>
     </Project>
   </TemplateContent>
 </VSTemplate>

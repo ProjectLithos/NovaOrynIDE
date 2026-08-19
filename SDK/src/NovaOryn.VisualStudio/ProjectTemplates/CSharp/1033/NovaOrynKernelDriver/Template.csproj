@@ -18,6 +18,9 @@
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="NovaOryn.Driver.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
   <ItemGroup Condition="'$(NovaOrynWorkspaceRoot)' != ''">
     <ProjectReference Include="$(NovaOrynWorkspaceRoot)\Sdk\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj" />
     <ProjectReference Include="$(NovaOrynWorkspaceRoot)\Sdk\NovaOryn.Kernel.Drivers\NovaOryn.Kernel.Drivers.csproj" />

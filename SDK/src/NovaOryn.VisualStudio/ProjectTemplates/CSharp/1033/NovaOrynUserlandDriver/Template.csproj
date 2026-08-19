@@ -11,4 +11,7 @@
     <NovaOrynProjectType>UserlandDriver</NovaOrynProjectType>
     <NovaOrynWorkspaceRoot>$([MSBuild]::GetDirectoryNameOfFileAbove('$(MSBuildProjectDirectory)', 'NovaOrynProject.json'))</NovaOrynWorkspaceRoot>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="NovaOryn.Driver.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

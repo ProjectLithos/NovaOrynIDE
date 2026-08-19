@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 3,
+  "id": "novaoryn.driver.$safeprojectname$",
+  "name": "$safeprojectname$",
+  "kind": "platform",
+  "version": "0.1.0",
+  "architecture": "x64",
+  "minimumNovaOrynVersion": "0.42.0",
+  "sdkApiVersion": "1.2",
+  "driverAbiVersion": "1.0",
+  "ids": [],
+  "dependencies": [],
+  "capabilities": [],
+  "permissions": [],
+  "signing": { "state": "unsigned" }
+}
