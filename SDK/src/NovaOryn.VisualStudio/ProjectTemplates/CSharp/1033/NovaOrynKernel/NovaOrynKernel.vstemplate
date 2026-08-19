@@ -17,6 +17,7 @@
   <TemplateContent>
     <Project File="NovaOrynKernel.csproj" ReplaceParameters="true" TargetFileName="$safeprojectname$.csproj">
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Boot\BootStartup.cs">Boot\BootStartup.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Boot\KernelPanicTransport.cs">Boot\KernelPanicTransport.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Build-Kernel.bat">Build-Kernel.bat</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Build-WorkspaceProjects.ps1">Build-WorkspaceProjects.ps1</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="HAL\HardwareAbstractionLayer.cs">HAL\HardwareAbstractionLayer.cs</ProjectItem>

@@ -230,12 +230,29 @@ public readonly struct KernelPanicInfo
     public Boolean WriteCrashDump{get;} public Boolean BreakDebugger{get;} public KernelPanicPolicy Policy{get;}
 }
 
-/// <summary>Last panic snapshot retained in static kernel memory for debugger/offline inspection.</summary>
+/// <summary>
+/// Unmanaged panic context used by the freestanding function-pointer ABI.
+/// It intentionally contains no String or object references.
+/// </summary>
+public readonly struct KernelPanicNativeInfo
+{
+    public KernelPanicNativeInfo(UInt32 code,UInt32 cpu,UInt64 threadId,UInt64 processId,UInt64 instructionPointer,UInt64 stackPointer,Boolean writeCrashDump,Boolean breakDebugger,KernelPanicPolicy policy)
+    {Code=code;Cpu=cpu;ThreadId=threadId;ProcessId=processId;InstructionPointer=instructionPointer;StackPointer=stackPointer;WriteCrashDump=writeCrashDump;BreakDebugger=breakDebugger;Policy=policy;}
+    public UInt32 Code{get;} public UInt32 Cpu{get;} public UInt64 ThreadId{get;} public UInt64 ProcessId{get;}
+    public UInt64 InstructionPointer{get;} public UInt64 StackPointer{get;}
+    public Boolean WriteCrashDump{get;} public Boolean BreakDebugger{get;} public KernelPanicPolicy Policy{get;}
+}
+
+/// <summary>
+/// Last allocation-free panic snapshot retained in static kernel memory for debugger/offline inspection.
+/// Human-readable reason/message remain in KernelPanicInfo and structured telemetry; they are not stored as
+/// static managed references in the terminal panic path.
+/// </summary>
 public readonly struct KernelPanicSnapshot
 {
-    public KernelPanicSnapshot(KernelPanicInfo info,KernelPanicRegisters registers,KernelPanicCallStack callStack,UInt64 timestampNanoseconds)
+    public KernelPanicSnapshot(KernelPanicNativeInfo info,KernelPanicRegisters registers,KernelPanicCallStack callStack,UInt64 timestampNanoseconds)
     {Info=info;Registers=registers;CallStack=callStack;TimestampNanoseconds=timestampNanoseconds;}
-    public KernelPanicInfo Info{get;} public KernelPanicRegisters Registers{get;} public KernelPanicCallStack CallStack{get;} public UInt64 TimestampNanoseconds{get;}
+    public KernelPanicNativeInfo Info{get;} public KernelPanicRegisters Registers{get;} public KernelPanicCallStack CallStack{get;} public UInt64 TimestampNanoseconds{get;}
 }
 
 /// <summary>

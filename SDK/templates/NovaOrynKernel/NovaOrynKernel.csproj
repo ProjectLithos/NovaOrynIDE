@@ -26,6 +26,7 @@
     <Compile Include="Boot\BootStartup.cs" />
     <Compile Include="Boot\KernelStructuredLogging.cs" />
     <Compile Include="Boot\KernelTelemetryTransport.cs" />
+    <Compile Include="Boot\KernelPanicTransport.cs" />
     <Compile Include="HAL\HardwareAbstractionLayer.cs" />
     <ProjectReference Include="Sdk\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.String\NovaOryn.String.csproj" />

@@ -316,6 +316,7 @@ foreach ($required in @(
     "NovaOrynProject.json",
     "Kernel\Kernel.cs",
     "Boot\BootStartup.cs",
+    "Boot\KernelPanicTransport.cs",
     "HAL\HardwareAbstractionLayer.cs",
     "Userland\Commands\NovaOryn.Userland.Commands.csproj",
     "Userland\Drivers\NovaOryn.Userland.Drivers.csproj",

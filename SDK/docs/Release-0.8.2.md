@@ -1,6 +1,6 @@
-# NovaOryn 0.10.0
+# NovaOryn 0.10.1
 
-NovaOryn 0.10.0 is a corrective runtime-validation release for roadmap item 15, Scheduler and Threads.
+NovaOryn 0.10.1 is a corrective runtime-validation release for roadmap item 15, Scheduler and Threads.
 
 The Visual Studio Debug run path successfully built the complete freestanding kernel through Roslyn, direct ILC, LLD and EFI image creation, but the QEMU launcher allowed only 30 seconds for an unoptimised Debug kernel running under TCG and reported a generic timeout that did not reveal how far managed startup progressed.
 

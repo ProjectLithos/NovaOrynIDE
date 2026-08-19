@@ -1,7 +1,7 @@
 applications/electron/package.json
 Build-NovaOrynIDE.bat
 ChangedFiles.txt
-docs/Release-0.10.0.md
+docs/Release-0.10.1.md
 package.json
 packages/novaoryn-ide/package.json
 packages/novaoryn-ide/src/browser/novaoryn-target-manager-widget.tsx

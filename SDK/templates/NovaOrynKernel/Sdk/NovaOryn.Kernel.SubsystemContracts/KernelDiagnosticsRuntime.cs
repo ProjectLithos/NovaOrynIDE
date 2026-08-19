@@ -121,8 +121,8 @@ public static unsafe class KernelPanic
     private static delegate* managed<UInt32*,UInt64*,UInt64*,UInt64*,UInt64*,UInt64*,Boolean> _context;
     private static delegate* managed<KernelPanicRegisters*,Boolean> _registers;
     private static delegate* managed<KernelPanicCallStack*,Boolean> _callStack;
-    private static delegate* managed<KernelPanicInfo*,KernelPanicRegisters*,KernelPanicCallStack*,Boolean> _crashDump;
-    private static delegate* managed<KernelPanicInfo*,Boolean> _debugBreak;
+    private static delegate* managed<KernelPanicNativeInfo*,KernelPanicRegisters*,KernelPanicCallStack*,Boolean> _crashDump;
+    private static delegate* managed<KernelPanicNativeInfo*,Boolean> _debugBreak;
     private static delegate* managed<Boolean> _halt;
     private static delegate* managed<Boolean> _reboot;
     private static Boolean _configured,_panicking,_hasSnapshot;
@@ -132,8 +132,8 @@ public static unsafe class KernelPanic
         delegate* managed<UInt32*,UInt64*,UInt64*,UInt64*,UInt64*,UInt64*,Boolean> context,
         delegate* managed<KernelPanicRegisters*,Boolean> registers,
         delegate* managed<KernelPanicCallStack*,Boolean> callStack,
-        delegate* managed<KernelPanicInfo*,KernelPanicRegisters*,KernelPanicCallStack*,Boolean> crashDump,
-        delegate* managed<KernelPanicInfo*,Boolean> debugBreak,
+        delegate* managed<KernelPanicNativeInfo*,KernelPanicRegisters*,KernelPanicCallStack*,Boolean> crashDump,
+        delegate* managed<KernelPanicNativeInfo*,Boolean> debugBreak,
         delegate* managed<Boolean> halt,
         delegate* managed<Boolean> reboot)
     {
@@ -164,19 +164,23 @@ public static unsafe class KernelPanic
         KernelPanicCallStack stack=default;
         Boolean registerOk=_registers!=null&&_registers(&registers);
         Boolean stackOk=_callStack!=null&&_callStack(&stack);
-        if(timestamp==0UL)timestamp=registers.Rip!=0UL?registers.Rip:1UL;
-        _last=new KernelPanicSnapshot(info,registers,stack,timestamp);
+        if(timestamp==0UL)timestamp=1UL;
+
+        KernelPanicNativeInfo nativeInfo=new(
+            info.Code,info.Cpu,info.ThreadId,info.ProcessId,info.InstructionPointer,info.StackPointer,
+            info.WriteCrashDump,info.BreakDebugger,info.Policy);
+        _last=new KernelPanicSnapshot(nativeInfo,registers,stack,timestamp);
         _hasSnapshot=true;
 
-        // Structured telemetry is best effort; failure must never prevent terminal handling.
+        // Human-readable strings are emitted, not stored in static panic state.
         KernelTelemetry.KernelDiagnosticEvent("panic","raised",(UInt64)info.Code,info.Reason??String.Empty);
         KernelTelemetry.KernelTrace("panic","message",info.Message??String.Empty);
 
         Boolean ok=registerOk&&stackOk;
-        if(info.WriteCrashDump&&_crashDump!=null)ok=_crashDump(&info,&registers,&stack)&&ok;
+        if(info.WriteCrashDump&&_crashDump!=null)ok=_crashDump(&nativeInfo,&registers,&stack)&&ok;
 
         Boolean wantsDebugger=info.BreakDebugger||info.Policy==KernelPanicPolicy.DebuggerThenHalt||info.Policy==KernelPanicPolicy.DebuggerThenReboot;
-        if(wantsDebugger&&_debugBreak!=null)ok=_debugBreak(&info)&&ok;
+        if(wantsDebugger&&_debugBreak!=null)ok=_debugBreak(&nativeInfo)&&ok;
 
         Boolean wantsReboot=info.Policy==KernelPanicPolicy.Reboot||info.Policy==KernelPanicPolicy.DebuggerThenReboot;
         if(wantsReboot&&_reboot!=null&&_reboot())return ok;

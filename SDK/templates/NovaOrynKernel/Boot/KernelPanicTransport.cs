@@ -60,7 +60,7 @@ public static unsafe class KernelPanicTransport
         return true;
     }
 
-    public static Boolean RequestCrashDump(KernelPanicInfo* info,KernelPanicRegisters* registers,KernelPanicCallStack* stack)
+    public static Boolean RequestCrashDump(KernelPanicNativeInfo* info,KernelPanicRegisters* registers,KernelPanicCallStack* stack)
     {
         if(info==null)return false;
         // The IDE consumes this stable panic marker. If debugging is attached, the following
@@ -70,12 +70,11 @@ public static unsafe class KernelPanicTransport
         if(!KernelConsole.Write(" cpu="))return false;if(!KernelConsole.WriteUInt64(info->Cpu))return false;
         if(!KernelConsole.Write(" thread="))return false;if(!KernelConsole.WriteUInt64(info->ThreadId))return false;
         if(!KernelConsole.Write(" process="))return false;if(!KernelConsole.WriteUInt64(info->ProcessId))return false;
-        if(!KernelConsole.Write(" dump=1 reason="))return false;
-        if(!KernelConsole.WriteLine(info->Reason??String.Empty))return false;
+        if(!KernelConsole.WriteLine(" dump=1"))return false;
         return true;
     }
 
-    public static Boolean BreakDebugger(KernelPanicInfo* info)=>Native.PanicDebuggerBreak();
+    public static Boolean BreakDebugger(KernelPanicNativeInfo* info)=>Native.PanicDebuggerBreak();
     public static Boolean Reboot()=>KernelAcpiPlatform.Reboot();
     public static Boolean Halt()=>Native.Halt();
 }
