@@ -27,8 +27,13 @@ public static unsafe class KernelCommandLine
         if (!KernelHeap.IsInitialized() || !KernelHeap.TryAllocate(MaximumCommandBytes, 16UL, true, out _inputAllocation)) return false;
         _input=(Byte*)(nuint)_inputAllocation.Address;
         _length=0U; _copyAllArmed=false; _initialized=true;
-        // Own the PS/2 -> shell bridge in the SDK, not in generated user HAL source.
-        // Existing projects therefore receive working input as soon as their SDK bridge is refreshed.
+        // The interactive boot/debug shell owns a minimal keyboard path independently of
+        // the configured OS Input work area. In a microkernel, the general input service may
+        // correctly live in userland, but the kernel console must still remain operable.
+        // If the HAL did not initialize i8042/PS2, initialize it here and use non-blocking
+        // polling as the guaranteed fallback. Hardware IRQ delivery, when configured by HAL,
+        // remains an optimisation rather than a prerequisite for shell input.
+        if (!KernelPs2.IsInitialized() && !KernelPs2.Initialize()) return false;
         Ps2Capabilities ps2 = KernelPs2.GetCapabilities();
         if (ps2.Controller && ps2.Keyboard)
         {
@@ -38,7 +43,7 @@ public static unsafe class KernelCommandLine
         if (!KernelConsole.SetInputService(&ServiceInputNow)) return false;
         if (!KernelConsole.WriteHostControl("SHELL_BEGIN")) return false;
         if(!KernelConsole.WriteLine("Commands: help, clear, echo, info, uptime, memory, drivers, devices, font, buffering, keyboard")) return false;
-        if(!KernelConsole.WriteLine("Shell input bridge: SDK-owned PS/2 service active. Ctrl+A then Ctrl+C copies all shell output.")) return false;
+        if(!KernelConsole.WriteLine(ps2.Controller && ps2.Keyboard ? "Shell input bridge: PS/2 keyboard active (polling fallback guaranteed). Ctrl+A then Ctrl+C copies all shell output." : "Shell input bridge: no PS/2 keyboard detected.")) return false;
         if(!KernelConsole.SetCaretEnabled(true)) return false;
         return WritePrompt();
     }

@@ -1,0 +1,6 @@
+{
+  "release": "NovaOryn IDE 0.8.3",
+  "fix": "Interactive kernel console accepts keyboard input even when microkernel configuration excludes the general Input work area.",
+  "rootCause": "KernelCommandLine assumed KernelPs2 had already been initialized by HardwareAbstractionLayer. Microkernel configurations can exclude NOVAORYN_KERNELAREA_INPUT, leaving the visible shell without an input producer.",
+  "validation": "Static source/template verification passed."
+}
