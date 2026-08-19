@@ -17,6 +17,7 @@ public static class KernelStructuredLogging
     public static Boolean Begin(KernelLogLevel level,String subsystem,String source)
     {
         if(level<_minimum)return true;
+        if(!KernelConsole.BeginSerialDiagnosticLine())return false;
         UInt32 cpu=0U; UInt64 thread=0UL,process=0UL,time=0UL;
         time=KernelTime.IsInitialized?KernelTime.GetMonotonicNanoseconds():0UL;
         if(KernelSmp.IsInitialized()&&KernelSmp.TryGetCurrentProcessor(out KernelProcessorState processor))cpu=processor.Index;

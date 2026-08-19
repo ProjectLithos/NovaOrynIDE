@@ -211,7 +211,6 @@ public static unsafe class BootStartup
         if (!KernelConsole.WriteUInt64(firmwareDisplay.Value)) return false;
         if (!KernelConsole.Write(" @ ")) return false;
         if (!KernelConsole.WriteUInt64(boot.GetFramebufferWidth())) return false;
-        if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"boot-detail","BootStartup.Initialize")) return false;
         if (!KernelConsole.Write("x")) return false;
         if (!KernelConsole.WriteUInt64(boot.GetFramebufferHeight())) return false;
         if (!KernelConsole.WriteLine(" (UEFI GOP generic framebuffer target).")) return false;

@@ -11,6 +11,7 @@ public static class KernelConsole
     private static FramebufferConsole _framebuffer;
     private static Boolean _initialized;
     private static unsafe delegate*<Byte, Boolean> _secondarySerialWriter;
+    private static Boolean _serialDiagnosticLine;
 
     /// <summary>Gets the exact glyph height used by the framebuffer renderer, in pixels.</summary>
     public static UInt32 FontSize
@@ -34,6 +35,17 @@ public static class KernelConsole
         return true;
     }
 
+    /// <summary>Begins one structured diagnostic line that is routed to serial/debug transports only.</summary>
+    public static Boolean BeginSerialDiagnosticLine()
+    {
+        if (!_initialized || _serialDiagnosticLine) return false;
+        _serialDiagnosticLine = true;
+        return true;
+    }
+
+    /// <summary>Gets whether a serial-only structured diagnostic line is currently being emitted.</summary>
+    public static Boolean IsSerialDiagnosticLineActive() => _serialDiagnosticLine;
+
     /// <summary>Writes a managed string without appending a line terminator.</summary>
     public static Boolean Write(String value)
     {
@@ -47,7 +59,7 @@ public static class KernelConsole
             if (!WriteRaw((Byte)character)) return false;
             index++;
         }
-        return _framebuffer.Flush();
+        return _serialDiagnosticLine ? true : _framebuffer.Flush();
     }
 
     /// <summary>Writes a managed string followed by a carriage return and line feed as one framebuffer batch.</summary>
@@ -107,7 +119,7 @@ public static class KernelConsole
             count--;
             if (!WriteRaw(digits[count])) return false;
         }
-        return _framebuffer.Flush();
+        return _serialDiagnosticLine ? true : _framebuffer.Flush();
     }
 
     /// <summary>Writes a byte quantity using B, KiB, MiB, GiB, or TiB as appropriate.</summary>
@@ -352,7 +364,7 @@ public static class KernelConsole
     public static unsafe Boolean Write(Byte value)
     {
         if (!WriteRaw(value)) return false;
-        return _framebuffer.Flush();
+        return _serialDiagnosticLine ? true : _framebuffer.Flush();
     }
 
     private static unsafe Boolean WriteRaw(Byte value)
@@ -360,6 +372,11 @@ public static class KernelConsole
         if (!_initialized) return false;
         if (!Native.WriteSerial(value)) return false;
         if (_secondarySerialWriter != null && !_secondarySerialWriter(value)) return false;
+        if (_serialDiagnosticLine)
+        {
+            if (value == (Byte)'\n') _serialDiagnosticLine = false;
+            return true;
+        }
         return _framebuffer.Write(value);
     }
 }

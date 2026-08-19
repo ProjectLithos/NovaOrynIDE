@@ -46,6 +46,7 @@ const generatedProcesses='SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Proce
 const vsGeneratedProcesses='SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Processes/KernelProcesses.cs';
 const projectCreator='SDK/src/NovaOryn.ProjectCreator/Program.cs';
 const ideSerial='packages/novaoryn-ide/src/node/novaoryn-project-service.ts';
+const kernelConsole='SDK/src/NovaOryn.Kernel.Console/KernelConsole.cs';
 has(generatedBoot,'KernelStructuredLogging.Initialize()','generated OS bootstrap configures structured logging');
 has(generatedBoot,'KernelStructuredLogging.InfoLine("bootstrap","BootStartup.Initialize","NovaOryn KMain started.")','generated OS first diagnostic uses structured logging');
 has(generatedHal,'KernelStructuredLogging.InfoLine("hal","HardwareAbstractionLayer.Initialize","Microkernel topology:','generated microkernel HAL topology uses structured logging');
@@ -57,6 +58,13 @@ has(generatedProject,'NovaOryn.Kernel.SubsystemContracts','generated kernel refe
 has(projectCreator,'Boot and HAL are SDK-owned generated source','existing OS Boot/HAL refresh ownership');
 has(ideSerial,'serialDisplayPending','serial display retains incomplete kernel lines');
 has(ideSerial,"pending.endsWith('NovaOryn> ')",'newline-free shell prompt remains visible');
+has(kernelConsole,'BeginSerialDiagnosticLine()','serial-only diagnostic line routing');
+has(kernelConsole,'if (_serialDiagnosticLine)','diagnostics bypass framebuffer renderer');
+has(generatedLogger,'KernelConsole.BeginSerialDiagnosticLine()','generated logger enters serial-only diagnostic mode');
+checks.push(['generated framebuffer resolution has one structured prefix',(() => { const t=read(generatedBoot); const start=t.indexOf('Generic framebuffer registered: '); const end=t.indexOf('Framebuffer buffers available/active:',start); if(start<0||end<0)return false; return (t.slice(start,end).match(/KernelStructuredLogging\.Begin/g)||[]).length===1; })()]);
+checks.push(['Visual Studio framebuffer resolution has one structured prefix',(() => { const t=read('SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Boot/BootStartup.cs'); const start=t.indexOf('Generic framebuffer registered: '); const end=t.indexOf('Framebuffer buffers available/active:',start); if(start<0||end<0)return false; return (t.slice(start,end).match(/KernelStructuredLogging\.Begin/g)||[]).length===1; })()]);
+checks.push(['generated console matches canonical console',read('SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Console/KernelConsole.cs')===read(kernelConsole)]);
+checks.push(['Visual Studio console matches canonical console',read('SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Console/KernelConsole.cs')===read(kernelConsole)]);
 
 checks.push(['bootstrap logger creates no managed objects',!read(sink).includes('new KernelConsoleLogSink')&&!read(sink).includes('new KernelLogContextProvider')&&!read(sink).includes('new ')]);
 checks.push(['bootstrap logger uses no interface dispatch',!read(sink).includes('IKernelLogSink')&&!read(sink).includes('IKernelLogContextProvider')]);
@@ -71,4 +79,4 @@ const b=read(boot);
 checks.push(['legacy KMain startup WriteLine removed',!b.includes('KernelConsole.WriteLine("NovaOryn KMain started.")')]);
 let bad=false;for(const [label,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${label}`);if(!ok)bad=true;}
 if(bad)process.exit(1);
-console.log(`[ OK ] NovaOryn IDE 0.7.6 structured kernel logging contract verified (${checks.length} checks).`);
+console.log(`[ OK ] NovaOryn IDE 0.7.7 structured kernel logging contract verified (${checks.length} checks).`);
