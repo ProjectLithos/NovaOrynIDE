@@ -13,10 +13,20 @@ public static unsafe class KernelTelemetryTransport
 {
     public static Boolean TryGetContext(UInt32* cpu, UInt64* threadId, UInt64* processId, UInt64* timestampNanoseconds)
     {
-        if(cpu!=null)*cpu=KernelSmp.GetCurrentProcessorIndex();
-        if(threadId!=null)*threadId=KernelScheduler.GetCurrentThreadId();
-        if(processId!=null)*processId=KernelProcesses.GetCurrentProcessId();
-        if(timestampNanoseconds!=null)*timestampNanoseconds=KernelTime.GetMonotonicNanoseconds();
+        UInt32 currentCpu = 0U;
+        UInt64 currentThreadId = 0UL;
+        UInt64 currentProcessId = 0UL;
+
+        if (KernelSmp.TryGetCurrentProcessor(out KernelProcessorState processor))
+            currentCpu = processor.Index;
+
+        KernelScheduler.TryGetCurrentThreadId(out currentThreadId);
+        KernelProcesses.TryGetCurrentProcessId(out currentProcessId);
+
+        if (cpu != null) *cpu = currentCpu;
+        if (threadId != null) *threadId = currentThreadId;
+        if (processId != null) *processId = currentProcessId;
+        if (timestampNanoseconds != null) *timestampNanoseconds = KernelTime.GetMonotonicNanoseconds();
         return true;
     }
 

@@ -1,0 +1,31 @@
+{
+  "release": "NovaOryn IDE 0.8.2",
+  "baseRelease": "0.8.1",
+  "purpose": "Correct structured telemetry context capture against the actual freestanding SMP, scheduler and process APIs.",
+  "rootCause": [
+    "KernelTelemetryTransport referenced nonexistent KernelSmp.GetCurrentProcessorIndex().",
+    "KernelTelemetryTransport referenced nonexistent KernelScheduler.GetCurrentThreadId().",
+    "KernelTelemetryTransport referenced nonexistent KernelProcesses.GetCurrentProcessId()."
+  ],
+  "fixes": [
+    "Use KernelSmp.TryGetCurrentProcessor(out KernelProcessorState) and processor.Index.",
+    "Use KernelScheduler.TryGetCurrentThreadId(out UInt64).",
+    "Use KernelProcesses.TryGetCurrentProcessId(out UInt64).",
+    "Return CPU/thread/process context as zero until the corresponding subsystem can supply a current context.",
+    "Apply the same transport implementation to SDK source, generated NovaOryn kernel template and Visual Studio kernel template."
+  ],
+  "validation": {
+    "telemetryTransportApiMatch": "PASS",
+    "sdkSourceTransport": "PASS",
+    "generatedKernelTemplateTransport": "PASS",
+    "visualStudioKernelTemplateTransport": "PASS",
+    "versionConsistency": {
+      "package.json": "0.8.2",
+      "applications/electron/package.json": "0.8.2",
+      "packages/novaoryn-ide/package.json": "0.8.2"
+    },
+    "changedFileCount": 32,
+    "deletedFileCount": 0,
+    "windowsNativeAotBuild": "Not runnable in this Linux environment; the user's Windows build remains the native-link verification."
+  }
+}

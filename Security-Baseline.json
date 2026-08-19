@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "ideVersion": "0.8.1",
+  "ideVersion": "0.8.2",
   "policy": {
     "productionCriticalAllowed": 0,
     "productionHighPolicy": "fail-unless-explicitly-approved",
