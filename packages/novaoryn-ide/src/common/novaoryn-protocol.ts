@@ -252,10 +252,6 @@ export interface NovaOrynTraceEvent {
     name: string;
     phase: NovaOrynTracePhase;
     cpuIndex?: number;
-    threadId?: number;
-    processId?: number;
-    sequence?: number;
-    diagnosticCode?: number;
     durationMs?: number;
     details?: string;
     severity?: 'info' | 'warning' | 'error';

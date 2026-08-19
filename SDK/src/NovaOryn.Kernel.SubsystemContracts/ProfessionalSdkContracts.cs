@@ -19,24 +19,21 @@ public readonly struct KernelLogStatistics
 public interface IKernelLogContextProvider { Boolean TryGetContext(out UInt32 cpu,out UInt64 threadId,out UInt64 processId,out UInt64 timestampNanoseconds); }
 
 public enum KernelTelemetryKind : Byte { Trace=1, Profile=2, BootEvent=3, Counter=4, DiagnosticEvent=5 }
-public enum KernelTelemetryPhase : Byte { Instant=0, Begin=1, End=2 }
+public enum KernelBootPhase : Byte { Instant=0, Begin=1, End=2, Warning=3, Failed=4 }
 public readonly struct KernelTelemetryEvent
 {
-    // ABI-compatible constructor retained for SDK 0.39/0.40 callers.
     public KernelTelemetryEvent(KernelTelemetryKind kind,String subsystem,String name,UInt64 timestampNanoseconds,UInt64 value0,UInt64 value1,UInt64 correlationId,String detail)
-        : this(kind,subsystem,name,timestampNanoseconds,value0,value1,correlationId,detail,0U,0UL,0UL,KernelTelemetryPhase.Instant) { }
-    public KernelTelemetryEvent(KernelTelemetryKind kind,String subsystem,String name,UInt64 timestampNanoseconds,UInt64 value0,UInt64 value1,UInt64 correlationId,String detail,UInt32 cpu,UInt64 threadId,UInt64 processId,KernelTelemetryPhase phase)
-    { Kind=kind;Subsystem=subsystem;Name=name;TimestampNanoseconds=timestampNanoseconds;Value0=value0;Value1=value1;CorrelationId=correlationId;Detail=detail;Cpu=cpu;ThreadId=threadId;ProcessId=processId;Phase=phase; }
-    public KernelTelemetryKind Kind { get; } public String Subsystem { get; } public String Name { get; } public UInt64 TimestampNanoseconds { get; } public UInt64 Value0 { get; } public UInt64 Value1 { get; } public UInt64 CorrelationId { get; } public String Detail { get; } public UInt32 Cpu { get; } public UInt64 ThreadId { get; } public UInt64 ProcessId { get; } public KernelTelemetryPhase Phase { get; }
+        : this(kind,subsystem,name,timestampNanoseconds,value0,value1,correlationId,detail,0U,0UL,0UL) { }
+    public KernelTelemetryEvent(KernelTelemetryKind kind,String subsystem,String name,UInt64 timestampNanoseconds,UInt64 value0,UInt64 value1,UInt64 correlationId,String detail,UInt32 cpu,UInt64 threadId,UInt64 processId)
+    { Kind=kind;Subsystem=subsystem;Name=name;TimestampNanoseconds=timestampNanoseconds;Value0=value0;Value1=value1;CorrelationId=correlationId;Detail=detail;Cpu=cpu;ThreadId=threadId;ProcessId=processId; }
+    public KernelTelemetryKind Kind { get; } public String Subsystem { get; } public String Name { get; } public UInt64 TimestampNanoseconds { get; } public UInt64 Value0 { get; } public UInt64 Value1 { get; } public UInt64 CorrelationId { get; } public String Detail { get; } public UInt32 Cpu { get; } public UInt64 ThreadId { get; } public UInt64 ProcessId { get; }
 }
-public interface IKernelTelemetrySink { Boolean TryEmit(KernelTelemetryEvent telemetryEvent); }
-public interface IKernelTelemetryContextProvider { Boolean TryGetContext(out UInt32 cpu,out UInt64 threadId,out UInt64 processId,out UInt64 timestampNanoseconds); }
 public readonly struct KernelTelemetryStatistics
 {
-    public KernelTelemetryStatistics(UInt64 trace,UInt64 profile,UInt64 bootEvents,UInt64 counters,UInt64 diagnostics,UInt64 dropped,UInt64 sequence)
-    { Trace=trace;Profile=profile;BootEvents=bootEvents;Counters=counters;Diagnostics=diagnostics;Dropped=dropped;Sequence=sequence; }
-    public UInt64 Trace{get;} public UInt64 Profile{get;} public UInt64 BootEvents{get;} public UInt64 Counters{get;} public UInt64 Diagnostics{get;} public UInt64 Dropped{get;} public UInt64 Sequence{get;}
+    public KernelTelemetryStatistics(UInt64 trace,UInt64 profile,UInt64 boot,UInt64 counter,UInt64 diagnostic,UInt64 dropped) { Trace=trace;Profile=profile;Boot=boot;Counter=counter;Diagnostic=diagnostic;Dropped=dropped; }
+    public UInt64 Trace{get;} public UInt64 Profile{get;} public UInt64 Boot{get;} public UInt64 Counter{get;} public UInt64 Diagnostic{get;} public UInt64 Dropped{get;}
 }
+public interface IKernelTelemetrySink { Boolean TryEmit(KernelTelemetryEvent telemetryEvent); }
 
 public static class KernelCrashDumpFormat { public const UInt32 Magic=0x4E4F4344U; public const UInt16 Major=1; public const UInt16 Minor=0; }
 public enum KernelCrashSectionKind : UInt16 { CpuState=1,Registers=2,Stack=3,PageTables=4,Processes=5,Modules=6,Heap=7,MemoryRanges=8,Panic=9,Drivers=10 }

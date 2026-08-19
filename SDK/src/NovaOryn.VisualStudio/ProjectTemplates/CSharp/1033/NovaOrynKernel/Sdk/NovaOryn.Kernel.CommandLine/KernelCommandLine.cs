@@ -29,7 +29,8 @@ public static unsafe class KernelCommandLine
         _length=0U; _copyAllArmed=false; _initialized=true;
         // Own the PS/2 -> shell bridge in the SDK, not in generated user HAL source.
         // Existing projects therefore receive working input as soon as their SDK bridge is refreshed.
-        if (KernelPs2.IsInitialized())
+        Ps2Capabilities ps2 = KernelPs2.GetCapabilities();
+        if (ps2.Controller && ps2.Keyboard)
         {
             if (!KernelPs2.SetKeyboardEventHandler(&HandlePs2KeyboardEvent)) return false;
             if (!KernelTimerDispatch.Register(1000000UL, &ServiceInputTimer, 0UL, out _inputTimerHandle)) return false;
@@ -63,7 +64,8 @@ public static unsafe class KernelCommandLine
     public static Boolean ServiceInputNow()
     {
         if (!_initialized) return false;
-        if (!KernelPs2.IsInitialized()) return true;
+        Ps2Capabilities ps2 = KernelPs2.GetCapabilities();
+        if (!ps2.Controller || !ps2.Keyboard) return true;
         return KernelPs2.Service();
     }
 
