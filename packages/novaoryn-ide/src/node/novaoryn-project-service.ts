@@ -80,7 +80,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.4.12';
+const NOVAORYN_IDE_VERSION = '0.4.13';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -474,7 +474,7 @@ interface RunSession {
     lastBreakpoint?: SourceBreakpoint;
     stepPlan?: StepPlan;
     exceptionBreakpoints: NovaOrynExceptionBreakpointSettings;
-    exceptionBreakpointAddress?: bigint;
+    exceptionBreakpointAddresses: Map<bigint, number>;
     panicBreakpointAddress?: bigint;
     nativeVariables?: NativeVariableLocation[];
     nativeVariablesMessage?: string;
@@ -1388,7 +1388,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.4.12 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.4.13 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -1403,6 +1403,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 requestedBreakpoints: breakpoints.map(item => ({ sourcePath: path.resolve(item.sourcePath), line: item.line, condition: item.condition?.trim() || undefined, hitCondition: item.hitCondition?.trim() || undefined })),
                 breakpointResults: [],
                 exceptionBreakpoints: { vectors: Array.from(new Set((exceptionBreakpoints.vectors ?? []).filter(vector => Number.isInteger(vector) && vector >= 0 && vector < 32))), breakOnPanic: !!exceptionBreakpoints.breakOnPanic },
+                exceptionBreakpointAddresses: new Map<bigint, number>,
                 debug: mode === 'debug' ? { active: false, paused: false, sourceSymbols: false, message: 'Building Debug kernel…' } : undefined,
                 startedAtMs: Date.now(), telemetryBuffer: '', traceEvents: [], bootStages: new Map<string, NovaOrynBootStage>(),
                 profileSamples: new Map(), profileCpuSamples: new Map(), profileCounters: new Map()
@@ -1765,10 +1766,10 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             return { ...session.debug, message: 'Pause the kernel before changing CPU exception/panic breakpoints.' };
         }
         const vectors = Array.from(new Set((settings.vectors ?? []).filter(vector => Number.isInteger(vector) && vector >= 0 && vector < 32)));
-        if (session.exceptionBreakpointAddress) {
-            try { await session.gdb.command(`z0,${session.exceptionBreakpointAddress.toString(16)},1`); } catch { }
-            session.exceptionBreakpointAddress = undefined;
+        for (const address of session.exceptionBreakpointAddresses.keys()) {
+            try { await session.gdb.command(`z0,${address.toString(16)},1`); } catch { }
         }
+        session.exceptionBreakpointAddresses.clear();
         if (session.panicBreakpointAddress) {
             try { await session.gdb.command(`z0,${session.panicBreakpointAddress.toString(16)},1`); } catch { }
             session.panicBreakpointAddress = undefined;
@@ -1986,7 +1987,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.4.12 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.4.13 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -2428,19 +2429,34 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         const mapPath = path.join(artifactRoot, 'MinimalKernel.map');
         try {
             const mapText = await fs.readFile(mapPath, 'utf8');
+            session.exceptionBreakpointAddresses.clear();
             if (session.exceptionBreakpoints.vectors.length > 0) {
-                const linked = this.findLinkedSymbolAddress(mapText, 'NovaOrynX64InterruptCommon');
-                if (linked !== undefined) {
+                const armed: number[] = [];
+                const unavailable: number[] = [];
+                for (const vector of session.exceptionBreakpoints.vectors) {
+                    // Break on the vector-specific entry stub, never NovaOrynX64InterruptCommon.
+                    // The common routine is shared by exceptions AND hardware IRQs, so putting a
+                    // debugger breakpoint there makes QEMU stop on every timer/keyboard/device
+                    // interrupt and causes its window to flash "[Stopped]" continuously.
+                    const linked = this.findLinkedSymbolAddress(mapText, `NovaOrynX64InterruptStub${vector}`);
+                    if (linked === undefined) {
+                        unavailable.push(vector);
+                        continue;
+                    }
                     const runtime = linked + session.relocationDelta;
                     const reply = await session.gdb.command(`Z0,${runtime.toString(16)},1`);
                     if (reply === 'OK') {
-                        session.exceptionBreakpointAddress = runtime;
-                        session.output += `[ OK ] CPU exception breakpoint gate armed for vectors ${session.exceptionBreakpoints.vectors.join(', ')}.\r\n`;
+                        session.exceptionBreakpointAddresses.set(runtime, vector);
+                        armed.push(vector);
                     } else {
-                        session.output += `[WARN] QEMU rejected the CPU exception breakpoint gate: ${reply}.\r\n`;
+                        session.output += `[WARN] QEMU rejected CPU exception vector ${vector} breakpoint: ${reply}.\r\n`;
                     }
-                } else {
-                    session.output += '[WARN] CPU exception breakpoint gate symbol was not found in MinimalKernel.map.\r\n';
+                }
+                if (armed.length > 0) {
+                    session.output += `[ OK ] CPU exception breakpoints armed on vector-specific stubs: ${armed.join(', ')}. Hardware IRQs remain uninterrupted.\r\n`;
+                }
+                if (unavailable.length > 0) {
+                    session.output += `[WARN] CPU exception stub symbol(s) not found for vector(s): ${unavailable.join(', ')}.\r\n`;
                 }
             }
             if (session.exceptionBreakpoints.breakOnPanic) {
@@ -2591,26 +2607,29 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             const rip = await this.readRip(session.gdb);
             const candidates = [rip, rip > 0n ? rip - 1n : rip];
 
-            if (session.exceptionBreakpointAddress && candidates.some(candidate => candidate === session.exceptionBreakpointAddress)) {
+            const exceptionHit = candidates
+                .map(candidate => ({ address: candidate, vector: session.exceptionBreakpointAddresses.get(candidate) }))
+                .find(item => item.vector !== undefined);
+            if (exceptionHit?.vector !== undefined) {
+                const vector = exceptionHit.vector;
                 const rsp = await this.readRegister(session.gdb, 7);
-                const vector = Number((await this.readU64(session.gdb, rsp)) & 0xffn);
-                if (session.exceptionBreakpoints.vectors.includes(vector)) {
-                    const faultRip = await this.readU64(session.gdb, rsp + 16n);
-                    const name = this.exceptionName(vector);
-                    const linkedFault = faultRip - session.relocationDelta;
-                    const location = this.resolveSourceLocation(session.nativeDebugMap, linkedFault);
-                    session.debug = {
-                        ...session.debug, paused: true, sourcePath: location?.sourcePath, line: location?.line,
-                        exceptionVector: vector, exceptionName: name,
-                        message: `CPU exception breakpoint: ${name} (vector ${vector})${location ? ` at ${path.basename(location.sourcePath)}:${location.line}` : ` at RIP 0x${faultRip.toString(16)}`}.`
-                    };
-                    await this.populatePausedDebugData(session, faultRip);
-                    const dump = await this.captureCrashDump(session.sessionId, `CPU exception: ${name} (vector ${vector})`);
-                    if (!dump.success) session.output += `[WARN] Automatic exception crash dump failed: ${dump.error}\r\n`;
-                    return;
-                }
-                session.gdb.run('c');
-                session.debug = this.runningDebugState(session, `Kernel running. Ignored CPU exception vector ${vector}.`);
+                // At a vector-specific entry stub the CPU frame is still untouched. Exceptions
+                // with an architectural error code have [error, RIP, CS, RFLAGS...] on the stack;
+                // other exceptions start directly with RIP.
+                const pushesErrorCode = vector === 8 || vector === 10 || vector === 11 || vector === 12 ||
+                    vector === 13 || vector === 14 || vector === 17 || vector === 21 || vector === 29 || vector === 30;
+                const faultRip = await this.readU64(session.gdb, rsp + (pushesErrorCode ? 8n : 0n));
+                const name = this.exceptionName(vector);
+                const linkedFault = faultRip - session.relocationDelta;
+                const location = this.resolveSourceLocation(session.nativeDebugMap, linkedFault);
+                session.debug = {
+                    ...session.debug, paused: true, sourcePath: location?.sourcePath, line: location?.line,
+                    exceptionVector: vector, exceptionName: name,
+                    message: `CPU exception breakpoint: ${name} (vector ${vector})${location ? ` at ${path.basename(location.sourcePath)}:${location.line}` : ` at RIP 0x${faultRip.toString(16)}`}.`
+                };
+                await this.populatePausedDebugData(session, faultRip);
+                const dump = await this.captureCrashDump(session.sessionId, `CPU exception: ${name} (vector ${vector})`);
+                if (!dump.success) session.output += `[WARN] Automatic exception crash dump failed: ${dump.error}\r\n`;
                 return;
             }
 

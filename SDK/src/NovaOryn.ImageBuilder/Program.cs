@@ -56,7 +56,7 @@ static int MainEntry(string[] args)
         File.WriteAllText(manifestPath, JsonSerializer.Serialize(new
         {
             schemaVersion = 1,
-            productVersion = "0.41.6",
+            productVersion = "0.41.7",
             project = project.Name,
             architecture = project.TargetArchitecture,
             bootProtocol = project.BootProtocol,

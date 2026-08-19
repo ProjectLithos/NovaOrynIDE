@@ -44,8 +44,10 @@ requireText(css, '.novaoryn-current-statement-glyph', 'Paused-line arrow styling
 requireText(protocol, 'disassembly?: NovaOrynDisassemblyInstruction[];', 'Debug state must expose mixed source/native disassembly.');
 requireText(protocol, 'NovaOrynExceptionBreakpointSettings', 'Exception/panic breakpoint settings contract is missing.');
 requireText(service, 'buildDisassembly', 'Paused debug state must build NativeAOT x64 disassembly.');
-requireText(service, 'NovaOrynX64InterruptCommon', 'CPU exception breakpoint gate is missing.');
-requireText(interruptsAsm, 'global NovaOrynX64InterruptCommon', 'CPU exception common entry must be exported into the linker map for debugger breakpoints.');
+requireText(service, '`NovaOrynX64InterruptStub${vector}`', 'CPU exception breakpoints must bind vector-specific interrupt stubs.');
+requireText(service, 'Hardware IRQs remain uninterrupted.', 'Debugger must explicitly preserve hardware IRQ execution while exception breakpoints are armed.');
+requireText(interruptsAsm, 'global NovaOrynX64InterruptStub0', 'CPU exception vector stubs must be exported into the linker map for debugger breakpoints.');
+if (service.includes("findLinkedSymbolAddress(mapText, 'NovaOrynX64InterruptCommon')")) throw new Error('Debugger must never arm a breakpoint on the common interrupt path; it would stop QEMU on every hardware IRQ.');
 requireText(service, 'NovaOrynX64StopProcessor', 'Fatal/panic breakpoint gate is missing.');
 requireText(inspector, 'Mixed C# / x64 Disassembly', 'Debug inspector must show mixed C#/x64 disassembly.');
 requireText(inspector, 'Exception / Panic Breakpoints', 'Debug inspector must expose exception/panic breakpoint controls.');
@@ -56,4 +58,4 @@ requireText(linker, '[ OK ] Direct PDB source-line extraction:', 'Direct PDB sou
 requireText(linker, 'TryGetPeSectionLayout', 'PDB section offsets must be translated through the linked PE section table.');
 requireText(linker, 'MaxFallbackAddresses = 20000', 'Legacy per-instruction symbolizer fallback must be bounded.');
 
-console.log('[ OK ] NovaOryn IDE 0.4.12 source debugging, direct PDB line mapping, stepping, mixed disassembly and native debug-inspection contract verified.');
+console.log('[ OK ] NovaOryn IDE 0.4.13 source debugging, direct PDB line mapping, stepping, mixed disassembly and native debug-inspection contract verified.');
