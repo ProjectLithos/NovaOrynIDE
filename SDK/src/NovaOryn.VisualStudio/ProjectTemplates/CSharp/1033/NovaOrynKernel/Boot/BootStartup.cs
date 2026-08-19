@@ -24,16 +24,16 @@ public static unsafe class BootStartup
     {
         if (!KernelConsole.Initialize(boot)) return false;
         if (!KernelStructuredLogging.Initialize()) return false;
-        if (!KernelLog.Trace("console","BootStartup.Initialize","Kernel console initialized; structured diagnostic routing begins.")) return false;
-        if (!KernelLog.Info("bootstrap","BootStartup.Initialize","NovaOryn KMain started.")) return false;
+        if (!KernelStructuredLogging.TraceLine("console","BootStartup.Initialize","Kernel console initialized; structured diagnostic routing begins.")) return false;
+        if (!KernelStructuredLogging.InfoLine("bootstrap","BootStartup.Initialize","NovaOryn KMain started.")) return false;
         if (!boot.HasFinalMemoryMap()) return false;
-        if (!KernelLog.Info("boot","BootStartup.Initialize","Final UEFI memory map retained; ExitBootServices succeeded.")) return false;
+        if (!KernelStructuredLogging.InfoLine("boot","BootStartup.Initialize","Final UEFI memory map retained; ExitBootServices succeeded.")) return false;
         if (!KernelPlatform.InitializeDescriptors()) return false;
-        if (!KernelLog.Debug("architecture","BootStartup.Initialize","GDT and TSS installed.")) return false;
+        if (!KernelStructuredLogging.DebugLine("architecture","BootStartup.Initialize","GDT and TSS installed.")) return false;
         if (!KernelPlatform.InitializeInterrupts()) return false;
-        if (!KernelLog.Debug("interrupts","BootStartup.Initialize","IDT with 256 vectors installed.")) return false;
+        if (!KernelStructuredLogging.DebugLine("interrupts","BootStartup.Initialize","IDT with 256 vectors installed.")) return false;
         if (!KernelPlatform.DisableLegacyPic()) return false;
-        if (!KernelLog.Info("interrupts","BootStartup.Initialize","Legacy PIC masked; APIC/MSI controller layer ready.")) return false;
+        if (!KernelStructuredLogging.InfoLine("interrupts","BootStartup.Initialize","Legacy PIC masked; APIC/MSI controller layer ready.")) return false;
         if (!KernelAcpi.Initialize(boot)) return false;
         if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"boot-detail","BootStartup.Initialize")) return false;
         if (!KernelConsole.Write("ACPI status: ")) return false;
@@ -89,7 +89,7 @@ public static unsafe class BootStartup
         if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"boot-detail","BootStartup.Initialize")) return false;
         if (!KernelConsole.Write("ACPI embedded controller: ")) return false;
         if (!KernelConsole.WriteLine(ecReady ? "ECDT online" : "not advertised by ECDT")) return false;
-        if (!KernelLog.Info("acpi","BootStartup.Initialize","ACPI MADT, MCFG, HPET, FADT and platform power services online.")) return false;
+        if (!KernelStructuredLogging.InfoLine("acpi","BootStartup.Initialize","ACPI MADT, MCFG, HPET, FADT and platform power services online.")) return false;
         if (!KernelTime.Initialize()) return false;
         KernelTimeCapabilities timeCapabilities = KernelTime.GetCapabilities();
         if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"boot-detail","BootStartup.Initialize")) return false;
@@ -144,7 +144,7 @@ public static unsafe class BootStartup
             if (!KernelConsole.WriteLine("")) return false;
         }
         else if (!KernelConsole.WriteLine("unavailable")) return false;
-        if (!KernelLog.Info("time","BootStartup.Initialize","HPET, Local APIC timer, TSC, RTC/CMOS and invariant-TSC clock source online.")) return false;
+        if (!KernelStructuredLogging.InfoLine("time","BootStartup.Initialize","HPET, Local APIC timer, TSC, RTC/CMOS and invariant-TSC clock source online.")) return false;
         if (!KernelPhysicalMemory.Initialize(boot)) return false;
         KernelPhysicalMemoryStatistics physicalMemory = KernelPhysicalMemory.GetStatistics();
         if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"boot-detail","BootStartup.Initialize")) return false;
@@ -155,9 +155,9 @@ public static unsafe class BootStartup
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteByteSize(physicalMemory.ReservedPages * 4096UL)) return false;
         if (!KernelConsole.WriteLine("")) return false;
-        if (!KernelLog.Info("memory","BootStartup.Initialize","Physical memory manager initialized from final UEFI map.")) return false;
+        if (!KernelStructuredLogging.InfoLine("memory","BootStartup.Initialize","Physical memory manager initialized from final UEFI map.")) return false;
         if (!KernelVirtualMemory.Initialize()) return false;
-        if (!KernelLog.Info("virtual-memory","BootStartup.Initialize","Virtual memory manager attached to active x64 page tables.")) return false;
+        if (!KernelStructuredLogging.InfoLine("virtual-memory","BootStartup.Initialize","Virtual memory manager attached to active x64 page tables.")) return false;
         Boolean addressSpaceReady = KernelAddressSpace.Initialize();
         if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"boot-detail","BootStartup.Initialize")) return false;
         if (!KernelConsole.Write("Kernel address-space status: ")) return false;
@@ -251,7 +251,7 @@ public static unsafe class BootStartup
         if (!KernelConsole.Write("AP trampoline: ")) return false;
         if (!KernelConsole.WriteHex(KernelSmp.GetCapabilities().TrampolineAddress)) return false;
         if (!KernelConsole.WriteLine("")) return false;
-        if (!KernelLog.Info("smp","BootStartup.Initialize","SMP and per-CPU state online.")) return false;
+        if (!KernelStructuredLogging.InfoLine("smp","BootStartup.Initialize","SMP and per-CPU state online.")) return false;
         if (!KernelScheduler.Initialize()) return false;
         if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"boot-detail","BootStartup.Initialize")) return false;
         if (!KernelConsole.Write("Scheduler threads active: ")) return false;
@@ -264,7 +264,7 @@ public static unsafe class BootStartup
         if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"boot-detail","BootStartup.Initialize")) return false;
         if (!KernelConsole.Write("Timer preemption: ")) return false;
         if (!KernelConsole.WriteLine(KernelScheduler.GetCapabilities().HasTimerPreemption ? "available" : "cooperative only")) return false;
-        if (!KernelLog.Info("scheduler","BootStartup.Initialize","Scheduler and threads online.")) return false;
+        if (!KernelStructuredLogging.InfoLine("scheduler","BootStartup.Initialize","Scheduler and threads online.")) return false;
         if (!KernelProtection.Initialize()) return false;
         KernelProtectionCapabilities protection = KernelProtection.GetCapabilities();
         if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"boot-detail","BootStartup.Initialize")) return false;
@@ -286,7 +286,7 @@ public static unsafe class BootStartup
         if (!KernelConsole.Write(protection.SmepEnabled ? "on" : (protection.SmepSupported ? "available" : "unsupported"))) return false;
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteLine(protection.SmapSupported ? "available for syscall copy guards" : "unsupported")) return false;
-        if (!KernelLog.Info("protection","BootStartup.Initialize","User/kernel separation online.")) return false;
+        if (!KernelStructuredLogging.InfoLine("protection","BootStartup.Initialize","User/kernel separation online.")) return false;
         if (!KernelSystemCalls.Initialize()) return false;
         if (!KernelSystemCalls.RegisterGet(33U, &GetFontPresetSyscall)) return false;
         if (!KernelSystemCalls.RegisterSet(33U, &SetFontPresetSyscall)) return false;
@@ -300,7 +300,7 @@ public static unsafe class BootStartup
         if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"boot-detail","BootStartup.Initialize")) return false;
         if (!KernelConsole.Write("SMAP guarded user copies: ")) return false;
         if (!KernelConsole.WriteLine(systemCalls.SmapEnabled ? "enabled" : "not supported")) return false;
-        if (!KernelLog.Info("syscalls","BootStartup.Initialize","System calls online.")) return false;
+        if (!KernelStructuredLogging.InfoLine("syscalls","BootStartup.Initialize","System calls online.")) return false;
         return true;
     }
     private static Int64 GetFontPresetSyscall(KernelSystemCallFrame* frame) => (Int64)KernelConsole.GetFontPreset();

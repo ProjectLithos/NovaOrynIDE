@@ -1387,6 +1387,11 @@
       "sha256": "797d6491aea1cede63d398d47edf86259c955ddb4b66fc087a3677cb2a4ebc14"
     },
     {
+      "path": "docs/Release-0.7.6.md",
+      "size": 649,
+      "sha256": "77e208cdddfceab196cf3b70b2eb4983036011a88dfb24061578cbf04c441adf"
+    },
+    {
       "path": "docs/Release-0.8.0.md",
       "size": 771,
       "sha256": "9b240f36e7f814244ce548d0389368b28b02a6e627ca902a1e6e66b27f7738a1"
@@ -2118,13 +2123,13 @@
     },
     {
       "path": "src/NovaOryn.Kernel.Bootstrap/Kernel.cs",
-      "size": 42540,
-      "sha256": "ff53c29cf3a36b7115a90e07526186f36873b097b479abd465f7244dc8893b98"
+      "size": 42815,
+      "sha256": "1a23d7c5dfb69b6d3c9ce367b5077ddc5a81f4afd1e16501bea590452e8943b7"
     },
     {
       "path": "src/NovaOryn.Kernel.Bootstrap/KernelStructuredLogging.cs",
-      "size": 5577,
-      "sha256": "97c15f4e57edac4b74a6d973176abee3a5ca3e4cd0547e57ee561abf9a061584"
+      "size": 3542,
+      "sha256": "651edefc64ba087549c43da6050266ec1b457b0cbf5d1218647dfe2f59cace90"
     },
     {
       "path": "src/NovaOryn.Kernel.Bootstrap/KernelSubsystemRuntime.cs",
@@ -3163,13 +3168,13 @@
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Boot/BootStartup.cs",
-      "size": 24134,
-      "sha256": "d0382cdf26b5dd1185fb88cb002b3f358a22aa85c53716101bbc631d2e8394e7"
+      "size": 24386,
+      "sha256": "cc7e4d4f790e3200b0e36d7405129d60096665f080336d6ebe8bcaaea530ab45"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Boot/KernelStructuredLogging.cs",
-      "size": 4196,
-      "sha256": "740a370d9588e52e48d6dd43bd03fca93888babeabfc6dcd5b31b2edc65b2713"
+      "size": 3542,
+      "sha256": "651edefc64ba087549c43da6050266ec1b457b0cbf5d1218647dfe2f59cace90"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Build-Kernel.bat",
@@ -3183,13 +3188,13 @@
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/HAL/HardwareAbstractionLayer.cs",
-      "size": 9565,
-      "sha256": "0667d90f4bcea832afc97b5c10d6792713034317c7e38d2146424f30629aeab0"
+      "size": 9673,
+      "sha256": "ea590ea56ef9f0ff9edc48a55d5fdff836f5aa2347306a55feff9c2dd7af3b56"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Kernel/Kernel.cs",
-      "size": 1042,
-      "sha256": "c08e8f4fc1ce7d7550bb0cbfe679abd58cb8b6612d2a6b42a7e81227a90c9193"
+      "size": 1060,
+      "sha256": "7cfb9e08c962d17cdb5c171c0b658bfcd78719f6d5e902ca68c06b0e98624955"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/KernelProjects/README.md",
@@ -4383,13 +4388,13 @@
     },
     {
       "path": "templates/NovaOrynKernel/Boot/BootStartup.cs",
-      "size": 24134,
-      "sha256": "d0382cdf26b5dd1185fb88cb002b3f358a22aa85c53716101bbc631d2e8394e7"
+      "size": 24386,
+      "sha256": "cc7e4d4f790e3200b0e36d7405129d60096665f080336d6ebe8bcaaea530ab45"
     },
     {
       "path": "templates/NovaOrynKernel/Boot/KernelStructuredLogging.cs",
-      "size": 4196,
-      "sha256": "740a370d9588e52e48d6dd43bd03fca93888babeabfc6dcd5b31b2edc65b2713"
+      "size": 3542,
+      "sha256": "651edefc64ba087549c43da6050266ec1b457b0cbf5d1218647dfe2f59cace90"
     },
     {
       "path": "templates/NovaOrynKernel/Build-Kernel.bat",
@@ -4403,13 +4408,13 @@
     },
     {
       "path": "templates/NovaOrynKernel/HAL/HardwareAbstractionLayer.cs",
-      "size": 9565,
-      "sha256": "0667d90f4bcea832afc97b5c10d6792713034317c7e38d2146424f30629aeab0"
+      "size": 9673,
+      "sha256": "ea590ea56ef9f0ff9edc48a55d5fdff836f5aa2347306a55feff9c2dd7af3b56"
     },
     {
       "path": "templates/NovaOrynKernel/Kernel/Kernel.cs",
-      "size": 1042,
-      "sha256": "c08e8f4fc1ce7d7550bb0cbfe679abd58cb8b6612d2a6b42a7e81227a90c9193"
+      "size": 1060,
+      "sha256": "7cfb9e08c962d17cdb5c171c0b658bfcd78719f6d5e902ca68c06b0e98624955"
     },
     {
       "path": "templates/NovaOrynKernel/KernelProjects/README.md",

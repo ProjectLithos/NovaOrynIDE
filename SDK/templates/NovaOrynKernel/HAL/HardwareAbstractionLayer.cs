@@ -52,13 +52,13 @@ public static unsafe class HardwareAbstractionLayer
         if (!KernelTimerDispatch.Initialize()) return false;
 
 #if NOVAORYN_KERNEL_MICROKERNEL
-        if (!KernelLog.Info("hal","HardwareAbstractionLayer.Initialize","Microkernel topology: optional drivers, storage, networking, USB, audio, GUI and filesystem services are excluded from HAL kernel startup.")) return false;
+        if (!KernelStructuredLogging.InfoLine("hal","HardwareAbstractionLayer.Initialize","Microkernel topology: optional drivers, storage, networking, USB, audio, GUI and filesystem services are excluded from HAL kernel startup.")) return false;
 #endif
 #if NOVAORYN_KERNEL_HYBRID
-        if (!KernelLog.Info("hal","HardwareAbstractionLayer.Initialize","Hybrid topology: only work areas assigned to the Kernel execution domain are initialized by HAL.")) return false;
+        if (!KernelStructuredLogging.InfoLine("hal","HardwareAbstractionLayer.Initialize","Hybrid topology: only work areas assigned to the Kernel execution domain are initialized by HAL.")) return false;
 #endif
 #if NOVAORYN_KERNEL_MONOLITHIC
-        if (!KernelLog.Info("hal","HardwareAbstractionLayer.Initialize","Monolithic topology: selected kernel-domain work areas are initialized directly by HAL.")) return false;
+        if (!KernelStructuredLogging.InfoLine("hal","HardwareAbstractionLayer.Initialize","Monolithic topology: selected kernel-domain work areas are initialized directly by HAL.")) return false;
 #endif
 
 #if NOVAORYN_KERNELAREA_INPUT
@@ -113,7 +113,7 @@ public static unsafe class HardwareAbstractionLayer
         if (!KernelStorage.Initialize()) return false;
         if (!KernelNvme.Initialize()) return false;
         if (!KernelAhci.Initialize()) return false;
-        if (!KernelLog.Info("storage","HardwareAbstractionLayer.Initialize","Kernel-domain storage services online.")) return false;
+        if (!KernelStructuredLogging.InfoLine("storage","HardwareAbstractionLayer.Initialize","Kernel-domain storage services online.")) return false;
 #endif
 
 #if NOVAORYN_KERNELAREA_NETWORKING
@@ -121,7 +121,7 @@ public static unsafe class HardwareAbstractionLayer
         if (!KernelVirtio.Initialize()) return false;
         if (!KernelE1000.Initialize()) return false;
         if (!KernelRtl8168.Initialize()) return false;
-        if (!KernelLog.Info("networking","HardwareAbstractionLayer.Initialize","Kernel-domain networking services online.")) return false;
+        if (!KernelStructuredLogging.InfoLine("networking","HardwareAbstractionLayer.Initialize","Kernel-domain networking services online.")) return false;
 #endif
 
 #if NOVAORYN_KERNELAREA_USB
@@ -134,7 +134,7 @@ public static unsafe class HardwareAbstractionLayer
         if (!UsbHid.SetKeyboardEventHandler(&HandleUsbKeyboardEvent)) return false;
 #endif
         if (!UsbMassStorage.Initialize()) return false;
-        if (!KernelLog.Info("usb","HardwareAbstractionLayer.Initialize","Kernel-domain USB services online.")) return false;
+        if (!KernelStructuredLogging.InfoLine("usb","HardwareAbstractionLayer.Initialize","Kernel-domain USB services online.")) return false;
 #endif
 
         return true;

@@ -27,16 +27,16 @@ has(runtime,'public static Boolean Trace(','Trace API');
 has(runtime,'public static Boolean Critical(','Critical API');
 has(sink,'[thread=','console sink emits thread');
 has(sink,'[process=','console sink emits process');
-has(sink,'record.TimestampNanoseconds','console sink emits timestamp');
-has(sink,'record.Subsystem','console sink emits subsystem');
-has(sink,'record.Source','console sink emits source');
-has(sink,'KernelScheduler.TryGetCurrentThreadId(out threadId)','live scheduler thread context');
-has(sink,'KernelProcesses.TryGetCurrentProcessId(out processId)','live process context');
+has(sink,'KernelTime.GetMonotonicNanoseconds()','bootstrap logger emits timestamp');
+has(sink,'subsystem??String.Empty','bootstrap logger emits subsystem');
+has(sink,'source??String.Empty','bootstrap logger emits source');
+has(sink,'KernelScheduler.TryGetCurrentThreadId(out thread)','live scheduler thread context');
+has(sink,'KernelProcesses.TryGetCurrentProcessId(out process)','live process context');
 has(processes,'TryGetCurrentProcessId(out UInt64 processId)','process execution-context API');
 has(processes,'_currentProcessId=r->Id','user process ownership captured');
-has(boot,'KernelLog.Configure(new KernelConsoleLogSink(), diagnosticsContext, KernelLogLevel.Trace)','logging configured immediately after console startup');
-has(boot,'KernelLog.Info("bootstrap","Kernel.KMain","NovaOryn KMain started.")','first boot diagnostic uses structured logging');
-has(boot,'KernelLog.Debug("architecture","Kernel.KMain","GDT and TSS installed.")','debug-level boot diagnostic');
+has(boot,'KernelStructuredLogging.Initialize()','allocation-free logging initialized immediately after console startup');
+has(boot,'KernelStructuredLogging.InfoLine("bootstrap","Kernel.KMain","NovaOryn KMain started.")','first boot diagnostic uses structured logging');
+has(boot,'KernelStructuredLogging.DebugLine("architecture","Kernel.KMain","GDT and TSS installed.")','debug-level boot diagnostic');
 has('SDK/NovaOryn.SdkManifest.json','"structuredLogging": "2.0"','SDK manifest structured logging 2.0');
 const generatedBoot='SDK/templates/NovaOrynKernel/Boot/BootStartup.cs';
 const generatedHal='SDK/templates/NovaOrynKernel/HAL/HardwareAbstractionLayer.cs';
@@ -47,9 +47,9 @@ const vsGeneratedProcesses='SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CShar
 const projectCreator='SDK/src/NovaOryn.ProjectCreator/Program.cs';
 const ideSerial='packages/novaoryn-ide/src/node/novaoryn-project-service.ts';
 has(generatedBoot,'KernelStructuredLogging.Initialize()','generated OS bootstrap configures structured logging');
-has(generatedBoot,'KernelLog.Info("bootstrap","BootStartup.Initialize","NovaOryn KMain started.")','generated OS first diagnostic uses structured logging');
-has(generatedHal,'KernelLog.Info("hal","HardwareAbstractionLayer.Initialize","Microkernel topology:','generated microkernel HAL topology uses structured logging');
-has(generatedLogger,'KernelProcesses.TryGetCurrentProcessId(out processId)','generated logger supplies process context');
+has(generatedBoot,'KernelStructuredLogging.InfoLine("bootstrap","BootStartup.Initialize","NovaOryn KMain started.")','generated OS first diagnostic uses structured logging');
+has(generatedHal,'KernelStructuredLogging.InfoLine("hal","HardwareAbstractionLayer.Initialize","Microkernel topology:','generated microkernel HAL topology uses structured logging');
+has(generatedLogger,'KernelProcesses.TryGetCurrentProcessId(out process)','generated logger supplies process context');
 has(generatedProcesses,'TryGetCurrentProcessId(out UInt64 processId)','generated OS process runtime exposes current process ID');
 has(generatedProcesses,'_currentProcessId=r->Id','generated OS process runtime captures current user process');
 has(vsGeneratedProcesses,'TryGetCurrentProcessId(out UInt64 processId)','Visual Studio template process runtime exposes current process ID');
@@ -57,6 +57,13 @@ has(generatedProject,'NovaOryn.Kernel.SubsystemContracts','generated kernel refe
 has(projectCreator,'Boot and HAL are SDK-owned generated source','existing OS Boot/HAL refresh ownership');
 has(ideSerial,'serialDisplayPending','serial display retains incomplete kernel lines');
 has(ideSerial,"pending.endsWith('NovaOryn> ')",'newline-free shell prompt remains visible');
+
+checks.push(['bootstrap logger creates no managed objects',!read(sink).includes('new KernelConsoleLogSink')&&!read(sink).includes('new KernelLogContextProvider')&&!read(sink).includes('new ')]);
+checks.push(['bootstrap logger uses no interface dispatch',!read(sink).includes('IKernelLogSink')&&!read(sink).includes('IKernelLogContextProvider')]);
+checks.push(['generated boot does not call managed KernelLog dispatch',!read(generatedBoot).includes('KernelLog.')]);
+checks.push(['generated HAL does not call managed KernelLog dispatch',!read(generatedHal).includes('KernelLog.')]);
+checks.push(['generated kernel does not call managed KernelLog dispatch',!read('SDK/templates/NovaOrynKernel/Kernel/Kernel.cs').includes('KernelLog.')]);
+
 const gb=read(generatedBoot);
 checks.push(['generated startup raw KMain WriteLine removed',!gb.includes('KernelConsole.WriteLine("NovaOryn KMain started.")')]);
 
@@ -64,4 +71,4 @@ const b=read(boot);
 checks.push(['legacy KMain startup WriteLine removed',!b.includes('KernelConsole.WriteLine("NovaOryn KMain started.")')]);
 let bad=false;for(const [label,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${label}`);if(!ok)bad=true;}
 if(bad)process.exit(1);
-console.log(`[ OK ] NovaOryn IDE 0.7.5 structured kernel logging contract verified (${checks.length} checks).`);
+console.log(`[ OK ] NovaOryn IDE 0.7.6 structured kernel logging contract verified (${checks.length} checks).`);
