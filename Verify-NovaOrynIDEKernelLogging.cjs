@@ -17,6 +17,10 @@ has(contracts,'public UInt64 ProcessId { get; }','process field');
 has(contracts,'public UInt64 TimestampNanoseconds { get; }','timestamp field');
 has(contracts,'public String Source { get; }','source field');
 has(runtime,'MaximumSinks=4','multi-sink logging');
+checks.push(['no managed log-sink reference array during no-GC bootstrap',!read(runtime).includes('IKernelLogSink[]')&&!read(runtime).includes('_sinks[')]);
+checks.push(['no managed telemetry-sink reference array during no-GC bootstrap',!read(runtime).includes('IKernelTelemetrySink[]')]);
+checks.push(['generated logging runtime matches canonical runtime',read('SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/KernelDiagnosticsRuntime.cs')===read(runtime)]);
+checks.push(['Visual Studio logging runtime matches canonical runtime',read('SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/KernelDiagnosticsRuntime.cs')===read(runtime)]);
 has(runtime,'SetMinimumLevel','runtime level filter');
 has(runtime,'ResetStatistics','resettable log statistics');
 has(runtime,'public static Boolean Trace(','Trace API');
@@ -60,4 +64,4 @@ const b=read(boot);
 checks.push(['legacy KMain startup WriteLine removed',!b.includes('KernelConsole.WriteLine("NovaOryn KMain started.")')]);
 let bad=false;for(const [label,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${label}`);if(!ok)bad=true;}
 if(bad)process.exit(1);
-console.log(`[ OK ] NovaOryn IDE 0.7.4 structured kernel logging contract verified (${checks.length} checks).`);
+console.log(`[ OK ] NovaOryn IDE 0.7.5 structured kernel logging contract verified (${checks.length} checks).`);

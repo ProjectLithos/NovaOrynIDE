@@ -159,7 +159,7 @@ export class NovaOrynTargetManagerWidget extends ReactWidget {
                         <div className='novaoryn-target-actions'>{target.id !== this.activeTargetId && <button className='theia-button' onClick={() => void this.setActiveTarget(target.id)}>Use Target</button>}<button className='theia-button secondary' disabled={this.targets.length <= 1} onClick={() => void this.remove(target.id)}>Delete</button></div>
                     </div>)}</div>
                 </section>
-                <section className='novaoryn-target-note'><h3>Execution contract</h3><p>QEMU x86_64 targets support Run and Debug. Physical x86_64 targets support Debug through the NovaOryn 0.7.4 GDB RSP physical-machine transport, with optional COM-port serial capture. ARM64/RISC-V and generic remote-agent execution remain stored/configurable until their architecture/transport backends are installed.</p></section>
+                <section className='novaoryn-target-note'><h3>Execution contract</h3><p>QEMU x86_64 targets support Run and Debug. Physical x86_64 targets support Debug through the NovaOryn 0.7.5 GDB RSP physical-machine transport, with optional COM-port serial capture. ARM64/RISC-V and generic remote-agent execution remain stored/configurable until their architecture/transport backends are installed.</p></section>
             </>}
         </div>;
     }

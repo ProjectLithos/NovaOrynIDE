@@ -5,7 +5,9 @@ namespace NovaOryn.Kernel.Contracts;
 public static class KernelLog
 {
     private const Int32 MaximumSinks=4;
-    private static readonly IKernelLogSink[] _sinks=new IKernelLogSink[MaximumSinks];
+    // Fixed reference slots deliberately avoid managed reference arrays during the no-GC bootstrap.
+    // Reference-array stores require NativeAOT TypeCast/StelemRef helpers, which belong to the later managed runtime.
+    private static IKernelLogSink _sink0,_sink1,_sink2,_sink3;
     private static IKernelLogContextProvider _context;
     private static KernelLogLevel _minimum=KernelLogLevel.Info;
     private static UInt64 _trace,_debug,_info,_warning,_error,_critical,_dropped;
@@ -14,7 +16,7 @@ public static class KernelLog
     {
         if(sink==null)return false;
         RemoveAllSinks();
-        _sinks[0]=sink;
+        _sink0=sink;
         _context=context;
         _minimum=minimum;
         return true;
@@ -22,17 +24,17 @@ public static class KernelLog
     public static Boolean AddSink(IKernelLogSink sink)
     {
         if(sink==null)return false;
-        for(Int32 i=0;i<MaximumSinks;i++)
-        {
-            if(_sinks[i]==sink)return true;
-            if(_sinks[i]==null){_sinks[i]=sink;return true;}
-        }
+        if(_sink0==sink||_sink1==sink||_sink2==sink||_sink3==sink)return true;
+        if(_sink0==null){_sink0=sink;return true;}
+        if(_sink1==null){_sink1=sink;return true;}
+        if(_sink2==null){_sink2=sink;return true;}
+        if(_sink3==null){_sink3=sink;return true;}
         return false;
     }
-    public static Boolean RemoveAllSinks(){for(Int32 i=0;i<MaximumSinks;i++)_sinks[i]=null;return true;}
+    public static Boolean RemoveAllSinks(){_sink0=_sink1=_sink2=_sink3=null;return true;}
     public static Boolean SetMinimumLevel(KernelLogLevel minimum){_minimum=minimum;return true;}
     public static KernelLogLevel GetMinimumLevel()=>_minimum;
-    public static Boolean IsConfigured(){for(Int32 i=0;i<MaximumSinks;i++)if(_sinks[i]!=null)return true;return false;}
+    public static Boolean IsConfigured()=>_sink0!=null||_sink1!=null||_sink2!=null||_sink3!=null;
     public static KernelLogStatistics GetStatistics()=>new KernelLogStatistics(_trace,_debug,_info,_warning,_error,_critical,_dropped);
     public static Boolean ResetStatistics(){_trace=_debug=_info=_warning=_error=_critical=_dropped=0UL;return true;}
 
@@ -43,13 +45,10 @@ public static class KernelLog
         if(_context!=null)_context.TryGetContext(out cpu,out thread,out process,out time);
         KernelLogRecord record=new KernelLogRecord(level,subsystem??String.Empty,cpu,thread,process,time,source??String.Empty,message??String.Empty);
         Boolean any=false,ok=true;
-        for(Int32 i=0;i<MaximumSinks;i++)
-        {
-            IKernelLogSink sink=_sinks[i];
-            if(sink==null)continue;
-            any=true;
-            if(!sink.TryWrite(record))ok=false;
-        }
+        if(_sink0!=null){any=true;if(!_sink0.TryWrite(record))ok=false;}
+        if(_sink1!=null){any=true;if(!_sink1.TryWrite(record))ok=false;}
+        if(_sink2!=null){any=true;if(!_sink2.TryWrite(record))ok=false;}
+        if(_sink3!=null){any=true;if(!_sink3.TryWrite(record))ok=false;}
         Count(level);
         if(!any||!ok)_dropped++;
         return any&&ok;
@@ -69,7 +68,8 @@ public static class KernelLog
 public static class KernelTelemetry
 {
     private const Int32 MaximumSinks=4;
-    private static readonly IKernelTelemetrySink[] _sinks=new IKernelTelemetrySink[MaximumSinks];
+    // Fixed reference slots keep telemetry usable before NovaOryn brings a managed runtime type-cast layer online.
+    private static IKernelTelemetrySink _sink0,_sink1,_sink2,_sink3;
     private static IKernelLogContextProvider _context;
     private static UInt64 _sequence=1,_trace,_profile,_boot,_counter,_diagnostic,_dropped;
 
@@ -77,15 +77,19 @@ public static class KernelTelemetry
     public static Boolean Configure(IKernelTelemetrySink sink,IKernelLogContextProvider context)
     {
         if(sink==null)return false;
-        RemoveAllSinks();_sinks[0]=sink;_context=context;return true;
+        RemoveAllSinks();_sink0=sink;_context=context;return true;
     }
     public static Boolean AddSink(IKernelTelemetrySink sink)
     {
         if(sink==null)return false;
-        for(Int32 i=0;i<MaximumSinks;i++){if(_sinks[i]==sink)return true;if(_sinks[i]==null){_sinks[i]=sink;return true;}}
+        if(_sink0==sink||_sink1==sink||_sink2==sink||_sink3==sink)return true;
+        if(_sink0==null){_sink0=sink;return true;}
+        if(_sink1==null){_sink1=sink;return true;}
+        if(_sink2==null){_sink2=sink;return true;}
+        if(_sink3==null){_sink3=sink;return true;}
         return false;
     }
-    public static Boolean RemoveAllSinks(){for(Int32 i=0;i<MaximumSinks;i++)_sinks[i]=null;return true;}
+    public static Boolean RemoveAllSinks(){_sink0=_sink1=_sink2=_sink3=null;return true;}
     public static KernelTelemetryStatistics GetStatistics()=>new KernelTelemetryStatistics(_trace,_profile,_boot,_counter,_diagnostic,_dropped);
     public static Boolean ResetStatistics(){_trace=_profile=_boot=_counter=_diagnostic=_dropped=0;return true;}
 
@@ -96,7 +100,10 @@ public static class KernelTelemetry
         if(timestamp==0)timestamp=contextTime;
         KernelTelemetryEvent record=new KernelTelemetryEvent(kind,subsystem??String.Empty,name??String.Empty,timestamp,value0,value1,_sequence++,detail??String.Empty,cpu,thread,process);
         Boolean any=false,ok=true;
-        for(Int32 i=0;i<MaximumSinks;i++){IKernelTelemetrySink sink=_sinks[i];if(sink==null)continue;any=true;if(!sink.TryEmit(record))ok=false;}
+        if(_sink0!=null){any=true;if(!_sink0.TryEmit(record))ok=false;}
+        if(_sink1!=null){any=true;if(!_sink1.TryEmit(record))ok=false;}
+        if(_sink2!=null){any=true;if(!_sink2.TryEmit(record))ok=false;}
+        if(_sink3!=null){any=true;if(!_sink3.TryEmit(record))ok=false;}
         Count(kind);if(!any||!ok)_dropped++;return any&&ok;
     }
     private static Boolean Count(KernelTelemetryKind kind)
