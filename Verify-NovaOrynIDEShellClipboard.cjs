@@ -14,4 +14,4 @@ checks.push(['host controls stay off framebuffer',con.includes('WriteHostControl
 checks.push(['IDE consumes shell-copy marker',svc.includes("fresh.includes('[[NOVAORYN:SHELL_COPY_ALL]]')")]);
 checks.push(['IDE copies via Windows clipboard',svc.includes("spawn('clip.exe'")&&svc.includes('copyTextToWindowsClipboard')]);
 let bad=false; for(const [n,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${n}`); if(!ok)bad=true;} if(bad)process.exit(1);
-console.log(`[ OK ] NovaOryn IDE 0.8.4 SDK-owned interactive input and shell clipboard contract verified (${checks.length} checks).`);
+console.log(`[ OK ] NovaOryn IDE 0.8.5 SDK-owned interactive input and shell clipboard contract verified (${checks.length} checks).`);
