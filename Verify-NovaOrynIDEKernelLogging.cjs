@@ -34,8 +34,25 @@ has(boot,'KernelLog.Configure(new KernelConsoleLogSink(), diagnosticsContext, Ke
 has(boot,'KernelLog.Info("bootstrap","Kernel.KMain","NovaOryn KMain started.")','first boot diagnostic uses structured logging');
 has(boot,'KernelLog.Debug("architecture","Kernel.KMain","GDT and TSS installed.")','debug-level boot diagnostic');
 has('SDK/NovaOryn.SdkManifest.json','"structuredLogging": "2.0"','SDK manifest structured logging 2.0');
+const generatedBoot='SDK/templates/NovaOrynKernel/Boot/BootStartup.cs';
+const generatedHal='SDK/templates/NovaOrynKernel/HAL/HardwareAbstractionLayer.cs';
+const generatedLogger='SDK/templates/NovaOrynKernel/Boot/KernelStructuredLogging.cs';
+const generatedProject='SDK/templates/NovaOrynKernel/NovaOrynKernel.csproj';
+const projectCreator='SDK/src/NovaOryn.ProjectCreator/Program.cs';
+const ideSerial='packages/novaoryn-ide/src/node/novaoryn-project-service.ts';
+has(generatedBoot,'KernelStructuredLogging.Initialize()','generated OS bootstrap configures structured logging');
+has(generatedBoot,'KernelLog.Info("bootstrap","BootStartup.Initialize","NovaOryn KMain started.")','generated OS first diagnostic uses structured logging');
+has(generatedHal,'KernelLog.Info("hal","HardwareAbstractionLayer.Initialize","Microkernel topology:','generated microkernel HAL topology uses structured logging');
+has(generatedLogger,'KernelProcesses.TryGetCurrentProcessId(out processId)','generated logger supplies process context');
+has(generatedProject,'NovaOryn.Kernel.SubsystemContracts','generated kernel references structured logging contracts');
+has(projectCreator,'Boot and HAL are SDK-owned generated source','existing OS Boot/HAL refresh ownership');
+has(ideSerial,'serialDisplayPending','serial display retains incomplete kernel lines');
+has(ideSerial,"pending.endsWith('NovaOryn> ')",'newline-free shell prompt remains visible');
+const gb=read(generatedBoot);
+checks.push(['generated startup raw KMain WriteLine removed',!gb.includes('KernelConsole.WriteLine("NovaOryn KMain started.")')]);
+
 const b=read(boot);
 checks.push(['legacy KMain startup WriteLine removed',!b.includes('KernelConsole.WriteLine("NovaOryn KMain started.")')]);
 let bad=false;for(const [label,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${label}`);if(!ok)bad=true;}
 if(bad)process.exit(1);
-console.log(`[ OK ] NovaOryn IDE 0.7.1 structured kernel logging contract verified (${checks.length} checks).`);
+console.log(`[ OK ] NovaOryn IDE 0.7.2 structured kernel logging contract verified (${checks.length} checks).`);

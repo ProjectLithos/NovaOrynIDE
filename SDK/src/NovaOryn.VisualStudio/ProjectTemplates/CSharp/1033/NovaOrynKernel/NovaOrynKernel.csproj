@@ -24,10 +24,12 @@
   <ItemGroup>
     <Compile Include="Kernel\Kernel.cs" />
     <Compile Include="Boot\BootStartup.cs" />
+    <Compile Include="Boot\KernelStructuredLogging.cs" />
     <Compile Include="HAL\HardwareAbstractionLayer.cs" />
     <ProjectReference Include="Sdk\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.String\NovaOryn.String.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Console\NovaOryn.Kernel.Console.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.SubsystemContracts\NovaOryn.Kernel.SubsystemContracts.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.CommandLine\NovaOryn.Kernel.CommandLine.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Memory\NovaOryn.Kernel.Memory.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.VirtualMemory\NovaOryn.Kernel.VirtualMemory.csproj" />

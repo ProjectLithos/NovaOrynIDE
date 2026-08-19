@@ -1,5 +1,6 @@
 using System;
 using NovaOryn.Kernel.Console;
+using NovaOryn.Kernel.Contracts;
 using NovaOryn.Kernel.CommandLine;
 using NovaOryn.Kernel.Processes;
 using NovaOryn.Kernel.InterruptDispatch;
@@ -51,18 +52,19 @@ public static unsafe class HardwareAbstractionLayer
         if (!KernelTimerDispatch.Initialize()) return false;
 
 #if NOVAORYN_KERNEL_MICROKERNEL
-        if (!KernelConsole.WriteLine("Microkernel topology: optional drivers, storage, networking, USB, audio, GUI and filesystem services are excluded from HAL kernel startup.")) return false;
+        if (!KernelLog.Info("hal","HardwareAbstractionLayer.Initialize","Microkernel topology: optional drivers, storage, networking, USB, audio, GUI and filesystem services are excluded from HAL kernel startup.")) return false;
 #endif
 #if NOVAORYN_KERNEL_HYBRID
-        if (!KernelConsole.WriteLine("Hybrid topology: only work areas assigned to the Kernel execution domain are initialized by HAL.")) return false;
+        if (!KernelLog.Info("hal","HardwareAbstractionLayer.Initialize","Hybrid topology: only work areas assigned to the Kernel execution domain are initialized by HAL.")) return false;
 #endif
 #if NOVAORYN_KERNEL_MONOLITHIC
-        if (!KernelConsole.WriteLine("Monolithic topology: selected kernel-domain work areas are initialized directly by HAL.")) return false;
+        if (!KernelLog.Info("hal","HardwareAbstractionLayer.Initialize","Monolithic topology: selected kernel-domain work areas are initialized directly by HAL.")) return false;
 #endif
 
 #if NOVAORYN_KERNELAREA_INPUT
         if (!KernelPs2.Initialize()) return false;
         Ps2Capabilities ps2 = KernelPs2.GetCapabilities();
+        if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"hal-detail","HardwareAbstractionLayer.Initialize")) return false;
         if (!KernelConsole.Write("PS/2 keyboard/mouse: ")) return false;
         if (!KernelConsole.Write(ps2.Keyboard ? "keyboard" : "no keyboard")) return false;
         if (!KernelConsole.Write(" / ")) return false;
@@ -89,6 +91,7 @@ public static unsafe class HardwareAbstractionLayer
         PciCapabilities pci = KernelPci.GetCapabilities();
         VirtioGpuCapabilities virtioGpu = KernelVirtioGpu.GetCapabilities();
         KernelGraphicsCapabilities graphics = KernelGraphics.GetCapabilities();
+        if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"hal-detail","HardwareAbstractionLayer.Initialize")) return false;
         if (!KernelConsole.Write("Kernel driver framework drivers/devices: ")) return false;
         if (!KernelConsole.WriteUInt64(drivers.RegisteredDrivers)) return false;
         if (!KernelConsole.Write(" / ")) return false;
@@ -96,6 +99,7 @@ public static unsafe class HardwareAbstractionLayer
         if (!KernelConsole.Write("; PCI devices: ")) return false;
         if (!KernelConsole.WriteUInt64(pci.DeviceCount)) return false;
         if (!KernelConsole.WriteLine("")) return false;
+        if (!KernelStructuredLogging.Begin(KernelLogLevel.Info,"hal-detail","HardwareAbstractionLayer.Initialize")) return false;
         if (!KernelConsole.Write("VirtIO GPU controllers/displays: ")) return false;
         if (!KernelConsole.WriteUInt64(virtioGpu.Controllers)) return false;
         if (!KernelConsole.Write(" / ")) return false;
@@ -109,7 +113,7 @@ public static unsafe class HardwareAbstractionLayer
         if (!KernelStorage.Initialize()) return false;
         if (!KernelNvme.Initialize()) return false;
         if (!KernelAhci.Initialize()) return false;
-        if (!KernelConsole.WriteLine("Kernel-domain storage services online.")) return false;
+        if (!KernelLog.Info("storage","HardwareAbstractionLayer.Initialize","Kernel-domain storage services online.")) return false;
 #endif
 
 #if NOVAORYN_KERNELAREA_NETWORKING
@@ -117,7 +121,7 @@ public static unsafe class HardwareAbstractionLayer
         if (!KernelVirtio.Initialize()) return false;
         if (!KernelE1000.Initialize()) return false;
         if (!KernelRtl8168.Initialize()) return false;
-        if (!KernelConsole.WriteLine("Kernel-domain networking services online.")) return false;
+        if (!KernelLog.Info("networking","HardwareAbstractionLayer.Initialize","Kernel-domain networking services online.")) return false;
 #endif
 
 #if NOVAORYN_KERNELAREA_USB
@@ -130,7 +134,7 @@ public static unsafe class HardwareAbstractionLayer
         if (!UsbHid.SetKeyboardEventHandler(&HandleUsbKeyboardEvent)) return false;
 #endif
         if (!UsbMassStorage.Initialize()) return false;
-        if (!KernelConsole.WriteLine("Kernel-domain USB services online.")) return false;
+        if (!KernelLog.Info("usb","HardwareAbstractionLayer.Initialize","Kernel-domain USB services online.")) return false;
 #endif
 
         return true;

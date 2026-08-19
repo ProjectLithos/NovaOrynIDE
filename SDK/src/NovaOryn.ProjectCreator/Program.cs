@@ -44,9 +44,10 @@ static int MainEntry(string[] args)
 
         string destination = Path.Combine(output, relative);
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+        // Boot and HAL are SDK-owned generated source and must refresh with the SDK. Keeping
+        // them user-owned left existing OSes on obsolete startup/runtime contracts. The user's
+        // high-level Kernel\Kernel.cs remains protected exactly as before.
         bool userOwnedTree = relative.StartsWith("Kernel" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
-            relative.StartsWith("Boot" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
-            relative.StartsWith("HAL" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
             relative.StartsWith("KernelProjects" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
             relative.StartsWith("Userland" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
             relative.StartsWith("Tests" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);

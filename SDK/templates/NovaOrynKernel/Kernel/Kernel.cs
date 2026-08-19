@@ -1,5 +1,6 @@
 using System;
 using NovaOryn.Kernel.Console;
+using NovaOryn.Kernel.Contracts;
 using NovaOryn.Kernel.CommandLine;
 using NovaOryn.Kernel.InterruptDispatch;
 using NovaOryn.Kernel.Bootstrap.Boot;
@@ -15,7 +16,7 @@ public static class Kernel
     {
         if (!BootStartup.Initialize(boot)) return false;
         if (!HardwareAbstractionLayer.Initialize()) return false;
-        if (!KernelConsole.WriteLine("Interactive console ready. Defaults: font 3, buffering auto (double for text).")) return false;
+        if (!KernelLog.Info("console","Kernel.KMain","Interactive console ready. Defaults: font 3, buffering auto (double for text).")) return false;
         if (!KernelCommandLine.Initialize()) return false;
         if (!KernelInterruptDispatch.Enable()) return false;
         return KernelConsole.RunInteractive();

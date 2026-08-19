@@ -83,7 +83,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.7.1';
+const NOVAORYN_IDE_VERSION = '0.7.2';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -488,6 +488,7 @@ interface RunSession {
     nativeGlobalsLoaded?: boolean;
     serialLogPath?: string;
     serialLogOffset?: number;
+    serialDisplayPending?: string;
     startedAtMs: number;
     telemetryBuffer: string;
     traceEvents: NovaOrynTraceEvent[];
@@ -1439,7 +1440,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.7.1 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.7.2 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -1553,10 +1554,25 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                             }
                         }
                     }
-                    const labelled = fresh
-                        .split('\n')
+                    // Serial output is written byte-by-byte by the freestanding kernel. Never
+                    // label a partially-written line: polling in the middle of KernelConsole.Write()
+                    // used to turn one logical record into several unrelated [KERNEL] fragments.
+                    const displayText = `${session.serialDisplayPending ?? ''}${fresh}`;
+                    const displayParts = displayText.split('\n');
+                    const endedWithNewline = displayText.endsWith('\n');
+                    let pending = endedWithNewline ? '' : (displayParts.pop() ?? '');
+                    if (endedWithNewline && displayParts.length > 0 && displayParts[displayParts.length - 1] === '') {
+                        displayParts.pop();
+                    }
+                    // The interactive shell prompt is intentionally not newline-terminated. It is a
+                    // complete presentation record once emitted, so surface it immediately.
+                    if (pending.endsWith('NovaOryn> ')) {
+                        displayParts.push(pending);
+                        pending = '';
+                    }
+                    session.serialDisplayPending = pending;
+                    const labelled = displayParts
                         .filter(line => !/^\[\[NOVAORYN:[A-Z0-9_]+\]\]$/.test(line.trim()))
-                        .filter((line, index, all) => line.length > 0 || index < all.length - 1)
                         .map(line => `[KERNEL] ${line}`)
                         .join('\n');
                     if (labelled) {
@@ -2038,7 +2054,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.7.1 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.7.2 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -2340,6 +2356,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         const serialLog = path.join(runDirectory, 'serial.log');
         session.serialLogPath = serialLog;
         session.serialLogOffset = 0;
+        session.serialDisplayPending = '';
         const debugConLog = path.join(runDirectory, 'debugcon.bin');
         await fs.copyFile(ovmfVars, varsCopy);
         const gdbPort = await this.findFreePort(1234, 1299);

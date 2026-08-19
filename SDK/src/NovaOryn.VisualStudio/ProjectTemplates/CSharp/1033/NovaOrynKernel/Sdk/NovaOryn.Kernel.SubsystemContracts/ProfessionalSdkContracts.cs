@@ -1,0 +1,95 @@
+using System;
+
+namespace NovaOryn.Kernel.Contracts;
+
+public enum KernelLogLevel : Byte { Trace=0, Debug=1, Info=2, Warning=3, Error=4, Critical=5 }
+public readonly struct KernelLogRecord
+{
+    public KernelLogRecord(KernelLogLevel level,String subsystem,UInt32 cpu,UInt64 threadId,UInt64 processId,UInt64 timestampNanoseconds,String source,String message)
+    { Level=level;Subsystem=subsystem;Cpu=cpu;ThreadId=threadId;ProcessId=processId;TimestampNanoseconds=timestampNanoseconds;Source=source;Message=message; }
+    public KernelLogLevel Level { get; } public String Subsystem { get; } public UInt32 Cpu { get; } public UInt64 ThreadId { get; } public UInt64 ProcessId { get; } public UInt64 TimestampNanoseconds { get; } public String Source { get; } public String Message { get; }
+}
+public interface IKernelLogSink { Boolean TryWrite(KernelLogRecord record); }
+public readonly struct KernelLogStatistics
+{
+    public KernelLogStatistics(UInt64 trace,UInt64 debug,UInt64 info,UInt64 warning,UInt64 error,UInt64 critical,UInt64 dropped)
+    { Trace=trace;Debug=debug;Info=info;Warning=warning;Error=error;Critical=critical;Dropped=dropped; }
+    public UInt64 Trace{get;} public UInt64 Debug{get;} public UInt64 Info{get;} public UInt64 Warning{get;} public UInt64 Error{get;} public UInt64 Critical{get;} public UInt64 Dropped{get;}
+}
+public interface IKernelLogContextProvider { Boolean TryGetContext(out UInt32 cpu,out UInt64 threadId,out UInt64 processId,out UInt64 timestampNanoseconds); }
+
+public enum KernelTelemetryKind : Byte { Trace=1, Profile=2, BootEvent=3, Counter=4, DiagnosticEvent=5 }
+public enum KernelBootPhase : Byte { Instant=0, Begin=1, End=2, Warning=3, Failed=4 }
+public readonly struct KernelTelemetryEvent
+{
+    public KernelTelemetryEvent(KernelTelemetryKind kind,String subsystem,String name,UInt64 timestampNanoseconds,UInt64 value0,UInt64 value1,UInt64 correlationId,String detail)
+        : this(kind,subsystem,name,timestampNanoseconds,value0,value1,correlationId,detail,0U,0UL,0UL) { }
+    public KernelTelemetryEvent(KernelTelemetryKind kind,String subsystem,String name,UInt64 timestampNanoseconds,UInt64 value0,UInt64 value1,UInt64 correlationId,String detail,UInt32 cpu,UInt64 threadId,UInt64 processId)
+    { Kind=kind;Subsystem=subsystem;Name=name;TimestampNanoseconds=timestampNanoseconds;Value0=value0;Value1=value1;CorrelationId=correlationId;Detail=detail;Cpu=cpu;ThreadId=threadId;ProcessId=processId; }
+    public KernelTelemetryKind Kind { get; } public String Subsystem { get; } public String Name { get; } public UInt64 TimestampNanoseconds { get; } public UInt64 Value0 { get; } public UInt64 Value1 { get; } public UInt64 CorrelationId { get; } public String Detail { get; } public UInt32 Cpu { get; } public UInt64 ThreadId { get; } public UInt64 ProcessId { get; }
+}
+public readonly struct KernelTelemetryStatistics
+{
+    public KernelTelemetryStatistics(UInt64 trace,UInt64 profile,UInt64 boot,UInt64 counter,UInt64 diagnostic,UInt64 dropped) { Trace=trace;Profile=profile;Boot=boot;Counter=counter;Diagnostic=diagnostic;Dropped=dropped; }
+    public UInt64 Trace{get;} public UInt64 Profile{get;} public UInt64 Boot{get;} public UInt64 Counter{get;} public UInt64 Diagnostic{get;} public UInt64 Dropped{get;}
+}
+public interface IKernelTelemetrySink { Boolean TryEmit(KernelTelemetryEvent telemetryEvent); }
+
+public static class KernelCrashDumpFormat { public const UInt32 Magic=0x4E4F4344U; public const UInt16 Major=1; public const UInt16 Minor=0; }
+public enum KernelCrashSectionKind : UInt16 { CpuState=1,Registers=2,Stack=3,PageTables=4,Processes=5,Modules=6,Heap=7,MemoryRanges=8,Panic=9,Drivers=10 }
+public readonly struct KernelCrashDumpHeader
+{
+    public KernelCrashDumpHeader(UInt32 magic,UInt16 major,UInt16 minor,UInt64 totalBytes,UInt32 sectionCount,UInt64 timestampNanoseconds,UInt32 architecture)
+    { Magic=magic;Major=major;Minor=minor;TotalBytes=totalBytes;SectionCount=sectionCount;TimestampNanoseconds=timestampNanoseconds;Architecture=architecture; }
+    public UInt32 Magic { get; } public UInt16 Major { get; } public UInt16 Minor { get; } public UInt64 TotalBytes { get; } public UInt32 SectionCount { get; } public UInt64 TimestampNanoseconds { get; } public UInt32 Architecture { get; }
+}
+public readonly struct KernelCrashDumpSection { public KernelCrashDumpSection(KernelCrashSectionKind kind,UInt16 version,UInt64 offset,UInt64 length){Kind=kind;Version=version;Offset=offset;Length=length;} public KernelCrashSectionKind Kind{get;} public UInt16 Version{get;} public UInt64 Offset{get;} public UInt64 Length{get;} }
+
+public enum KernelPanicPolicy : Byte { Halt=0,Reboot=1,DebuggerThenHalt=2,DebuggerThenReboot=3 }
+public readonly struct KernelPanicInfo
+{
+    public KernelPanicInfo(UInt32 code,String reason,String message,UInt32 cpu,UInt64 threadId,UInt64 processId,UInt64 instructionPointer,UInt64 stackPointer,Boolean writeCrashDump,Boolean breakDebugger,KernelPanicPolicy policy)
+    { Code=code;Reason=reason;Message=message;Cpu=cpu;ThreadId=threadId;ProcessId=processId;InstructionPointer=instructionPointer;StackPointer=stackPointer;WriteCrashDump=writeCrashDump;BreakDebugger=breakDebugger;Policy=policy; }
+    public UInt32 Code{get;} public String Reason{get;} public String Message{get;} public UInt32 Cpu{get;} public UInt64 ThreadId{get;} public UInt64 ProcessId{get;} public UInt64 InstructionPointer{get;} public UInt64 StackPointer{get;} public Boolean WriteCrashDump{get;} public Boolean BreakDebugger{get;} public KernelPanicPolicy Policy{get;}
+}
+public interface IKernelPanicBackend { Boolean TryCaptureCallStack(KernelPanicInfo info); Boolean TryCaptureRegisters(KernelPanicInfo info); Boolean TryWriteCrashDump(KernelPanicInfo info); Boolean TryBreakDebugger(KernelPanicInfo info); Boolean TryHaltOrReboot(KernelPanicInfo info); }
+
+public enum KernelTestKind : Byte { Kernel=1,Unit=2,Integration=3,Boot=4,Driver=5,Stress=6,FaultInjection=7,HardwareSimulation=8 }
+public enum KernelTestResult : Byte { NotRun=0,Passed=1,Failed=2,Skipped=3,Timeout=4 }
+public readonly struct KernelTestDescriptor { public KernelTestDescriptor(String id,String name,KernelTestKind kind,UInt64 timeoutMilliseconds,String[] tags){Id=id;Name=name;Kind=kind;TimeoutMilliseconds=timeoutMilliseconds;Tags=tags;} public String Id{get;} public String Name{get;} public KernelTestKind Kind{get;} public UInt64 TimeoutMilliseconds{get;} public String[] Tags{get;} }
+public interface IKernelTestCase { KernelTestDescriptor Descriptor{get;} KernelTestResult Run(); }
+
+public enum KernelFaultKind : Byte { AllocationFailure=1,IoTimeout=2,DroppedInterrupt=3,DeviceReset=4,BadDma=5,CorruptPacket=6,PageFault=7,CpuOffline=8,FilesystemError=9 }
+public readonly struct KernelFaultRule { public KernelFaultRule(KernelFaultKind kind,String subsystem,UInt64 triggerAfter,UInt32 repeatCount,UInt64 parameter){Kind=kind;Subsystem=subsystem;TriggerAfter=triggerAfter;RepeatCount=repeatCount;Parameter=parameter;} public KernelFaultKind Kind{get;} public String Subsystem{get;} public UInt64 TriggerAfter{get;} public UInt32 RepeatCount{get;} public UInt64 Parameter{get;} }
+public interface IKernelFaultInjector { Boolean TryArm(KernelFaultRule rule,out UInt64 ruleId); Boolean TryDisarm(UInt64 ruleId); Boolean ShouldInject(KernelFaultKind kind,String subsystem,out UInt64 parameter); }
+
+public enum KernelArchitecture : Byte { X64=1,Arm64=2 }
+public interface IKernelArchitectureContract : IKernelSubsystemContract { KernelArchitecture Architecture{get;} Boolean TryMemoryBarrier(); Boolean TryInstructionBarrier(); Boolean TryGetCurrentCpu(out UInt32 cpu); Boolean TryHalt(); }
+public interface IKernelPerCpuStorage { Boolean TryGet(UInt32 cpu,UInt32 key,out UInt64 value); Boolean TrySet(UInt32 cpu,UInt32 key,UInt64 value); }
+public interface IKernelSmpProfessionalContract : IKernelSmpContract { Boolean TryEnumerate(UInt32 index,out UInt64 hardwareId,out Boolean online); Boolean TrySetAffinity(UInt64 threadId,UInt64 cpuMask); Boolean TryStartProcessor(UInt32 processorIndex); Boolean TryShutdownProcessor(UInt32 processorIndex); Boolean TryGetLocalScheduler(UInt32 processorIndex,out UInt64 schedulerId); }
+
+public enum KernelSynchronizationKind : Byte { SpinLock=1,Mutex=2,Semaphore=3,Event=4,ReaderWriterLock=5,Atomic=6,Barrier=7,LockFree=8 }
+public interface IKernelSynchronizationContract : IKernelSubsystemContract { Boolean TryCreate(KernelSynchronizationKind kind,UInt32 initialValue,out UInt64 handle); Boolean TryAcquire(UInt64 handle,UInt64 timeoutNanoseconds); Boolean TryRelease(UInt64 handle); Boolean TryAtomicCompareExchange(UInt64 address,UInt64 expected,UInt64 replacement,out UInt64 previous); Boolean TryMemoryBarrier(); }
+
+public readonly struct KernelPhysicalAllocatorStatistics { public KernelPhysicalAllocatorStatistics(UInt64 totalPages,UInt64 freePages,UInt64 reservedPages,UInt64 allocatedPages){TotalPages=totalPages;FreePages=freePages;ReservedPages=reservedPages;AllocatedPages=allocatedPages;} public UInt64 TotalPages{get;} public UInt64 FreePages{get;} public UInt64 ReservedPages{get;} public UInt64 AllocatedPages{get;} }
+public readonly struct KernelHeapDiagnostics { public KernelHeapDiagnostics(UInt64 committedBytes,UInt64 usedBytes,UInt64 allocationCount,UInt64 peakBytes,UInt64 leakCandidates,UInt64 guardFailures,UInt64 doubleFreeFailures){CommittedBytes=committedBytes;UsedBytes=usedBytes;AllocationCount=allocationCount;PeakBytes=peakBytes;LeakCandidates=leakCandidates;GuardFailures=guardFailures;DoubleFreeFailures=doubleFreeFailures;} public UInt64 CommittedBytes{get;} public UInt64 UsedBytes{get;} public UInt64 AllocationCount{get;} public UInt64 PeakBytes{get;} public UInt64 LeakCandidates{get;} public UInt64 GuardFailures{get;} public UInt64 DoubleFreeFailures{get;} }
+public interface IKernelMemoryDiagnosticsContract : IKernelSubsystemContract { Boolean TryGetPhysicalStatistics(out KernelPhysicalAllocatorStatistics statistics); Boolean TryGetHeapDiagnostics(out KernelHeapDiagnostics diagnostics); Boolean TryInspectPageTable(UInt64 address,out UInt64 physicalAddress,out UInt64 flags); Boolean TrySetAllocationTag(UInt64 allocation,String tag); Boolean TryValidateGuards(out UInt64 failures); }
+
+[Flags] public enum KernelMemoryProtection : UInt32 { None=0,Read=1,Write=2,Execute=4,User=8,Guard=16 }
+public interface IKernelSecurityContract : IKernelSubsystemContract { Boolean TryValidateUserPointer(UInt64 processId,UInt64 address,UInt64 length,KernelMemoryProtection access); Boolean TryProtect(UInt64 processId,UInt64 address,UInt64 length,KernelMemoryProtection protection); Boolean TryValidateSyscall(UInt64 processId,UInt32 abi,UInt32 service); Boolean TryCreateCapability(UInt64 processId,UInt64 objectId,UInt64 rights,out UInt64 handle); Boolean TryResolveCapability(UInt64 processId,UInt64 handle,UInt64 requiredRights,out UInt64 objectId); }
+
+public static class NovaOrynExecutableFormat { public const UInt32 Magic=0x4E4F5845U; public const UInt16 Major=1; public const UInt16 Minor=0; }
+public readonly struct NovaOrynExecutableMetadata { public NovaOrynExecutableMetadata(String id,String version,KernelArchitecture architecture,String abiVersion,UInt64 entryPoint,String[] dependencies,String[] requiredCapabilities,String[] resources){Id=id;Version=version;Architecture=architecture;AbiVersion=abiVersion;EntryPoint=entryPoint;Dependencies=dependencies;RequiredCapabilities=requiredCapabilities;Resources=resources;} public String Id{get;} public String Version{get;} public KernelArchitecture Architecture{get;} public String AbiVersion{get;} public UInt64 EntryPoint{get;} public String[] Dependencies{get;} public String[] RequiredCapabilities{get;} public String[] Resources{get;} }
+public enum NovaOrynPackageKind : Byte { Application=1,Driver=2,Library=3,Service=4,KernelExtension=5 }
+public readonly struct NovaOrynPackageManifest { public NovaOrynPackageManifest(UInt32 schemaVersion,String id,String version,NovaOrynPackageKind kind,KernelArchitecture architecture,String minimumSdkVersion,String[] dependencies,String[] capabilities,String contentHash,String signature){SchemaVersion=schemaVersion;Id=id;Version=version;Kind=kind;Architecture=architecture;MinimumSdkVersion=minimumSdkVersion;Dependencies=dependencies;Capabilities=capabilities;ContentHash=contentHash;Signature=signature;} public UInt32 SchemaVersion{get;} public String Id{get;} public String Version{get;} public NovaOrynPackageKind Kind{get;} public KernelArchitecture Architecture{get;} public String MinimumSdkVersion{get;} public String[] Dependencies{get;} public String[] Capabilities{get;} public String ContentHash{get;} public String Signature{get;} }
+
+public interface IKernelVfsContract : IKernelFilesystemContract { Boolean TryUnmount(UInt64 mountId); Boolean TryWrite(UInt64 fileHandle,UInt64 offset,UInt64 bufferAddress,UInt32 bufferBytes,out UInt32 bytesWritten); Boolean TryOpenDirectory(String path,out UInt64 directoryHandle); Boolean TryReadDirectory(UInt64 directoryHandle,out String name,out UInt32 type); Boolean TryGetPermissions(String path,out UInt32 permissions); Boolean TrySetPermissions(String path,UInt32 permissions); }
+public enum KernelNetworkLayer : Byte { Nic=1,Ethernet=2,Arp=3,Ndp=4,Ipv4=5,Ipv6=6,Icmp=7,Udp=8,Tcp=9,Sockets=10,Dns=11 }
+public interface IKernelNetworkStackContract : IKernelNetworkingContract { Boolean TryGetLayerState(KernelNetworkLayer layer,out KernelSubsystemState state); Boolean TryResolveName(String host,out UInt64 address); Boolean TryBind(UInt64 socketHandle,UInt64 address,UInt16 port); Boolean TryConnect(UInt64 socketHandle,UInt64 address,UInt16 port); Boolean TryListen(UInt64 socketHandle,UInt32 backlog); Boolean TryAccept(UInt64 socketHandle,out UInt64 clientSocket); }
+public enum KernelPowerState : Byte { Working=0,Sleep1=1,Sleep2=2,Sleep3=3,Hibernate=4,Off=5 }
+public interface IKernelPowerManagementContract : IKernelPowerContract { Boolean TryEnterSystemState(KernelPowerState state); Boolean TrySetCpuPowerState(UInt32 cpu,UInt32 state); Boolean TrySuspendDevice(UInt64 deviceId); Boolean TryResumeDevicePower(UInt64 deviceId); }
+public interface IKernelTimekeepingContract : IKernelTimeContract { Boolean TryGetWallClockNanoseconds(out Int64 nanoseconds); Boolean TryGetHighResolutionCounter(out UInt64 ticks,out UInt64 frequency); Boolean TryGetSchedulerTick(out UInt64 tick,out UInt64 frequency); }
+
+public readonly struct NovaOrynQemuMatrixEntry { public NovaOrynQemuMatrixEntry(UInt32 cpus,UInt64 memoryMiB,String storage,String network,String graphics,String usb,String firmware){Cpus=cpus;MemoryMiB=memoryMiB;Storage=storage;Network=network;Graphics=graphics;Usb=usb;Firmware=firmware;} public UInt32 Cpus{get;} public UInt64 MemoryMiB{get;} public String Storage{get;} public String Network{get;} public String Graphics{get;} public String Usb{get;} public String Firmware{get;} }
+public readonly struct NovaOrynBuildProvenance { public NovaOrynBuildProvenance(String sdkVersion,String compilerVersion,String linkerVersion,String configuration,String sourceHash,String dependencyHash){SdkVersion=sdkVersion;CompilerVersion=compilerVersion;LinkerVersion=linkerVersion;Configuration=configuration;SourceHash=sourceHash;DependencyHash=dependencyHash;} public String SdkVersion{get;} public String CompilerVersion{get;} public String LinkerVersion{get;} public String Configuration{get;} public String SourceHash{get;} public String DependencyHash{get;} }
+public readonly struct NovaOrynSdkVersionManifest { public NovaOrynSdkVersionManifest(UInt32 schemaVersion,String sdkVersion,String apiVersion,String abiVersion,KernelArchitecture[] architectures,String dotnetVersion,String ilcVersion,String llvmVersion,String[] driverFormats,UInt32[] projectSchemas){SchemaVersion=schemaVersion;SdkVersion=sdkVersion;ApiVersion=apiVersion;AbiVersion=abiVersion;Architectures=architectures;DotnetVersion=dotnetVersion;IlcVersion=ilcVersion;LlvmVersion=llvmVersion;DriverFormats=driverFormats;ProjectSchemas=projectSchemas;} public UInt32 SchemaVersion{get;} public String SdkVersion{get;} public String ApiVersion{get;} public String AbiVersion{get;} public KernelArchitecture[] Architectures{get;} public String DotnetVersion{get;} public String IlcVersion{get;} public String LlvmVersion{get;} public String[] DriverFormats{get;} public UInt32[] ProjectSchemas{get;} }
