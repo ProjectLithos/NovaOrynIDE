@@ -1,6 +1,6 @@
-# NovaOryn 0.8.5
+# NovaOryn 0.9.0
 
-NovaOryn 0.8.5 changes QEMU CPU allocation from a hard-coded single virtual CPU to 50% of the host logical processors.
+NovaOryn 0.9.0 changes QEMU CPU allocation from a hard-coded single virtual CPU to 50% of the host logical processors.
 
 ## QEMU CPU allocation
 

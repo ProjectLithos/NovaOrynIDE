@@ -270,8 +270,8 @@ export class NovaOrynDebugInspectorWidget extends ReactWidget {
                     onChange={event => { this.crashDumpPathDraft = event.target.value; this.update(); }} />
                 <button className='theia-button' disabled={!this.crashDumpPathDraft.trim()} onClick={() => void this.loadCrashDump()}>Open Dump</button>
             </div>
-            <p className='novaoryn-debug-note'>Captures registers, x64 unwind stack, locals, disassembly, page-table translation, heap metadata, and code/stack memory into the OS project's <code>.novaoryn/crash-dumps</code> folder. Dumps can be reopened with QEMU stopped.</p>
-            {this.offlineDump && result?.dump && <div className='novaoryn-crash-dump-open'><strong>Offline dump:</strong> {result.dump.createdUtc} — {result.dump.reason}<br/><code>{result.dump.path}</code></div>}
+            <p className='novaoryn-debug-note'>Writes the versioned NovaOryn Crash Dump SDK format with CPU state, registers, stack, page tables, processes, modules, heap, memory ranges, panic reason, and driver state into the OS project's <code>.novaoryn/crash-dumps</code> folder. Dumps can be reopened with QEMU stopped.</p>
+            {this.offlineDump && result?.dump && <div className='novaoryn-crash-dump-open'><strong>Offline dump:</strong> {result.dump.createdUtc} — {result.dump.reason} {result.dump.formatVersion ? `(format ${result.dump.formatVersion})` : ''}<br/><code>{result.dump.path}</code></div>}
             {result && !result.success && <div className='novaoryn-debug-value error'>{result.error}</div>}
             {!this.offlineDump && result?.success && result.dump && <div className='novaoryn-crash-dump-open'><strong>Captured:</strong> <code>{result.dump.path}</code></div>}
         </section>;

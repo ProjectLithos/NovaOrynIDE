@@ -1,0 +1,37 @@
+{
+  "release": "NovaOryn IDE 0.9.0",
+  "feature": "Versioned NovaOryn Crash Dump SDK format",
+  "format": {
+    "magic": "NOCD",
+    "version": "1.0",
+    "sections": [
+      "CPU state",
+      "registers",
+      "stack",
+      "page tables",
+      "processes",
+      "modules",
+      "heap",
+      "memory ranges",
+      "panic reason",
+      "driver state"
+    ]
+  },
+  "compatibility": {
+    "majorVersionIsBreakingBoundary": true,
+    "minorVersionAllowsOptionalAdditions": true,
+    "perSectionVersions": true,
+    "unknownSectionsAndFieldsIgnored": true,
+    "legacyPre090SchemaVersion1Import": true
+  },
+  "validation": {
+    "formatContractVerifier": "PASS",
+    "modifiedTypeScriptSyntax": "PASS",
+    "versionConsistency": {
+      "package.json": "0.9.0",
+      "applications/electron/package.json": "0.9.0",
+      "packages/novaoryn-ide/package.json": "0.9.0"
+    },
+    "fullWorkspaceBuildOnThisRunner": "Unavailable because this extracted Linux environment lacks the Node ambient/type setup used by Build-NovaOrynIDE.bat; failures were pre-existing Node type resolution errors."
+  }
+}

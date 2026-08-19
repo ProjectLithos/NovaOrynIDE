@@ -1,0 +1,9 @@
+{
+  "version": "0.4.3",
+  "baseVersion": "0.4.2",
+  "fullGeneratedKernelBootstrap": true,
+  "legacyMinimalKernelMigration": true,
+  "preservesUserWrittenKernel": true,
+  "syscallBootstrap": true,
+  "configuredHalBootstrap": true
+}

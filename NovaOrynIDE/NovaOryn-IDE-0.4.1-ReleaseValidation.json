@@ -1,0 +1,37 @@
+{
+  "version": "0.4.1",
+  "baseVersion": "0.4.0",
+  "feature": "Capability-based driver model",
+  "capabilities": [
+    "MMIO ranges",
+    "I/O ports",
+    "IRQ",
+    "MSI",
+    "MSI-X",
+    "DMA",
+    "PCI config",
+    "physical memory",
+    "timers",
+    "networking",
+    "filesystem access"
+  ],
+  "implementation": [
+    "KernelDriverCapability declaration bitset",
+    "KernelDriverCapabilityRequest concrete privilege requests",
+    "opaque per-binding KernelDriverCapabilityGrant tokens",
+    "resource/range validation for MMIO, PIO and physical memory",
+    "PCI-only PCI-config grants",
+    "resource-gated interrupt/MSI/MSI-X and DMA grants",
+    "grant validation and revocation",
+    "Driver Development Centre schema 2 capability declarations",
+    "generated driver registration with capability declaration",
+    "static analyzer coverage for all service classes"
+  ],
+  "validation": {
+    "capabilityContract": "PASS (13 checks)",
+    "typescriptSyntax": "PASS for modified TS/TSX",
+    "existingSourceVerifiers": "PASS except installed-dependency verifiers requiring node_modules",
+    "fullWindowsBuild": "Not run here; Build-NovaOrynIDE.bat remains final Windows validation."
+  },
+  "changedFileCount": 41
+}

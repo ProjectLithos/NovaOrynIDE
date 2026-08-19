@@ -28,7 +28,7 @@ import {
     NovaOrynHeapSnapshot,
     NovaOrynHeapBlock,
     NovaOrynCrashDumpSummary,
-    NovaOrynCrashDumpResult,
+    NovaOrynCrashDumpResult, NovaOrynCrashDumpPanic, NovaOrynCrashDumpDriverState, NovaOrynCrashDumpModule, NovaOrynCrashDumpProcess, NovaOrynCrashDumpDocument,
     NovaOrynBreakpointResult,
     NovaOrynRunOutput,
     NovaOrynRunResult,
@@ -83,7 +83,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.8.5';
+const NOVAORYN_IDE_VERSION = '0.9.0';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -1541,7 +1541,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.8.5 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.9.0 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -2155,7 +2155,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.8.5 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.9.0 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -2235,34 +2235,160 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         if (!session || session.mode !== 'debug' || !session.gdb || !session.debug?.active || !session.debug.paused) {
             return { success: false, error: 'A crash/debug dump can be captured only while the NovaOryn kernel is paused.' };
         }
+
         try {
-            const rip = session.debug.registers?.find(r => r.name === 'rip')?.value ?? 'rip';
-            const rsp = session.debug.registers?.find(r => r.name === 'rsp')?.value ?? 'rsp';
+            const registers = session.debug.registers ?? [];
+            const register = (name: string): string | undefined => registers.find(item => item.name.toLowerCase() === name)?.value;
+            const rip = register('rip') ?? 'rip';
+            const rsp = register('rsp') ?? 'rsp';
             const pageTable = await this.inspectPageTable(sessionId, rip);
             const heap = await this.inspectHeap(sessionId);
             const stackMemory = await this.readMemoryRange(sessionId, rsp, 512);
             const codeMemory = await this.readMemoryRange(sessionId, rip, 128);
+            const configurationResult = await this.readProjectConfiguration(session.projectRoot);
+            const configuration = configurationResult.success ? configurationResult.configuration : undefined;
+            const contexts = session.debug.executionContexts ?? [];
+
+            const processMap = new Map<string, NovaOrynCrashDumpProcess>();
+            for (const context of contexts) {
+                const processId = context.processId ?? '0';
+                const existing = processMap.get(processId) ?? {
+                    processId,
+                    name: processId === '0' ? 'kernel' : `process ${processId}`,
+                    current: false,
+                    threadIds: [],
+                    cpuIndexes: []
+                };
+                existing.current = existing.current || context.current;
+                if (!existing.threadIds.includes(context.threadId)) existing.threadIds.push(context.threadId);
+                if (context.cpuIndex !== undefined && !existing.cpuIndexes.includes(context.cpuIndex)) existing.cpuIndexes.push(context.cpuIndex);
+                processMap.set(processId, existing);
+            }
+
+            const modules: NovaOrynCrashDumpModule[] = [];
+            if (session.nativeDebugMap?.image || session.nativeDebugMap?.pdb) {
+                modules.push({
+                    name: path.basename(session.nativeDebugMap.image ?? 'NovaOryn kernel'),
+                    imagePath: session.nativeDebugMap.image,
+                    pdbPath: session.nativeDebugMap.pdb,
+                    runtimeBase: session.relocationDelta !== undefined ? `0x${session.relocationDelta.toString(16)}` : undefined,
+                    relocationDelta: session.relocationDelta !== undefined ? `0x${session.relocationDelta.toString(16)}` : undefined,
+                    sourceEntryCount: session.nativeDebugMap.entries.length
+                });
+            }
+
+            const configuredDrivers = Array.from(new Set([
+                ...(configuration?.drivers ?? []),
+                ...(configuration?.storageControllers ?? []),
+                ...(configuration?.networkDrivers ?? []),
+                ...(configuration?.input ?? []),
+                ...(configuration?.graphics ?? [])
+            ]));
+            const drivers: NovaOrynCrashDumpDriverState[] = configuredDrivers.map(id => ({
+                id,
+                configured: true,
+                state: 'configured',
+                detail: 'Configured by NovaOryn.json. Live lifecycle state was not exported by this paused kernel.'
+            }));
+
+            const selectedContext = contexts.find(item => item.current) ?? contexts.find(item => item.threadId === session.debug?.selectedThreadId);
+            const architecture = configuration?.targetArchitecture ?? 'x86_64';
             const createdUtc = new Date().toISOString();
+            const panic: NovaOrynCrashDumpPanic = {
+                reason,
+                exceptionVector: session.debug.exceptionVector,
+                exceptionName: session.debug.exceptionName,
+                sourcePath: session.debug.sourcePath,
+                line: session.debug.line,
+                message: session.debug.message
+            };
+
+            const document: NovaOrynCrashDumpDocument = {
+                magic: 'NOCD',
+                format: 'NovaOryn Crash Dump',
+                formatVersion: { major: 1, minor: 0 },
+                architecture,
+                createdUtc,
+                producer: { product: 'NovaOryn IDE', version: NOVAORYN_IDE_VERSION },
+                project: { name: configuration?.name, root: session.projectRoot },
+                sections: {
+                    cpuState: {
+                        version: 1,
+                        available: true,
+                        data: {
+                            architecture,
+                            cpuIndex: selectedContext?.cpuIndex,
+                            threadId: selectedContext?.threadId ?? session.debug.selectedThreadId,
+                            processId: selectedContext?.processId,
+                            instructionPointer: register('rip'),
+                            stackPointer: register('rsp'),
+                            framePointer: register('rbp'),
+                            flags: register('rflags') ?? register('eflags'),
+                            pageTableRoot: register('cr3') ?? pageTable.cr3,
+                            executionContexts: contexts
+                        }
+                    },
+                    registers: { version: 1, available: registers.length > 0, data: registers },
+                    stack: {
+                        version: 1,
+                        available: (session.debug.callStack?.length ?? 0) > 0 || stackMemory.success,
+                        data: { frames: session.debug.callStack ?? [], memory: stackMemory }
+                    },
+                    pageTables: { version: 1, available: pageTable.success, data: pageTable, note: pageTable.error },
+                    processes: {
+                        version: 1,
+                        available: processMap.size > 0,
+                        data: Array.from(processMap.values()),
+                        note: processMap.size > 0 ? undefined : 'No process/thread execution-context ABI was available.'
+                    },
+                    modules: {
+                        version: 1,
+                        available: modules.length > 0,
+                        data: modules,
+                        note: modules.length > 0 ? undefined : 'No native debug image metadata was available.'
+                    },
+                    heap: { version: 1, available: heap.success, data: heap, note: heap.error },
+                    memoryRanges: {
+                        version: 1,
+                        available: stackMemory.success || codeMemory.success,
+                        data: { stack: stackMemory, code: codeMemory }
+                    },
+                    panic: { version: 1, available: true, data: panic },
+                    drivers: {
+                        version: 1,
+                        available: drivers.length > 0,
+                        data: drivers,
+                        note: drivers.length > 0
+                            ? 'Driver configuration captured; live lifecycle state is marked configured until the runtime driver-state ABI is available.'
+                            : 'No configured drivers were found.'
+                    }
+                }
+            };
+
             const dumpRoot = path.join(session.projectRoot, '.novaoryn', 'crash-dumps');
             await fs.mkdir(dumpRoot, { recursive: true });
             const stamp = createdUtc.replace(/[:.]/g, '-');
             const dumpPath = path.join(dumpRoot, `NovaOryn-${stamp}.nodump.json`);
-            const payload = {
-                schemaVersion: 1,
-                product: 'NovaOryn IDE',
-                ideVersion: NOVAORYN_IDE_VERSION,
+            await fs.writeFile(dumpPath, JSON.stringify(document, null, 2), 'utf8');
+
+            const dump: NovaOrynCrashDumpSummary = {
+                path: dumpPath,
                 createdUtc,
                 reason,
-                projectRoot: session.projectRoot,
-                debugState: session.debug,
+                formatVersion: '1.0',
+                sourcePath: session.debug.sourcePath,
+                line: session.debug.line
+            };
+            session.output += `[ OK ] NovaOryn Crash Dump v1.0 captured: ${dumpPath}\r\n`;
+            return {
+                success: true,
+                dump,
+                document,
+                state: { ...session.debug },
                 pageTable,
                 heap,
                 memory: { stack: stackMemory, code: codeMemory }
             };
-            await fs.writeFile(dumpPath, JSON.stringify(payload, null, 2), 'utf8');
-            const dump: NovaOrynCrashDumpSummary = { path: dumpPath, createdUtc, reason, sourcePath: session.debug.sourcePath, line: session.debug.line };
-            session.output += `[ OK ] NovaOryn crash/debug dump captured: ${dumpPath}\r\n`;
-            return { success: true, dump, state: { ...session.debug }, pageTable, heap, memory: { stack: stackMemory, code: codeMemory } };
         } catch (error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
@@ -2278,7 +2404,27 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 try {
                     const file = path.join(dumpRoot, name);
                     const parsed = JSON.parse(await fs.readFile(file, 'utf8')) as any;
-                    result.push({ path: file, createdUtc: String(parsed.createdUtc ?? ''), reason: String(parsed.reason ?? 'crash/debug dump'), sourcePath: parsed.debugState?.sourcePath, line: parsed.debugState?.line });
+                    if (parsed.magic === 'NOCD' && parsed.formatVersion?.major === 1) {
+                        const panic = parsed.sections?.panic?.data;
+                        result.push({
+                            path: file,
+                            createdUtc: String(parsed.createdUtc ?? ''),
+                            reason: String(panic?.reason ?? 'crash/debug dump'),
+                            formatVersion: `${parsed.formatVersion.major}.${parsed.formatVersion.minor ?? 0}`,
+                            sourcePath: panic?.sourcePath,
+                            line: panic?.line
+                        });
+                    } else if (parsed.schemaVersion === 1) {
+                        result.push({
+                            path: file,
+                            createdUtc: String(parsed.createdUtc ?? ''),
+                            reason: String(parsed.reason ?? 'legacy crash/debug dump'),
+                            formatVersion: 'legacy-1',
+                            legacy: true,
+                            sourcePath: parsed.debugState?.sourcePath,
+                            line: parsed.debugState?.line
+                        });
+                    }
                 } catch { }
             }
             return result;
@@ -2288,16 +2434,83 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     async loadCrashDump(dumpPath: string): Promise<NovaOrynCrashDumpResult> {
         try {
             const resolved = path.resolve(dumpPath);
-            if (!resolved.toLowerCase().endsWith('.nodump.json')) return { success: false, error: 'NovaOryn crash dumps must use the .nodump.json format.' };
+            if (!resolved.toLowerCase().endsWith('.nodump.json')) {
+                return { success: false, error: 'NovaOryn crash dumps must use the .nodump.json format.' };
+            }
             const parsed = JSON.parse(await fs.readFile(resolved, 'utf8')) as any;
-            if (parsed.schemaVersion !== 1 || !parsed.debugState) return { success: false, error: 'The file is not a supported NovaOryn crash dump.' };
-            const state: NovaOrynDebugState = { ...parsed.debugState, active: true, paused: true, message: `Offline crash dump: ${parsed.reason ?? 'captured debugger state'}` };
-            const dump: NovaOrynCrashDumpSummary = { path: resolved, createdUtc: String(parsed.createdUtc ?? ''), reason: String(parsed.reason ?? 'crash/debug dump'), sourcePath: state.sourcePath, line: state.line };
-            return { success: true, dump, state, pageTable: parsed.pageTable, heap: parsed.heap, memory: parsed.memory };
+
+            // Formal NovaOryn Crash Dump v1.x. Major 1 is the compatibility boundary.
+            if (parsed.magic === 'NOCD' && parsed.format === 'NovaOryn Crash Dump') {
+                const major = Number(parsed.formatVersion?.major);
+                const minor = Number(parsed.formatVersion?.minor ?? 0);
+                if (major !== 1) {
+                    return { success: false, error: `NovaOryn Crash Dump major version ${major} is not supported by this IDE. Supported major version: 1.` };
+                }
+                if (!parsed.sections || typeof parsed.sections !== 'object') {
+                    return { success: false, error: 'The NovaOryn Crash Dump does not contain a section directory.' };
+                }
+
+                // Minor releases and section versions are forward-compatible: unknown fields
+                // or sections are intentionally ignored. Known v1 sections are projected into
+                // the existing debugger views so old and new IDE tooling can share one model.
+                const panic = parsed.sections.panic?.data ?? {};
+                const cpu = parsed.sections.cpuState?.data ?? {};
+                const registers = Array.isArray(parsed.sections.registers?.data) ? parsed.sections.registers.data : [];
+                const stack = parsed.sections.stack?.data ?? {};
+                const state: NovaOrynDebugState = {
+                    active: true,
+                    paused: true,
+                    sourceSymbols: true,
+                    sourcePath: panic.sourcePath,
+                    line: panic.line,
+                    message: `Offline NovaOryn Crash Dump v${major}.${minor}: ${panic.reason ?? 'captured kernel state'}`,
+                    registers,
+                    callStack: Array.isArray(stack.frames) ? stack.frames : [],
+                    executionContexts: Array.isArray(cpu.executionContexts) ? cpu.executionContexts : [],
+                    selectedThreadId: cpu.threadId,
+                    exceptionVector: panic.exceptionVector,
+                    exceptionName: panic.exceptionName
+                };
+                const pageTable = parsed.sections.pageTables?.data;
+                const heap = parsed.sections.heap?.data;
+                const memory = parsed.sections.memoryRanges?.data;
+                const dump: NovaOrynCrashDumpSummary = {
+                    path: resolved,
+                    createdUtc: String(parsed.createdUtc ?? ''),
+                    reason: String(panic.reason ?? 'crash/debug dump'),
+                    formatVersion: `${major}.${minor}`,
+                    sourcePath: state.sourcePath,
+                    line: state.line
+                };
+                return { success: true, dump, document: parsed as NovaOrynCrashDumpDocument, state, pageTable, heap, memory };
+            }
+
+            // Pre-0.9.0 IDE dumps are retained as a documented legacy import path.
+            if (parsed.schemaVersion === 1 && parsed.debugState) {
+                const state: NovaOrynDebugState = {
+                    ...parsed.debugState,
+                    active: true,
+                    paused: true,
+                    message: `Offline legacy crash dump: ${parsed.reason ?? 'captured debugger state'}`
+                };
+                const dump: NovaOrynCrashDumpSummary = {
+                    path: resolved,
+                    createdUtc: String(parsed.createdUtc ?? ''),
+                    reason: String(parsed.reason ?? 'legacy crash/debug dump'),
+                    formatVersion: 'legacy-1',
+                    legacy: true,
+                    sourcePath: state.sourcePath,
+                    line: state.line
+                };
+                return { success: true, dump, state, pageTable: parsed.pageTable, heap: parsed.heap, memory: parsed.memory };
+            }
+
+            return { success: false, error: 'The file is not a supported NovaOryn Crash Dump.' };
         } catch (error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };
         }
     }
+
 
     protected async loadDebugMapForSession(session: RunSession, debugMapPath: string): Promise<void> {
         const rawDebugMap = JSON.parse(await fs.readFile(debugMapPath, 'utf8')) as { image?: string; pdb?: string; anchor?: NativeDebugMap['anchor']; entries?: Array<Record<string, unknown>> };

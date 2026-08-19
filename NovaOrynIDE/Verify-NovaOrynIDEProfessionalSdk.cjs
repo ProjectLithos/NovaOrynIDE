@@ -1,0 +1,10 @@
+const fs=require('fs'),path=require('path'); const root=__dirname; let checks=0;
+function must(file,terms){const t=fs.readFileSync(path.join(root,file),'utf8');for(const x of terms){if(!t.includes(x))throw new Error(`${file}: missing ${x}`);checks++;}}
+must('SDK/src/NovaOryn.Kernel.Drivers/KernelDriverContracts.cs',['Discover=1','Reset=6','Suspend=7','Resume=8','Fail=10','Recover=11','KernelDriverPackageManifest','KernelDeviceNode','KernelDriverSigningState']);
+must('SDK/src/NovaOryn.Kernel.Drivers/KernelDrivers.cs',['DiscoverDevice(','ResetDevice(','SuspendDevice(','ResumeDevice(','FailDevice(','RecoverDevice(','TryGetDeviceNode(','InstallLifecycleSink(']);
+must('SDK/src/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs',['KernelLogLevel','KernelTelemetryKind','KernelCrashDumpFormat','KernelPanicInfo','KernelTestKind','KernelFaultKind','IKernelArchitectureContract','IKernelSmpProfessionalContract','IKernelSynchronizationContract','IKernelMemoryDiagnosticsContract','IKernelSecurityContract','NovaOrynExecutableFormat','NovaOrynPackageManifest','IKernelVfsContract','IKernelNetworkStackContract','IKernelPowerManagementContract','IKernelTimekeepingContract','NovaOrynQemuMatrixEntry','NovaOrynBuildProvenance','NovaOrynSdkVersionManifest']);
+must('SDK/src/NovaOryn.Kernel.SubsystemContracts/KernelDiagnosticsRuntime.cs',['class KernelLog','Trace(','Debug(','Info(','Warning(','Error(','Critical(','class KernelTelemetry','KernelTrace(','KernelProfile(','KernelBootEvent(','KernelCounter(','KernelDiagnosticEvent(','class KernelPanic']);
+must('SDK/novaoryn.ps1',["'new'","'build'","'run'","'debug'","'test'","'pack'","'doctor'"]);
+const m=JSON.parse(fs.readFileSync(path.join(root,'SDK/NovaOryn.SdkManifest.json'),'utf8')); if(m.schemaVersion!==2||m.contracts.driverManifestSchema!==3)throw new Error('SDK manifest not upgraded');checks+=2;
+for(const f of ['SDK/NovaOryn.QemuTestMatrix.json','SDK/NovaOryn.TestContract.json','SDK/NovaOryn.BuildProvenance.schema.json']){JSON.parse(fs.readFileSync(path.join(root,f),'utf8'));checks++;}
+console.log(`[ OK ] NovaOryn professional SDK foundation verified (${checks} checks).`);

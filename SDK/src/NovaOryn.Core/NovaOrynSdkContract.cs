@@ -39,4 +39,7 @@ public static class NovaOrynSdkContract
     /// <param name="majorVersion">The driver ABI major version required by the driver.</param>
     /// <returns><see langword="true"/> when the requested driver ABI major version is supported; otherwise <see langword="false"/>.</returns>
     public static bool IsDriverAbiCompatible(int majorVersion) => majorVersion == 1;
+
+    /// <summary>Returns true when a crash-dump ABI major version can be opened by this SDK.</summary>
+    public static bool IsCrashDumpAbiCompatible(int majorVersion) => majorVersion == 1;
 }

@@ -158,13 +158,93 @@ export interface NovaOrynCrashDumpSummary {
     path: string;
     createdUtc: string;
     reason: string;
+    formatVersion?: string;
+    legacy?: boolean;
     sourcePath?: string;
     line?: number;
+}
+
+export interface NovaOrynCrashDumpSection<T> {
+    version: number;
+    available: boolean;
+    data?: T;
+    note?: string;
+}
+
+export interface NovaOrynCrashDumpCpuState {
+    architecture: string;
+    cpuIndex?: number;
+    threadId?: string;
+    processId?: string;
+    instructionPointer?: string;
+    stackPointer?: string;
+    framePointer?: string;
+    flags?: string;
+    pageTableRoot?: string;
+    executionContexts: NovaOrynDebugExecutionContext[];
+}
+
+export interface NovaOrynCrashDumpProcess {
+    processId: string;
+    name: string;
+    current: boolean;
+    threadIds: string[];
+    cpuIndexes: number[];
+}
+
+export interface NovaOrynCrashDumpModule {
+    name: string;
+    imagePath?: string;
+    pdbPath?: string;
+    runtimeBase?: string;
+    relocationDelta?: string;
+    sourceEntryCount?: number;
+}
+
+export interface NovaOrynCrashDumpDriverState {
+    id: string;
+    configured: boolean;
+    state: 'configured' | 'started' | 'stopped' | 'failed' | 'unknown';
+    detail?: string;
+}
+
+export interface NovaOrynCrashDumpPanic {
+    reason: string;
+    exceptionVector?: number;
+    exceptionName?: string;
+    sourcePath?: string;
+    line?: number;
+    message?: string;
+}
+
+export interface NovaOrynCrashDumpSections {
+    cpuState: NovaOrynCrashDumpSection<NovaOrynCrashDumpCpuState>;
+    registers: NovaOrynCrashDumpSection<NovaOrynDebugRegister[]>;
+    stack: NovaOrynCrashDumpSection<{ frames: NovaOrynDebugFrame[]; memory?: NovaOrynMemoryReadResult }>;
+    pageTables: NovaOrynCrashDumpSection<NovaOrynPageTableInspection>;
+    processes: NovaOrynCrashDumpSection<NovaOrynCrashDumpProcess[]>;
+    modules: NovaOrynCrashDumpSection<NovaOrynCrashDumpModule[]>;
+    heap: NovaOrynCrashDumpSection<NovaOrynHeapSnapshot>;
+    memoryRanges: NovaOrynCrashDumpSection<{ stack?: NovaOrynMemoryReadResult; code?: NovaOrynMemoryReadResult }>;
+    panic: NovaOrynCrashDumpSection<NovaOrynCrashDumpPanic>;
+    drivers: NovaOrynCrashDumpSection<NovaOrynCrashDumpDriverState[]>;
+}
+
+export interface NovaOrynCrashDumpDocument {
+    magic: 'NOCD';
+    format: 'NovaOryn Crash Dump';
+    formatVersion: { major: number; minor: number };
+    architecture: string;
+    createdUtc: string;
+    producer: { product: string; version: string };
+    project?: { name?: string; root?: string };
+    sections: NovaOrynCrashDumpSections;
 }
 
 export interface NovaOrynCrashDumpResult {
     success: boolean;
     dump?: NovaOrynCrashDumpSummary;
+    document?: NovaOrynCrashDumpDocument;
     state?: NovaOrynDebugState;
     pageTable?: NovaOrynPageTableInspection;
     heap?: NovaOrynHeapSnapshot;

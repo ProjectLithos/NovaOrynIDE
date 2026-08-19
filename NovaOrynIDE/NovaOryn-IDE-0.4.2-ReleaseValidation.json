@@ -1,0 +1,9 @@
+{
+  "version": "0.4.2",
+  "baseVersion": "0.4.1",
+  "kernelSubsystemRuntimeIntegration": true,
+  "driverCapabilityGrantEnforcement": true,
+  "formalSubsystemCount": 13,
+  "subsystemContractVersion": "1.0",
+  "driverCapabilityModel": "1.1"
+}

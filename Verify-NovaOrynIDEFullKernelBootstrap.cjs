@@ -26,4 +26,4 @@ const checks=[
 ];
 let bad=0;for(const [name,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${name}`);if(!ok)bad++;}
 if(bad)process.exit(1);
-console.log(`[ OK ] NovaOryn IDE 0.8.5 full generated-kernel bootstrap contract verified (${checks.length} checks).`);
+console.log(`[ OK ] NovaOryn IDE 0.9.0 full generated-kernel bootstrap contract verified (${checks.length} checks).`);

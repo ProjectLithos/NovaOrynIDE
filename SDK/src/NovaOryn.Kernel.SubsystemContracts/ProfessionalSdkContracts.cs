@@ -35,15 +35,136 @@ public readonly struct KernelTelemetryStatistics
 }
 public interface IKernelTelemetrySink { Boolean TryEmit(KernelTelemetryEvent telemetryEvent); }
 
-public static class KernelCrashDumpFormat { public const UInt32 Magic=0x4E4F4344U; public const UInt16 Major=1; public const UInt16 Minor=0; }
-public enum KernelCrashSectionKind : UInt16 { CpuState=1,Registers=2,Stack=3,PageTables=4,Processes=5,Modules=6,Heap=7,MemoryRanges=8,Panic=9,Drivers=10 }
+/// <summary>Defines the stable NovaOryn Crash Dump (NOCD) SDK format.</summary>
+/// <remarks>
+/// Major-version changes are breaking. Minor-version changes may append optional fields or section kinds.
+/// Readers must ignore unknown section kinds and unknown fields. Each section has an independent version.
+/// </remarks>
+public static class KernelCrashDumpFormat
+{
+    /// <summary>ASCII "NOCD" encoded as a little-endian UInt32.</summary>
+    public const UInt32 Magic=0x4E4F4344U;
+    public const UInt16 Major=1;
+    public const UInt16 Minor=0;
+    public const UInt16 HeaderVersion=1;
+    public const UInt16 CpuStateVersion=1;
+    public const UInt16 RegistersVersion=1;
+    public const UInt16 StackVersion=1;
+    public const UInt16 PageTablesVersion=1;
+    public const UInt16 ProcessesVersion=1;
+    public const UInt16 ModulesVersion=1;
+    public const UInt16 HeapVersion=1;
+    public const UInt16 MemoryRangesVersion=1;
+    public const UInt16 PanicVersion=1;
+    public const UInt16 DriversVersion=1;
+
+    public static Boolean IsCompatible(UInt16 major,UInt16 minor) => major==Major;
+    public static Boolean IsSectionVersionSupported(KernelCrashSectionKind kind,UInt16 version)
+    {
+        if(version==0)return false;
+        return kind switch
+        {
+            KernelCrashSectionKind.CpuState=>version<=CpuStateVersion,
+            KernelCrashSectionKind.Registers=>version<=RegistersVersion,
+            KernelCrashSectionKind.Stack=>version<=StackVersion,
+            KernelCrashSectionKind.PageTables=>version<=PageTablesVersion,
+            KernelCrashSectionKind.Processes=>version<=ProcessesVersion,
+            KernelCrashSectionKind.Modules=>version<=ModulesVersion,
+            KernelCrashSectionKind.Heap=>version<=HeapVersion,
+            KernelCrashSectionKind.MemoryRanges=>version<=MemoryRangesVersion,
+            KernelCrashSectionKind.Panic=>version<=PanicVersion,
+            KernelCrashSectionKind.Drivers=>version<=DriversVersion,
+            _=>true
+        };
+    }
+}
+
+public enum KernelCrashSectionKind : UInt16
+{
+    CpuState=1,
+    Registers=2,
+    Stack=3,
+    PageTables=4,
+    Processes=5,
+    Modules=6,
+    Heap=7,
+    MemoryRanges=8,
+    Panic=9,
+    Drivers=10
+}
+
 public readonly struct KernelCrashDumpHeader
 {
     public KernelCrashDumpHeader(UInt32 magic,UInt16 major,UInt16 minor,UInt64 totalBytes,UInt32 sectionCount,UInt64 timestampNanoseconds,UInt32 architecture)
     { Magic=magic;Major=major;Minor=minor;TotalBytes=totalBytes;SectionCount=sectionCount;TimestampNanoseconds=timestampNanoseconds;Architecture=architecture; }
-    public UInt32 Magic { get; } public UInt16 Major { get; } public UInt16 Minor { get; } public UInt64 TotalBytes { get; } public UInt32 SectionCount { get; } public UInt64 TimestampNanoseconds { get; } public UInt32 Architecture { get; }
+    public UInt32 Magic { get; }
+    public UInt16 Major { get; }
+    public UInt16 Minor { get; }
+    public UInt64 TotalBytes { get; }
+    public UInt32 SectionCount { get; }
+    public UInt64 TimestampNanoseconds { get; }
+    public UInt32 Architecture { get; }
+    public Boolean IsCompatible()=>Magic==KernelCrashDumpFormat.Magic&&KernelCrashDumpFormat.IsCompatible(Major,Minor);
 }
-public readonly struct KernelCrashDumpSection { public KernelCrashDumpSection(KernelCrashSectionKind kind,UInt16 version,UInt64 offset,UInt64 length){Kind=kind;Version=version;Offset=offset;Length=length;} public KernelCrashSectionKind Kind{get;} public UInt16 Version{get;} public UInt64 Offset{get;} public UInt64 Length{get;} }
+
+public readonly struct KernelCrashDumpSection
+{
+    public KernelCrashDumpSection(KernelCrashSectionKind kind,UInt16 version,UInt64 offset,UInt64 length)
+    {Kind=kind;Version=version;Offset=offset;Length=length;}
+    public KernelCrashSectionKind Kind{get;}
+    public UInt16 Version{get;}
+    public UInt64 Offset{get;}
+    public UInt64 Length{get;}
+    public Boolean IsSupported()=>KernelCrashDumpFormat.IsSectionVersionSupported(Kind,Version);
+}
+
+/// <summary>Common CPU context stored in the CpuState section.</summary>
+public readonly struct KernelCrashCpuState
+{
+    public KernelCrashCpuState(UInt32 cpu,UInt64 threadId,UInt64 processId,UInt64 instructionPointer,UInt64 stackPointer,UInt64 framePointer,UInt64 flags,UInt64 pageTableRoot)
+    {Cpu=cpu;ThreadId=threadId;ProcessId=processId;InstructionPointer=instructionPointer;StackPointer=stackPointer;FramePointer=framePointer;Flags=flags;PageTableRoot=pageTableRoot;}
+    public UInt32 Cpu{get;} public UInt64 ThreadId{get;} public UInt64 ProcessId{get;}
+    public UInt64 InstructionPointer{get;} public UInt64 StackPointer{get;} public UInt64 FramePointer{get;}
+    public UInt64 Flags{get;} public UInt64 PageTableRoot{get;}
+}
+
+public readonly struct KernelCrashRegister
+{
+    public KernelCrashRegister(String name,UInt64 value){Name=name;Value=value;}
+    public String Name{get;} public UInt64 Value{get;}
+}
+
+public readonly struct KernelCrashStackFrame
+{
+    public KernelCrashStackFrame(UInt32 index,UInt64 instructionPointer,UInt64 stackPointer,UInt64 framePointer,String symbol,String sourcePath,UInt32 sourceLine)
+    {Index=index;InstructionPointer=instructionPointer;StackPointer=stackPointer;FramePointer=framePointer;Symbol=symbol;SourcePath=sourcePath;SourceLine=sourceLine;}
+    public UInt32 Index{get;} public UInt64 InstructionPointer{get;} public UInt64 StackPointer{get;} public UInt64 FramePointer{get;}
+    public String Symbol{get;} public String SourcePath{get;} public UInt32 SourceLine{get;}
+}
+
+public readonly struct KernelCrashMemoryRange
+{
+    public KernelCrashMemoryRange(UInt64 address,UInt64 length,UInt32 protection,UInt32 kind){Address=address;Length=length;Protection=protection;Kind=kind;}
+    public UInt64 Address{get;} public UInt64 Length{get;} public UInt32 Protection{get;} public UInt32 Kind{get;}
+}
+
+public readonly struct KernelCrashProcess
+{
+    public KernelCrashProcess(UInt64 processId,UInt64 parentProcessId,String name,UInt32 state){ProcessId=processId;ParentProcessId=parentProcessId;Name=name;State=state;}
+    public UInt64 ProcessId{get;} public UInt64 ParentProcessId{get;} public String Name{get;} public UInt32 State{get;}
+}
+
+public readonly struct KernelCrashModule
+{
+    public KernelCrashModule(String name,UInt64 baseAddress,UInt64 size,String buildId){Name=name;BaseAddress=baseAddress;Size=size;BuildId=buildId;}
+    public String Name{get;} public UInt64 BaseAddress{get;} public UInt64 Size{get;} public String BuildId{get;}
+}
+
+public readonly struct KernelCrashDriverState
+{
+    public KernelCrashDriverState(String id,String name,UInt32 state,UInt64 deviceId,String detail){Id=id;Name=name;State=state;DeviceId=deviceId;Detail=detail;}
+    public String Id{get;} public String Name{get;} public UInt32 State{get;} public UInt64 DeviceId{get;} public String Detail{get;}
+}
 
 public enum KernelPanicPolicy : Byte { Halt=0,Reboot=1,DebuggerThenHalt=2,DebuggerThenReboot=3 }
 public readonly struct KernelPanicInfo

@@ -1,0 +1,38 @@
+{
+  "name": "novaoryn-ide",
+  "private": true,
+  "version": "0.8.5",
+  "workspaces": [
+    "applications/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @novaoryn/ide-extension && npm run build --workspace @novaoryn/ide-electron",
+    "clean": "npm run clean --workspace @novaoryn/ide-extension && npm run clean --workspace @novaoryn/ide-electron",
+    "start": "npm run start --workspace @novaoryn/ide-electron",
+    "audit": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File Audit-NovaOrynIDE.ps1"
+  },
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "devDependencies": {
+    "@theia/application-manager": "1.74.0",
+    "@theia/cli": "1.74.0",
+    "@theia/core": "1.74.0",
+    "@theia/editor": "1.74.0",
+    "@theia/electron": "1.74.0",
+    "@theia/filesystem": "1.74.0",
+    "@theia/monaco": "1.74.0",
+    "@theia/navigator": "1.74.0",
+    "@theia/output": "1.74.0",
+    "@theia/preferences": "1.74.0",
+    "@theia/process": "1.74.0",
+    "@theia/search-in-workspace": "1.74.0",
+    "@theia/task": "1.74.0",
+    "@theia/terminal": "1.74.0",
+    "@theia/workspace": "1.74.0",
+    "@vscode/windows-ca-certs": "0.3.4",
+    "electron": "42.3.0",
+    "@theia/debug": "1.74.0"
+  }
+}
