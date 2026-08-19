@@ -2,13 +2,9 @@ Build-NovaOrynIDE.bat
 ChangedFiles.txt
 Run-NovaOrynIDE.bat
 SDK/NovaOryn-SourceManifest.json
-SDK/docs/Release-0.7.3.md
-SDK/src/NovaOryn.Freestanding.CoreLib/CoreLib.cs
-SDK/src/NovaOryn.Kernel.SubsystemContracts/KernelDiagnosticsRuntime.cs
-SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Freestanding.CoreLib/CoreLib.cs
-SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/KernelDiagnosticsRuntime.cs
-SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Freestanding.CoreLib/CoreLib.cs
-SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/KernelDiagnosticsRuntime.cs
+SDK/docs/Release-0.7.4.md
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Processes/KernelProcesses.cs
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Processes/KernelProcesses.cs
 Security-Baseline.json
 VERSION
 Validate-NovaOrynIDEDependencies.ps1
@@ -24,7 +20,7 @@ Verify-NovaOrynIDEShellClipboard.cjs
 Verify-NovaOrynIDESourceDebug.cjs
 Verify-NovaOrynIDETargetManager.cjs
 applications/electron/package.json
-docs/Release-0.7.3.md
+docs/Release-0.7.4.md
 package.json
 packages/novaoryn-ide/package.json
 packages/novaoryn-ide/src/browser/novaoryn-target-manager-widget.tsx

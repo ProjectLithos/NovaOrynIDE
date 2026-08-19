@@ -1382,6 +1382,11 @@
       "sha256": "ff7bc1eeed72997017278e1a859d9b1f581b5ff6d2e1ef858ca8455acaa5dc83"
     },
     {
+      "path": "docs/Release-0.7.4.md",
+      "size": 542,
+      "sha256": "e0b92cbc8130b47008125a4b7390658294397f602e69ac93ee82b7b19b887715"
+    },
+    {
       "path": "docs/Release-0.8.0.md",
       "size": 771,
       "sha256": "9b240f36e7f814244ce548d0389368b28b02a6e627ca902a1e6e66b27f7738a1"
@@ -3593,8 +3598,8 @@
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Processes/KernelProcesses.cs",
-      "size": 11757,
-      "sha256": "8a79292aa0fe0fedddf5dedc88207452aca2fdb343a9ff93c22bb764ce3af133"
+      "size": 12127,
+      "sha256": "1651c223be74411cec32004f2b46009b2542edf72430a7b0c14958bfdf262c4e"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Processes/NovaOryn.Kernel.Processes.csproj",
@@ -4808,8 +4813,8 @@
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Processes/KernelProcesses.cs",
-      "size": 11757,
-      "sha256": "8a79292aa0fe0fedddf5dedc88207452aca2fdb343a9ff93c22bb764ce3af133"
+      "size": 12127,
+      "sha256": "1651c223be74411cec32004f2b46009b2542edf72430a7b0c14958bfdf262c4e"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Processes/NovaOryn.Kernel.Processes.csproj",
