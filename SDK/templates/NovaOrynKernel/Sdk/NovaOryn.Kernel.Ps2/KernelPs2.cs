@@ -72,6 +72,8 @@ public static unsafe class KernelPs2
         return true;
     }
 
+    /// <summary>Gets whether the PS/2 subsystem has been initialized.</summary>
+    public static Boolean IsInitialized()=>_initialized;
     /// <summary>Gets current device and layout capabilities.</summary>
     public static Ps2Capabilities GetCapabilities()=>new(_controller,_keyboard,_mouse,_layout,_keyboardEvents,_mousePackets);
     /// <summary>Gets the active installed keyboard layout.</summary>

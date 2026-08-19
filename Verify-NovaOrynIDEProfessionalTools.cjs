@@ -11,4 +11,4 @@ const checks=[
 ];
 const missing=[]; for(const [file,tokens] of checks){const s=read(file);for(const token of tokens)if(!s.includes(token))missing.push(`${file}: ${token}`)}
 if(missing.length){console.error('[FAIL] NovaOryn IDE professional tools contract missing:\n'+missing.join('\n'));process.exit(1)}
-console.log('[ OK ] NovaOryn IDE 0.8.3 Dashboard, Kernel Console, unified Hardware Tree and Test Explorer contracts verified.');
+console.log('[ OK ] NovaOryn IDE 0.8.4 Dashboard, Kernel Console, unified Hardware Tree and Test Explorer contracts verified.');

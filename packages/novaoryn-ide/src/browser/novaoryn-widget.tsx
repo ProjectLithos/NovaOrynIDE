@@ -137,7 +137,7 @@ export class NovaOrynWidget extends BaseWidget {
         art.setAttribute('aria-label', 'NovaOryn IDE logo');
         card.appendChild(art);
 
-        card.appendChild(this.element('h1', undefined, 'NovaOryn IDE 0.8.3'));
+        card.appendChild(this.element('h1', undefined, 'NovaOryn IDE 0.8.4'));
         const intro = this.element('p');
         intro.append('All NovaOryn operating systems are stored beneath ');
         const root = this.element('strong', undefined, NOVAORYN_OS_ROOT);
@@ -160,10 +160,21 @@ export class NovaOrynWidget extends BaseWidget {
         } else {
             const list = this.element('div', 'novaoryn-os-list');
             for (const os of this.operatingSystems) {
+                const item = this.element('div', 'novaoryn-os-item');
+
+                const controls = this.element('div', 'novaoryn-os-item-controls');
+                controls.appendChild(this.button('Remove from list', 'theia-button secondary novaoryn-os-remove', () => void this.removeOperatingSystemFromList(os)));
+                controls.appendChild(this.button('Delete source code', 'theia-button secondary novaoryn-os-delete', () => void this.deleteOperatingSystemSource(os)));
+                item.appendChild(controls);
+
                 const entry = this.button('', 'novaoryn-os-entry', () => void this.openOperatingSystem(os));
-                entry.appendChild(this.element('strong', undefined, os.name));
+                const title = this.element('div', 'novaoryn-os-title');
+                title.appendChild(this.element('strong', undefined, os.name));
+                title.appendChild(this.element('span', 'novaoryn-os-instance', `OS #${os.instanceNumber}`));
+                entry.appendChild(title);
                 entry.appendChild(this.element('span', undefined, os.path));
-                list.appendChild(entry);
+                item.appendChild(entry);
+                list.appendChild(item);
             }
             existing.appendChild(list);
         }
@@ -178,7 +189,7 @@ export class NovaOrynWidget extends BaseWidget {
         const page = this.element('div', 'novaoryn-page');
         const card = this.element('div', 'novaoryn-card novaoryn-card-wide');
         card.appendChild(this.element('div', 'novaoryn-brand', 'NOVAORYN'));
-        card.appendChild(this.element('h1', undefined, this.reconfiguringProjectPath ? `Reconfigure ${c.name}` : 'NovaOryn OS 0.8.3'));
+        card.appendChild(this.element('h1', undefined, this.reconfiguringProjectPath ? `Reconfigure ${c.name}` : 'NovaOryn OS 0.8.4'));
         card.appendChild(this.element('p', 'novaoryn-version', 'Authoritative operating-system configuration'));
         card.appendChild(this.element('p', undefined, this.reconfiguringProjectPath
             ? 'Change the generated kernel/OS structure below. User-owned source files, including Kernel\\Kernel.cs, are preserved.'
@@ -459,6 +470,32 @@ export class NovaOrynWidget extends BaseWidget {
     protected async openOperatingSystem(os: NovaOrynOperatingSystem): Promise<void> {
         window.sessionStorage.setItem(NOVAORYN_EXPLICIT_WORKSPACE_OPEN, os.uri);
         this.workspaceService.open(new URI(os.uri), { preserveWindow: true });
+    }
+
+    protected async removeOperatingSystemFromList(os: NovaOrynOperatingSystem): Promise<void> {
+        const result = await this.projectService.removeOperatingSystemFromList(os.path);
+        if (!result.success) {
+            await this.messages.error(`Could not remove ${os.name} OS #${os.instanceNumber} from the list: ${result.error ?? 'Unknown error'}`);
+            return;
+        }
+        await this.refreshOperatingSystems();
+    }
+
+    protected async deleteOperatingSystemSource(os: NovaOrynOperatingSystem): Promise<void> {
+        const confirmation = await this.messages.warn(
+            `Delete all source code for ${os.name} OS #${os.instanceNumber}? This permanently deletes ${os.path}.`,
+            'Delete source code'
+        );
+        if (confirmation !== 'Delete source code') {
+            return;
+        }
+        const result = await this.projectService.deleteOperatingSystemSource(os.path);
+        if (!result.success) {
+            await this.messages.error(`Could not delete ${os.name} OS #${os.instanceNumber}: ${result.error ?? 'Unknown error'}`);
+            return;
+        }
+        await this.messages.info(`${os.name} OS #${os.instanceNumber} source code deleted.`);
+        await this.refreshOperatingSystems();
     }
 
     protected setArchitecture(architecture: TargetArchitecture): void {

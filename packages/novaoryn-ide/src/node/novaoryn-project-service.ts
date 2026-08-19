@@ -83,7 +83,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.8.3';
+const NOVAORYN_IDE_VERSION = '0.8.4';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -509,6 +509,14 @@ interface GeneratedProject {
     description: string;
 }
 
+interface NovaOrynOperatingSystemListState {
+    hiddenPaths: string[];
+    instanceNumbers: Record<string, number>;
+    nextInstanceByName: Record<string, number>;
+}
+
+const NOVAORYN_OS_LIST_STATE = path.join(NOVAORYN_OS_ROOT, '.novaoryn-ide-state.json');
+
 @injectable()
 export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     protected readonly runSessions = new Map<string, RunSession>();
@@ -523,24 +531,109 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
 
     async listOperatingSystems(): Promise<NovaOrynOperatingSystem[]> {
         await fs.mkdir(NOVAORYN_OS_ROOT, { recursive: true });
+        const state = await this.readOperatingSystemListState();
         const entries = await fs.readdir(NOVAORYN_OS_ROOT, { withFileTypes: true });
         const systems: NovaOrynOperatingSystem[] = [];
+        let stateChanged = false;
+
         for (const entry of entries) {
             if (!entry.isDirectory()) {
                 continue;
             }
             const osPath = path.join(NOVAORYN_OS_ROOT, entry.name);
+            const key = this.normalizedOsPath(osPath);
+            if (state.hiddenPaths.includes(key)) {
+                continue;
+            }
             try {
-                await fs.access(path.join(osPath, 'NovaOryn.json'));
+                const configurationText = await fs.readFile(path.join(osPath, 'NovaOryn.json'), 'utf8');
+                const configuration = JSON.parse(configurationText) as Partial<NovaOrynProjectConfiguration>;
+                const name = typeof configuration.name === 'string' && configuration.name.trim().length > 0
+                    ? configuration.name.trim()
+                    : entry.name;
+
+                let instanceNumber = state.instanceNumbers[key];
+                if (!instanceNumber || instanceNumber < 1) {
+                    const next = Math.max(1, state.nextInstanceByName[name] ?? 1);
+                    instanceNumber = next;
+                    state.instanceNumbers[key] = instanceNumber;
+                    state.nextInstanceByName[name] = next + 1;
+                    stateChanged = true;
+                } else {
+                    state.nextInstanceByName[name] = Math.max(state.nextInstanceByName[name] ?? 1, instanceNumber + 1);
+                }
+
                 await this.refreshSdkBridge(osPath);
-                systems.push({ name: entry.name, path: osPath, uri: pathToFileURL(osPath).toString() });
+                systems.push({ name, path: osPath, uri: pathToFileURL(osPath).toString(), instanceNumber });
             } catch {
-                // Only folders containing a NovaOryn OS configuration are offered.
+                // Only folders containing a valid NovaOryn OS configuration are offered.
             }
         }
-        return systems.sort((a, b) => a.name.localeCompare(b.name));
+
+        if (stateChanged) {
+            await this.writeOperatingSystemListState(state);
+        }
+
+        return systems.sort((a, b) =>
+            a.name.localeCompare(b.name) ||
+            a.instanceNumber - b.instanceNumber ||
+            a.path.localeCompare(b.path)
+        );
     }
 
+    async removeOperatingSystemFromList(projectPath: string): Promise<NovaOrynProjectResult> {
+        try {
+            const projectRoot = this.requireOperatingSystemRoot(projectPath);
+            await fs.access(path.join(projectRoot, 'NovaOryn.json'));
+            const state = await this.readOperatingSystemListState();
+            const key = this.normalizedOsPath(projectRoot);
+            if (!state.hiddenPaths.includes(key)) {
+                state.hiddenPaths.push(key);
+                await this.writeOperatingSystemListState(state);
+            }
+            return { success: true, projectPath: projectRoot };
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
+    async deleteOperatingSystemSource(projectPath: string): Promise<NovaOrynProjectResult> {
+        try {
+            const projectRoot = this.requireOperatingSystemRoot(projectPath);
+            await fs.access(path.join(projectRoot, 'NovaOryn.json'));
+            const state = await this.readOperatingSystemListState();
+            const key = this.normalizedOsPath(projectRoot);
+            state.hiddenPaths = state.hiddenPaths.filter(candidate => candidate !== key);
+            delete state.instanceNumbers[key];
+            await this.writeOperatingSystemListState(state);
+            await fs.rm(projectRoot, { recursive: true, force: false });
+            return { success: true, projectPath: projectRoot };
+        } catch (error) {
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
+    protected normalizedOsPath(projectPath: string): string {
+        return path.resolve(projectPath).toLowerCase();
+    }
+
+    protected async readOperatingSystemListState(): Promise<NovaOrynOperatingSystemListState> {
+        try {
+            const parsed = JSON.parse(await fs.readFile(NOVAORYN_OS_LIST_STATE, 'utf8')) as Partial<NovaOrynOperatingSystemListState>;
+            return {
+                hiddenPaths: Array.isArray(parsed.hiddenPaths) ? parsed.hiddenPaths.filter(value => typeof value === 'string') : [],
+                instanceNumbers: parsed.instanceNumbers && typeof parsed.instanceNumbers === 'object' ? parsed.instanceNumbers as Record<string, number> : {},
+                nextInstanceByName: parsed.nextInstanceByName && typeof parsed.nextInstanceByName === 'object' ? parsed.nextInstanceByName as Record<string, number> : {}
+            };
+        } catch {
+            return { hiddenPaths: [], instanceNumbers: {}, nextInstanceByName: {} };
+        }
+    }
+
+    protected async writeOperatingSystemListState(state: NovaOrynOperatingSystemListState): Promise<void> {
+        await fs.mkdir(NOVAORYN_OS_ROOT, { recursive: true });
+        await fs.writeFile(NOVAORYN_OS_LIST_STATE, JSON.stringify(state, null, 2) + '\n', 'utf8');
+    }
 
 
     async inspectDeviceTree(projectPath: string): Promise<NovaOrynDeviceTreeSnapshot> {
@@ -1441,7 +1534,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.8.3 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.8.4 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -2055,7 +2148,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await this.ensureNativeGlobalSymbols(session);
                 const stateSymbol = this.findHeapGlobal(session, '_state');
                 if (!stateSymbol || session.relocationDelta === undefined) {
-                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.8.3 or later.' };
+                    return { success: false, error: 'This kernel predates the stable KernelHeap diagnostic ABI and NativeAOT did not expose its private _state symbol. Rebuild the OS with the bundled NovaOryn SDK from IDE 0.8.4 or later.' };
                 }
                 stateAddress = stateSymbol.linkedAddress + session.relocationDelta;
                 stateBytes = await this.readMemoryChunked(session.gdb, stateAddress, 12800, 512);
@@ -3782,8 +3875,30 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
 
             await fs.mkdir(NOVAORYN_OS_ROOT, { recursive: true });
             const authoritativeConfiguration: NovaOrynProjectConfiguration = { ...configuration, location: NOVAORYN_OS_ROOT };
-            const projectRoot = path.join(NOVAORYN_OS_ROOT, authoritativeConfiguration.name);
-            await fs.mkdir(projectRoot, { recursive: false });
+            const state = await this.readOperatingSystemListState();
+            let instanceNumber = Math.max(1, state.nextInstanceByName[authoritativeConfiguration.name] ?? 1);
+            let folderName = instanceNumber === 1
+                ? authoritativeConfiguration.name
+                : `${authoritativeConfiguration.name}-${instanceNumber}`;
+            let projectRoot = path.join(NOVAORYN_OS_ROOT, folderName);
+            while (true) {
+                try {
+                    await fs.mkdir(projectRoot, { recursive: false });
+                    break;
+                } catch (error) {
+                    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+                        throw error;
+                    }
+                    instanceNumber++;
+                    folderName = `${authoritativeConfiguration.name}-${instanceNumber}`;
+                    projectRoot = path.join(NOVAORYN_OS_ROOT, folderName);
+                }
+            }
+            const key = this.normalizedOsPath(projectRoot);
+            state.instanceNumbers[key] = instanceNumber;
+            state.nextInstanceByName[authoritativeConfiguration.name] = instanceNumber + 1;
+            state.hiddenPaths = state.hiddenPaths.filter(candidate => candidate !== key);
+            await this.writeOperatingSystemListState(state);
 
             const generatedProjects = this.buildProjectGraph(authoritativeConfiguration);
             await this.createBaseDirectories(projectRoot, authoritativeConfiguration);

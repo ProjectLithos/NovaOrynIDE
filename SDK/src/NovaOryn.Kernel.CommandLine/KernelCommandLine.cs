@@ -33,7 +33,7 @@ public static unsafe class KernelCommandLine
         // If the HAL did not initialize i8042/PS2, initialize it here and use non-blocking
         // polling as the guaranteed fallback. Hardware IRQ delivery, when configured by HAL,
         // remains an optimisation rather than a prerequisite for shell input.
-        if (!KernelPs2.IsInitialized() && !KernelPs2.Initialize()) return false;
+        if (!KernelPs2.Initialize()) return false;
         Ps2Capabilities ps2 = KernelPs2.GetCapabilities();
         if (ps2.Controller && ps2.Keyboard)
         {

@@ -54,6 +54,7 @@ export interface NovaOrynOperatingSystem {
     name: string;
     path: string;
     uri: string;
+    instanceNumber: number;
 }
 
 export type NovaOrynRunMode = 'run' | 'debug';
@@ -768,6 +769,8 @@ export interface NovaOrynDiskReadResult {
 export interface NovaOrynProjectService {
     getSdkApiSiteUrl(): Promise<string>;
     listOperatingSystems(): Promise<NovaOrynOperatingSystem[]>;
+    removeOperatingSystemFromList(projectPath: string): Promise<NovaOrynProjectResult>;
+    deleteOperatingSystemSource(projectPath: string): Promise<NovaOrynProjectResult>;
     createProject(configuration: NovaOrynProjectConfiguration): Promise<NovaOrynProjectResult>;
     readProjectConfiguration(projectPath: string): Promise<NovaOrynConfigurationResult>;
     inspectDeviceTree(projectPath: string): Promise<NovaOrynDeviceTreeSnapshot>;

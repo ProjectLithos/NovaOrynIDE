@@ -18,5 +18,5 @@ checks.push(['probe implementation', service.includes('async probePhysicalDebugg
 checks.push(['physical widget', widget.includes('Physical-machine Debugger Transport') && widget.includes('Test GDB Transport') && widget.includes('Debug workflow')]);
 checks.push(['engineering menu', contrib.includes('NovaOrynCommands.PHYSICAL_DEBUGGER') && contrib.includes("order: '14'")]);
 checks.push(['widget factory', front.includes('NovaOrynPhysicalDebuggerWidget')]);
-checks.push(['target manager advertises transport', target.includes('0.8.3 GDB RSP physical-machine transport')]);
-let bad=false;for(const[c,ok]of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${c}`);if(!ok)bad=true;}if(bad)process.exit(1);console.log(`[ OK ] NovaOryn IDE 0.8.3 Physical-machine debugger transport contract verified (${checks.length} checks).`);
+checks.push(['target manager advertises transport', target.includes('0.8.4 GDB RSP physical-machine transport')]);
+let bad=false;for(const[c,ok]of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${c}`);if(!ok)bad=true;}if(bad)process.exit(1);console.log(`[ OK ] NovaOryn IDE 0.8.4 Physical-machine debugger transport contract verified (${checks.length} checks).`);
