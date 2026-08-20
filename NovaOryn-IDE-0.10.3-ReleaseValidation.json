@@ -1,5 +1,5 @@
 {
-  "release": "NovaOryn IDE 0.10.9",
+  "release": "NovaOryn IDE 0.10.11",
   "rootCause": "KernelPanicTransport used KernelAcpiPlatform.Reboot(), confusing the KernelAcpiPlatform.cs filename with its exported power-management class KernelAcpiPower.",
   "fix": "All panic transports now call KernelAcpiPower.Reboot().",
   "validation": {
@@ -7,9 +7,9 @@
     "sdkTemplateParity": "PASS",
     "existingProjectRefresh": "PASS",
     "versionConsistency": {
-      "package.json": "0.10.9",
-      "applications/electron/package.json": "0.10.9",
-      "packages/novaoryn-ide/package.json": "0.10.9"
+      "package.json": "0.10.11",
+      "applications/electron/package.json": "0.10.11",
+      "packages/novaoryn-ide/package.json": "0.10.11"
     }
   }
 }

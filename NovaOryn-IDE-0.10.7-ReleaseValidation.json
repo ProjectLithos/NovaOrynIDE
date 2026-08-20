@@ -1,13 +1,13 @@
 {
-  "release": "NovaOryn IDE 0.10.9",
+  "release": "NovaOryn IDE 0.10.11",
   "fix": "Discard requestAnimationFrame numeric return value in void MutationObserver repair callback.",
   "validation": {
     "modifiedContributionTypeScriptTranspile": "PASS",
     "bottomPanelFeatureRetained": "PASS",
     "versionConsistency": {
-      "package.json": "0.10.9",
-      "applications/electron/package.json": "0.10.9",
-      "packages/novaoryn-ide/package.json": "0.10.9"
+      "package.json": "0.10.11",
+      "applications/electron/package.json": "0.10.11",
+      "packages/novaoryn-ide/package.json": "0.10.11"
     },
     "windowsFullBuild": "Run Build-NovaOrynIDE.bat for final Theia/Electron integration validation."
   }

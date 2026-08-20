@@ -7,4 +7,4 @@ const out=ts.transpileModule(fs.readFileSync(file,"utf8"),{
 const errors=(out.diagnostics||[]).filter(d=>d.category===ts.DiagnosticCategory.Error);
 for(const d of errors)console.log("[FAIL] "+ts.flattenDiagnosticMessageText(d.messageText,"\n"));
 if(errors.length)process.exitCode=1;
-else console.log("[ OK ] NovaOryn 0.10.9 contribution TypeScript transpiles.");
+else console.log("[ OK ] NovaOryn 0.10.11 contribution TypeScript transpiles.");

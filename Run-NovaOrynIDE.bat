@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
-echo [INFO] NovaOryn IDE Run 0.10.9
+echo [INFO] NovaOryn IDE Run 0.10.11
 
 set "NOVAORYN_IDE_ROOT=%~dp0"
 set "NOVAORYN_SDK_ROOT=%~dp0SDK"
@@ -48,7 +48,7 @@ if not exist "%ELECTRON_MAIN%" (
   if not "%RESULT%"=="0" exit /b %RESULT%
 )
 
-echo [INFO] Starting NovaOryn IDE 0.10.9...
+echo [INFO] Starting NovaOryn IDE 0.10.11...
 call "%NOVAORYN_NPM%" run start --workspace @novaoryn/ide-electron
 set "RESULT=%errorlevel%"
 exit /b %RESULT%

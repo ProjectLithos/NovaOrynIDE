@@ -1,0 +1,14 @@
+{
+  "release": "NovaOryn IDE 0.10.11",
+  "rootCause": "Custom Problems/Output controls attempted DOM tab clicks instead of activating the corresponding Theia bottom widget.",
+  "fix": "Use CommandService first and ApplicationShell.activateWidget fallback; selector state follows actual activation.",
+  "validation": {
+    "problemsOutputSeparateWidgets": "PASS",
+    "modifiedContributionTranspile": "PASS",
+    "versionConsistency": {
+      "package.json": "0.10.11",
+      "applications/electron/package.json": "0.10.11",
+      "packages/novaoryn-ide/package.json": "0.10.11"
+    }
+  }
+}

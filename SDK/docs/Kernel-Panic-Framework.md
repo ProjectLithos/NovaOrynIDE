@@ -1,6 +1,6 @@
 # NovaOryn Kernel Panic Framework
 
-NovaOryn 0.10.9 defines a real, structured panic subsystem in `NovaOryn.Kernel.SubsystemContracts`.
+NovaOryn 0.10.11 defines a real, structured panic subsystem in `NovaOryn.Kernel.SubsystemContracts`.
 
 ## Panic record
 
@@ -33,7 +33,7 @@ That keeps the terminal panic path independent of managed-object allocation, GC 
 
 ## Crash dump
 
-When `writeCrashDump` is enabled the kernel emits a structured `[NOVAORYN:PANIC]` record. In a Debug session the panic debugger break stops QEMU through x64 `INT3`; NovaOryn IDE then captures the formal **NOCD 1.0** crash dump introduced in 0.10.9.
+When `writeCrashDump` is enabled the kernel emits a structured `[NOVAORYN:PANIC]` record. In a Debug session the panic debugger break stops QEMU through x64 `INT3`; NovaOryn IDE then captures the formal **NOCD 1.0** crash dump introduced in 0.10.11.
 
 The NOCD dump contains the full debugger-visible registers, unwind stack, page tables, processes, modules, heap, memory ranges, panic reason and driver state. Panic-time in-kernel state is retained separately in `KernelPanicSnapshot`.
 

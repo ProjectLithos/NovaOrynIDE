@@ -1,10 +1,10 @@
 {
   "release": "NovaOryn IDE 0.10.11",
-  "rootCause": "ApplicationShell.collapseBottomPanel is protected.",
-  "fix": "Use public this.shell.bottomPanel.hide() for the Close control.",
+  "rootCause": "Theia 1.74 CommandService has executeCommand but no getCommand.",
+  "fix": "Try executeCommand directly and fall through on unknown command IDs.",
   "validation": {
-    "directBottomPanelNodeMountRetained": "PASS",
-    "protectedCallRemoved": "PASS",
+    "unsupportedApiRemoved": "PASS",
+    "widgetFallbackRetained": "PASS",
     "modifiedContributionTranspile": "PASS",
     "versionConsistency": {
       "package.json": "0.10.11",

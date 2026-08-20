@@ -1,3 +1,4 @@
+import { CommandService } from '@theia/core/lib/common/command';
 
 import { inject, injectable } from 'inversify';
 import { BoxLayout } from '@lumino/widgets';
@@ -95,6 +96,9 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
 
     @inject(MessageService)
     protected readonly messageService!: MessageService;
+
+    @inject(CommandService)
+    protected readonly commandService!: CommandService;
 
     @inject(OutputChannelManager)
     protected readonly outputChannelManager!: OutputChannelManager;
@@ -516,15 +520,18 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
             problems.type = 'button';
             problems.textContent = 'Problems';
             problems.title = 'Show Problems';
-            problems.addEventListener('click', () => this.activateBottomPanelTab('Problems'));
+            problems.addEventListener('click', () => void this.activateBottomPanelView('Problems'));
 
             const output = document.createElement('button');
             output.type = 'button';
             output.textContent = 'Output';
             output.title = 'Show Output';
-            output.addEventListener('click', () => this.activateBottomPanelTab('Output'));
+            output.addEventListener('click', () => void this.activateBottomPanelView('Output'));
 
             left.append(problems, output);
+            output.classList.add('novaoryn-bottom-tab-selected');
+            output.setAttribute('aria-selected', 'true');
+            problems.setAttribute('aria-selected', 'false');
 
             const right = document.createElement('div');
             right.className = 'novaoryn-bottom-control-actions';
@@ -575,19 +582,48 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         strip.style.removeProperty('opacity');
     }
 
-    protected activateBottomPanelTab(label: string): void {
+    protected async activateBottomPanelView(label: 'Problems' | 'Output'): Promise<void> {
+        // Prefer Theia's real view commands. This switches the actual bottom widget,
+        // not just the visual state of NovaOryn's replacement control strip.
+        const commandIds = label === 'Problems'
+            ? ['problems:toggle', 'problems:show', 'problemsView:focus']
+            : ['output:toggle', 'output:show', 'workbench.action.output.toggleOutput'];
+
+        for (const commandId of commandIds) {
+            try {
+                // Theia 1.74 CommandService exposes executeCommand(), but not
+                // getCommand(). Unknown command IDs reject/throw, so simply try
+                // the compatible command IDs in order and fall through on failure.
+                await this.commandService.executeCommand(commandId);
+                this.markBottomPanelSelection(label);
+                return;
+            } catch {
+                // Try the next compatible Theia/VS Code command id.
+            }
+        }
+
+        // Fallback: activate the actual ApplicationShell widget by title.
+        const widgets = this.shell.getWidgets('bottom');
+        const match = widgets.find(widget =>
+            (widget.title?.label ?? '').trim().toLowerCase() === label.toLowerCase()
+        );
+        if (match) {
+            await this.shell.activateWidget(match.id);
+            this.markBottomPanelSelection(label);
+        }
+    }
+
+    protected markBottomPanelSelection(label: 'Problems' | 'Output'): void {
         const bottom = this.shell.bottomPanel?.node;
         if (!bottom) {
             return;
         }
 
-        const candidates = Array.from(bottom.querySelectorAll<HTMLElement>(
-            '[role="tab"], .lm-TabBar-tab, .p-TabBar-tab'
-        ));
-        const match = candidates.find(candidate =>
-            (candidate.textContent ?? '').trim().toLowerCase().includes(label.toLowerCase())
-        );
-        match?.click();
+        bottom.querySelectorAll<HTMLButtonElement>('.novaoryn-bottom-control-tabs button').forEach(button => {
+            const selected = (button.textContent ?? '').trim().toLowerCase() === label.toLowerCase();
+            button.classList.toggle('novaoryn-bottom-tab-selected', selected);
+            button.setAttribute('aria-selected', selected ? 'true' : 'false');
+        });
     }
 
     protected clickBottomPanelNativeControl(labels: string[]): void {

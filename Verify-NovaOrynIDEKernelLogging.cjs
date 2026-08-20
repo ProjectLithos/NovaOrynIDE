@@ -79,4 +79,4 @@ const b=read(boot);
 checks.push(['legacy KMain startup WriteLine removed',!b.includes('KernelConsole.WriteLine("NovaOryn KMain started.")')]);
 let bad=false;for(const [label,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${label}`);if(!ok)bad=true;}
 if(bad)process.exit(1);
-console.log(`[ OK ] NovaOryn IDE 0.10.9 structured kernel logging contract verified (${checks.length} checks).`);
+console.log(`[ OK ] NovaOryn IDE 0.10.11 structured kernel logging contract verified (${checks.length} checks).`);

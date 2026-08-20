@@ -4,14 +4,11 @@ const source=fs.readFileSync(file,"utf8");
 let fail=0;
 const C=(v,m)=>{console.log(`${v?"[ OK ]":"[FAIL]"} ${m}`);if(!v)fail++;};
 
-C(source.includes("const bottom = this.shell.bottomPanel?.node;"),
-  "control strip still mounts on ApplicationShell.bottomPanel.node");
-C(source.includes("this.shell.bottomPanel.hide();"),
-  "Close control uses public Lumino Widget.hide()");
-C(!source.includes("this.shell.collapseBottomPanel();"),
-  "protected ApplicationShell.collapseBottomPanel call removed");
-C(source.includes("this.shell.bottomPanel.toggleMaximized();"),
-  "maximize/restore control retained");
+C(!source.includes("commandService.getCommand("),"unsupported CommandService.getCommand removed");
+C(source.includes("await this.commandService.executeCommand(commandId);"),"Problems/Output use executeCommand directly");
+C(source.includes("this.shell.getWidgets('bottom')"),"ApplicationShell bottom-widget fallback retained");
+C(source.includes("await this.shell.activateWidget(match.id);"),"fallback activates actual widget");
+C(source.includes("markBottomPanelSelection(label)"),"visual selector follows real activation");
 
 const out=ts.transpileModule(source,{
   compilerOptions:{
@@ -28,4 +25,4 @@ if(errors.length)fail+=errors.length;
 else console.log("[ OK ] modified contribution transpiles cleanly.");
 
 if(fail)process.exitCode=1;
-else console.log("[ OK ] NovaOryn 0.10.11 bottom-panel contract verified.");
+else console.log("[ OK ] NovaOryn 0.10.11 Problems/Output activation contract verified.");

@@ -1,5 +1,5 @@
 {
-  "release": "NovaOryn IDE 0.10.9",
+  "release": "NovaOryn IDE 0.10.11",
   "bottomPanelRootCause": "Toolbar mounted against a guessed DOM selector instead of ApplicationShell.bottomPanel.",
   "fix": "Direct mount on this.shell.bottomPanel.node with absolute overlay.",
   "kernelRuntimeObserved": "VirtIO GPU active; device 1AF4:1050 bound and started.",
@@ -7,9 +7,9 @@
     "modifiedTypeScriptTranspile": "PASS",
     "directApplicationShellMount": "PASS",
     "versionConsistency": {
-      "package.json": "0.10.9",
-      "applications/electron/package.json": "0.10.9",
-      "packages/novaoryn-ide/package.json": "0.10.9"
+      "package.json": "0.10.11",
+      "applications/electron/package.json": "0.10.11",
+      "packages/novaoryn-ide/package.json": "0.10.11"
     }
   }
 }
