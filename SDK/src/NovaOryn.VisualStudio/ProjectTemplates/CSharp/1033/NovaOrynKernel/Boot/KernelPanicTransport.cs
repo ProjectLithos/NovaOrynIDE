@@ -75,6 +75,6 @@ public static unsafe class KernelPanicTransport
     }
 
     public static Boolean BreakDebugger(KernelPanicNativeInfo* info)=>Native.PanicDebuggerBreak();
-    public static Boolean Reboot()=>KernelAcpiPlatform.Reboot();
+    public static Boolean Reboot()=>KernelAcpiPower.Reboot();
     public static Boolean Halt()=>Native.Halt();
 }
