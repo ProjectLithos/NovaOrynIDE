@@ -1,0 +1,30 @@
+{
+  "version": "0.11.11",
+  "baseVersion": "0.11.9",
+  "change": "Root source-tree organization for scripts and text ancillary files.",
+  "layout": {
+    "rootAllowedBatchFiles": [
+      "Build-NovaOrynIDE.bat",
+      "Run-NovaOrynIDE.bat"
+    ],
+    "scriptsFolder": "Scripts",
+    "ancillaryFolder": "Ancillary",
+    "rootTxtFiles": 0,
+    "rootPowerShellFiles": 0,
+    "rootCmdFiles": 0
+  },
+  "moves": [
+    "Audit-NovaOrynIDE.bat -> Scripts/Audit-NovaOrynIDE.bat",
+    "Audit-NovaOrynIDE.ps1 -> Scripts/Audit-NovaOrynIDE.ps1",
+    "Install-NovaOrynIDEToolchain.ps1 -> Scripts/Install-NovaOrynIDEToolchain.ps1",
+    "Validate-NovaOrynIDEDependencies.ps1 -> Scripts/Validate-NovaOrynIDEDependencies.ps1",
+    "ChangedFiles.txt -> Ancillary/ChangedFiles.txt",
+    "DeletedFiles.txt -> Ancillary/DeletedFiles.txt"
+  ],
+  "validation": {
+    "buildReferencesMovedScripts": true,
+    "auditManifestReferenceMoved": true,
+    "legacyRootCleanup": "Build removes root .txt and all scripts except Build-NovaOrynIDE.bat and Run-NovaOrynIDE.bat",
+    "sdkOwnedScripts": "preserved in SDK because their paths are part of the SDK toolchain contract"
+  }
+}

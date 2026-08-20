@@ -1,163 +1,519 @@
-NovaOryn IDE 0.1.46 bundles NovaOryn SDK 0.37.4 and uses a QEMU debugcon relocation rendezvous so exact C# breakpoints are armed before KMain without relying on guest INT3 handling.
-
 # NovaOryn IDE
 
-### 0.1.30 Existing OS reconfiguration
+**Current release: 0.11.11**
 
-NovaOryn IDE 0.1.30 adds an authoritative **Reconfigure OS** workflow for an operating system that is already open. Use either the new **NovaOryn > Reconfigure OS** menu command or right-click the operating-system root folder in Explorer and choose **Reconfigure NovaOryn OS**.
+NovaOryn IDE is the desktop development environment for building, running, inspecting, testing, and debugging operating systems created with the **NovaOryn OS SDK**.
 
-The configurator reloads the current `NovaOryn.json` selections instead of starting from defaults. Applying the configuration rebuilds `NovaOryn.ProjectGraph.json`, generated component projects, `Configuration/GeneratedConfiguration.cs`, `NovaOryn.slnx`, the SDK bridge manifest, and the generated Build/Run launchers. Generated components that are no longer selected have only their generator-owned `.csproj` and `GeneratedFeature.cs` artifacts removed; directories containing user files are retained.
+It is based on Eclipse Theia and Electron, but the product is centred on NovaOryn's own operating-system workflow: authoritative OS configuration, generated kernel/service/driver projects, an embedded SDK, NativeAOT-aware debugging, hardware and kernel inspection tools, and a freestanding .NET-oriented runtime model.
 
-`Kernel\Kernel.cs` is explicitly user-owned during reconfiguration and is never regenerated or replaced. The OS name and root path are also fixed during reconfiguration so changing kernel architecture, drivers, services, filesystems, networking, userland, GUI, testing or safety options cannot accidentally turn the operation into a project rename.
+NovaOryn IDE is intended to be an operating-system development environment rather than a general-purpose code editor with a few OS commands added to it.
 
-The Run/Debug toolbar fixes from 0.1.12 remain in place: the toolbar stays below the menu, uses the standard Theia `ApplicationShell`, saves dirty editors before build/run, and streams SDK output inside the IDE.
+---
 
+## What NovaOryn IDE provides
 
-NovaOryn IDE is the desktop development environment for the NovaOryn Operating System SDK. It is a custom Eclipse Theia desktop application with NovaOryn-specific project configuration and generation.
+NovaOryn IDE currently brings the following NovaOryn-specific capabilities into one desktop application:
 
-## Current release: 0.1.46
+- creation and reconfiguration of NovaOryn operating systems;
+- authoritative configuration-driven project generation;
+- monolithic, microkernel, and hybrid kernel layouts;
+- an embedded NovaOryn SDK and pinned build toolchain;
+- Build, Run, and Debug workflows for NovaOryn OS projects;
+- QEMU x64 target support and physical-machine debugger transports;
+- source breakpoints before `KMain`;
+- NativeAOT-aware stepping, stack unwinding, locals, arguments, memory, page tables, and heap inspection;
+- exception, panic, crash-dump, and offline-dump debugging;
+- Kernel Console and structured kernel-log integration;
+- Target Manager;
+- Driver Development Centre;
+- Hardware / Device Tree;
+- OS-specific static analyzers;
+- Binary / Symbol Explorer;
+- Memory-map Visualiser;
+- Interrupt / APIC Visualiser;
+- Syscall Explorer;
+- Image / Disk Explorer;
+- tracing, boot analysis, and performance profiling;
+- SDK API documentation browser;
+- Test Explorer and the NovaOryn SDK test contract;
+- capability-based driver inspection and validation.
 
-### 0.1.46 Page-table/heap inspection and crash-dump debugging
+The IDE and bundled SDK are developed together so that generated OS projects, build contracts, debugging protocols, API documentation, driver contracts, and testing features remain synchronized.
 
-NovaOryn IDE 0.1.46 adds an x64 **Page Tables** inspector that walks the active CR3 through PML4, PDPT, PD and PT entries using QEMU physical-memory reads. It decodes Present/Write/User/NX/Global/large-page flags and resolves the final guest physical address for 4 KiB, 2 MiB and 1 GiB mappings.
+---
 
-The **Kernel Heap** inspector reads the NativeAOT `KernelHeap` metadata directly from the stopped kernel, showing committed, allocated, free and peak bytes together with the first-fit free/live block table and allocation tokens.
+## System requirements
 
-The new **Crash Dump Debugging** workflow writes `.nodump.json` captures beneath the OS project's `.novaoryn\crash-dumps` directory. Dumps include debugger state, registers, named locals, x64 unwind call stack, mixed disassembly, page-table translation, heap state, and stack/code memory. Exception and panic stops automatically create a dump, and a saved dump can be reopened in NovaOryn Debug without QEMU running.
+NovaOryn IDE currently targets **Windows x64**.
 
-## Previous release: 0.1.44
+The build system manages most of its own toolchain beneath `.toolchain` and currently pins:
 
-### 0.1.44 Memory viewer and named C# locals/arguments
+- Node.js **22.22.0**;
+- npm **10.9.4**;
+- Python **3.13.15**;
+- Eclipse Theia **1.74.0**;
+- Electron **42.3.0**;
+- TypeScript **5.9.x**;
+- Microsoft Visual Studio / MSVC x64 C++ build tools;
+- MSVC x64 Spectre-mitigated libraries.
 
-NovaOryn IDE 0.1.44 adds a live **Memory** inspector to NovaOryn Debug. While paused, enter an absolute address or a debugger expression such as `rsp`, `rbp-0x40`, or `rsp+0x20`; the IDE reads guest virtual memory through QEMU's GDB stub and renders address, hex bytes, and ASCII in 16-byte rows. Address/size settings persist, and Memory/Watch refreshes are serialized so the QEMU GDB transport never receives overlapping requests.
+The bundled NovaOryn SDK maintains its own .NET, NativeAOT, LLVM/LLD, NASM, QEMU, and related operating-system build dependencies.
 
-The Locals panel can now consume NativeAOT **CodeView variable live ranges** from `MinimalKernel.pdb` using the bundled LLVM `llvm-pdbutil`. Supported register, register-relative, and frame-pointer-relative locations are resolved at the current RIP, so C# argument/local names are paired with their current native value and location when the PDB provides that information. If a variable has no live location at the stop, the debugger falls back to native frame slots instead of fabricating data. Named live variables can also be used by Watch/conditional expressions.
+The authoritative IDE tool versions are stored in:
 
-## Previous release: 0.1.42
+```text
+JSON\Toolchain-Versions.json
+```
 
-### 0.1.42 Mixed disassembly, exception/panic breakpoints and IDE title logo
+---
 
-NovaOryn IDE 0.1.42 adds a mixed **C# / x64 Disassembly** view to the NovaOryn Debug inspector. Every paused stop can show the NativeAOT x64 instructions at the relocated runtime address while correlating each instruction with the nearest C# sequence point. The current instruction is highlighted and both runtime and linked-image addressing remain visible to make EFI relocation explicit.
+## Build the IDE
 
-The debugger also arms **CPU exception breakpoints before KMain** for divide error, NMI, invalid opcode, double fault, stack fault, general-protection fault, page fault and machine check. A separate **fatal/panic halt** breakpoint stops before NovaOryn enters the terminal processor halt path. Exception selections are remembered between IDE runs and can be changed while the kernel is paused.
+From the NovaOryn IDE root, run:
 
-The supplied NovaOryn cat logo is now displayed at the **top-left of the IDE title/menu bar**, using the same transparent branding asset already used by the startup screen.
+```bat
+Build-NovaOrynIDE.bat
+```
 
-Conditional/hit-count breakpoints and persistent Watch expressions from 0.1.41 remain available.
+**Build means build only.** It does not launch the IDE.
 
-## Security audit
+The build performs the complete NovaOryn IDE validation and compilation pipeline, including:
 
-Run:
+1. source-tree and release validation;
+2. embedded SDK verification;
+3. pinned Node.js and Python toolchain verification;
+4. MSVC/native build-tool verification;
+5. Theia/Electron dependency compatibility checks;
+6. npm workspace installation;
+7. production dependency security checks;
+8. NovaOryn feature-contract verifiers;
+9. TypeScript compilation of the NovaOryn Theia extension;
+10. Electron native-module rebuilds;
+11. Theia browser, Node, and Electron bundle generation;
+12. successful-build state recording;
+13. configured source publishing to the NovaOryn IDE repository.
 
-    Scripts\Audit-NovaOrynIDE.bat
+A successful build ends with a completed NovaOryn IDE build and produces the generated Electron application required by the Run launcher.
 
-Reports are written to:
+### Security reports
 
-    Artifacts\Security\npm-audit-full.json
-    Artifacts\Security\npm-audit-production.json
+The production security gate writes reports under:
 
-The full report includes development/build dependencies such as `@theia/cli`. The production report represents dependencies shipped with the application and is the report used by the build gate.
+```text
+Artifacts\Security\
+```
 
-## Toolchain policy
+The security audit can also be run directly with:
 
-The authoritative tool versions are in `JSON\Toolchain-Versions.json`.
+```bat
+Scripts\Audit-NovaOrynIDE.bat
+```
 
-The IDE currently pins:
+---
 
-- Node.js 22.22.0 LTS for the NovaOryn build host
-- Python 3.13.15 for native Node module builds
-- Visual Studio/MSVC x64 C++ Build Tools, including the x64 Spectre-mitigated libraries required by native dependencies
-- npm supplied by the pinned Node.js distribution
-- Eclipse Theia 1.74.0
-- Electron 42.3.0
-- `@vscode/windows-ca-certs` 0.3.4
+## Run the IDE
 
-Node.js and Python are installed under `.toolchain` so NovaOryn does not depend on arbitrary versions found on the system PATH. Visual Studio components are machine-level Microsoft software and may require elevation on first installation.
+After a successful build, run:
 
-## Build
+```bat
+Run-NovaOrynIDE.bat
+```
 
-Run:
+**Run means run only.** It does not call the Build launcher.
 
-    Build-NovaOrynIDE.bat
+Before starting Electron, the launcher verifies the previously built runtime, including the required Theia/Electron packages, generated backend, and matching build state. If the source has not been successfully built for the current release, Run stops and tells you to build first.
 
-The build automatically:
+This deliberate separation keeps the two root launchers unambiguous:
 
-1. Verifies Windows x64.
-2. Verifies/installs the pinned Node.js and Python toolchain.
-3. Verifies MSVC x64 C++ support and Spectre-mitigated libraries.
-4. Validates the NovaOryn/Theia/Electron dependency matrix.
-5. Installs workspace dependencies without `--force` or `--legacy-peer-deps`.
-6. Verifies required Theia, Windows certificate and TypeScript packages.
-7. Runs the NovaOryn production dependency security gate.
-8. Compiles the NovaOryn Theia extension.
-9. Rebuilds Electron native modules.
-10. Builds the Theia browser and Node bundles.
-11. Verifies the generated frontend, backend and stylesheet outputs.
+```text
+Build-NovaOrynIDE.bat   Build and verify NovaOryn IDE
+Run-NovaOrynIDE.bat     Launch the already-built NovaOryn IDE
+```
 
-Then launch:
+---
 
-    Run-NovaOrynIDE.bat
+## Creating a NovaOryn operating system
 
-`Run-NovaOrynIDE.bat` is first-run safe and invokes the build if required outputs are missing.
+NovaOryn IDE uses its configuration model as an **authoritative generator input** rather than as descriptive metadata.
 
-## Project generation
+The configuration controls areas including:
 
-NovaOryn IDE 0.1.1 generates source from the complete configuration model. The configuration is not descriptive metadata: it is the input to the project-graph builder. For every selected facility the generator emits the appropriate component project and starter source; facilities that are not selected are not emitted.
+- OS name and project location;
+- target architecture;
+- monolithic, microkernel, or hybrid layout;
+- processor and boot configuration;
+- physical and virtual memory;
+- scheduler and process model;
+- system-call model;
+- SMP and interrupt configuration;
+- timers;
+- drivers and driver capabilities;
+- storage and filesystems;
+- networking;
+- input;
+- graphics and audio;
+- userland and shell;
+- GUI selection;
+- debugging;
+- testing;
+- virtualisation;
+- RTOS and safety-oriented options.
 
-### Architecture placement
+The generated source tree is derived from those selections.
 
-**Monolithic:** selected drivers, storage, filesystems, networking, processes and other kernel facilities are generated under `Kernel`.
+### Kernel models
 
-**Microkernel:** the kernel remains minimal; drivers are generated under `Drivers`, while process, filesystem and networking facilities are generated under `Services`.
+**Monolithic**
 
-**Hybrid:** drivers and low-level mechanisms remain under `Kernel`, while process, filesystem and networking facilities are generated under `Services`.
+Selected low-level facilities, drivers, storage, filesystems, networking, process support, and other kernel facilities are placed within the kernel-oriented project structure.
 
-Generated projects contain `NovaOryn.json`, `NovaOryn.ProjectGraph.json`, `NovaOryn.slnx`, per-component `.csproj` files and starter C# source, `Kernel/Kernel.cs` with `KMain`, `Configuration/GeneratedConfiguration.cs`, `Build.bat`, `Run.bat`, and a README.
+**Microkernel**
 
-## Current integration boundary
+The kernel remains intentionally small. Drivers and operating-system facilities that do not need to live in the kernel are generated as separate drivers/services.
 
-The generated operating-system `Build.bat` and `Run.bat` files are connected directly to the installed NovaOryn SDK at `C:\NovaOryn`. Each generated project records that SDK root in `NovaOryn.json`, validates the corresponding SDK entry point, and forwards the generated project directory to the SDK build/run pipeline. The launchers canonicalise the operating-system directory before handing it to the SDK, avoiding a trailing-directory-separator quoting problem at the batch/PowerShell boundary. On startup, NovaOryn IDE refreshes these two generated launcher files for existing operating systems beneath `C:\NovaOrynOSes` so SDK-owned launcher fixes apply without recreating the OS.
+**Hybrid**
 
-## Repository hygiene
+Low-level mechanisms remain kernel-side while suitable process, filesystem, networking, and service functionality can be generated outside the core kernel.
 
-Generated content is not source-controlled. `.gitignore` excludes `.toolchain`, `node_modules`, compiled `lib` output, Electron distributions, security audit artifacts and npm logs.
+The generator creates the project graph, generated configuration, component projects, SDK bridge manifest, solution metadata, and OS build/run launchers required by the selected design.
 
-## 0.0.18 workspace-aware dependency verification
+`Kernel\Kernel.cs` is user-owned. Reconfiguration preserves it rather than regenerating the user's kernel entry source.
 
-NovaOryn IDE 0.0.18 keeps the dependency-tree and native-cache invalidation introduced in 0.0.13, but the installed-version check is now workspace-aware. The check runs with `applications/electron` as its module-resolution root, so both hoisted and workspace-local npm layouts are valid. A missing root-level `node_modules/electron` is no longer mistaken for a failed installation. The build still verifies Electron 42.3.0, `@theia/electron` 1.74.0, and the exact Electron peer requirement before auditing or compiling, then records the successful pair in `.toolchain/NovaOrynIDE-BuildState.json`.
+---
 
-## 0.0.18 verification fix
+## Reconfiguring an existing OS
 
-0.0.18 replaces the inline batch/`node -e` Theia/Electron version test with
-`Verify-NovaOrynIDEInstalledDependencies.cjs`. The verifier resolves packages from
-`applications/electron` with Node's workspace-aware module resolution and returns its
-status directly to the build script. This avoids false dependency-mismatch failures
-when the installed versions are already the required Theia 1.74.0 / Electron 42.3.0 pair.
+An existing NovaOryn OS can be reopened in the configurator from the NovaOryn menu or the Explorer root context menu.
 
-## 0.0.18 compatibility note
+Reconfiguration reloads the existing authoritative configuration, regenerates NovaOryn-owned files, and removes obsolete **generator-owned** component artifacts that are no longer selected.
 
-NovaOryn IDE 0.0.18 keeps Eclipse Theia 1.74.0 and Electron 42.3.0, and pins `inversify` 6.2.2 directly in the NovaOryn extension. This avoids the TypeScript export-resolution failure seen through the `@theia/core/shared/inversify` re-export while preserving the same Inversify 6.x API expected by the extension. The production security gate remains enabled.
+User-owned source is preserved. In particular, the configurator does not replace `Kernel\Kernel.cs` simply because project options changed.
 
-## 0.0.18 compatibility fix
+---
 
-NovaOryn IDE 0.0.18 explicitly pins the Lumino widget type surface used by Eclipse Theia 1.74.0 (`@lumino/widgets` 2.7.5 and `@lumino/messaging` 2.x). This prevents TypeScript workspace resolution from losing the inherited `Widget` members (`id`, `title`, and `update`) required by the NovaOryn React widget.
+## Building and running an operating system
 
-## 0.0.18 root Theia CLI dependency fix
+NovaOryn OS projects are built through the SDK bundled with the IDE.
 
-NovaOryn IDE 0.0.18 makes the repository root explicitly own the Theia packages used by the root-level Theia CLI. npm workspaces are permitted to keep application dependencies inside `applications/electron/node_modules`; however, `@theia/application-manager` executes from the repository root and resolves `@theia/electron` and native Electron modules relative to its own root-level module tree. Relying on npm to hoist those packages therefore made the build layout-dependent.
+The IDE saves modified files before an OS build/run operation and uses the generated NovaOryn project metadata to invoke the SDK pipeline for the selected operating system.
 
-The root `devDependencies` now pin the same Theia 1.74.0 / Electron 42.3.0 build surface as the Electron application. `Verify-NovaOrynIDETheiaCliDependencies.cjs` checks that the root CLI can resolve `@theia/electron`, Electron, `node-pty`, `native-keymap`, `drivelist`, and `keytar` before the build starts. These are build/runtime composition dependencies, not additional NovaOryn production features, and the production security audit remains separate.
+The run toolbar provides a persistent execution mode selection:
 
-## Run toolbar
+- **No Debug** — builds/runs the OS without an IDE debugger session;
+- **Debug** — builds a Debug kernel and launches/attaches the NovaOryn debugger for the active target.
 
-NovaOryn IDE 0.1.30 provides a NovaOryn-owned toolbar on a dedicated row immediately below the menu/title bar. The **Run** button launches the currently opened operating system. The adjacent mode selector offers **No Debug** (Release configuration) and **Debug** (Debug configuration). The selected mode is stored in local browser storage and restored when the IDE is started again. The toolbar refreshes after workspace startup, so **Run** is enabled immediately whenever a NovaOryn OS workspace is open.
+The selected mode is remembered between IDE runs.
 
-No Debug mode invokes the generated `Run.bat` with the SDK `-Run -Configuration Release` contract. Debug mode first builds the kernel with the authoritative SDK Debug pipeline, then NovaOryn IDE itself launches QEMU and owns the GDB debugging session. The SDK build process is hidden and its stdout/stderr is streamed to the **NovaOryn Build** output channel inside the IDE; it no longer opens a separate console window.
+The IDE streams build and launch output into its own output surfaces rather than requiring a separate command prompt for normal development.
 
-In 0.1.30, debugging is additionally gated by the operating-system configuration. **No Debug** always exports debugging as disabled. **Debug** enables only the facilities selected under the OS **Debugging** configuration (`Serial logging`, `Kernel diagnostics`, `Debug symbols`, and/or `Panic dump`). Generated `Configuration/GeneratedConfiguration.cs` exposes `DebugBuild`, `DebuggingConfigured`, `DebuggingEnabled()` and `EffectiveDebugging()` so kernel/OS code has the same effective rule at compile time. The generated SDK manifest records the configured facilities, and `Run.bat` exports `NOVAORYN_DEBUG_ENABLED`, `NOVAORYN_DEBUG_FEATURES`, plus one flag per supported facility for the SDK/runtime pipeline.
+---
 
-## System theme and syntax highlighting
+## NovaOryn debugger
 
-NovaOryn IDE follows the operating system light/dark colour scheme. The Theia application default uses the built-in `light`/`dark` theme pair and NovaOryn also listens to `prefers-color-scheme` changes so the IDE updates when the system theme changes.
+NovaOryn Debug is designed around operating-system and NativeAOT debugging rather than a normal managed-process debugger.
 
-C# source (`.cs`) has built-in Monaco lexical syntax highlighting and language configuration without requiring the VS Code/Open VSX plugin runtime. Semantic highlighting is enabled in the frontend preferences for language services that provide semantic tokens.
+Current capabilities include:
+
+- source breakpoints in C# kernel code;
+- breakpoint relocation before `KMain`;
+- Continue, Step Into, Step Over, and Step Out;
+- conditional and hit-count breakpoints;
+- Watch expressions;
+- registers;
+- CPU, thread, and process context selection;
+- x64 call-stack unwinding;
+- mixed C# / x64 disassembly;
+- named NativeAOT locals and arguments where debug information exposes them;
+- arbitrary memory inspection;
+- x64 page-table inspection and address translation;
+- kernel heap inspection;
+- exception and panic stops;
+- automatic crash-dump capture;
+- offline crash-dump reopening;
+- physical-machine debugger transport support.
+
+Debugging facilities exposed to a generated operating system remain controlled by that OS's own NovaOryn configuration.
+
+---
+
+## Kernel panic and crash diagnostics
+
+The NovaOryn SDK panic framework provides a formal kernel panic path with support for:
+
+- panic reason/code;
+- panic message;
+- CPU context;
+- thread context;
+- process context;
+- call stack;
+- register state;
+- optional crash dump;
+- debugger break;
+- controlled halt or reboot policy.
+
+NovaOryn IDE integrates those diagnostics into the debugger and crash-dump views so a panic can be inspected as an operating-system failure rather than only as serial text.
+
+---
+
+## Test framework
+
+The bundled SDK exposes a unified NovaOryn test contract supporting:
+
+- kernel tests;
+- unit tests;
+- integration tests;
+- boot tests;
+- driver tests;
+- stress tests;
+- fault-injection tests;
+- hardware-simulation tests.
+
+The framework includes test execution/reporting contracts, timeout and fail-fast support, fault-injection facilities, hardware-simulation hooks, manifests, and machine-readable reports.
+
+NovaOryn IDE exposes the test system through its Test Explorer and SDK integration rather than treating tests as unrelated standalone programs.
+
+---
+
+## Driver model
+
+NovaOryn uses a capability-based driver model.
+
+Drivers declare the privileged resources they need instead of assuming unrestricted hardware access. Capability areas include facilities such as:
+
+- MMIO;
+- I/O ports;
+- IRQ / MSI / MSI-X;
+- DMA;
+- PCI configuration;
+- physical memory;
+- timers;
+- networking;
+- filesystem access.
+
+The kernel grants those capabilities explicitly. The IDE's Driver Development Centre, static analyzers, Hardware Tree, and SDK manifests are designed around this same contract.
+
+---
+
+## Engineering tools
+
+NovaOryn IDE includes engineering views intended to make low-level OS state inspectable without leaving the IDE.
+
+### Target Manager
+
+Defines and selects the machine/transport against which NovaOryn builds, runs, and debugs. Targets can represent QEMU, physical machines, or remote debugger endpoints where supported.
+
+### Driver Development Centre
+
+Surfaces driver packages, declarations, capabilities, device binding information, and related SDK contracts.
+
+### Hardware / Device Tree
+
+Presents the unified NovaOryn device model for PCI, USB, ACPI, platform, virtual, and logical devices in one hierarchical view.
+
+### Static Analyzers
+
+Applies NovaOryn-specific rules such as kernel/userland boundaries, unsafe kernel patterns, hardware-abstraction violations, interrupt allocation rules, and driver capability requirements.
+
+### Binary / Symbol Explorer
+
+Inspects NovaOryn binaries, PE/COFF data, sections, native symbols, debug maps, and PDB/LLVM symbol information.
+
+### Memory-map Visualiser
+
+Displays operating-system physical/virtual memory-map information and related region state.
+
+### Interrupt / APIC Visualiser
+
+Exposes interrupt-controller and interrupt-delivery state, including NovaOryn's APIC-oriented abstractions.
+
+### Syscall Explorer
+
+Inspects NovaOryn's shared protected syscall core and its supported syscall namespaces, including NovaOryn Get/Set/Event, Linux-style, and Windows/NT-style models.
+
+### Image / Disk Explorer
+
+Inspects NovaOryn disk images and storage structures, including bounded raw reads and partition/filesystem inspection supported by the current SDK tooling.
+
+### SDK API
+
+Provides offline access to the bundled NovaOryn SDK API documentation from inside the IDE.
+
+---
+
+## Structured kernel logging and telemetry
+
+NovaOryn kernel logging supports structured records rather than plain unclassified text.
+
+The logging contract can carry fields such as:
+
+- severity level;
+- subsystem;
+- CPU;
+- thread;
+- process;
+- timestamp;
+- source.
+
+The runtime supports multiple sinks and is designed so early boot diagnostics can operate before normal managed allocation is available.
+
+The IDE consumes these records in its kernel-output, tracing, boot-analysis, and profiling surfaces where appropriate.
+
+---
+
+## Embedded SDK
+
+NovaOryn IDE ships with the NovaOryn SDK under:
+
+```text
+SDK\
+```
+
+The embedded SDK is the operating-system build authority used by the IDE. It contains the kernel/runtime source, project creator, linker/image tooling, QEMU launcher, templates, API/ABI contracts, subsystem contracts, driver packaging model, testing contracts, documentation, and the pinned OS build toolchain.
+
+The IDE build verifies that the bundled SDK source is present and valid before compiling the desktop application.
+
+SDK-owned scripts and JSON files remain inside `SDK` because their paths are part of the SDK/toolchain layout and are not part of the root-directory cleanup policy.
+
+---
+
+## Source-tree organisation
+
+The repository root is intentionally kept small.
+
+```text
+NovaOrynIDE\
+├─ Build-NovaOrynIDE.bat
+├─ Run-NovaOrynIDE.bat
+├─ README.md
+├─ VERSION
+├─ NovaOrynIDE.ico
+├─ CJS\
+├─ JSON\
+├─ Scripts\
+├─ Ancillary\
+├─ applications\
+├─ packages\
+├─ SDK\
+├─ docs\
+└─ ...
+```
+
+### `CJS`
+
+Contains NovaOryn IDE CommonJS verifier/build-support files. Root-level `.cjs` files are not permitted.
+
+### `JSON`
+
+Contains IDE-root JSON configuration, release validation, npm workspace metadata, security baseline, and toolchain metadata. Root-level `.json` files are not permitted.
+
+The npm workspace is staged under `.toolchain\NpmWorkspace` during build/run operations so the repository root does not need a `package.json`.
+
+### `Scripts`
+
+Contains IDE maintenance and support scripts such as auditing, dependency validation, and toolchain installation.
+
+Only the two primary batch launchers remain at the repository root:
+
+```text
+Build-NovaOrynIDE.bat
+Run-NovaOrynIDE.bat
+```
+
+### `Ancillary`
+
+Contains ancillary text/bookkeeping files that do not belong in the repository root.
+
+### `applications`
+
+Contains the Electron application workspace.
+
+### `packages`
+
+Contains the NovaOryn Theia extension and related IDE source.
+
+### `SDK`
+
+Contains the embedded NovaOryn OS SDK.
+
+---
+
+## Root-directory hygiene
+
+The Build launcher actively enforces the current root layout.
+
+Legacy root-level `.cjs`, `.json`, `.txt`, and support-script files are removed or rejected according to the current source-tree rules. The two root launchers are intentionally exempt.
+
+This allows an older extracted source tree to be upgraded without leaving obsolete copies of files beside their new `CJS`, `JSON`, `Scripts`, or `Ancillary` locations.
+
+Generated dependencies and build products are excluded from source control through `.gitignore`.
+
+---
+
+## Dependency workspace
+
+Because the repository root intentionally has no `package.json`, npm operations are performed through the staged workspace:
+
+```text
+.toolchain\NpmWorkspace\
+```
+
+Build and Run both execute their npm workspace commands from that location. They must not fall back to resolving `C:\NovaOrynIDE\package.json`.
+
+The Run launcher validates the installed Theia/Electron runtime and generated Electron backend directly before startup.
+
+---
+
+## Troubleshooting
+
+### `Could not read package.json ... C:\NovaOrynIDE\package.json`
+
+The current release must not run npm from the repository root. Make sure the source and launchers are from the same release and run a fresh build before Run.
+
+### Run says the IDE has not been built
+
+Run does not build automatically. Execute:
+
+```bat
+Build-NovaOrynIDE.bat
+```
+
+and confirm it completes successfully before running:
+
+```bat
+Run-NovaOrynIDE.bat
+```
+
+### OS build/debug failure
+
+Use the IDE's build/debug output as the primary diagnostic. NovaOryn OS compilation failures normally identify the SDK project and exact C#/NativeAOT stage that failed.
+
+For exhaustive SDK validation independent of a normal fast OS build, use the SDK validation tooling supplied under `SDK`.
+
+### npm security warnings
+
+The build distinguishes the complete development dependency tree from the production dependency tree. The production security gate is authoritative for shipped dependencies, with any temporary upstream exception explicitly recorded in the security baseline.
+
+---
+
+## Repository and release policy
+
+NovaOryn IDE source releases are produced as:
+
+```text
+NovaOryn-IDE-FullSource-<version>.zip
+NovaOryn-IDE-ChangedFiles-<version>.zip
+```
+
+`FullSource` is the complete source tree for that release.
+
+`ChangedFiles` contains the files required to update the preceding release and includes deletion bookkeeping where files have moved or been removed.
+
+The source build can publish the validated source tree to the configured NovaOryn IDE Git repository after a successful build.
+
+---
+
+## Design direction
+
+NovaOryn IDE is being built around a simple principle: an OS SDK should expose its architecture, contracts, hardware, memory, interrupts, system calls, drivers, tests, diagnostics, and generated structure directly to the developer.
+
+The IDE therefore treats NovaOryn operating systems as first-class systems projects. The goal is not merely to edit C# files—it is to make the operating system itself understandable, configurable, buildable, testable, and debuggable from one environment.
