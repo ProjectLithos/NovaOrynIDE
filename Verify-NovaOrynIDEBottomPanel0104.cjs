@@ -6,6 +6,6 @@ C(css.includes("#theia-bottom-content-panel")&&css.includes("contain: paint"),"p
 C(css.includes("#theia-bottom-panel")&&css.includes("overflow: visible !important"),"outer bottom dock no longer clips controls");
 C(css.includes("> .lm-TabBar")&&css.includes("> .p-TabBar"),"both Lumino tab-bar generations explicitly supported");
 C(css.includes("display: flex !important")&&css.includes("visibility: visible !important"),"bottom tab/control strip explicitly restored");
-const tail=css.slice(css.indexOf("/* 0.10.7:"));
+const tail=css.slice(css.indexOf("/* 0.10.9:"));
 C(!tail.includes("#theia-bottom-panel > .p-Widget")&&!tail.includes("#theia-bottom-panel > .lm-Widget"),"broad direct-widget clipping removed from outer dock");
 if(fail)process.exitCode=1;else console.log("[ OK ] NovaOryn bottom-panel control bar contract verified.");

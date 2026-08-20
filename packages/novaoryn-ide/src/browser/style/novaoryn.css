@@ -669,8 +669,8 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 /* NovaOryn IDE 0.3.1 Image / Disk Explorer */
 .novaoryn-image-disk-page{height:100%;min-height:0;overflow:auto;padding:12px}.novaoryn-disk-layout{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:12px;min-height:0}.novaoryn-disk-images{border:1px solid var(--theia-panel-border);background:var(--theia-sideBar-background);padding:8px;overflow:auto;max-height:calc(100vh - 170px)}.novaoryn-disk-images h3{margin:4px 4px 8px}.novaoryn-disk-image{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--theia-panel-border);background:transparent;color:var(--theia-foreground);padding:8px;cursor:pointer}.novaoryn-disk-image:hover,.novaoryn-disk-image.selected{background:var(--theia-list-activeSelectionBackground);color:var(--theia-list-activeSelectionForeground)}.novaoryn-disk-image strong,.novaoryn-disk-image small{display:block}.novaoryn-disk-image small{opacity:.68;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.novaoryn-disk-detail{min-width:0}.novaoryn-disk-detail section{border:1px solid var(--theia-panel-border);background:var(--theia-editor-background);padding:11px 12px;margin-bottom:10px}.novaoryn-disk-detail h3{margin:0 0 8px}.novaoryn-disk-title,.novaoryn-disk-section-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.novaoryn-disk-title code{display:block;opacity:.65;margin-top:3px;overflow-wrap:anywhere}.novaoryn-disk-title>span{padding:2px 8px;border-radius:10px;background:var(--theia-badge-background);color:var(--theia-badge-foreground)}.novaoryn-disk-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;margin-top:10px}.novaoryn-disk-facts>div,.novaoryn-disk-volume-grid>div{border:1px solid var(--theia-panel-border);padding:8px}.novaoryn-disk-facts span,.novaoryn-disk-facts strong,.novaoryn-disk-volume-grid strong,.novaoryn-disk-volume-grid span,.novaoryn-disk-volume-grid small{display:block}.novaoryn-disk-facts span{font-size:11px;opacity:.68;text-transform:uppercase}.novaoryn-disk-facts strong{margin-top:3px;font-family:var(--theia-code-font-family);overflow-wrap:anywhere}.novaoryn-disk-table-wrap,.novaoryn-disk-hex-wrap{overflow:auto;border:1px solid var(--theia-panel-border);max-height:360px}.novaoryn-disk-table,.novaoryn-disk-hex{border-collapse:collapse;width:100%;font-size:12px}.novaoryn-disk-table th,.novaoryn-disk-table td,.novaoryn-disk-hex th,.novaoryn-disk-hex td{padding:6px 8px;border-bottom:1px solid var(--theia-panel-border);text-align:left;white-space:nowrap}.novaoryn-disk-table th,.novaoryn-disk-hex th{position:sticky;top:0;background:var(--theia-editorWidget-background);z-index:1}.novaoryn-disk-table td small{display:block;opacity:.65;margin-top:2px}.novaoryn-disk-volume-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}.novaoryn-disk-volume-grid span,.novaoryn-disk-volume-grid small{opacity:.7;margin-top:3px}.novaoryn-disk-section-head input{min-width:260px}.novaoryn-disk-tree{border:1px solid var(--theia-panel-border);max-height:380px;overflow:auto}.novaoryn-disk-tree button{display:flex;justify-content:space-between;gap:14px;width:100%;border:0;border-bottom:1px solid var(--theia-panel-border);background:transparent;color:var(--theia-foreground);padding-top:6px;padding-bottom:6px;padding-right:9px;text-align:left;cursor:pointer}.novaoryn-disk-tree button:hover,.novaoryn-disk-tree button.selected{background:var(--theia-list-activeSelectionBackground);color:var(--theia-list-activeSelectionForeground)}.novaoryn-disk-tree small{opacity:.65;white-space:nowrap}.novaoryn-disk-read-controls{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}.novaoryn-disk-read-controls label{display:flex;flex-direction:column;gap:3px;font-size:11px;opacity:.85}.novaoryn-disk-read-controls input{width:130px}.novaoryn-disk-hex{font-family:var(--theia-code-font-family)}.novaoryn-disk-hex td:nth-child(2){min-width:390px}.novaoryn-disk-hex td:nth-child(3){letter-spacing:.5px}@media(max-width:900px){.novaoryn-disk-layout{grid-template-columns:1fr}.novaoryn-disk-images{max-height:220px}.novaoryn-disk-section-head{display:block}.novaoryn-disk-section-head input{margin-top:7px;min-width:0;width:100%}}
 
-/* 0.10.7: keep Monaco/Output painting contained without clipping Theia's
-   bottom-panel tab/control bar. 0.10.7 applied overflow/paint containment to
+/* 0.10.9: keep Monaco/Output painting contained without clipping Theia's
+   bottom-panel tab/control bar. 0.10.9 applied overflow/paint containment to
    the entire bottom panel and every direct Lumino widget, which also clipped
    the standard Problems/Output toolbar. */
 #theia-bottom-content-panel,
@@ -713,7 +713,7 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 }
 
 
-/* 0.10.7: shell-level repair marks the real Lumino bottom control strip.
+/* 0.10.9: shell-level repair marks the real Lumino bottom control strip.
    This only preserves its layout priority; paint isolation remains on content. */
 [data-novaoryn-bottom-controls="restored"] {
     position: relative;
@@ -722,7 +722,7 @@ body.novaoryn-has-title-logo .lm-MenuBar {
 }
 
 
-/* 0.10.7: guaranteed visible bottom-panel controls owned by NovaOryn. */
+/* 0.10.9: guaranteed visible bottom-panel controls owned by NovaOryn. */
 .novaoryn-bottom-control-strip {
     display: flex !important;
     align-items: center;
@@ -767,4 +767,21 @@ body.novaoryn-has-title-logo .lm-MenuBar {
     border: 1px solid var(--theia-widget-border);
     border-radius: 3px;
     font-size: 12px;
+}
+
+
+/* 0.10.9: attach directly to ApplicationShell.bottomPanel.node. */
+.novaoryn-bottom-panel-host {
+    position: relative !important;
+    padding-top: 31px !important;
+    box-sizing: border-box !important;
+}
+.novaoryn-bottom-panel-host > .novaoryn-bottom-control-strip {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 31px;
+    min-height: 31px;
+    z-index: 100 !important;
 }

@@ -493,12 +493,14 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     }
 
     protected ensureBottomPanelControlStrip(): void {
-        const bottom =
-            document.querySelector<HTMLElement>('#theia-bottom-panel')
-            ?? document.querySelector<HTMLElement>('.theia-bottom-panel');
+        // Eclipse Theia 1.74 exposes the real bottom DockPanel directly from
+        // ApplicationShell. Do not depend on a guessed DOM id.
+        const bottom = this.shell.bottomPanel?.node;
         if (!bottom) {
             return;
         }
+
+        bottom.classList.add('novaoryn-bottom-panel-host');
 
         let strip = bottom.querySelector<HTMLElement>(':scope > .novaoryn-bottom-control-strip');
         if (!strip) {
@@ -544,25 +546,27 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
             maximize.type = 'button';
             maximize.textContent = '↕';
             maximize.title = 'Maximize / restore bottom panel';
-            maximize.addEventListener('click', () => this.clickBottomPanelNativeControl(['Maximize', 'Restore', 'Toggle Maximize']));
+            maximize.addEventListener('click', () => {
+                this.shell.bottomPanel.toggleMaximized();
+            });
 
             const close = document.createElement('button');
             close.type = 'button';
             close.textContent = '×';
             close.title = 'Close bottom panel';
-            close.addEventListener('click', () => this.clickBottomPanelNativeControl(['Close Panel', 'Close']));
+            close.addEventListener('click', () => {
+                // ApplicationShell.collapseBottomPanel() is protected. The public
+                // Lumino DockPanel inherits Widget.hide(), which is the correct
+                // external way to hide the bottom area.
+                this.shell.bottomPanel.hide();
+            });
 
             right.append(channel, clear, maximize, close);
             strip.append(left, right);
 
-            const content =
-                bottom.querySelector<HTMLElement>('#theia-bottom-content-panel')
-                ?? bottom.querySelector<HTMLElement>('.theia-bottom-content-panel');
-            if (content) {
-                bottom.insertBefore(strip, content);
-            } else {
-                bottom.prepend(strip);
-            }
+            // Lumino owns the DockPanel's managed child layout. The toolbar is
+            // therefore an absolute overlay on the shell-owned panel node.
+            bottom.appendChild(strip);
         }
 
         strip.hidden = false;
@@ -572,9 +576,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     }
 
     protected activateBottomPanelTab(label: string): void {
-        const bottom =
-            document.querySelector<HTMLElement>('#theia-bottom-panel')
-            ?? document.querySelector<HTMLElement>('.theia-bottom-panel');
+        const bottom = this.shell.bottomPanel?.node;
         if (!bottom) {
             return;
         }

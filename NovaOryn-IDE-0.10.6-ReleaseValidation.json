@@ -1,5 +1,5 @@
 {
-  "release": "NovaOryn IDE 0.10.7",
+  "release": "NovaOryn IDE 0.10.9",
   "bottomPanel": "NovaOryn-owned guaranteed control strip",
   "driverRootCause": "capability declarations incorrectly treated as mandatory all-or-nothing pre-grants",
   "driverFix": "best-effort pre-grant; declaration remains permission ceiling",
@@ -7,9 +7,9 @@
     "static": "PASS",
     "typescript": "PASS",
     "versions": {
-      "package.json": "0.10.7",
-      "applications/electron/package.json": "0.10.7",
-      "packages/novaoryn-ide/package.json": "0.10.7"
+      "package.json": "0.10.9",
+      "applications/electron/package.json": "0.10.9",
+      "packages/novaoryn-ide/package.json": "0.10.9"
     }
   }
 }

@@ -1,0 +1,15 @@
+{
+  "release": "NovaOryn IDE 0.10.9",
+  "rootCause": "ApplicationShell.collapseBottomPanel is protected.",
+  "fix": "Use public this.shell.bottomPanel.hide() for the Close control.",
+  "validation": {
+    "directBottomPanelNodeMountRetained": "PASS",
+    "protectedCallRemoved": "PASS",
+    "modifiedContributionTranspile": "PASS",
+    "versionConsistency": {
+      "package.json": "0.10.9",
+      "applications/electron/package.json": "0.10.9",
+      "packages/novaoryn-ide/package.json": "0.10.9"
+    }
+  }
+}

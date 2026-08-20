@@ -14,4 +14,4 @@ C(drv.includes("// Best-effort pre-grants."),"automatic grants are best-effort")
 C(!drv.includes("KernelDriverFailureCode.CapabilityFailure,KernelDriverLifecycleStage.Bind);continue;"),"capability pre-grant no longer fails binding");
 C(gpu.includes("!EnablePci(pci.Location)")&&gpu.includes("command|0x0006U"),"VirtIO PCI enablement retained");
 C(drv.includes("BindAndStartMatchingDevices()"),"device matching/start reconciliation retained");
-if(f)process.exitCode=1;else console.log("[ OK ] NovaOryn 0.10.7 verified.");
+if(f)process.exitCode=1;else console.log("[ OK ] NovaOryn 0.10.9 verified.");

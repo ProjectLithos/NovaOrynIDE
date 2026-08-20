@@ -18,4 +18,4 @@ C(drv.includes("if(TryBindDevice(device,out _))"),"matching discovered devices a
 C(drv.includes("ok=StartDevice(device)&ok"),"bound matching devices are started");
 C(drv.includes("d->State=(Byte)KernelDeviceState.Bound;d->FailureCode=(UInt32)KernelDriverFailureCode.StartFailed"),"start failure remains retryable bound state");
 C(hal.includes("KernelDrivers.BindAndStartMatchingDevices()"),"generated HAL reconciles all configured drivers");
-if(fail)process.exitCode=1;else console.log("[ OK ] NovaOryn 0.10.7 panel/device/driver contract verified.");
+if(fail)process.exitCode=1;else console.log("[ OK ] NovaOryn 0.10.9 panel/device/driver contract verified.");
