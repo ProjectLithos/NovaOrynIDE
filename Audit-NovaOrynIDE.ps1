@@ -9,7 +9,9 @@ $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Npm = Join-Path $Root '.toolchain\Node\npm.cmd'
 $Artifacts = Join-Path $Root 'Artifacts\Security'
-$BaselinePath = Join-Path $Root 'Security-Baseline.json'
+$JsonRoot = Join-Path $Root 'JSON'
+$NpmWorkspace = Join-Path $Root '.toolchain\NpmWorkspace'
+$BaselinePath = Join-Path $JsonRoot 'Security-Baseline.json'
 $FullReport = Join-Path $Artifacts 'npm-audit-full.json'
 $ProductionReport = Join-Path $Artifacts 'npm-audit-production.json'
 
@@ -20,6 +22,7 @@ function Ok([string]$Message) { Write-Host "[ OK ] $Message" }
 function Invoke-Audit([string[]]$ExtraArgs, [string]$OutputPath) {
     $arguments = @('audit','--json') + $ExtraArgs
     $tempErr = [System.IO.Path]::GetTempFileName()
+    Push-Location -LiteralPath $NpmWorkspace
     try {
         $stdoutLines = & $Npm @arguments 2> $tempErr
         $stdout = ($stdoutLines -join [Environment]::NewLine)
@@ -31,6 +34,7 @@ function Invoke-Audit([string[]]$ExtraArgs, [string]$OutputPath) {
         try { return ($stdout | ConvertFrom-Json) }
         catch { Fail "npm audit returned invalid JSON for $OutputPath. $stderr" }
     } finally {
+        Pop-Location
         Remove-Item -LiteralPath $tempErr -Force -ErrorAction SilentlyContinue
     }
 }

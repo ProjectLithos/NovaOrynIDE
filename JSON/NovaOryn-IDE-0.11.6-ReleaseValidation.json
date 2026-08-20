@@ -1,0 +1,20 @@
+{
+  "version": "0.11.6",
+  "baseVersion": "0.11.5",
+  "rootCause": "Moving the root npm manifest into JSON and staging the npm workspace exposed that @novaoryn/ide-extension did not explicitly declare @types/react. The React runtime was installed transitively through Theia, but TypeScript had no React/JSX declarations, causing TS7016/TS7026 cascades across all TSX widgets.",
+  "fixes": [
+    "Declare @types/react ^18.3.0 as an explicit devDependency of @novaoryn/ide-extension.",
+    "Verify @types/react is actually installed in the extension workspace before TypeScript compilation.",
+    "Retain npm execution from .toolchain/NpmWorkspace so C:\\NovaOrynIDE remains free of root JSON files.",
+    "Bump active IDE/generator/configurator release metadata to 0.11.6 while preserving historical compatibility references."
+  ],
+  "validation": {
+    "rootJsonFiles": 0,
+    "jsonParse": "passed",
+    "targetManagerVerifier": "passed",
+    "authoritativeConfigurationVerifier": "passed",
+    "testFrameworkVerifier": "passed",
+    "reactTypesManifest": "@types/react ^18.3.0 declared",
+    "windowsNpmInstallAndFullTheiaBuild": "must run via Build-NovaOrynIDE.bat on Windows"
+  }
+}

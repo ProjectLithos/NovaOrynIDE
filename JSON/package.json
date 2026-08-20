@@ -1,7 +1,7 @@
 {
   "name": "novaoryn-ide",
   "private": true,
-  "version": "0.11.3",
+  "version": "0.11.6",
   "workspaces": [
     "applications/*",
     "packages/*"
@@ -10,7 +10,7 @@
     "build": "npm run build --workspace @novaoryn/ide-extension && npm run build --workspace @novaoryn/ide-electron",
     "clean": "npm run clean --workspace @novaoryn/ide-extension && npm run clean --workspace @novaoryn/ide-electron",
     "start": "npm run start --workspace @novaoryn/ide-electron",
-    "audit": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File Audit-NovaOrynIDE.ps1"
+    "audit": "powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File ..\\..\\Audit-NovaOrynIDE.ps1"
   },
   "engines": {
     "node": ">=22 <23"

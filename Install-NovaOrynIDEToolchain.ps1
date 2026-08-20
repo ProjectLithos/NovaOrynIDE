@@ -8,7 +8,7 @@ $ProgressPreference = 'SilentlyContinue'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ToolchainRoot = Join-Path $Root '.toolchain'
 $Downloads = Join-Path $ToolchainRoot 'Downloads'
-$ManifestPath = Join-Path $Root 'Toolchain-Versions.json'
+$ManifestPath = Join-Path $Root 'JSON\Toolchain-Versions.json'
 
 function Write-Info([string]$Message) { Write-Host "[INFO] $Message" }
 function Write-Ok([string]$Message) { Write-Host "[ OK ] $Message" }

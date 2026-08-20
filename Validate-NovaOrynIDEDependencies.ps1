@@ -5,11 +5,11 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RootPackagePath = Join-Path $Root 'package.json'
+$RootPackagePath = Join-Path $Root 'JSON\package.json'
 $ElectronPackagePath = Join-Path $Root 'applications\electron\package.json'
 $ExtensionPackagePath = Join-Path $Root 'packages\novaoryn-ide\package.json'
 
-$ExpectedIdeVersion = '0.11.3'
+$ExpectedIdeVersion = '0.11.6'
 $ExpectedTheiaVersion = '1.74.0'
 $ExpectedElectronVersion = '42.3.0'
 $ExpectedWindowsCaCertsVersion = '0.3.4'
@@ -77,7 +77,7 @@ try {
 
     foreach ($packageName in $ForbiddenRuntimePackages) {
         if ($electronPackage.dependencies.PSObject.Properties.Name -contains $packageName) {
-            Fail "$packageName must not be a production dependency in 0.11.3. VS Code/Open VSX plugin loading is temporarily disabled to keep the vulnerable decompress chain out of the shipped runtime."
+            Fail "$packageName must not be a production dependency in 0.11.6. VS Code/Open VSX plugin loading is temporarily disabled to keep the vulnerable decompress chain out of the shipped runtime."
         }
     }
 
@@ -101,6 +101,11 @@ try {
         Fail "NovaOryn IDE requires @lumino/messaging ^2.0.4 to match Theia 1.74.0; found $($extensionPackage.dependencies.'@lumino/messaging')."
     }
     Ok 'Lumino Widget 2.7.5 / Messaging 2.x compatibility dependencies verified.'
+    $reactTypes = [string]$extensionPackage.devDependencies.'@types/react'
+    if ([string]::IsNullOrWhiteSpace($reactTypes)) {
+        Fail 'NovaOryn IDE TSX widgets require @types/react in the extension devDependencies.'
+    }
+    Ok "React/JSX TypeScript declarations @types/react $reactTypes verified."
     $requiredRootCliPackages = @(
         '@theia/application-manager','@theia/cli','@theia/core','@theia/editor','@theia/electron',
         '@theia/debug','@theia/filesystem','@theia/monaco','@theia/navigator','@theia/output','@theia/preferences',

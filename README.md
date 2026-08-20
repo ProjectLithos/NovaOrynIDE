@@ -60,7 +60,7 @@ The full report includes development/build dependencies such as `@theia/cli`. Th
 
 ## Toolchain policy
 
-The authoritative tool versions are in `Toolchain-Versions.json`.
+The authoritative tool versions are in `JSON\Toolchain-Versions.json`.
 
 The IDE currently pins:
 

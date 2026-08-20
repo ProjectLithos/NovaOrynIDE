@@ -14,7 +14,19 @@ if exist "%~dp0*.cjs" (
   echo [ OK ] Legacy root-level .cjs files removed.
 )
 
-echo [INFO] NovaOryn IDE Build 0.11.3
+rem Remove legacy root-level JSON files after the JSON source reorganisation.
+rem JSON\ contains the authoritative root manifests; no *.json file is supported directly at the IDE root.
+if exist "%~dp0*.json" (
+  echo [INFO] Removing legacy root-level .json files...
+  del /q "%~dp0*.json" >nul 2>&1
+  if exist "%~dp0*.json" (
+    echo [FAIL] One or more legacy root-level .json files could not be removed.
+    exit /b 1
+  )
+  echo [ OK ] Legacy root-level .json files removed.
+)
+
+echo [INFO] NovaOryn IDE Build 0.11.6
 
 set "NOVAORYN_IDE_ROOT=%~dp0"
 set "NOVAORYN_SDK_ROOT=%~dp0SDK"
@@ -44,7 +56,7 @@ if not exist "%BOOTSTRAP%" (
   exit /b 1
 )
 
-echo [INFO] Verifying NovaOryn IDE 0.11.3 build toolchain...
+echo [INFO] Verifying NovaOryn IDE 0.11.6 build toolchain...
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%BOOTSTRAP%"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
@@ -56,6 +68,7 @@ rem Resolve the repository-pinned tools directly.  Do not call a generated
 rem environment .cmd file: build control flow must remain inside this script.
 set "NOVAORYN_NODE=%~dp0.toolchain\Node\node.exe"
 set "NOVAORYN_NPM=%~dp0.toolchain\Node\npm.cmd"
+set "NOVAORYN_NPM_PREFIX=%~dp0.toolchain\NpmWorkspace"
 set "NOVAORYN_PYTHON=%~dp0.toolchain\Python\python.exe"
 
 if not exist "%NOVAORYN_NODE%" (
@@ -96,8 +109,8 @@ if not "%RESULT%"=="0" (
   exit /b %RESULT%
 )
 
-if exist "%~dp0package-lock.json" (
-  powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$p='%~dp0package-lock.json'; try { $j=Get-Content -LiteralPath $p -Raw ^| ConvertFrom-Json; $v=[string]$j.version; if ($v -and $v -ne '0.11.3') { Write-Host '[INFO] Removing stale package-lock.json from NovaOryn IDE' $v; Remove-Item -LiteralPath $p -Force } } catch { Write-Host '[INFO] Removing unreadable package-lock.json so npm can regenerate it.'; Remove-Item -LiteralPath $p -Force }"
+if exist "%~dp0JSON\package-lock.json" (
+  powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$p='%~dp0JSON\package-lock.json'; try { $j=Get-Content -LiteralPath $p -Raw ^| ConvertFrom-Json; $v=[string]$j.version; if ($v -and $v -ne '0.11.6') { Write-Host '[INFO] Removing stale package-lock.json from NovaOryn IDE' $v; Remove-Item -LiteralPath $p -Force } } catch { Write-Host '[INFO] Removing unreadable package-lock.json so npm can regenerate it.'; Remove-Item -LiteralPath $p -Force }"
   if errorlevel 1 (
     echo [FAIL] Could not validate the existing package-lock.json.
     exit /b 1
@@ -110,28 +123,60 @@ rem has been removed.  Treat the installed tree as disposable whenever the recor
 rem Theia/Electron pair does not match the pinned pair.
 set "NOVAORYN_BUILDSTATE=%~dp0.toolchain\NovaOrynIDE-BuildState.json"
 set "NOVAORYN_BROWSER_MODULES=%~dp0.browser_modules"
-set "NOVAORYN_NODE_MODULES=%~dp0node_modules"
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$state='%NOVAORYN_BUILDSTATE%'; $cache='%NOVAORYN_BROWSER_MODULES%'; $modules='%NOVAORYN_NODE_MODULES%'; $wantedTheia='1.74.0'; $wantedElectron='42.3.0'; $stale=$false; if (Test-Path -LiteralPath $state) { try { $j=Get-Content -LiteralPath $state -Raw | ConvertFrom-Json; if ([string]$j.theiaVersion -ne $wantedTheia -or [string]$j.electronVersion -ne $wantedElectron) { $stale=$true } } catch { $stale=$true } } elseif ((Test-Path -LiteralPath $modules) -or (Test-Path -LiteralPath $cache)) { $stale=$true }; if ($stale -and (Test-Path -LiteralPath $modules)) { Write-Host '[INFO] Removing stale npm dependency tree from an earlier Theia/Electron pair.'; Remove-Item -LiteralPath $modules -Recurse -Force -ErrorAction Stop }; if ($stale -and (Test-Path -LiteralPath $cache)) { Write-Host '[INFO] Removing stale Theia native-module cache from an earlier dependency set.'; Remove-Item -LiteralPath $cache -Recurse -Force -ErrorAction Stop }; if ($stale) { foreach ($rel in @('applications\electron\lib','applications\electron\src-gen','applications\electron\gen-webpack.config.js','applications\electron\esbuild.mjs')) { $x=Join-Path '%~dp0' $rel; if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Recurse -Force -ErrorAction Stop } }; $lock=Join-Path '%~dp0' 'package-lock.json'; if (Test-Path -LiteralPath $lock) { Remove-Item -LiteralPath $lock -Force -ErrorAction Stop } }"
+set "NOVAORYN_NODE_MODULES=%NOVAORYN_NPM_PREFIX%\node_modules"
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$state='%NOVAORYN_BUILDSTATE%'; $cache='%NOVAORYN_BROWSER_MODULES%'; $modules='%NOVAORYN_NODE_MODULES%'; $wantedTheia='1.74.0'; $wantedElectron='42.3.0'; $stale=$false; if (Test-Path -LiteralPath $state) { try { $j=Get-Content -LiteralPath $state -Raw | ConvertFrom-Json; if ([string]$j.theiaVersion -ne $wantedTheia -or [string]$j.electronVersion -ne $wantedElectron) { $stale=$true } } catch { $stale=$true } } elseif ((Test-Path -LiteralPath $modules) -or (Test-Path -LiteralPath $cache)) { $stale=$true }; if ($stale -and (Test-Path -LiteralPath $modules)) { Write-Host '[INFO] Removing stale npm dependency tree from an earlier Theia/Electron pair.'; Remove-Item -LiteralPath $modules -Recurse -Force -ErrorAction Stop }; if ($stale -and (Test-Path -LiteralPath $cache)) { Write-Host '[INFO] Removing stale Theia native-module cache from an earlier dependency set.'; Remove-Item -LiteralPath $cache -Recurse -Force -ErrorAction Stop }; if ($stale) { foreach ($rel in @('applications\electron\lib','applications\electron\src-gen','applications\electron\gen-webpack.config.js','applications\electron\esbuild.mjs')) { $x=Join-Path '%~dp0' $rel; if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Recurse -Force -ErrorAction Stop } }; $lock=Join-Path '%~dp0JSON' 'package-lock.json'; if (Test-Path -LiteralPath $lock) { Remove-Item -LiteralPath $lock -Force -ErrorAction Stop }; $stagedLock=Join-Path '%NOVAORYN_NPM_PREFIX%' 'package-lock.json'; if (Test-Path -LiteralPath $stagedLock) { Remove-Item -LiteralPath $stagedLock -Force -ErrorAction Stop } }"
 if errorlevel 1 (
   echo [FAIL] Could not invalidate stale npm/Theia dependency state.
   exit /b 1
 )
 
-echo [INFO] Installing NovaOryn IDE JavaScript dependencies, including development tools...
-call "%NOVAORYN_NPM%" install --include=dev --workspaces
-set "RESULT=%errorlevel%"
-if not "%RESULT%"=="0" (
-  echo [FAIL] npm dependency installation failed with exit code %RESULT%.
-  exit /b %RESULT%
+rem Stage the npm workspace under .toolchain so the IDE root itself contains no JSON manifests.
+if not exist "%NOVAORYN_NPM_PREFIX%" mkdir "%NOVAORYN_NPM_PREFIX%"
+copy /y "%~dp0JSON\package.json" "%NOVAORYN_NPM_PREFIX%\package.json" >nul
+if errorlevel 1 (
+  echo [FAIL] Could not stage JSON\package.json for npm.
+  exit /b 1
 )
+if exist "%~dp0JSON\package-lock.json" copy /y "%~dp0JSON\package-lock.json" "%NOVAORYN_NPM_PREFIX%\package-lock.json" >nul
+rmdir /s /q "%NOVAORYN_NPM_PREFIX%\applications" >nul 2>&1
+rmdir /s /q "%NOVAORYN_NPM_PREFIX%\packages" >nul 2>&1
+rmdir /s /q "%NOVAORYN_NPM_PREFIX%\CJS" >nul 2>&1
+mklink /J "%NOVAORYN_NPM_PREFIX%\applications" "%~dp0applications" >nul 2>&1
+mklink /J "%NOVAORYN_NPM_PREFIX%\packages" "%~dp0packages" >nul 2>&1
+mklink /J "%NOVAORYN_NPM_PREFIX%\CJS" "%~dp0CJS" >nul 2>&1
+if not exist "%NOVAORYN_NPM_PREFIX%\applications\electron\package.json" (
+  echo [FAIL] Could not stage the npm workspace application junction.
+  exit /b 1
+)
+rmdir /s /q "%~dp0node_modules" >nul 2>&1
+if not exist "%NOVAORYN_NPM_PREFIX%\node_modules" mkdir "%NOVAORYN_NPM_PREFIX%\node_modules"
+mklink /J "%~dp0node_modules" "%NOVAORYN_NPM_PREFIX%\node_modules" >nul 2>&1
+if not exist "%~dp0node_modules" (
+  echo [FAIL] Could not create the root node_modules junction to the staged npm workspace.
+  exit /b 1
+)
+echo [INFO] Installing NovaOryn IDE JavaScript dependencies, including development tools...
+pushd "%NOVAORYN_NPM_PREFIX%"
+call "%NOVAORYN_NPM%" install --include=dev --workspaces
+set "RESULT=!errorlevel!"
+popd
+if not "!RESULT!"=="0" (
+  echo [FAIL] npm dependency installation failed with exit code !RESULT!.
+  exit /b !RESULT!
+)
+if exist "%NOVAORYN_NPM_PREFIX%\package-lock.json" copy /y "%NOVAORYN_NPM_PREFIX%\package-lock.json" "%~dp0JSON\package-lock.json" >nul
 
 echo [INFO] Verifying Eclipse Theia CLI package...
+pushd "%NOVAORYN_NPM_PREFIX%"
 call "%NOVAORYN_NPM%" ls @theia/cli --workspace @novaoryn/ide-electron --depth=0
-set "RESULT=%errorlevel%"
-if not "%RESULT%"=="0" (
+set "RESULT=!errorlevel!"
+popd
+if not "!RESULT!"=="0" (
   echo [FAIL] @theia/cli is not installed for @novaoryn/ide-electron.
   echo [INFO] npm omit setting:
-  call "%NOVAORYN_NPM%" config get omit
+  pushd "%NOVAORYN_NPM_PREFIX%"
+call "%NOVAORYN_NPM%" config get omit
+popd
   exit /b 1
 )
 echo [ OK ] Eclipse Theia CLI package is installed.
@@ -139,28 +184,40 @@ echo [ OK ] Eclipse Theia CLI package is installed.
 echo [INFO] Verifying installed Theia/Electron runtime versions from the Electron workspace...
 "%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEInstalledDependencies.cjs"
 if errorlevel 1 (
-  echo [WARN] Installed dependency tree does not match the NovaOryn 0.11.3 pins.
+  echo [WARN] Installed dependency tree does not match the NovaOryn 0.11.6 pins.
   echo [INFO] Performing one clean dependency reinstall from the checked package manifests...
-  if exist "%~dp0node_modules" rmdir /s /q "%~dp0node_modules"
-  if exist "%~dp0package-lock.json" del /f /q "%~dp0package-lock.json"
+  rmdir /s /q "%~dp0node_modules" >nul 2>&1
+  if exist "%NOVAORYN_NPM_PREFIX%\node_modules" rmdir /s /q "%NOVAORYN_NPM_PREFIX%\node_modules"
+  if exist "%~dp0JSON\package-lock.json" del /f /q "%~dp0JSON\package-lock.json"
+  if exist "%NOVAORYN_NPM_PREFIX%\package-lock.json" del /f /q "%NOVAORYN_NPM_PREFIX%\package-lock.json"
   if exist "%~dp0.browser_modules" rmdir /s /q "%~dp0.browser_modules"
-  call "%NOVAORYN_NPM%" install --include=dev --workspaces
-  set "RESULT=!errorlevel!"
+  pushd "%NOVAORYN_NPM_PREFIX%"
+call "%NOVAORYN_NPM%" install --include=dev --workspaces
+set "RESULT=!errorlevel!"
+popd
   if not "!RESULT!"=="0" (
     echo [FAIL] Clean npm dependency reinstall failed with exit code !RESULT!.
     exit /b !RESULT!
   )
+  if exist "%NOVAORYN_NPM_PREFIX%\package-lock.json" copy /y "%NOVAORYN_NPM_PREFIX%\package-lock.json" "%~dp0JSON\package-lock.json" >nul
+  mklink /J "%~dp0node_modules" "%NOVAORYN_NPM_PREFIX%\node_modules" >nul 2>&1
+  if not exist "%~dp0node_modules" (
+    echo [FAIL] Could not recreate the root node_modules junction after clean reinstall.
+    exit /b 1
+  )
   "%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEInstalledDependencies.cjs"
   if errorlevel 1 (
-    echo [FAIL] Clean reinstall still does not match the NovaOryn 0.11.3 dependency pins.
+    echo [FAIL] Clean reinstall still does not match the NovaOryn 0.11.6 dependency pins.
     exit /b 2
   )
 )
 
 echo [INFO] Verifying Windows CA certificate module required by the Theia Node bundle...
+pushd "%NOVAORYN_NPM_PREFIX%"
 call "%NOVAORYN_NPM%" ls @vscode/windows-ca-certs --workspace @novaoryn/ide-electron --depth=0
-set "RESULT=%errorlevel%"
-if not "%RESULT%"=="0" (
+set "RESULT=!errorlevel!"
+popd
+if not "!RESULT!"=="0" (
   echo [FAIL] @vscode/windows-ca-certs is not installed for @novaoryn/ide-electron.
   exit /b 1
 )
@@ -182,13 +239,27 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying TypeScript compiler for the NovaOryn Theia extension...
+pushd "%NOVAORYN_NPM_PREFIX%"
 call "%NOVAORYN_NPM%" ls typescript --workspace @novaoryn/ide-extension --depth=0
-set "RESULT=%errorlevel%"
-if not "%RESULT%"=="0" (
+set "RESULT=!errorlevel!"
+popd
+if not "!RESULT!"=="0" (
   echo [FAIL] TypeScript is not installed for @novaoryn/ide-extension.
   exit /b 1
 )
 echo [ OK ] TypeScript compiler is installed.
+
+echo [INFO] Verifying React/JSX TypeScript declarations for the NovaOryn extension...
+pushd "%NOVAORYN_NPM_PREFIX%"
+call "%NOVAORYN_NPM%" ls @types/react --workspace @novaoryn/ide-extension --depth=0
+set "RESULT=!errorlevel!"
+popd
+if not "!RESULT!"=="0" (
+  echo [FAIL] @types/react is not installed for @novaoryn/ide-extension.
+  echo [INFO] NovaOryn TSX widgets require React declarations for JSX.IntrinsicElements and react/jsx-runtime.
+  exit /b 1
+)
+echo [ OK ] React/JSX TypeScript declarations are installed.
 
 if not exist "%~dp0applications\electron\splash\splash.html" (
   echo [FAIL] NovaOryn IDE splash screen HTML is missing.
@@ -406,12 +477,14 @@ echo [INFO] Verifying proper NovaOryn SDK test framework...
 "%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDETestFramework0110.cjs"
 if errorlevel 1 ( echo [FAIL] Proper SDK test framework verification failed. & exit /b 1 )
 
-echo [INFO] Building NovaOryn IDE 0.11.3...
+echo [INFO] Building NovaOryn IDE 0.11.6...
+pushd "%NOVAORYN_NPM_PREFIX%"
 call "%NOVAORYN_NPM%" run build
-set "RESULT=%errorlevel%"
-if not "%RESULT%"=="0" (
-  echo [FAIL] NovaOryn IDE build failed with exit code %RESULT%.
-  exit /b %RESULT%
+set "RESULT=!errorlevel!"
+popd
+if not "!RESULT!"=="0" (
+  echo [FAIL] NovaOryn IDE build failed with exit code !RESULT!.
+  exit /b !RESULT!
 )
 
 if not exist "%~dp0packages\novaoryn-ide\lib\browser\novaoryn-frontend-module.js" (
@@ -431,7 +504,7 @@ if not exist "%~dp0applications\electron\lib\backend\electron-main.js" (
   exit /b 1
 )
 
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$o=[ordered]@{ novaOrynIdeVersion='0.11.3'; theiaVersion='1.74.0'; electronVersion='42.3.0'; generatedUtc=(Get-Date).ToUniversalTime().ToString('o') }; $o | ConvertTo-Json | Set-Content -LiteralPath '%NOVAORYN_BUILDSTATE%' -Encoding UTF8"
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$o=[ordered]@{ novaOrynIdeVersion='0.11.6'; theiaVersion='1.74.0'; electronVersion='42.3.0'; generatedUtc=(Get-Date).ToUniversalTime().ToString('o') }; $o | ConvertTo-Json | Set-Content -LiteralPath '%NOVAORYN_BUILDSTATE%' -Encoding UTF8"
 if errorlevel 1 (
   echo [WARN] Build succeeded but NovaOryn could not record the dependency build-state marker.
 )
@@ -514,7 +587,7 @@ if errorlevel 1 goto :git_fail
 git diff --cached --quiet
 if errorlevel 1 (
   echo [INFO] Committing NovaOryn IDE 0.11.3 source changes.
-  git commit -m "NovaOryn IDE 0.11.3"
+  git commit -m "NovaOryn IDE 0.11.6"
   if errorlevel 1 goto :git_fail
 ) else (
   echo [INFO] No source changes require a new commit.

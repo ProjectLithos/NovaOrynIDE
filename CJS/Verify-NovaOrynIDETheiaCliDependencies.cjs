@@ -3,7 +3,7 @@
 const path = require('path');
 const { createRequire } = require('module');
 
-const rootPackage = path.join(__dirname, '..', 'package.json');
+const rootPackage = path.join(__dirname, '..', '.toolchain', 'NpmWorkspace', 'package.json');
 const rootRequire = createRequire(rootPackage);
 const required = [
   '@theia/application-manager',

@@ -1,6 +1,6 @@
 {
   "name": "@novaoryn/ide-extension",
-  "version": "0.11.3",
+  "version": "0.11.6",
   "private": true,
   "license": "MIT",
   "theiaExtensions": [
@@ -26,7 +26,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "@types/react": "^18.3.0"
   },
   "scripts": {
     "build": "node ../../CJS/extension-files.cjs clean && tsc -p tsconfig.json && node ../../CJS/extension-files.cjs assets",
