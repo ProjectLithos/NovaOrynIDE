@@ -6,8 +6,8 @@ import { NovaOrynDeviceTreeNode, NovaOrynDeviceTreeSnapshot, NovaOrynProjectServ
 
 @injectable()
 export class NovaOrynHardwareWidget extends ReactWidget {
-    static readonly ID = 'novaoryn.hardware.tree';
-    static readonly LABEL = 'NovaOryn Hardware';
+    static readonly ID = 'novaoryn.hardware.document';
+    static readonly LABEL = 'Hardware / Device Tree';
     @inject(WorkspaceService) protected readonly workspaceService!: WorkspaceService;
     @inject(NovaOrynProjectService) protected readonly projectService!: NovaOrynProjectService;
     protected snapshot?: NovaOrynDeviceTreeSnapshot;

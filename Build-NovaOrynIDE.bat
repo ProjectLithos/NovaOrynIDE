@@ -2,7 +2,19 @@
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
-echo [INFO] NovaOryn IDE Build 0.11.1
+rem Remove legacy root-level CommonJS verifier files after the 0.11.2 CJS reorganisation.
+rem Only files directly under the IDE root are removed; CJS\*.cjs is preserved.
+if exist "%~dp0*.cjs" (
+  echo [INFO] Removing legacy root-level .cjs files...
+  del /q "%~dp0*.cjs" >nul 2>&1
+  if exist "%~dp0*.cjs" (
+    echo [FAIL] One or more legacy root-level .cjs files could not be removed.
+    exit /b 1
+  )
+  echo [ OK ] Legacy root-level .cjs files removed.
+)
+
+echo [INFO] NovaOryn IDE Build 0.11.3
 
 set "NOVAORYN_IDE_ROOT=%~dp0"
 set "NOVAORYN_SDK_ROOT=%~dp0SDK"
@@ -32,7 +44,7 @@ if not exist "%BOOTSTRAP%" (
   exit /b 1
 )
 
-echo [INFO] Verifying NovaOryn IDE 0.11.1 build toolchain...
+echo [INFO] Verifying NovaOryn IDE 0.11.3 build toolchain...
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%BOOTSTRAP%"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
@@ -85,7 +97,7 @@ if not "%RESULT%"=="0" (
 )
 
 if exist "%~dp0package-lock.json" (
-  powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$p='%~dp0package-lock.json'; try { $j=Get-Content -LiteralPath $p -Raw ^| ConvertFrom-Json; $v=[string]$j.version; if ($v -and $v -ne '0.11.1') { Write-Host '[INFO] Removing stale package-lock.json from NovaOryn IDE' $v; Remove-Item -LiteralPath $p -Force } } catch { Write-Host '[INFO] Removing unreadable package-lock.json so npm can regenerate it.'; Remove-Item -LiteralPath $p -Force }"
+  powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$p='%~dp0package-lock.json'; try { $j=Get-Content -LiteralPath $p -Raw ^| ConvertFrom-Json; $v=[string]$j.version; if ($v -and $v -ne '0.11.3') { Write-Host '[INFO] Removing stale package-lock.json from NovaOryn IDE' $v; Remove-Item -LiteralPath $p -Force } } catch { Write-Host '[INFO] Removing unreadable package-lock.json so npm can regenerate it.'; Remove-Item -LiteralPath $p -Force }"
   if errorlevel 1 (
     echo [FAIL] Could not validate the existing package-lock.json.
     exit /b 1
@@ -125,9 +137,9 @@ if not "%RESULT%"=="0" (
 echo [ OK ] Eclipse Theia CLI package is installed.
 
 echo [INFO] Verifying installed Theia/Electron runtime versions from the Electron workspace...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEInstalledDependencies.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEInstalledDependencies.cjs"
 if errorlevel 1 (
-  echo [WARN] Installed dependency tree does not match the NovaOryn 0.11.1 pins.
+  echo [WARN] Installed dependency tree does not match the NovaOryn 0.11.3 pins.
   echo [INFO] Performing one clean dependency reinstall from the checked package manifests...
   if exist "%~dp0node_modules" rmdir /s /q "%~dp0node_modules"
   if exist "%~dp0package-lock.json" del /f /q "%~dp0package-lock.json"
@@ -138,9 +150,9 @@ if errorlevel 1 (
     echo [FAIL] Clean npm dependency reinstall failed with exit code !RESULT!.
     exit /b !RESULT!
   )
-  "%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEInstalledDependencies.cjs"
+  "%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEInstalledDependencies.cjs"
   if errorlevel 1 (
-    echo [FAIL] Clean reinstall still does not match the NovaOryn 0.11.1 dependency pins.
+    echo [FAIL] Clean reinstall still does not match the NovaOryn 0.11.3 dependency pins.
     exit /b 2
   )
 )
@@ -155,7 +167,7 @@ if not "%RESULT%"=="0" (
 echo [ OK ] Windows CA certificate module is installed.
 
 echo [INFO] Verifying root Theia CLI dependency surface...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDETheiaCliDependencies.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDETheiaCliDependencies.cjs"
 if errorlevel 1 (
   echo [FAIL] Root Theia CLI dependency verification failed.
   exit /b 1
@@ -195,7 +207,7 @@ if not exist "%~dp0applications\electron\resources\novaoryn-ide.ico" (
 echo [ OK ] NovaOryn IDE application icon is present.
 
 echo [INFO] Verifying authoritative NovaOryn configuration generator...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEAuthoritativeConfiguration.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEAuthoritativeConfiguration.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn authoritative configuration verification failed.
@@ -203,7 +215,7 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying existing NovaOryn OS reconfiguration contract...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEReconfiguration.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEReconfiguration.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn OS reconfiguration verification failed.
@@ -211,7 +223,7 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying system theme and syntax-highlighting contract...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEThemeAndSyntax.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEThemeAndSyntax.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE theme/syntax verification failed.
@@ -219,7 +231,7 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying build-owned GitHub source publishing contract...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEGitPublish.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEGitPublish.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE GitHub publishing verification failed.
@@ -227,7 +239,7 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying debugger breakpoint integration...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEDebugBreakpoints.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEDebugBreakpoints.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE debugger breakpoint verification failed.
@@ -235,14 +247,14 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying exact NativeAOT source-debug integration...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEBundledSdk.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEBundledSdk.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE bundled-SDK verification failed.
   exit /b %RESULT%
 )
 
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDESourceDebug.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDESourceDebug.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE source-debug verification failed.
@@ -250,7 +262,7 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying conditional breakpoints and Watch expressions...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEDebugExpressions.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEDebugExpressions.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE conditional-breakpoint/Watch verification failed.
@@ -258,7 +270,7 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying Memory viewer and named NativeAOT locals/arguments...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEMemoryLocals.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEMemoryLocals.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE Memory/locals verification failed.
@@ -266,7 +278,7 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying CPU/thread/process contexts, x64 call-stack unwinding, and NovaOryn application icon...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEExecutionUnwind.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEExecutionUnwind.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE execution-context/x64-unwind/icon verification failed.
@@ -274,7 +286,7 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying page-table, heap and crash-dump debugging...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEPageHeapCrash.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEPageHeapCrash.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE page-table/heap/crash-dump verification failed.
@@ -282,7 +294,7 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying professional OS Dashboard, Kernel Console, Hardware Tree and Test Explorer...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEProfessionalTools.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEProfessionalTools.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE professional OS tools verification failed.
@@ -290,7 +302,7 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying kernel tracing, boot analyser and performance profiler...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDETracingProfiler.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDETracingProfiler.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE tracing/profiler verification failed.
@@ -301,34 +313,34 @@ echo [INFO] Verifying bundled NovaOryn SDK API/ABI contract...
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0SDK\Verify-NovaOrynSdkContract.ps1"
 if errorlevel 1 ( echo [FAIL] Bundled NovaOryn SDK contract verification failed. & exit /b 1 )
 echo [INFO] Verifying Driver Development Centre...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEDriverCentre.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEDriverCentre.cjs"
 if errorlevel 1 (
   echo [FAIL] Driver Development Centre verification failed.
   exit /b 1
 )
 echo [INFO] Verifying Target Manager contract...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDETargetManager.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDETargetManager.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE Target Manager verification failed.
   exit /b %RESULT%
 )
 echo [INFO] Verifying OS-specific static analyzers...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEStaticAnalyzers.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEStaticAnalyzers.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE OS-specific static analyzer verification failed.
   exit /b %RESULT%
 )
 echo [INFO] Verifying Binary / Symbol Explorer...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEBinarySymbols.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEBinarySymbols.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE Binary / Symbol Explorer verification failed.
   exit /b %RESULT%
 )
 echo [INFO] Verifying Memory-map Visualiser...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEMemoryMap.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEMemoryMap.cjs"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
   echo [FAIL] NovaOryn IDE Memory-map Visualiser verification failed.
@@ -336,65 +348,65 @@ if not "%RESULT%"=="0" (
 )
 
 echo [INFO] Verifying Syscall Explorer...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDESyscalls.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDESyscalls.cjs"
 if errorlevel 1 (
   echo [FAIL] Syscall Explorer contract verification failed.
   exit /b 1
 )
 
 echo [INFO] Verifying Image / Disk Explorer...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEImageDiskExplorer.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEImageDiskExplorer.cjs"
 if errorlevel 1 (
   echo [FAIL] Image / Disk Explorer contract verification failed.
   exit /b 1
 )
 
 echo [INFO] Verifying Physical-machine debugger transport...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEPhysicalDebugger.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEPhysicalDebugger.cjs"
 if errorlevel 1 (
   echo [FAIL] Physical-machine debugger transport contract verification failed.
   exit /b 1
 )
 
 echo [INFO] Verifying formal kernel subsystem contracts...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDESubsystemContracts.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDESubsystemContracts.cjs"
 if errorlevel 1 (
   echo [FAIL] NovaOryn formal kernel subsystem contract verification failed.
   exit /b 1
 )
 echo [INFO] Verifying capability-based driver model...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEDriverCapabilities.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEDriverCapabilities.cjs"
 if errorlevel 1 ( echo [FAIL] Capability-based driver model verification failed. & exit /b 1 )
 
 echo [INFO] Verifying professional driver packaging...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEDriverPackaging.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEDriverPackaging.cjs"
 if errorlevel 1 ( echo [FAIL] Driver packaging verification failed. & exit /b 1 )
 
 echo [INFO] Verifying unified NovaOryn device model...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEDeviceModel.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEDeviceModel.cjs"
 if errorlevel 1 ( echo [FAIL] Unified device model verification failed. & exit /b 1 )
 
 echo [INFO] Verifying expanded NovaOryn freestanding CoreLib...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEFreestandingCoreLib.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEFreestandingCoreLib.cjs"
 if errorlevel 1 ( echo [FAIL] Freestanding CoreLib expansion verification failed. & exit /b 1 )
 
 echo [INFO] Verifying structured NovaOryn kernel logging...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEKernelLogging.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEKernelLogging.cjs"
 if errorlevel 1 ( echo [FAIL] Structured kernel logging verification failed. & exit /b 1 )
 
 echo [INFO] Verifying kernel runtime integration of subsystem contracts and driver capability grants...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEKernelRuntimeIntegration.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEKernelRuntimeIntegration.cjs"
 if errorlevel 1 ( echo [FAIL] Kernel runtime integration verification failed. & exit /b 1 )
 
 echo [INFO] Verifying full generated-kernel bootstrap and legacy minimal-kernel migration...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDEFullKernelBootstrap.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEFullKernelBootstrap.cjs"
 if errorlevel 1 ( echo [FAIL] Full generated-kernel bootstrap verification failed. & exit /b 1 )
 
 echo [INFO] Verifying proper NovaOryn SDK test framework...
-"%NOVAORYN_NODE%" "%~dp0Verify-NovaOrynIDETestFramework0110.cjs"
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDETestFramework0110.cjs"
 if errorlevel 1 ( echo [FAIL] Proper SDK test framework verification failed. & exit /b 1 )
 
-echo [INFO] Building NovaOryn IDE 0.11.1...
+echo [INFO] Building NovaOryn IDE 0.11.3...
 call "%NOVAORYN_NPM%" run build
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
@@ -419,12 +431,12 @@ if not exist "%~dp0applications\electron\lib\backend\electron-main.js" (
   exit /b 1
 )
 
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$o=[ordered]@{ novaOrynIdeVersion='0.11.1'; theiaVersion='1.74.0'; electronVersion='42.3.0'; generatedUtc=(Get-Date).ToUniversalTime().ToString('o') }; $o | ConvertTo-Json | Set-Content -LiteralPath '%NOVAORYN_BUILDSTATE%' -Encoding UTF8"
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$o=[ordered]@{ novaOrynIdeVersion='0.11.3'; theiaVersion='1.74.0'; electronVersion='42.3.0'; generatedUtc=(Get-Date).ToUniversalTime().ToString('o') }; $o | ConvertTo-Json | Set-Content -LiteralPath '%NOVAORYN_BUILDSTATE%' -Encoding UTF8"
 if errorlevel 1 (
   echo [WARN] Build succeeded but NovaOryn could not record the dependency build-state marker.
 )
 
-echo [ OK ] NovaOryn IDE 0.11.1 build completed.
+echo [ OK ] NovaOryn IDE 0.11.3 build completed.
 
 echo [INFO] Publishing NovaOryn IDE source to GitHub...
 set "NOVAORYN_GIT_REMOTE=https://github.com/ProjectLithos/NovaOrynIDE.git"
@@ -501,8 +513,8 @@ if errorlevel 1 goto :git_fail
 
 git diff --cached --quiet
 if errorlevel 1 (
-  echo [INFO] Committing NovaOryn IDE 0.11.1 source changes.
-  git commit -m "NovaOryn IDE 0.11.1"
+  echo [INFO] Committing NovaOryn IDE 0.11.3 source changes.
+  git commit -m "NovaOryn IDE 0.11.3"
   if errorlevel 1 goto :git_fail
 ) else (
   echo [INFO] No source changes require a new commit.

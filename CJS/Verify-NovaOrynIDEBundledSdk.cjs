@@ -1,0 +1,15 @@
+const fs = require('fs');
+const path = require('path');
+const root = path.resolve(__dirname, '..');
+const service = fs.readFileSync(path.join(root, 'packages/novaoryn-ide/src/node/novaoryn-project-service.ts'), 'utf8');
+const run = fs.readFileSync(path.join(root, 'Run-NovaOrynIDE.bat'), 'utf8');
+const build = fs.readFileSync(path.join(root, 'Build-NovaOrynIDE.bat'), 'utf8');
+const sdkInstaller = fs.readFileSync(path.join(root, 'SDK', 'Install-NovaOrynToolchain.ps1'), 'utf8');
+if (!fs.existsSync(path.join(root, 'SDK', 'Build-NovaOryn.bat'))) throw new Error('Bundled SDK/Build-NovaOryn.bat is missing.');
+if (!service.includes("path.join(NOVAORYN_IDE_ROOT, 'SDK')")) throw new Error('Project service does not resolve the SDK from the IDE root.');
+if (service.includes("const NOVAORYN_SDK_ROOT = 'C:\\\\NovaOryn'")) throw new Error('Legacy C:\\NovaOryn SDK root is still hard-coded.');
+if (!run.includes('NOVAORYN_IDE_ROOT=%~dp0')) throw new Error('Run-NovaOrynIDE.bat does not export the IDE root.');
+if (!build.includes('set "NOVAORYN_EMBEDDED_SDK=1"')) throw new Error('IDE build does not enable embedded SDK mode before toolchain verification.');
+if (!sdkInstaller.includes("$embeddedSdk = $env:NOVAORYN_EMBEDDED_SDK -eq '1'")) throw new Error('Bundled SDK installer does not support embedded SDK mode.');
+if (!sdkInstaller.includes('skipping standalone Git repository/clean-tree gate')) throw new Error('Bundled SDK installer does not bypass standalone Git checks in embedded mode.');
+console.log('[ OK ] NovaOryn IDE bundled SDK layout verified.');

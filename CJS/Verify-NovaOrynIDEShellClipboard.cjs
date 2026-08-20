@@ -1,0 +1,17 @@
+const fs=require('fs'); const path=require('path'); const root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8'); const checks=[];
+const cmd=read('SDK/src/NovaOryn.Kernel.CommandLine/KernelCommandLine.cs');
+const con=read('SDK/src/NovaOryn.Kernel.Console/KernelConsole.cs');
+const svc=read('packages/novaoryn-ide/src/node/novaoryn-project-service.ts');
+checks.push(['SDK owns PS/2 keyboard handler',cmd.includes('KernelPs2.SetKeyboardEventHandler(&HandlePs2KeyboardEvent)')]);
+checks.push(['SDK owns periodic PS/2 drain',cmd.includes('KernelTimerDispatch.Register(1000000UL, &ServiceInputTimer')]);
+checks.push(['interactive loop has direct input service',con.includes('_inputService != null && !_inputService()')]);
+checks.push(['Ctrl+A arms transcript selection',cmd.includes('input.Control && input.Key == Ps2Key.A')&&cmd.includes('SHELL_SELECT_ALL')]);
+checks.push(['Ctrl+C copies selected transcript',cmd.includes('input.Control && input.Key == Ps2Key.C')&&cmd.includes('SHELL_COPY_ALL')]);
+checks.push(['plain Ctrl+C cancels command',cmd.includes('CancelCurrentCommand()')&&cmd.includes('^C')]);
+checks.push(['shell emits begin marker',cmd.includes('WriteHostControl("SHELL_BEGIN")')]);
+checks.push(['host controls stay off framebuffer',con.includes('WriteHostControl(String command)')&&con.includes('Native.WriteSerial')]);
+checks.push(['IDE consumes shell-copy marker',svc.includes("fresh.includes('[[NOVAORYN:SHELL_COPY_ALL]]')")]);
+checks.push(['IDE copies via Windows clipboard',svc.includes("spawn('clip.exe'")&&svc.includes('copyTextToWindowsClipboard')]);
+let bad=false; for(const [n,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${n}`); if(!ok)bad=true;} if(bad)process.exit(1);
+console.log(`[ OK ] NovaOryn IDE 0.10.11 SDK-owned interactive input and shell clipboard contract verified (${checks.length} checks).`);

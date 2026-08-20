@@ -91,7 +91,7 @@ globalThis.extensionInfo = [
     },
     {
         "name": "@novaoryn/ide-extension",
-        "version": "0.11.1"
+        "version": "0.11.3"
     },
     {
         "name": "@theia/preferences",

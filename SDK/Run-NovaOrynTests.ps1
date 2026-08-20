@@ -28,7 +28,7 @@ foreach($t in @($m.tests)){
   if($Tag -and (@($t.tags) -notcontains $Tag)){continue}
   $selected+=$t
 }
-Write-Host "[INFO] NovaOryn SDK Test Framework 0.11.1"
+Write-Host "[INFO] NovaOryn SDK Test Framework 0.11.2"
 Write-Host "[INFO] Manifest: $manifestPath"
 Write-Host "[INFO] Selected tests: $($selected.Count)"
 if($List){foreach($t in $selected){Write-Host ("{0,-20} {1,-20} {2}" -f $t.kind,$t.id,$t.name)};exit 0}
