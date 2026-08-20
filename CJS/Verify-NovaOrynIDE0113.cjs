@@ -1,0 +1,17 @@
+const fs=require('fs');
+let fail=0; const C=(v,m)=>{console.log(`${v?'[ OK ]':'[FAIL]'} ${m}`); if(!v)fail++;};
+const widget=fs.readFileSync('packages/novaoryn-ide/src/browser/novaoryn-widget.tsx','utf8');
+const service=fs.readFileSync('packages/novaoryn-ide/src/node/novaoryn-project-service.ts','utf8');
+const readme=fs.readFileSync('README.md','utf8');
+C(readme.includes('![NovaOryn logo](packages/novaoryn-ide/src/browser/style/novaoryn-logo.png)'), 'README embeds repository NovaOryn logo');
+C(widget.includes("'Hybrid'") && widget.includes("'Microkernel'") && widget.includes("'Monolithic Kernel'"), 'start page exposes Hybrid, Microkernel and Monolithic buttons');
+C(!widget.includes("'Full Kernel'"), 'obsolete Full Kernel label removed');
+C(widget.includes("type KernelPreset = 'hybrid' | 'microkernel' | 'monolithic'"), 'preset model uses real kernel architecture names');
+C(service.includes('microkernelKernelSource()') && service.includes('hybridKernelSource()') && service.includes('monolithicKernelSource()'), 'three distinct Kernel.cs generators exist');
+C(service.includes('Core mechanisms online; drivers, storage, networking, USB, filesystems and GUI belong to service/userland projects.'), 'microkernel source keeps high-level services outside kernel');
+C(service.includes('Kernel-resident core, PCI/driver broker, PS/2 and VirtIO graphics online'), 'hybrid source directly owns selected kernel-resident hardware');
+for(const token of ['KernelStorage.Initialize()','KernelNvme.Initialize()','KernelAhci.Initialize()','KernelNetworking.Initialize()','KernelVirtio.Initialize()','KernelE1000.Initialize()','KernelRtl8168.Initialize()','KernelXhci.Initialize()','UsbHub.Initialize()','UsbHid.Initialize()','UsbMassStorage.Initialize()']) C(service.includes(token), `monolithic source directly calls ${token}`);
+for(const token of ['KernelPlatform.InitializeDescriptors()','KernelAcpi.Initialize(boot)','KernelPhysicalMemory.Initialize(boot)','KernelVirtualMemory.Initialize()','KernelHeap.Initialize()','KernelSmp.Initialize(boot)','KernelScheduler.Initialize()','KernelProtection.Initialize()','KernelSystemCalls.Initialize()','KernelProcesses.Initialize()']) C(service.includes(token), `generated kernels expose public core call ${token}`);
+C(service.includes('The three presets intentionally generate different'), 'public SDK guide explains architecture-specific source');
+C(service.includes('PUBLIC-SDK-USAGE.md'), 'generated OS includes public SDK usage guide');
+if(fail) process.exitCode=1; else console.log('[ OK ] NovaOryn IDE 0.11.13 architecture-specific kernel preset contract verified.');

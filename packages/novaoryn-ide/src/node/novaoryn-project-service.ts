@@ -83,7 +83,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.11.12';
+const NOVAORYN_IDE_VERSION = '0.11.15';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -1542,7 +1542,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.11.12 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.11.15 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -4475,7 +4475,302 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     }
 
     protected kernelSource(configuration: NovaOrynProjectConfiguration): string {
-        return `using System;\nusing NovaOryn.Kernel.Console;\nusing NovaOryn.Kernel.CommandLine;\nusing NovaOryn.Kernel.InterruptDispatch;\nusing NovaOryn.Kernel.Bootstrap.Boot;\nusing NovaOryn.Kernel.Bootstrap.HAL;\n\nnamespace NovaOryn.Kernel.Bootstrap;\n\n/// <summary>Defines the high-level NovaOryn kernel entry and delegates startup to Boot and HAL.</summary>\npublic static class Kernel\n{\n    /// <summary>Boots the configured NovaOryn runtime, initializes hardware/services, then enters the interactive console.</summary>\n    public static Boolean KMain(BootContext boot)\n    {\n        if (!BootStartup.Initialize(boot)) return false;\n        if (!HardwareAbstractionLayer.Initialize()) return false;\n        if (!KernelConsole.WriteLine(\"Interactive console ready. Defaults: font 3, buffering auto (double for text).\")) return false;\n        if (!KernelCommandLine.Initialize()) return false;\n        if (!KernelInterruptDispatch.Enable()) return false;\n        return KernelConsole.RunInteractive();\n    }\n}\n`;
+        if (configuration.kernelArchitecture === 'microkernel') return this.microkernelKernelSource();
+        if (configuration.kernelArchitecture === 'monolithic') return this.monolithicKernelSource();
+        return this.hybridKernelSource();
+    }
+
+    protected microkernelKernelSource(): string {
+        return `using System;
+using NovaOryn.Kernel.Console;
+using NovaOryn.Kernel.CommandLine;
+using NovaOryn.Kernel.Platform.X64;
+using NovaOryn.Kernel.Memory;
+using NovaOryn.Kernel.VirtualMemory;
+using NovaOryn.Kernel.AddressSpace;
+using NovaOryn.Kernel.Heap;
+using NovaOryn.Kernel.Acpi;
+using NovaOryn.Kernel.Time;
+using NovaOryn.Kernel.Graphics;
+using NovaOryn.Kernel.Smp;
+using NovaOryn.Kernel.Scheduler;
+using NovaOryn.Kernel.Protection;
+using NovaOryn.Kernel.SystemCalls;
+using NovaOryn.Kernel.Processes;
+using NovaOryn.Kernel.InterruptDispatch;
+using NovaOryn.Kernel.TimerDispatch;
+
+namespace NovaOryn.Kernel.Bootstrap;
+
+/// <summary>Minimal-privilege microkernel: mechanisms stay in kernel; device and high-level services live outside it.</summary>
+public static class Kernel
+{
+    public static Boolean KMain(BootContext boot)
+    {
+        if (!InitializeMicrokernelCore(boot)) return false;
+        if (!StartMicrokernelMechanisms(boot)) return false;
+        if (!KernelStructuredLogging.InfoLine("microkernel", "Kernel.KMain", "Core mechanisms online; drivers, storage, networking, USB, filesystems and GUI belong to service/userland projects.")) return false;
+        if (!KernelCommandLine.Initialize()) return false;
+        if (!KernelInterruptDispatch.Enable()) return false;
+        return KernelConsole.RunInteractive();
+    }
+
+    private static Boolean InitializeMicrokernelCore(BootContext boot)
+    {
+        if (!KernelConsole.Initialize(boot)) return false;
+        if (!KernelStructuredLogging.Initialize()) return false;
+        if (!KernelPanicTransport.Initialize()) return false;
+        if (!boot.HasFinalMemoryMap()) return false;
+        if (!KernelPlatform.InitializeDescriptors()) return false;
+        if (!KernelPlatform.InitializeInterrupts()) return false;
+        if (!KernelPlatform.DisableLegacyPic()) return false;
+        if (!KernelAcpi.Initialize(boot)) return false;
+        if (!KernelAcpiFadt.Initialize()) return false;
+        if (!KernelAcpiPower.Initialize()) return false;
+        KernelAcpiEc.Initialize();
+        if (!KernelTime.Initialize()) return false;
+        if (!KernelPhysicalMemory.Initialize(boot)) return false;
+        if (!KernelVirtualMemory.Initialize()) return false;
+        if (!KernelAddressSpace.Initialize()) return false;
+        if (!KernelEarlyAllocator.Initialize()) return false;
+        if (!KernelHeap.Initialize()) return false;
+        if (!KernelGraphics.Initialize()) return false;
+        return true;
+    }
+
+    private static Boolean StartMicrokernelMechanisms(BootContext boot)
+    {
+        if (!KernelSmp.Initialize(boot)) return false;
+        if (!KernelScheduler.Initialize()) return false;
+        if (!KernelProtection.Initialize()) return false;
+        if (!KernelSystemCalls.Initialize()) return false;
+        if (!KernelProcesses.Initialize()) return false;
+        if (!KernelInterruptDispatch.Initialize()) return false;
+        if (!KernelTimerDispatch.Initialize()) return false;
+        return true;
+    }
+}
+`;
+    }
+
+    protected hybridKernelSource(): string {
+        return `using System;
+using NovaOryn.Kernel.Console;
+using NovaOryn.Kernel.CommandLine;
+using NovaOryn.Kernel.Platform.X64;
+using NovaOryn.Kernel.Memory;
+using NovaOryn.Kernel.VirtualMemory;
+using NovaOryn.Kernel.AddressSpace;
+using NovaOryn.Kernel.Heap;
+using NovaOryn.Kernel.Acpi;
+using NovaOryn.Kernel.Time;
+using NovaOryn.Kernel.Graphics;
+using NovaOryn.Kernel.Smp;
+using NovaOryn.Kernel.Scheduler;
+using NovaOryn.Kernel.Protection;
+using NovaOryn.Kernel.SystemCalls;
+using NovaOryn.Kernel.Processes;
+using NovaOryn.Kernel.InterruptDispatch;
+using NovaOryn.Kernel.TimerDispatch;
+using NovaOryn.Kernel.Drivers;
+using NovaOryn.Kernel.Pci;
+using NovaOryn.Kernel.InterruptBroker;
+using NovaOryn.Kernel.Ps2;
+using NovaOryn.Kernel.Virtio.Gpu;
+
+namespace NovaOryn.Kernel.Bootstrap;
+
+/// <summary>Hybrid kernel: core mechanisms and latency-sensitive driver/input facilities stay kernel-resident.</summary>
+public static class Kernel
+{
+    public static Boolean KMain(BootContext boot)
+    {
+        if (!InitializeHybridCore(boot)) return false;
+        if (!InitializeKernelResidentHardware()) return false;
+        if (!StartHybridRuntime()) return false;
+        if (!KernelStructuredLogging.InfoLine("hybrid", "Kernel.KMain", "Kernel-resident core, PCI/driver broker, PS/2 and VirtIO graphics online; storage/network/USB services remain separable.")) return false;
+        if (!KernelConsole.WriteLine("Hybrid NovaOryn kernel ready.")) return false;
+        if (!KernelCommandLine.Initialize()) return false;
+        if (!KernelInterruptDispatch.Enable()) return false;
+        return KernelConsole.RunInteractive();
+    }
+
+    private static Boolean InitializeHybridCore(BootContext boot)
+    {
+        if (!KernelConsole.Initialize(boot)) return false;
+        if (!KernelStructuredLogging.Initialize()) return false;
+        if (!KernelPanicTransport.Initialize()) return false;
+        if (!boot.HasFinalMemoryMap()) return false;
+        if (!KernelPlatform.InitializeDescriptors()) return false;
+        if (!KernelPlatform.InitializeInterrupts()) return false;
+        if (!KernelPlatform.DisableLegacyPic()) return false;
+        if (!KernelAcpi.Initialize(boot)) return false;
+        if (!KernelAcpiFadt.Initialize()) return false;
+        if (!KernelAcpiPower.Initialize()) return false;
+        KernelAcpiEc.Initialize();
+        if (!KernelTime.Initialize()) return false;
+        if (!KernelPhysicalMemory.Initialize(boot)) return false;
+        if (!KernelVirtualMemory.Initialize()) return false;
+        if (!KernelAddressSpace.Initialize()) return false;
+        if (!KernelEarlyAllocator.Initialize()) return false;
+        if (!KernelHeap.Initialize()) return false;
+        if (!KernelGraphics.Initialize()) return false;
+        if (!KernelSmp.Initialize(boot)) return false;
+        if (!KernelScheduler.Initialize()) return false;
+        if (!KernelProtection.Initialize()) return false;
+        if (!KernelSystemCalls.Initialize()) return false;
+        if (!KernelProcesses.Initialize()) return false;
+        return true;
+    }
+
+    private static Boolean InitializeKernelResidentHardware()
+    {
+        if (!KernelInterruptDispatch.Initialize()) return false;
+        if (!KernelTimerDispatch.Initialize()) return false;
+        if (!KernelDrivers.Initialize()) return false;
+        if (!KernelPci.Initialize()) return false;
+        if (!KernelInterruptBroker.Initialize()) return false;
+        if (!KernelPs2.Initialize()) return false;
+        if (!KernelVirtioGpu.Initialize()) return false;
+        return KernelDrivers.BindAndStartMatchingDevices();
+    }
+
+    private static Boolean StartHybridRuntime()
+    {
+        KernelDriverCapabilities drivers = KernelDrivers.GetCapabilities();
+        PciCapabilities pci = KernelPci.GetCapabilities();
+        if (!KernelConsole.Write("Hybrid kernel drivers/devices: ")) return false;
+        if (!KernelConsole.WriteUInt64(drivers.RegisteredDrivers)) return false;
+        if (!KernelConsole.Write(" / ")) return false;
+        if (!KernelConsole.WriteUInt64(drivers.RegisteredDevices)) return false;
+        if (!KernelConsole.Write("; PCI devices: ")) return false;
+        if (!KernelConsole.WriteUInt64(pci.DeviceCount)) return false;
+        return KernelConsole.WriteLine("");
+    }
+}
+`;
+    }
+
+    protected monolithicKernelSource(): string {
+        return `using System;
+using NovaOryn.Kernel.Console;
+using NovaOryn.Kernel.CommandLine;
+using NovaOryn.Kernel.Platform.X64;
+using NovaOryn.Kernel.Memory;
+using NovaOryn.Kernel.VirtualMemory;
+using NovaOryn.Kernel.AddressSpace;
+using NovaOryn.Kernel.Heap;
+using NovaOryn.Kernel.Acpi;
+using NovaOryn.Kernel.Time;
+using NovaOryn.Kernel.Graphics;
+using NovaOryn.Kernel.Smp;
+using NovaOryn.Kernel.Scheduler;
+using NovaOryn.Kernel.Protection;
+using NovaOryn.Kernel.SystemCalls;
+using NovaOryn.Kernel.Processes;
+using NovaOryn.Kernel.InterruptDispatch;
+using NovaOryn.Kernel.TimerDispatch;
+using NovaOryn.Kernel.Drivers;
+using NovaOryn.Kernel.Pci;
+using NovaOryn.Kernel.InterruptBroker;
+using NovaOryn.Kernel.Ps2;
+using NovaOryn.Kernel.Virtio.Gpu;
+using NovaOryn.Kernel.Storage;
+using NovaOryn.Kernel.Nvme;
+using NovaOryn.Kernel.Ahci;
+using NovaOryn.Kernel.Networking;
+using NovaOryn.Kernel.Virtio;
+using NovaOryn.Kernel.E1000;
+using NovaOryn.Kernel.Rtl8168;
+using NovaOryn.Usb.Xhci;
+using NovaOryn.Usb.Hid;
+using NovaOryn.Usb.MassStorage;
+using NovaOryn.Usb.Hub;
+
+namespace NovaOryn.Kernel.Bootstrap;
+
+/// <summary>Monolithic kernel: every configured kernel facility is initialized directly in one privileged runtime.</summary>
+public static class Kernel
+{
+    public static Boolean KMain(BootContext boot)
+    {
+        if (!InitializePlatformAndMemory(boot)) return false;
+        if (!InitializeExecutionCore(boot)) return false;
+        if (!InitializeAllKernelDrivers()) return false;
+        if (!InitializeStorageAndNetworking()) return false;
+        if (!InitializeUsbStack()) return false;
+        if (!KernelDrivers.BindAndStartMatchingDevices()) return false;
+        if (!KernelStructuredLogging.InfoLine("monolithic", "Kernel.KMain", "All configured core, device, storage, networking and USB facilities are resident and initialized inside the kernel.")) return false;
+        if (!KernelConsole.WriteLine("Monolithic NovaOryn kernel fully online.")) return false;
+        if (!KernelCommandLine.Initialize()) return false;
+        if (!KernelInterruptDispatch.Enable()) return false;
+        return KernelConsole.RunInteractive();
+    }
+
+    private static Boolean InitializePlatformAndMemory(BootContext boot)
+    {
+        if (!KernelConsole.Initialize(boot)) return false;
+        if (!KernelStructuredLogging.Initialize()) return false;
+        if (!KernelPanicTransport.Initialize()) return false;
+        if (!boot.HasFinalMemoryMap()) return false;
+        if (!KernelPlatform.InitializeDescriptors()) return false;
+        if (!KernelPlatform.InitializeInterrupts()) return false;
+        if (!KernelPlatform.DisableLegacyPic()) return false;
+        if (!KernelAcpi.Initialize(boot)) return false;
+        if (!KernelAcpiFadt.Initialize()) return false;
+        if (!KernelAcpiPower.Initialize()) return false;
+        KernelAcpiEc.Initialize();
+        if (!KernelTime.Initialize()) return false;
+        if (!KernelPhysicalMemory.Initialize(boot)) return false;
+        if (!KernelVirtualMemory.Initialize()) return false;
+        if (!KernelAddressSpace.Initialize()) return false;
+        if (!KernelEarlyAllocator.Initialize()) return false;
+        if (!KernelHeap.Initialize()) return false;
+        return KernelGraphics.Initialize();
+    }
+
+    private static Boolean InitializeExecutionCore(BootContext boot)
+    {
+        if (!KernelSmp.Initialize(boot)) return false;
+        if (!KernelScheduler.Initialize()) return false;
+        if (!KernelProtection.Initialize()) return false;
+        if (!KernelSystemCalls.Initialize()) return false;
+        if (!KernelProcesses.Initialize()) return false;
+        if (!KernelInterruptDispatch.Initialize()) return false;
+        return KernelTimerDispatch.Initialize();
+    }
+
+    private static Boolean InitializeAllKernelDrivers()
+    {
+        if (!KernelPs2.Initialize()) return false;
+        if (!KernelDrivers.Initialize()) return false;
+        if (!KernelPci.Initialize()) return false;
+        if (!KernelInterruptBroker.Initialize()) return false;
+        return KernelVirtioGpu.Initialize();
+    }
+
+    private static Boolean InitializeStorageAndNetworking()
+    {
+        if (!KernelStorage.Initialize()) return false;
+        if (!KernelNvme.Initialize()) return false;
+        if (!KernelAhci.Initialize()) return false;
+        if (!KernelNetworking.Initialize()) return false;
+        if (!KernelVirtio.Initialize()) return false;
+        if (!KernelE1000.Initialize()) return false;
+        return KernelRtl8168.Initialize();
+    }
+
+    private static Boolean InitializeUsbStack()
+    {
+        if (!KernelXhci.Initialize()) return false;
+        if (!KernelXhci.ScanRootPorts()) return false;
+        if (!UsbHub.Initialize()) return false;
+        if (!UsbHub.EnumerateDownstream()) return false;
+        if (!UsbHid.Initialize()) return false;
+        return UsbMassStorage.Initialize();
+    }
+}
+`;
     }
 
     protected sdkKernelModel(configuration: NovaOrynProjectConfiguration): 'Monolithic' | 'Microkernel' | 'Hybrid' {
@@ -5070,7 +5365,13 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     }
 
     protected publicSdkUsageGuide(configuration: NovaOrynProjectConfiguration): string {
-        return `# Public NovaOryn SDK usage\n\nThis operating system was generated from the **${configuration.kernelArchitecture}** comprehensive preset. The preset deliberately enables every mutually compatible subsystem that NovaOryn IDE ${NOVAORYN_IDE_VERSION} can configure for x86-64.\n\n## This is live integration, not sample-only code\n\nThe generated kernel does not merely list SDK APIs. Its normal boot path actively calls them:\n\n- **Kernel\\Kernel.cs** calls \`BootStartup.Initialize(boot)\`, \`HardwareAbstractionLayer.Initialize()\`, \`KernelCommandLine.Initialize()\`, \`KernelInterruptDispatch.Enable()\`, and \`KernelConsole.RunInteractive()\`.\n- **Boot\\BootStartup.cs** demonstrates the public platform, ACPI, timer, physical-memory, virtual-memory, address-space, heap, graphics, SMP, scheduler, protection, syscall, logging, telemetry and panic APIs.\n- **HAL\\HardwareAbstractionLayer.cs** demonstrates public PCI/device discovery, driver, storage, filesystem, networking, USB, input, graphics and other hardware-facing APIs selected by the authoritative configuration.\n- **Configuration\\GeneratedConfiguration.cs** shows how code can query the exact features selected for this OS.\n\n## Public API patterns\n\nUse these generated source files as executable examples. Typical public calls already present in the boot path include:\n\n\`\`\`csharp\nKernelConsole.Initialize(boot);\nKernelPlatform.InitializeDescriptors();\nKernelAcpi.Initialize(boot);\nKernelTime.Initialize();\nKernelPhysicalMemory.Initialize(boot);\nKernelVirtualMemory.Initialize();\nKernelAddressSpace.Initialize();\nKernelHeap.Initialize();\nKernelGraphics.Initialize();\nKernelSmp.Initialize(boot);\nKernelScheduler.Initialize();\nKernelProtection.Initialize();\nKernelSystemCalls.Initialize();\n\`\`\`\n\nThe capability-based driver framework should be used through its public grant/broker contracts rather than programming privileged resources directly. The generated HAL and driver registration code show the intended pattern for MMIO, ports, interrupts/MSI/MSI-X, DMA, PCI configuration, physical memory, timers, networking and filesystem authority.\n\n## Why mutually compatible?\n\nSome configuration choices are alternatives rather than additive features (for example FATFS versus native FAT32, HDA versus AC97, and guest versus hypervisor mode). The comprehensive preset selects the broadest production-oriented choice while enabling every additive option. Change those alternatives in the authoritative configuration page if you want to exercise a different implementation.\n\n## Where to browse every public contract\n\nInside NovaOryn IDE open **Help -> SDK API**. The bundled documentation is the authoritative API reference; this generated guide points you to real code paths that consume those public contracts.\n`;
+        const model = configuration.kernelArchitecture === 'microkernel' ? 'Microkernel' : configuration.kernelArchitecture === 'monolithic' ? 'Monolithic' : 'Hybrid';
+        const architectureNote = configuration.kernelArchitecture === 'microkernel'
+            ? 'The generated `Kernel\\Kernel.cs` deliberately contains only privileged mechanisms. Drivers, storage, networking, USB, filesystems and GUI responsibilities are represented by service/userland projects rather than being initialized inside the kernel.'
+            : configuration.kernelArchitecture === 'monolithic'
+                ? 'The generated `Kernel\\Kernel.cs` directly initializes the configured driver, PCI, interrupt-broker, PS/2, VirtIO GPU, storage, NVMe, AHCI, networking, VirtIO, E1000, RTL8168, xHCI, USB hub, HID and mass-storage facilities inside one privileged kernel.'
+                : 'The generated `Kernel\\Kernel.cs` keeps the core plus latency-sensitive driver, PCI, interrupt-broker, PS/2 and VirtIO GPU facilities in the kernel while leaving storage, networking and USB as separable higher-level services.';
+        return `# Public NovaOryn SDK usage\n\nThis operating system was generated from the **${model}** comprehensive preset in NovaOryn IDE ${NOVAORYN_IDE_VERSION}.\n\n## Architecture-specific executable example\n\n${architectureNote}\n\nThe three presets intentionally generate different \`Kernel\\Kernel.cs\` files. They do not hide initialization behind the same generic \`BootStartup.Initialize()\` / \`HardwareAbstractionLayer.Initialize()\` pair. Instead, the generated kernel source visibly calls the public SDK facilities that belong to that architecture.\n\n## Public core calls demonstrated directly\n\nThe generated kernel source shows real calls such as:\n\n\`\`\`csharp\nKernelConsole.Initialize(boot);\nKernelStructuredLogging.Initialize();\nKernelPanicTransport.Initialize();\nKernelPlatform.InitializeDescriptors();\nKernelPlatform.InitializeInterrupts();\nKernelPlatform.DisableLegacyPic();\nKernelAcpi.Initialize(boot);\nKernelAcpiFadt.Initialize();\nKernelAcpiPower.Initialize();\nKernelTime.Initialize();\nKernelPhysicalMemory.Initialize(boot);\nKernelVirtualMemory.Initialize();\nKernelAddressSpace.Initialize();\nKernelEarlyAllocator.Initialize();\nKernelHeap.Initialize();\nKernelGraphics.Initialize();\nKernelSmp.Initialize(boot);\nKernelScheduler.Initialize();\nKernelProtection.Initialize();\nKernelSystemCalls.Initialize();\nKernelProcesses.Initialize();\nKernelInterruptDispatch.Initialize();\nKernelTimerDispatch.Initialize();\n\`\`\`\n\nHybrid and Monolithic kernels additionally demonstrate the public driver/device APIs assigned to the kernel execution domain. The Monolithic source goes further and directly starts storage, networking and USB families.\n\n## Public capability model\n\nDrivers should consume MMIO, I/O ports, IRQ/MSI/MSI-X, DMA, PCI configuration, physical-memory, timer, networking and filesystem authority through the NovaOryn capability/grant contracts rather than bypassing the broker. The generated driver registration and kernel source are executable examples of the intended public surface.\n\n## Supporting generated files\n\n- **Kernel\\Kernel.cs** — architecture-specific public SDK orchestration.\n- **Boot\\BootStartup.cs** — reusable detailed boot implementation and diagnostics.\n- **HAL\\HardwareAbstractionLayer.cs** — reusable execution-domain-aware HAL implementation.\n- **Configuration\\GeneratedConfiguration.cs** — exact authoritative feature selections.\n- **NovaOryn.ProjectGraph.json** — generated project/service topology.\n\n## Browse every public contract\n\nOpen **Help -> SDK API** inside NovaOryn IDE for the bundled public API reference.\n`;
     }
 
     protected projectReadme(configuration: NovaOrynProjectConfiguration, projects: GeneratedProject[]): string {

@@ -6,7 +6,10 @@ const kernel=read('SDK/templates/NovaOrynKernel/Kernel/Kernel.cs');
 const boot=read('SDK/templates/NovaOrynKernel/Boot/BootStartup.cs');
 const hal=read('SDK/templates/NovaOrynKernel/HAL/HardwareAbstractionLayer.cs');
 const checks=[
- ['new IDE kernels enter BootStartup',service.includes('BootStartup.Initialize(boot)')],
+ ['new IDE kernels expose explicit microkernel core path',service.includes('InitializeMicrokernelCore(boot)')&&service.includes('StartMicrokernelMechanisms(boot)')],
+ ['new IDE kernels expose explicit hybrid path',service.includes('InitializeHybridCore(boot)')&&service.includes('InitializeKernelResidentHardware()')&&service.includes('StartHybridRuntime()')],
+ ['new IDE kernels expose explicit monolithic path',service.includes('InitializePlatformAndMemory(boot)')&&service.includes('InitializeExecutionCore(boot)')&&service.includes('InitializeAllKernelDrivers()')&&service.includes('InitializeStorageAndNetworking()')&&service.includes('InitializeUsbStack()')],
+ ['explicit generated kernels initialize console/platform/memory directly',service.includes('KernelConsole.Initialize(boot)')&&service.includes('KernelPlatform.InitializeDescriptors()')&&service.includes('KernelPhysicalMemory.Initialize(boot)')],
  ['new IDE kernels enter HAL',service.includes('HardwareAbstractionLayer.Initialize()')],
  ['new IDE kernels initialize command line',service.includes('KernelCommandLine.Initialize()')],
  ['new IDE kernels enable interrupt dispatch',service.includes('KernelInterruptDispatch.Enable()')],
@@ -26,4 +29,4 @@ const checks=[
 ];
 let bad=0;for(const [name,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${name}`);if(!ok)bad++;}
 if(bad)process.exit(1);
-console.log(`[ OK ] NovaOryn IDE 0.10.11 full generated-kernel bootstrap contract verified (${checks.length} checks).`);
+console.log(`[ OK ] NovaOryn IDE 0.11.15 architecture-specific generated-kernel bootstrap contract verified (${checks.length} checks).`);

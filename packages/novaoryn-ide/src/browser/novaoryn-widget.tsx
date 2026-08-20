@@ -30,7 +30,7 @@ export const NOVAORYN_WIDGET_ID = 'novaoryn.project.configurator';
 export const NOVAORYN_EXPLICIT_WORKSPACE_OPEN = 'novaoryn.explicitWorkspaceOpen';
 
 type Page = 'startup' | 'configuration';
-type KernelPreset = 'full' | 'microkernel' | 'monolithic';
+type KernelPreset = 'hybrid' | 'microkernel' | 'monolithic';
 type Option = readonly [value: string, label: string];
 
 @injectable()
@@ -138,7 +138,7 @@ export class NovaOrynWidget extends BaseWidget {
         art.setAttribute('aria-label', 'NovaOryn IDE logo');
         card.appendChild(art);
 
-        card.appendChild(this.element('h1', undefined, 'NovaOryn IDE 0.11.12'));
+        card.appendChild(this.element('h1', undefined, 'NovaOryn IDE 0.11.15'));
         const intro = this.element('p');
         intro.append('All NovaOryn operating systems are stored beneath ');
         const root = this.element('strong', undefined, NOVAORYN_OS_ROOT);
@@ -147,7 +147,7 @@ export class NovaOrynWidget extends BaseWidget {
         card.appendChild(intro);
 
         const actions = this.element('div', 'novaoryn-start-actions');
-        actions.appendChild(this.presetButton('Full Kernel', 'Hybrid layout with every mutually compatible NovaOryn subsystem enabled.', 'full'));
+        actions.appendChild(this.presetButton('Hybrid', 'Hybrid kernel with the complete compatible NovaOryn core plus kernel-resident driver and input facilities.', 'hybrid'));
         actions.appendChild(this.presetButton('Microkernel', 'Full-featured microkernel layout with services and drivers split out of the core kernel.', 'microkernel'));
         actions.appendChild(this.presetButton('Monolithic Kernel', 'Full-featured monolithic layout with supported kernel facilities built into the kernel side.', 'monolithic'));
         card.appendChild(actions);
@@ -192,7 +192,7 @@ export class NovaOrynWidget extends BaseWidget {
         const page = this.element('div', 'novaoryn-page');
         const card = this.element('div', 'novaoryn-card novaoryn-card-wide');
         card.appendChild(this.element('div', 'novaoryn-brand', 'NOVAORYN'));
-        card.appendChild(this.element('h1', undefined, this.reconfiguringProjectPath ? `Reconfigure ${c.name}` : 'NovaOryn OS 0.11.12'));
+        card.appendChild(this.element('h1', undefined, this.reconfiguringProjectPath ? `Reconfigure ${c.name}` : 'NovaOryn OS 0.11.15'));
         card.appendChild(this.element('p', 'novaoryn-version', 'Authoritative operating-system configuration'));
         card.appendChild(this.element('p', undefined, this.reconfiguringProjectPath
             ? 'Change the generated kernel/OS structure below. User-owned source files, including Kernel\\Kernel.cs, are preserved.'
@@ -429,8 +429,8 @@ export class NovaOrynWidget extends BaseWidget {
 
     protected createComprehensiveConfiguration(preset: KernelPreset): NovaOrynProjectConfiguration {
         const configuration = this.createDefaultConfiguration();
-        configuration.name = preset === 'full' ? 'NovaOrynFullOS' : preset === 'microkernel' ? 'NovaOrynMicrokernelOS' : 'NovaOrynMonolithicOS';
-        configuration.kernelArchitecture = preset === 'full' ? 'hybrid' : preset;
+        configuration.name = preset === 'hybrid' ? 'NovaOrynHybridOS' : preset === 'microkernel' ? 'NovaOrynMicrokernelOS' : 'NovaOrynMonolithicOS';
+        configuration.kernelArchitecture = preset;
         configuration.targetArchitecture = 'x86_64';
         configuration.bootArchitecture = 'uefi';
         configuration.memorySystem = 'paged';
@@ -459,7 +459,7 @@ export class NovaOrynWidget extends BaseWidget {
         return configuration;
     }
 
-    protected beginNewOperatingSystem(preset: KernelPreset = 'full'): void {
+    protected beginNewOperatingSystem(preset: KernelPreset = 'hybrid'): void {
         this.reconfiguringProjectPath = undefined;
         this.configuration = this.createComprehensiveConfiguration(preset);
         this.page = 'configuration';

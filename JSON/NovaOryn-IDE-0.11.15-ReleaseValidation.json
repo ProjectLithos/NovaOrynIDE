@@ -1,0 +1,4 @@
+{
+  "version": "0.11.15",
+  "change": "Updates the generated-kernel bootstrap verifier for the architecture-specific Microkernel, Hybrid and Monolithic Kernel.cs orchestration introduced in 0.11.13, while retaining direct runtime initialization checks."
+}

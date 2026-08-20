@@ -1,0 +1,4 @@
+{
+  "version": "0.11.14",
+  "change": "Run validates the generated Electron build directly using applications/electron/lib/.novaoryn-build-version rather than relying on the toolchain JSON marker."
+}

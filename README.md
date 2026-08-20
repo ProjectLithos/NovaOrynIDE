@@ -2,7 +2,7 @@
 
 ![NovaOryn logo](packages/novaoryn-ide/src/browser/style/novaoryn-logo.png)
 
-**Current release: 0.11.12**
+**Current release: 0.11.15**
 
 NovaOryn IDE is the desktop development environment for building, running, inspecting, testing, and debugging operating systems created with the **NovaOryn OS SDK**.
 
@@ -162,6 +162,16 @@ The configuration controls areas including:
 - RTOS and safety-oriented options.
 
 The generated source tree is derived from those selections.
+
+### Start-page kernel presets
+
+The NovaOryn IDE start page provides three architecture-specific creation presets: **Hybrid**, **Microkernel**, and **Monolithic Kernel**. Each preset starts from the full compatible NovaOryn feature set, but the generated `Kernel\Kernel.cs` is deliberately different for each architecture.
+
+- **Microkernel** directly initializes only privileged kernel mechanisms; driver, storage, networking, USB, filesystem, and GUI responsibilities remain outside the core kernel.
+- **Hybrid** directly initializes the kernel core plus selected latency-sensitive driver, PCI, interrupt-broker, PS/2, and VirtIO graphics facilities while retaining separable higher-level services.
+- **Monolithic** directly initializes the complete configured kernel-side stack, including storage, NVMe, AHCI, networking, VirtIO, E1000, RTL8168, xHCI, USB hub, HID, and mass-storage support.
+
+These generated kernels intentionally expose the real public SDK initialization calls rather than reducing every architecture to the same `BootStartup.Initialize()` / `HardwareAbstractionLayer.Initialize()` wrapper. A generated `PUBLIC-SDK-USAGE.md` explains the public contracts exercised by that specific OS.
 
 ### Kernel models
 
