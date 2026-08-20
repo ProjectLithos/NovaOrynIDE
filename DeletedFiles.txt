@@ -1,1 +1,1 @@
-JSON/NovaOryn-IDE-0.11.7-ReleaseValidation.json
+JSON/NovaOryn-IDE-0.11.8-ReleaseValidation.json

@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
-echo [INFO] NovaOryn IDE Run 0.11.8
+echo [INFO] NovaOryn IDE Run 0.11.9
 
 set "NOVAORYN_IDE_ROOT=%~dp0"
 set "NOVAORYN_SDK_ROOT=%~dp0SDK"
@@ -23,7 +23,7 @@ if not exist "%NOVAORYN_NPM_PREFIX%\node_modules" goto NOT_BUILT
 if not exist "%NOVAORYN_BUILDSTATE%" goto NOT_BUILT
 if not exist "%ELECTRON_MAIN%" goto NOT_BUILT
 
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$p='%NOVAORYN_BUILDSTATE%'; try { $j=Get-Content -LiteralPath $p -Raw | ConvertFrom-Json; if ([string]$j.novaOrynIdeVersion -ne '0.11.8') { exit 2 }; exit 0 } catch { exit 3 }"
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$p='%NOVAORYN_BUILDSTATE%'; try { $j=Get-Content -LiteralPath $p -Raw | ConvertFrom-Json; if ([string]$j.novaOrynIdeVersion -ne '0.11.9') { exit 2 }; exit 0 } catch { exit 3 }"
 if errorlevel 1 goto STALE_BUILD
 
 set "PATH=%~dp0.toolchain\Node;%~dp0.toolchain\Python;%PATH%"
@@ -34,30 +34,34 @@ set "npm_config_omit="
 set "NPM_CONFIG_OMIT="
 
 echo [INFO] Verifying already-built Theia runtime...
-pushd "%NOVAORYN_NPM_PREFIX%" >nul
-call "%NOVAORYN_NPM%" ls @theia/cli --workspace @novaoryn/ide-electron --depth=0 >nul 2>nul
-set "THEIA_CHECK=!errorlevel!"
-popd >nul
-if not "!THEIA_CHECK!"=="0" (
-  echo [FAIL] The built IDE dependency tree is incomplete.
-  echo [INFO] Run Build-NovaOrynIDE.bat, then run this launcher again.
-  exit /b 1
-)
+set "THEIA_CLI_PACKAGE=%NOVAORYN_NPM_PREFIX%\node_modules\@theia\cli\package.json"
+set "THEIA_ELECTRON_PACKAGE=%NOVAORYN_NPM_PREFIX%\node_modules\@theia\electron\package.json"
+set "ELECTRON_PACKAGE=%NOVAORYN_NPM_PREFIX%\node_modules\electron\package.json"
+if not exist "%THEIA_CLI_PACKAGE%" goto INCOMPLETE_RUNTIME
+if not exist "%THEIA_ELECTRON_PACKAGE%" goto INCOMPLETE_RUNTIME
+if not exist "%ELECTRON_PACKAGE%" goto INCOMPLETE_RUNTIME
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$items=@(@('%THEIA_CLI_PACKAGE%','1.74.0'),@('%THEIA_ELECTRON_PACKAGE%','1.74.0'),@('%ELECTRON_PACKAGE%','42.3.0')); foreach($i in $items){ try { $j=Get-Content -LiteralPath $i[0] -Raw | ConvertFrom-Json; if([string]$j.version -ne [string]$i[1]){ exit 2 } } catch { exit 3 } }; exit 0"
+if errorlevel 1 goto INCOMPLETE_RUNTIME
 
-echo [ OK ] Existing NovaOryn IDE 0.11.8 build is ready.
-echo [INFO] Starting NovaOryn IDE 0.11.8...
+echo [ OK ] Existing NovaOryn IDE 0.11.9 build is ready.
+echo [INFO] Starting NovaOryn IDE 0.11.9...
 pushd "%NOVAORYN_NPM_PREFIX%" >nul
 call "%NOVAORYN_NPM%" run start --workspace @novaoryn/ide-electron
 set "RESULT=!errorlevel!"
 popd >nul
 exit /b !RESULT!
 
+:INCOMPLETE_RUNTIME
+echo [FAIL] The built IDE runtime is incomplete or does not match Theia 1.74.0 / Electron 42.3.0.
+echo [INFO] Run Build-NovaOrynIDE.bat, then run this launcher again.
+exit /b 1
+
 :STALE_BUILD
-echo [FAIL] The existing NovaOryn IDE build is not version 0.11.8 or its build-state marker is invalid.
+echo [FAIL] The existing NovaOryn IDE build is not version 0.11.9 or its build-state marker is invalid.
 echo [INFO] Run Build-NovaOrynIDE.bat once, then use Run-NovaOrynIDE.bat to launch it.
 exit /b 1
 
 :NOT_BUILT
-echo [FAIL] NovaOryn IDE 0.11.8 has not been built completely yet.
+echo [FAIL] NovaOryn IDE 0.11.9 has not been built completely yet.
 echo [INFO] Run Build-NovaOrynIDE.bat once. This Run script will not build the IDE automatically.
 exit /b 1
