@@ -25,3 +25,12 @@ Rules select a fault kind and optional subsystem, can wait for N observations be
 The bundled `NovaOryn.FaultInjection.Tests` project is automatically discovered by the existing Test Explorer. It validates all nine fault kinds, trigger-after/repeat/disarm semantics, subsystem scoping, and the DMA/packet corruption helpers.
 
 The fault hooks are present in both the bundled SDK source and the kernel-template copies, so newly generated operating systems receive the same injection points.
+
+## QEMU hardware-matrix reliability correction
+
+- The matrix now begins with a known-good control matching the established NovaOryn QEMU boot path: Q35, TCG, 2 CPUs, 512 MiB, VirtIO block, VirtIO GPU, no optional network device and no xHCI device.
+- Balanced testing varies one hardware dimension from that control rather than treating GOP + networking + xHCI as the baseline.
+- Full Cartesian testing runs the known-good control before the Cartesian hardware combinations.
+- If the control boot fails, remaining cases are skipped instead of generating hundreds of misleading failures.
+- Failed cases report the exact QEMU arguments and the serial-log tail directly in matrix output.
+- Matrix execution uses SDL like the proven NovaOryn QEMU launcher rather than introducing a headless-display difference into the control.

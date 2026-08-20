@@ -509,7 +509,7 @@ export interface NovaOrynTestOutput {
 
 export type NovaOrynHardwareMatrixPreset = 'balanced' | 'full';
 export type NovaOrynHardwareMatrixStorage = 'virtio-blk' | 'ahci' | 'nvme';
-export type NovaOrynHardwareMatrixNetwork = 'virtio-net' | 'e1000';
+export type NovaOrynHardwareMatrixNetwork = 'none' | 'virtio-net' | 'e1000';
 export type NovaOrynHardwareMatrixGraphics = 'gop' | 'virtio-gpu';
 export type NovaOrynHardwareMatrixUsb = 'none' | 'xhci';
 export type NovaOrynHardwareMatrixFirmware = 'uefi' | 'bios';

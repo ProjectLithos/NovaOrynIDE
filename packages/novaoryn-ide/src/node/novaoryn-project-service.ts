@@ -1589,7 +1589,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
 
     protected createHardwareMatrixCases(preset: NovaOrynHardwareMatrixPreset, biosSupported: boolean): NovaOrynHardwareMatrixCase[] {
         type Spec = Omit<NovaOrynHardwareMatrixCase, 'id' | 'label' | 'status'>;
-        const baseline: Spec = { cpuCount: 2, memoryMiB: 512, storage: 'virtio-blk', network: 'virtio-net', graphics: 'gop', usb: 'xhci', firmware: 'uefi' };
+        const baseline: Spec = { cpuCount: 2, memoryMiB: 512, storage: 'virtio-blk', network: 'none', graphics: 'virtio-gpu', usb: 'none', firmware: 'uefi' };
         let specs: Spec[] = [];
         if (preset === 'full') {
             const cpus = [1, 2, 4, 8];
@@ -1599,6 +1599,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             const graphics: Spec['graphics'][] = ['gop', 'virtio-gpu'];
             const usbModes: Spec['usb'][] = ['none', 'xhci'];
             const firmwares: Spec['firmware'][] = biosSupported ? ['uefi', 'bios'] : ['uefi'];
+            specs.push({ ...baseline });
             for (const cpuCount of cpus) for (const memoryMiB of memories) for (const storage of storages) for (const network of networks) for (const gpu of graphics) for (const usb of usbModes) for (const firmware of firmwares) {
                 specs.push({ cpuCount, memoryMiB, storage, network, graphics: gpu, usb, firmware });
             }
@@ -1608,10 +1609,10 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 { ...baseline, cpuCount: 1 }, { ...baseline, cpuCount: 4 }, { ...baseline, cpuCount: 8 },
                 { ...baseline, memoryMiB: 128 }, { ...baseline, memoryMiB: 1024 }, { ...baseline, memoryMiB: 2048 },
                 { ...baseline, storage: 'ahci' }, { ...baseline, storage: 'nvme' },
-                { ...baseline, network: 'e1000' },
-                { ...baseline, graphics: 'virtio-gpu' },
-                { ...baseline, usb: 'none' },
-                { ...baseline, cpuCount: 8, memoryMiB: 2048, storage: 'nvme', network: 'e1000', graphics: 'virtio-gpu', usb: 'xhci' }
+                { ...baseline, network: 'virtio-net' }, { ...baseline, network: 'e1000' },
+                { ...baseline, graphics: 'gop' },
+                { ...baseline, usb: 'xhci' },
+                { ...baseline, cpuCount: 8, memoryMiB: 2048, storage: 'nvme', network: 'e1000', graphics: 'gop', usb: 'xhci' }
             ];
             if (biosSupported) specs.push({ ...baseline, firmware: 'bios' });
         }
@@ -1667,6 +1668,16 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 testCase.status = accepted.success ? 'passed' : 'failed';
                 testCase.message = accepted.message;
                 run.output += `${accepted.success ? '[ OK ]' : '[FAIL]'} ${testCase.id} ${accepted.message} (${(testCase.durationMs / 1000).toFixed(1)}s)\r\n`;
+                if (!accepted.success) {
+                    run.output += `[INFO] QEMU arguments: ${args.map(value => /\s/.test(value) ? `"${value}"` : value).join(' ')}\r\n`;
+                    if (accepted.serialTail) run.output += `[INFO] Serial tail follows:\r\n${accepted.serialTail}\r\n[INFO] End serial tail.\r\n`;
+                    if (testCase.id === 'hw-001') {
+                        const reason = 'Skipped because the known-good control boot failed; hardware variations were not executed.';
+                        for (const remaining of run.cases) if (remaining.status === 'pending') { remaining.status = 'skipped'; remaining.message = reason; }
+                        run.output += `[FAIL] Known-good control boot failed. Remaining matrix cases were skipped so one control failure cannot produce hundreds of false hardware failures.\r\n`;
+                        break;
+                    }
+                }
             } catch (error) {
                 testCase.durationMs = Date.now() - started;
                 testCase.status = 'failed';
@@ -1686,7 +1697,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     }
 
     protected async hardwareMatrixQemuArguments(testCase: NovaOrynHardwareMatrixCase, imagePath: string, serialLog: string, ovmfCode: string, ovmfVars: string, caseRoot: string): Promise<string[]> {
-        const args = ['-machine', 'q35', '-accel', 'tcg,thread=multi', '-cpu', 'max', '-smp', String(testCase.cpuCount), '-m', `${testCase.memoryMiB}M`, '-display', 'none'];
+        const args = ['-machine', 'q35', '-accel', 'tcg,thread=multi', '-cpu', 'max', '-smp', String(testCase.cpuCount), '-m', `${testCase.memoryMiB}M`, '-display', 'sdl'];
         if (testCase.firmware === 'uefi') {
             const varsCopy = path.join(caseRoot, 'OVMF_VARS.fd');
             await fs.copyFile(ovmfVars, varsCopy);
@@ -1696,15 +1707,17 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         if (testCase.storage === 'virtio-blk') args.push('-device', 'virtio-blk-pci,drive=boot,bootindex=0');
         else if (testCase.storage === 'ahci') args.push('-device', 'ich9-ahci,id=ahci', '-device', 'ide-hd,drive=boot,bus=ahci.0,bootindex=0');
         else args.push('-device', 'nvme,drive=boot,serial=NOVAORYNTEST,bootindex=0');
-        args.push('-netdev', 'user,id=net0');
-        args.push('-device', testCase.network === 'e1000' ? 'e1000,netdev=net0' : 'virtio-net-pci,netdev=net0');
+        if (testCase.network !== 'none') {
+            args.push('-netdev', 'user,id=net0');
+            args.push('-device', testCase.network === 'e1000' ? 'e1000,netdev=net0' : 'virtio-net-pci,netdev=net0');
+        }
         if (testCase.graphics === 'virtio-gpu') args.push('-device', 'virtio-gpu-pci'); else args.push('-vga', 'std');
         if (testCase.usb === 'xhci') args.push('-device', 'qemu-xhci,id=xhci', '-device', 'usb-kbd,bus=xhci.0', '-device', 'usb-mouse,bus=xhci.0');
         args.push('-boot', 'menu=off,strict=on', '-serial', `file:${serialLog}`, '-monitor', 'none', '-no-reboot', '-no-shutdown');
         return args;
     }
 
-    protected async runQemuAcceptance(qemuPath: string, args: string[], cwd: string, serialLog: string, timeoutMs: number): Promise<{ success: boolean; message: string }> {
+    protected async runQemuAcceptance(qemuPath: string, args: string[], cwd: string, serialLog: string, timeoutMs: number): Promise<{ success: boolean; message: string; serialTail?: string }> {
         await fs.rm(serialLog, { force: true }).catch(() => undefined);
         const child = spawn(qemuPath, args, { cwd, windowsHide: true, stdio: 'ignore' });
         let exited = false; let exitCode: number | null = null;
@@ -1718,9 +1731,10 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
                 await new Promise(resolve => setTimeout(resolve, 150));
             }
             const serial = await fs.readFile(serialLog, 'utf8').catch(() => '');
+            const serialTail = serial.length > 6000 ? serial.slice(-6000) : serial;
             if (!serial) return { success: false, message: 'Timed out before any NovaOryn serial output appeared.' };
-            if (!serial.includes('NovaOryn KMain started.')) return { success: false, message: 'Timed out before NovaOryn KMain started.' };
-            return { success: false, message: 'KMain started, but the interactive NovaOryn prompt was not reached.' };
+            if (!serial.includes('NovaOryn KMain started.')) return { success: false, message: 'Timed out before NovaOryn KMain started.', serialTail };
+            return { success: false, message: 'KMain started, but the interactive NovaOryn prompt was not reached.', serialTail };
         } finally {
             if (!exited) {
                 try { child.kill(); } catch { }
