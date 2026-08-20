@@ -1,0 +1,11 @@
+{
+  "version": "0.11.16",
+  "summary": "Generated comprehensive kernels no longer call the private KernelPanicTransport bootstrap implementation from user Kernel.cs.",
+  "rootCause": "The 0.11.13 architecture-specific generator exposed KernelPanicTransport.Initialize() in generated Kernel.cs even though the selected user-kernel compilation surface does not compile that bootstrap helper into the user project.",
+  "fixes": [
+    "Removed KernelPanicTransport.Initialize() from Microkernel, Hybrid and Monolithic generated Kernel.cs sources.",
+    "Kept the kernel panic transport in the SDK/bootstrap support where the panic framework configures platform callbacks.",
+    "Removed the private transport from PUBLIC-SDK-USAGE.md public-call examples.",
+    "Added a verifier preventing private bootstrap transport calls from being emitted into comprehensive user kernels."
+  ]
+}

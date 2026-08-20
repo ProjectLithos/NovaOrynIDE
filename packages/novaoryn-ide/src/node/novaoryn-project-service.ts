@@ -83,7 +83,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.11.15';
+const NOVAORYN_IDE_VERSION = '0.11.16';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -1542,7 +1542,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.11.15 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.11.16 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -4519,7 +4519,6 @@ public static class Kernel
     {
         if (!KernelConsole.Initialize(boot)) return false;
         if (!KernelStructuredLogging.Initialize()) return false;
-        if (!KernelPanicTransport.Initialize()) return false;
         if (!boot.HasFinalMemoryMap()) return false;
         if (!KernelPlatform.InitializeDescriptors()) return false;
         if (!KernelPlatform.InitializeInterrupts()) return false;
@@ -4599,7 +4598,6 @@ public static class Kernel
     {
         if (!KernelConsole.Initialize(boot)) return false;
         if (!KernelStructuredLogging.Initialize()) return false;
-        if (!KernelPanicTransport.Initialize()) return false;
         if (!boot.HasFinalMemoryMap()) return false;
         if (!KernelPlatform.InitializeDescriptors()) return false;
         if (!KernelPlatform.InitializeInterrupts()) return false;
@@ -4711,7 +4709,6 @@ public static class Kernel
     {
         if (!KernelConsole.Initialize(boot)) return false;
         if (!KernelStructuredLogging.Initialize()) return false;
-        if (!KernelPanicTransport.Initialize()) return false;
         if (!boot.HasFinalMemoryMap()) return false;
         if (!KernelPlatform.InitializeDescriptors()) return false;
         if (!KernelPlatform.InitializeInterrupts()) return false;
@@ -5371,7 +5368,7 @@ public static class Kernel
             : configuration.kernelArchitecture === 'monolithic'
                 ? 'The generated `Kernel\\Kernel.cs` directly initializes the configured driver, PCI, interrupt-broker, PS/2, VirtIO GPU, storage, NVMe, AHCI, networking, VirtIO, E1000, RTL8168, xHCI, USB hub, HID and mass-storage facilities inside one privileged kernel.'
                 : 'The generated `Kernel\\Kernel.cs` keeps the core plus latency-sensitive driver, PCI, interrupt-broker, PS/2 and VirtIO GPU facilities in the kernel while leaving storage, networking and USB as separable higher-level services.';
-        return `# Public NovaOryn SDK usage\n\nThis operating system was generated from the **${model}** comprehensive preset in NovaOryn IDE ${NOVAORYN_IDE_VERSION}.\n\n## Architecture-specific executable example\n\n${architectureNote}\n\nThe three presets intentionally generate different \`Kernel\\Kernel.cs\` files. They do not hide initialization behind the same generic \`BootStartup.Initialize()\` / \`HardwareAbstractionLayer.Initialize()\` pair. Instead, the generated kernel source visibly calls the public SDK facilities that belong to that architecture.\n\n## Public core calls demonstrated directly\n\nThe generated kernel source shows real calls such as:\n\n\`\`\`csharp\nKernelConsole.Initialize(boot);\nKernelStructuredLogging.Initialize();\nKernelPanicTransport.Initialize();\nKernelPlatform.InitializeDescriptors();\nKernelPlatform.InitializeInterrupts();\nKernelPlatform.DisableLegacyPic();\nKernelAcpi.Initialize(boot);\nKernelAcpiFadt.Initialize();\nKernelAcpiPower.Initialize();\nKernelTime.Initialize();\nKernelPhysicalMemory.Initialize(boot);\nKernelVirtualMemory.Initialize();\nKernelAddressSpace.Initialize();\nKernelEarlyAllocator.Initialize();\nKernelHeap.Initialize();\nKernelGraphics.Initialize();\nKernelSmp.Initialize(boot);\nKernelScheduler.Initialize();\nKernelProtection.Initialize();\nKernelSystemCalls.Initialize();\nKernelProcesses.Initialize();\nKernelInterruptDispatch.Initialize();\nKernelTimerDispatch.Initialize();\n\`\`\`\n\nHybrid and Monolithic kernels additionally demonstrate the public driver/device APIs assigned to the kernel execution domain. The Monolithic source goes further and directly starts storage, networking and USB families.\n\n## Public capability model\n\nDrivers should consume MMIO, I/O ports, IRQ/MSI/MSI-X, DMA, PCI configuration, physical-memory, timer, networking and filesystem authority through the NovaOryn capability/grant contracts rather than bypassing the broker. The generated driver registration and kernel source are executable examples of the intended public surface.\n\n## Supporting generated files\n\n- **Kernel\\Kernel.cs** — architecture-specific public SDK orchestration.\n- **Boot\\BootStartup.cs** — reusable detailed boot implementation and diagnostics.\n- **HAL\\HardwareAbstractionLayer.cs** — reusable execution-domain-aware HAL implementation.\n- **Configuration\\GeneratedConfiguration.cs** — exact authoritative feature selections.\n- **NovaOryn.ProjectGraph.json** — generated project/service topology.\n\n## Browse every public contract\n\nOpen **Help -> SDK API** inside NovaOryn IDE for the bundled public API reference.\n`;
+        return `# Public NovaOryn SDK usage\n\nThis operating system was generated from the **${model}** comprehensive preset in NovaOryn IDE ${NOVAORYN_IDE_VERSION}.\n\n## Architecture-specific executable example\n\n${architectureNote}\n\nThe three presets intentionally generate different \`Kernel\\Kernel.cs\` files. They do not hide initialization behind the same generic \`BootStartup.Initialize()\` / \`HardwareAbstractionLayer.Initialize()\` pair. Instead, the generated kernel source visibly calls the public SDK facilities that belong to that architecture.\n\n## Public core calls demonstrated directly\n\nThe generated kernel source shows real calls such as:\n\n\`\`\`csharp\nKernelConsole.Initialize(boot);\nKernelStructuredLogging.Initialize();\nKernelPlatform.InitializeDescriptors();\nKernelPlatform.InitializeInterrupts();\nKernelPlatform.DisableLegacyPic();\nKernelAcpi.Initialize(boot);\nKernelAcpiFadt.Initialize();\nKernelAcpiPower.Initialize();\nKernelTime.Initialize();\nKernelPhysicalMemory.Initialize(boot);\nKernelVirtualMemory.Initialize();\nKernelAddressSpace.Initialize();\nKernelEarlyAllocator.Initialize();\nKernelHeap.Initialize();\nKernelGraphics.Initialize();\nKernelSmp.Initialize(boot);\nKernelScheduler.Initialize();\nKernelProtection.Initialize();\nKernelSystemCalls.Initialize();\nKernelProcesses.Initialize();\nKernelInterruptDispatch.Initialize();\nKernelTimerDispatch.Initialize();\n\`\`\`\n\nHybrid and Monolithic kernels additionally demonstrate the public driver/device APIs assigned to the kernel execution domain. The Monolithic source goes further and directly starts storage, networking and USB families.\n\n## Public capability model\n\nDrivers should consume MMIO, I/O ports, IRQ/MSI/MSI-X, DMA, PCI configuration, physical-memory, timer, networking and filesystem authority through the NovaOryn capability/grant contracts rather than bypassing the broker. The generated driver registration and kernel source are executable examples of the intended public surface.\n\n## Supporting generated files\n\n- **Kernel\\Kernel.cs** — architecture-specific public SDK orchestration.\n- **Boot\\BootStartup.cs** — reusable detailed boot implementation and diagnostics.\n- **HAL\\HardwareAbstractionLayer.cs** — reusable execution-domain-aware HAL implementation.\n- **Configuration\\GeneratedConfiguration.cs** — exact authoritative feature selections.\n- **NovaOryn.ProjectGraph.json** — generated project/service topology.\n\n## Browse every public contract\n\nOpen **Help -> SDK API** inside NovaOryn IDE for the bundled public API reference.\n`;
     }
 
     protected projectReadme(configuration: NovaOrynProjectConfiguration, projects: GeneratedProject[]): string {
