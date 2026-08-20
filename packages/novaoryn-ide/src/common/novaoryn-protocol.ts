@@ -506,6 +506,53 @@ export interface NovaOrynTestOutput {
     error?: string;
 }
 
+
+export type NovaOrynHardwareMatrixPreset = 'balanced' | 'full';
+export type NovaOrynHardwareMatrixStorage = 'virtio-blk' | 'ahci' | 'nvme';
+export type NovaOrynHardwareMatrixNetwork = 'virtio-net' | 'e1000';
+export type NovaOrynHardwareMatrixGraphics = 'gop' | 'virtio-gpu';
+export type NovaOrynHardwareMatrixUsb = 'none' | 'xhci';
+export type NovaOrynHardwareMatrixFirmware = 'uefi' | 'bios';
+export type NovaOrynHardwareMatrixCaseStatus = 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
+
+export interface NovaOrynHardwareMatrixCase {
+    id: string;
+    label: string;
+    cpuCount: number;
+    memoryMiB: number;
+    storage: NovaOrynHardwareMatrixStorage;
+    network: NovaOrynHardwareMatrixNetwork;
+    graphics: NovaOrynHardwareMatrixGraphics;
+    usb: NovaOrynHardwareMatrixUsb;
+    firmware: NovaOrynHardwareMatrixFirmware;
+    status: NovaOrynHardwareMatrixCaseStatus;
+    durationMs?: number;
+    serialLogPath?: string;
+    message?: string;
+}
+
+export interface NovaOrynHardwareMatrixPlan {
+    success: boolean;
+    preset: NovaOrynHardwareMatrixPreset;
+    cases: NovaOrynHardwareMatrixCase[];
+    biosSupported: boolean;
+    message?: string;
+    error?: string;
+}
+
+export interface NovaOrynHardwareMatrixRunResult { success: boolean; runId?: string; error?: string; }
+export interface NovaOrynHardwareMatrixOutput {
+    text: string;
+    nextOffset: number;
+    complete: boolean;
+    exitCode?: number;
+    cases: NovaOrynHardwareMatrixCase[];
+    passed: number;
+    failed: number;
+    skipped: number;
+    error?: string;
+}
+
 export interface NovaOrynProjectResult {
     success: boolean;
     projectPath?: string;
@@ -896,5 +943,8 @@ export interface NovaOrynProjectService {
     listTests(projectPath: string): Promise<NovaOrynTestDescriptor[]>;
     runTest(projectPath: string, testId: string): Promise<NovaOrynTestRunResult>;
     readTestOutput(runId: string, offset: number): Promise<NovaOrynTestOutput>;
+    getHardwareMatrixPlan(projectPath: string, preset: NovaOrynHardwareMatrixPreset): Promise<NovaOrynHardwareMatrixPlan>;
+    runHardwareMatrix(projectPath: string, preset: NovaOrynHardwareMatrixPreset): Promise<NovaOrynHardwareMatrixRunResult>;
+    readHardwareMatrixOutput(runId: string, offset: number): Promise<NovaOrynHardwareMatrixOutput>;
 }
 

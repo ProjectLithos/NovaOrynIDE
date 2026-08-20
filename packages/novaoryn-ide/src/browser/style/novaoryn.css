@@ -798,3 +798,23 @@ body.novaoryn-has-title-logo .lm-MenuBar {
     background: var(--theia-list-activeSelectionBackground);
     color: var(--theia-list-activeSelectionForeground);
 }
+
+/* 0.12.0 QEMU hardware test matrix */
+.novaoryn-matrix-section { border:1px solid var(--theia-widget-border); padding:12px; margin-bottom:16px; }
+.novaoryn-matrix-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.novaoryn-matrix-heading h3 { margin-top:0; }
+.novaoryn-matrix-heading p { margin-bottom:4px; opacity:.78; max-width:850px; }
+.novaoryn-matrix-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.novaoryn-matrix-summary { display:flex; gap:18px; flex-wrap:wrap; margin:10px 0; padding:8px 10px; background:var(--theia-editor-background); border:1px solid var(--theia-widget-border); }
+.novaoryn-matrix-table { overflow:auto; border:1px solid var(--theia-widget-border); max-height:420px; }
+.novaoryn-matrix-row { min-width:850px; display:grid; grid-template-columns:120px 55px 90px 110px 110px 110px 90px 90px; align-items:center; gap:8px; padding:6px 8px; border-bottom:1px solid var(--theia-widget-border); }
+.novaoryn-matrix-row:last-child { border-bottom:0; }
+.novaoryn-matrix-row.header { position:sticky; top:0; z-index:1; font-weight:600; background:var(--theia-editor-background); }
+.novaoryn-matrix-row.running { background:var(--theia-list-activeSelectionBackground); }
+.novaoryn-matrix-row.failed { background:color-mix(in srgb, var(--theia-errorForeground) 9%, transparent); }
+.novaoryn-matrix-status { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; }
+.novaoryn-matrix-status.passed { color:var(--theia-testing-iconPassed,#73c991); }
+.novaoryn-matrix-status.failed { color:var(--theia-errorForeground,#f48771); }
+.novaoryn-matrix-status.running { color:var(--theia-progressBar-background,#0e70c0); }
+.novaoryn-matrix-status.skipped { opacity:.65; }
+.novaoryn-matrix-output-wrap { margin-top:12px; }

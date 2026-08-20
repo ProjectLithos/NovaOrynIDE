@@ -48,6 +48,11 @@ import {
     NovaOrynTestDescriptor,
     NovaOrynTestRunResult,
     NovaOrynTestOutput,
+    NovaOrynHardwareMatrixPreset,
+    NovaOrynHardwareMatrixCase,
+    NovaOrynHardwareMatrixPlan,
+    NovaOrynHardwareMatrixRunResult,
+    NovaOrynHardwareMatrixOutput,
     NovaOrynTargetProfile,
     NovaOrynPhysicalDebuggerProbe,
     NovaOrynTargetState,
@@ -83,7 +88,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.11.16';
+const NOVAORYN_IDE_VERSION = '0.12.0';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -522,6 +527,7 @@ const NOVAORYN_OS_LIST_STATE = path.join(NOVAORYN_OS_ROOT, '.novaoryn-ide-state.
 export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
     protected readonly runSessions = new Map<string, RunSession>();
     protected readonly testRuns = new Map<string, { output: string; complete: boolean; exitCode?: number; error?: string }>();
+    protected readonly hardwareMatrixRuns = new Map<string, { output: string; complete: boolean; exitCode?: number; error?: string; cases: NovaOrynHardwareMatrixCase[] }>();
     protected readonly telemetryArchives = new Map<string, { trace: NovaOrynTraceSnapshot; profiler: NovaOrynProfilerSnapshot }>();
 
     async getSdkApiSiteUrl(): Promise<string> {
@@ -1528,6 +1534,225 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         return { text, nextOffset: run.output.length, complete: run.complete, exitCode: run.exitCode, error: run.error };
     }
 
+    async getHardwareMatrixPlan(projectPath: string, preset: NovaOrynHardwareMatrixPreset): Promise<NovaOrynHardwareMatrixPlan> {
+        try {
+            const projectRoot = path.resolve(projectPath);
+            await fs.access(projectRoot);
+            const artifactRoot = path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel');
+            const biosSupported = await this.exists(path.join(artifactRoot, 'MinimalKernel-bios.img'));
+            return {
+                success: true,
+                preset,
+                cases: this.createHardwareMatrixCases(preset, biosSupported),
+                biosSupported,
+                message: biosSupported
+                    ? 'UEFI and legacy BIOS boot artifacts are available for matrix execution.'
+                    : 'The current NovaOryn x64 pipeline emits an EFI/UEFI image. BIOS cases are recorded as not applicable until a BIOS boot artifact exists.'
+            };
+        } catch (error) {
+            return { success: false, preset, cases: [], biosSupported: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
+    async runHardwareMatrix(projectPath: string, preset: NovaOrynHardwareMatrixPreset): Promise<NovaOrynHardwareMatrixRunResult> {
+        try {
+            const projectRoot = path.resolve(projectPath);
+            const plan = await this.getHardwareMatrixPlan(projectRoot, preset);
+            if (!plan.success) return { success: false, error: plan.error ?? 'Could not prepare the QEMU hardware test matrix.' };
+            const runId = `matrix-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+            const run = {
+                output: `[INFO] NovaOryn QEMU Hardware Test Matrix 0.12.0\r\n[INFO] Preset: ${preset === 'full' ? 'Full Cartesian' : 'Balanced'}\r\n[INFO] Project: ${projectRoot}\r\n[INFO] Planned cases: ${plan.cases.length}\r\n${plan.message ? `[INFO] ${plan.message}\r\n` : ''}\r\n`,
+                complete: false,
+                cases: plan.cases.map(item => ({ ...item }))
+            } as { output: string; complete: boolean; exitCode?: number; error?: string; cases: NovaOrynHardwareMatrixCase[] };
+            this.hardwareMatrixRuns.set(runId, run);
+            void this.executeHardwareMatrix(projectRoot, run).catch(error => {
+                run.error = error instanceof Error ? error.message : String(error);
+                run.output += `\r\n[FAIL] Hardware matrix aborted: ${run.error}\r\n`;
+                run.exitCode = 1;
+                run.complete = true;
+            });
+            return { success: true, runId };
+        } catch (error) { return { success: false, error: error instanceof Error ? error.message : String(error) }; }
+    }
+
+    async readHardwareMatrixOutput(runId: string, offset: number): Promise<NovaOrynHardwareMatrixOutput> {
+        const run = this.hardwareMatrixRuns.get(runId);
+        if (!run) return { text: '', nextOffset: offset, complete: true, exitCode: 1, cases: [], passed: 0, failed: 0, skipped: 0, error: 'Unknown NovaOryn hardware-matrix run.' };
+        const safeOffset = Math.max(0, Math.min(offset, run.output.length));
+        const text = run.output.slice(safeOffset);
+        const passed = run.cases.filter(item => item.status === 'passed').length;
+        const failed = run.cases.filter(item => item.status === 'failed').length;
+        const skipped = run.cases.filter(item => item.status === 'skipped').length;
+        return { text, nextOffset: run.output.length, complete: run.complete, exitCode: run.exitCode, cases: run.cases.map(item => ({ ...item })), passed, failed, skipped, error: run.error };
+    }
+
+    protected createHardwareMatrixCases(preset: NovaOrynHardwareMatrixPreset, biosSupported: boolean): NovaOrynHardwareMatrixCase[] {
+        type Spec = Omit<NovaOrynHardwareMatrixCase, 'id' | 'label' | 'status'>;
+        const baseline: Spec = { cpuCount: 2, memoryMiB: 512, storage: 'virtio-blk', network: 'virtio-net', graphics: 'gop', usb: 'xhci', firmware: 'uefi' };
+        let specs: Spec[] = [];
+        if (preset === 'full') {
+            const cpus = [1, 2, 4, 8];
+            const memories = [128, 512, 1024, 2048];
+            const storages: Spec['storage'][] = ['virtio-blk', 'ahci', 'nvme'];
+            const networks: Spec['network'][] = ['virtio-net', 'e1000'];
+            const graphics: Spec['graphics'][] = ['gop', 'virtio-gpu'];
+            const usbModes: Spec['usb'][] = ['none', 'xhci'];
+            const firmwares: Spec['firmware'][] = biosSupported ? ['uefi', 'bios'] : ['uefi'];
+            for (const cpuCount of cpus) for (const memoryMiB of memories) for (const storage of storages) for (const network of networks) for (const gpu of graphics) for (const usb of usbModes) for (const firmware of firmwares) {
+                specs.push({ cpuCount, memoryMiB, storage, network, graphics: gpu, usb, firmware });
+            }
+        } else {
+            specs = [
+                { ...baseline },
+                { ...baseline, cpuCount: 1 }, { ...baseline, cpuCount: 4 }, { ...baseline, cpuCount: 8 },
+                { ...baseline, memoryMiB: 128 }, { ...baseline, memoryMiB: 1024 }, { ...baseline, memoryMiB: 2048 },
+                { ...baseline, storage: 'ahci' }, { ...baseline, storage: 'nvme' },
+                { ...baseline, network: 'e1000' },
+                { ...baseline, graphics: 'virtio-gpu' },
+                { ...baseline, usb: 'none' },
+                { ...baseline, cpuCount: 8, memoryMiB: 2048, storage: 'nvme', network: 'e1000', graphics: 'virtio-gpu', usb: 'xhci' }
+            ];
+            if (biosSupported) specs.push({ ...baseline, firmware: 'bios' });
+        }
+        if (!biosSupported) specs.push({ ...baseline, firmware: 'bios' });
+        return specs.map((spec, index) => ({
+            ...spec,
+            id: `hw-${String(index + 1).padStart(3, '0')}`,
+            label: `${spec.cpuCount} CPU / ${spec.memoryMiB} MiB / ${spec.storage} / ${spec.network} / ${spec.graphics} / ${spec.usb} / ${spec.firmware.toUpperCase()}`,
+            status: spec.firmware === 'bios' && !biosSupported ? 'skipped' : 'pending',
+            message: spec.firmware === 'bios' && !biosSupported ? 'Not applicable: current NovaOryn x64 image is EFI/UEFI-only.' : undefined
+        }));
+    }
+
+    protected async executeHardwareMatrix(projectRoot: string, run: { output: string; complete: boolean; exitCode?: number; error?: string; cases: NovaOrynHardwareMatrixCase[] }): Promise<void> {
+        const qemuPath = await this.resolveQemuExecutable();
+        const ovmfCode = await this.resolveQemuFile(['edk2-x86_64-code.fd', 'OVMF_CODE.fd']);
+        const ovmfVars = await this.resolveQemuFile(['edk2-i386-vars.fd', 'edk2-x86_64-vars.fd', 'OVMF_VARS.fd']);
+        if (!qemuPath) throw new Error('QEMU x86_64 was not found. Install/verify the NovaOryn SDK toolchain first.');
+        if (!ovmfCode || !ovmfVars) throw new Error('OVMF firmware was not found in the QEMU installation.');
+
+        run.output += '[INFO] Building the selected OS once before matrix execution.\r\n';
+        const buildScript = path.join(projectRoot, 'Build.bat');
+        if (!await this.exists(buildScript)) throw new Error(`Generated OS build script was not found: ${buildScript}`);
+        const build = await this.captureProcess('cmd.exe', ['/d', '/s', '/c', `"${buildScript}"`], projectRoot);
+        run.output += build.output;
+        if (build.exitCode !== 0) throw new Error(`OS build failed with exit code ${build.exitCode}. No QEMU matrix cases were run.`);
+
+        const artifactRoot = path.join(NOVAORYN_SDK_ROOT, 'Artifacts', 'MinimalKernel');
+        const uefiImage = path.join(artifactRoot, 'MinimalKernel.img');
+        const biosImage = path.join(artifactRoot, 'MinimalKernel-bios.img');
+        await fs.access(uefiImage);
+        const matrixRoot = path.join(projectRoot, '.novaoryn', 'tests', 'qemu-hardware-matrix', new Date().toISOString().replace(/[:.]/g, '-'));
+        await fs.mkdir(matrixRoot, { recursive: true });
+        run.output += `[ OK ] Matrix build completed.\r\n[INFO] Results: ${matrixRoot}\r\n\r\n`;
+
+        for (const testCase of run.cases) {
+            if (testCase.status === 'skipped') {
+                run.output += `[SKIP] ${testCase.id} ${testCase.label}: ${testCase.message}\r\n`;
+                continue;
+            }
+            testCase.status = 'running';
+            const started = Date.now();
+            run.output += `[RUN ] ${testCase.id} ${testCase.label}\r\n`;
+            try {
+                const caseRoot = path.join(matrixRoot, testCase.id);
+                await fs.mkdir(caseRoot, { recursive: true });
+                const serialLog = path.join(caseRoot, 'serial.log');
+                testCase.serialLogPath = serialLog;
+                const imagePath = testCase.firmware === 'bios' ? biosImage : uefiImage;
+                const args = await this.hardwareMatrixQemuArguments(testCase, imagePath, serialLog, ovmfCode, ovmfVars, caseRoot);
+                const accepted = await this.runQemuAcceptance(qemuPath, args, projectRoot, serialLog, 60_000);
+                testCase.durationMs = Date.now() - started;
+                testCase.status = accepted.success ? 'passed' : 'failed';
+                testCase.message = accepted.message;
+                run.output += `${accepted.success ? '[ OK ]' : '[FAIL]'} ${testCase.id} ${accepted.message} (${(testCase.durationMs / 1000).toFixed(1)}s)\r\n`;
+            } catch (error) {
+                testCase.durationMs = Date.now() - started;
+                testCase.status = 'failed';
+                testCase.message = error instanceof Error ? error.message : String(error);
+                run.output += `[FAIL] ${testCase.id} ${testCase.message}\r\n`;
+            }
+        }
+        const passed = run.cases.filter(item => item.status === 'passed').length;
+        const failed = run.cases.filter(item => item.status === 'failed').length;
+        const skipped = run.cases.filter(item => item.status === 'skipped').length;
+        const report = { schemaVersion: 1, product: 'NovaOryn IDE', version: NOVAORYN_IDE_VERSION, generatedUtc: new Date().toISOString(), passed, failed, skipped, cases: run.cases };
+        await fs.writeFile(path.join(matrixRoot, 'NovaOryn.QemuHardwareMatrix.json'), JSON.stringify(report, null, 2), 'utf8');
+        run.output += `\r\n[INFO] Matrix summary: ${passed} passed, ${failed} failed, ${skipped} skipped.\r\n`;
+        run.output += `[INFO] JSON report: ${path.join(matrixRoot, 'NovaOryn.QemuHardwareMatrix.json')}\r\n`;
+        run.exitCode = failed === 0 ? 0 : 1;
+        run.complete = true;
+    }
+
+    protected async hardwareMatrixQemuArguments(testCase: NovaOrynHardwareMatrixCase, imagePath: string, serialLog: string, ovmfCode: string, ovmfVars: string, caseRoot: string): Promise<string[]> {
+        const args = ['-machine', 'q35', '-accel', 'tcg,thread=multi', '-cpu', 'max', '-smp', String(testCase.cpuCount), '-m', `${testCase.memoryMiB}M`, '-display', 'none'];
+        if (testCase.firmware === 'uefi') {
+            const varsCopy = path.join(caseRoot, 'OVMF_VARS.fd');
+            await fs.copyFile(ovmfVars, varsCopy);
+            args.push('-drive', `if=pflash,format=raw,unit=0,readonly=on,file=${ovmfCode}`, '-drive', `if=pflash,format=raw,unit=1,file=${varsCopy}`);
+        }
+        args.push('-drive', `if=none,format=raw,readonly=on,file=${imagePath},id=boot`);
+        if (testCase.storage === 'virtio-blk') args.push('-device', 'virtio-blk-pci,drive=boot,bootindex=0');
+        else if (testCase.storage === 'ahci') args.push('-device', 'ich9-ahci,id=ahci', '-device', 'ide-hd,drive=boot,bus=ahci.0,bootindex=0');
+        else args.push('-device', 'nvme,drive=boot,serial=NOVAORYNTEST,bootindex=0');
+        args.push('-netdev', 'user,id=net0');
+        args.push('-device', testCase.network === 'e1000' ? 'e1000,netdev=net0' : 'virtio-net-pci,netdev=net0');
+        if (testCase.graphics === 'virtio-gpu') args.push('-device', 'virtio-gpu-pci'); else args.push('-vga', 'std');
+        if (testCase.usb === 'xhci') args.push('-device', 'qemu-xhci,id=xhci', '-device', 'usb-kbd,bus=xhci.0', '-device', 'usb-mouse,bus=xhci.0');
+        args.push('-boot', 'menu=off,strict=on', '-serial', `file:${serialLog}`, '-monitor', 'none', '-no-reboot', '-no-shutdown');
+        return args;
+    }
+
+    protected async runQemuAcceptance(qemuPath: string, args: string[], cwd: string, serialLog: string, timeoutMs: number): Promise<{ success: boolean; message: string }> {
+        await fs.rm(serialLog, { force: true }).catch(() => undefined);
+        const child = spawn(qemuPath, args, { cwd, windowsHide: true, stdio: 'ignore' });
+        let exited = false; let exitCode: number | null = null;
+        child.on('close', code => { exited = true; exitCode = code; });
+        try {
+            const deadline = Date.now() + timeoutMs;
+            while (Date.now() < deadline) {
+                if (exited) return { success: false, message: `QEMU exited before boot acceptance (exit code ${exitCode ?? -1}).` };
+                const serial = await fs.readFile(serialLog, 'utf8').catch(() => '');
+                if (serial.includes('NovaOryn KMain started.') && serial.includes('NovaOryn> ')) return { success: true, message: 'KMain and interactive NovaOryn prompt confirmed.' };
+                await new Promise(resolve => setTimeout(resolve, 150));
+            }
+            const serial = await fs.readFile(serialLog, 'utf8').catch(() => '');
+            if (!serial) return { success: false, message: 'Timed out before any NovaOryn serial output appeared.' };
+            if (!serial.includes('NovaOryn KMain started.')) return { success: false, message: 'Timed out before NovaOryn KMain started.' };
+            return { success: false, message: 'KMain started, but the interactive NovaOryn prompt was not reached.' };
+        } finally {
+            if (!exited) {
+                try { child.kill(); } catch { }
+            }
+        }
+    }
+
+    protected async captureProcess(command: string, args: string[], cwd: string): Promise<{ exitCode: number; output: string }> {
+        return new Promise((resolve, reject) => {
+            const child = spawn(command, args, { cwd, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+            let output = '';
+            child.stdout?.setEncoding('utf8'); child.stderr?.setEncoding('utf8');
+            child.stdout?.on('data', data => { output += data; }); child.stderr?.on('data', data => { output += data; });
+            child.on('error', reject); child.on('close', code => resolve({ exitCode: code ?? 1, output }));
+        });
+    }
+
+    protected async resolveQemuExecutable(): Promise<string | undefined> {
+        const candidates = [process.env.NOVAORYN_QEMU_X64, 'C:\\Program Files\\qemu\\qemu-system-x86_64.exe'].filter((value): value is string => !!value);
+        for (const candidate of candidates) if (await this.exists(candidate)) return candidate;
+        return undefined;
+    }
+
+    protected async resolveQemuFile(names: string[]): Promise<string | undefined> {
+        const roots = ['C:\\Program Files\\qemu\\share', 'C:\\Program Files\\qemu'];
+        for (const root of roots) for (const name of names) {
+            const candidate = path.join(root, name); if (await this.exists(candidate)) return candidate;
+        }
+        return undefined;
+    }
+
+
 
     async runOperatingSystem(projectPath: string, mode: NovaOrynRunMode, breakpoints: NovaOrynBreakpointRequest[] = [], exceptionBreakpoints: NovaOrynExceptionBreakpointSettings = { vectors: [0, 2, 6, 8, 12, 13, 14, 18], breakOnPanic: true }): Promise<NovaOrynRunResult> {
         try {
@@ -1542,7 +1767,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.11.16 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.12.0 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 

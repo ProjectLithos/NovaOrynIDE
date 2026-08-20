@@ -1,0 +1,23 @@
+{
+  "version": "0.12.0",
+  "summary": "Adds an automated QEMU hardware test matrix integrated into NovaOryn Test Explorer.",
+  "feature": "QEMU hardware test matrix",
+  "coverage": {
+    "cpuCounts": [1, 2, 4, 8],
+    "memoryMiB": [128, 512, 1024, 2048],
+    "storage": ["VirtIO block", "AHCI", "NVMe"],
+    "network": ["VirtIO net", "E1000"],
+    "graphics": ["UEFI GOP / standard VGA", "VirtIO GPU"],
+    "usb": ["none", "xHCI with USB keyboard and mouse"],
+    "firmware": ["UEFI", "legacy BIOS where a BIOS boot artifact exists"]
+  },
+  "execution": [
+    "Balanced matrix varies individual dimensions around a known-good baseline and includes a combined stress case.",
+    "Full Cartesian matrix generates every supported combination.",
+    "The selected OS is built once before the matrix begins.",
+    "Each QEMU case has a clean run directory and serial log.",
+    "Acceptance requires both NovaOryn KMain startup and the interactive NovaOryn prompt.",
+    "Legacy BIOS is explicitly skipped as not applicable for an EFI-only build rather than being reported as tested.",
+    "A versioned NovaOryn.QemuHardwareMatrix.json report is written under the OS .novaoryn test results directory."
+  ]
+}
