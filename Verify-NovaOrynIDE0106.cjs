@@ -1,0 +1,17 @@
+const fs=require("fs");
+let f=0;const R=p=>fs.readFileSync(p,"utf8");
+const C=(v,m)=>{console.log(`${v?"[ OK ]":"[FAIL]"} ${m}`);if(!v)f++;};
+const ui=R("packages/novaoryn-ide/src/browser/novaoryn-contribution.ts");
+const css=R("packages/novaoryn-ide/src/browser/style/novaoryn.css");
+const drv=R("SDK/src/NovaOryn.Kernel.Drivers/KernelDrivers.cs");
+const gpu=R("SDK/src/NovaOryn.Kernel.Virtio.Gpu/KernelVirtioGpu.cs");
+C(ui.includes("novaoryn-bottom-control-strip"),"owned bottom-panel control strip exists");
+C(ui.includes("Problems")&&ui.includes("Output"),"Problems/Output controls exist");
+C(ui.includes("getChannel('NovaOryn Build').clear()"),"Clear output control is functional");
+C(css.includes(".novaoryn-bottom-control-strip"),"bottom strip is styled");
+C(drv.includes("Capability declarations are maximum permission ceilings"),"capability declaration semantics corrected");
+C(drv.includes("// Best-effort pre-grants."),"automatic grants are best-effort");
+C(!drv.includes("KernelDriverFailureCode.CapabilityFailure,KernelDriverLifecycleStage.Bind);continue;"),"capability pre-grant no longer fails binding");
+C(gpu.includes("!EnablePci(pci.Location)")&&gpu.includes("command|0x0006U"),"VirtIO PCI enablement retained");
+C(drv.includes("BindAndStartMatchingDevices()"),"device matching/start reconciliation retained");
+if(f)process.exitCode=1;else console.log("[ OK ] NovaOryn 0.10.7 verified.");

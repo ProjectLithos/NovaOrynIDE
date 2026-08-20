@@ -58,4 +58,4 @@ requireText(linker, '[ OK ] Direct PDB source-line extraction:', 'Direct PDB sou
 requireText(linker, 'TryGetPeSectionLayout', 'PDB section offsets must be translated through the linked PE section table.');
 requireText(linker, 'MaxFallbackAddresses = 20000', 'Legacy per-instruction symbolizer fallback must be bounded.');
 
-console.log('[ OK ] NovaOryn IDE 0.10.5 source debugging, direct PDB line mapping, stepping, mixed disassembly and native debug-inspection contract verified.');
+console.log('[ OK ] NovaOryn IDE 0.10.7 source debugging, direct PDB line mapping, stepping, mixed disassembly and native debug-inspection contract verified.');

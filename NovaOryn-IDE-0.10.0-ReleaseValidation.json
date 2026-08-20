@@ -1,5 +1,5 @@
 {
-  "release": "NovaOryn IDE 0.10.5",
+  "release": "NovaOryn IDE 0.10.7",
   "feature": "Kernel panic framework",
   "panicRecord": [
     "reason/code",
@@ -34,9 +34,9 @@
     "modifiedIdeTypeScriptTranspile": "PASS",
     "sourceTemplateParity": "PASS",
     "versionConsistency": {
-      "package.json": "0.10.5",
-      "applications/electron/package.json": "0.10.5",
-      "packages/novaoryn-ide/package.json": "0.10.5"
+      "package.json": "0.10.7",
+      "applications/electron/package.json": "0.10.7",
+      "packages/novaoryn-ide/package.json": "0.10.7"
     },
     "windowsNativeBuild": "Run Build-NovaOrynIDE.bat on Windows for final NativeAOT/link validation."
   }

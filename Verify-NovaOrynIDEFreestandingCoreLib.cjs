@@ -25,4 +25,4 @@ const checks=[
  ['VS template avoids unsupported concat',!vs.includes('info.Reason+": "+info.Message')],
 ];
 let bad=false;for(const[n,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${n}`);if(!ok)bad=true;}
-if(bad)process.exit(1);console.log(`[ OK ] NovaOryn IDE 0.10.5 freestanding CoreLib expansion verified (${checks.length} checks).`);
+if(bad)process.exit(1);console.log(`[ OK ] NovaOryn IDE 0.10.7 freestanding CoreLib expansion verified (${checks.length} checks).`);

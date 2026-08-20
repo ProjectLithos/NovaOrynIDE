@@ -7,6 +7,7 @@ import { AbstractViewContribution, CommonMenus, FrontendApplicationContribution 
 import { NavigatorContextMenu } from '@theia/navigator/lib/browser/navigator-contribution';
 import { WorkspaceService } from '@theia/workspace/lib/browser/workspace-service';
 import { EDITOR_CONTEXT_MENU, EDITOR_LINENUMBER_CONTEXT_MENU, EditorManager } from '@theia/editor/lib/browser';
+import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
 import { NovaOrynBreakpointManager } from './novaoryn-breakpoint-manager';
 import { NovaOrynWidget, NOVAORYN_EXPLICIT_WORKSPACE_OPEN } from './novaoryn-widget';
 import { NovaOrynToolbarWidget } from './novaoryn-toolbar-widget';
@@ -94,6 +95,9 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
 
     @inject(MessageService)
     protected readonly messageService!: MessageService;
+
+    @inject(OutputChannelManager)
+    protected readonly outputChannelManager!: OutputChannelManager;
 
     @inject(NovaOrynToolbarWidget) protected readonly toolbarWidget!: NovaOrynToolbarWidget;
     @inject(NovaOrynDashboardWidget) protected readonly dashboardWidget!: NovaOrynDashboardWidget;
@@ -473,74 +477,132 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
      */
     protected installBottomPanelControls(): void {
         if (this.bottomPanelControlsInstalled) {
-            this.repairBottomPanelControls();
+            this.ensureBottomPanelControlStrip();
             return;
         }
 
         const repair = (): void => {
-            window.requestAnimationFrame(() => this.repairBottomPanelControls());
+            window.requestAnimationFrame(() => this.ensureBottomPanelControlStrip());
         };
-
         this.bottomPanelObserver = new MutationObserver(repair);
-        this.bottomPanelObserver.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        this.bottomPanelObserver.observe(document.body, { childList: true, subtree: true });
 
-        this.repairBottomPanelControls();
-        window.requestAnimationFrame(() => this.repairBottomPanelControls());
+        this.ensureBottomPanelControlStrip();
+        window.requestAnimationFrame(() => this.ensureBottomPanelControlStrip());
         this.bottomPanelControlsInstalled = true;
     }
 
-    protected repairBottomPanelControls(): void {
-        const shell = this.shell as unknown as {
-            bottomPanel?: {
-                tabBars?: () => Iterable<{
-                    show?: () => void;
-                    update?: () => void;
-                    fit?: () => void;
-                    node?: HTMLElement;
-                }>;
-                update?: () => void;
-                fit?: () => void;
-            };
-            update?: () => void;
-            fit?: () => void;
-        };
-
-        const bottomPanel = shell.bottomPanel;
-        if (bottomPanel && typeof bottomPanel.tabBars === 'function') {
-            for (const tabBar of Array.from(bottomPanel.tabBars())) {
-                tabBar.show?.();
-                if (tabBar.node) {
-                    tabBar.node.hidden = false;
-                    tabBar.node.style.removeProperty('display');
-                    tabBar.node.style.removeProperty('visibility');
-                    tabBar.node.style.removeProperty('opacity');
-                    tabBar.node.setAttribute('data-novaoryn-bottom-controls', 'restored');
-                }
-                tabBar.update?.();
-                tabBar.fit?.();
-            }
-            bottomPanel.update?.();
-            bottomPanel.fit?.();
+    protected ensureBottomPanelControlStrip(): void {
+        const bottom =
+            document.querySelector<HTMLElement>('#theia-bottom-panel')
+            ?? document.querySelector<HTMLElement>('.theia-bottom-panel');
+        if (!bottom) {
+            return;
         }
 
-        // Also repair the DOM representation for both current and legacy Lumino
-        // class names. This does not fabricate a toolbar; it exposes the real one.
-        document.querySelectorAll<HTMLElement>(
-            '#theia-bottom-panel .lm-TabBar, #theia-bottom-panel .p-TabBar, '
-            + '.theia-bottom-panel .lm-TabBar, .theia-bottom-panel .p-TabBar'
-        ).forEach(node => {
-            node.hidden = false;
-            node.style.removeProperty('display');
-            node.style.removeProperty('visibility');
-            node.style.removeProperty('opacity');
-            node.setAttribute('data-novaoryn-bottom-controls', 'restored');
-        });
+        let strip = bottom.querySelector<HTMLElement>(':scope > .novaoryn-bottom-control-strip');
+        if (!strip) {
+            strip = document.createElement('div');
+            strip.className = 'novaoryn-bottom-control-strip';
+            strip.setAttribute('role', 'toolbar');
+            strip.setAttribute('aria-label', 'Bottom panel controls');
 
-        shell.update?.();
-        shell.fit?.();
+            const left = document.createElement('div');
+            left.className = 'novaoryn-bottom-control-tabs';
+
+            const problems = document.createElement('button');
+            problems.type = 'button';
+            problems.textContent = 'Problems';
+            problems.title = 'Show Problems';
+            problems.addEventListener('click', () => this.activateBottomPanelTab('Problems'));
+
+            const output = document.createElement('button');
+            output.type = 'button';
+            output.textContent = 'Output';
+            output.title = 'Show Output';
+            output.addEventListener('click', () => this.activateBottomPanelTab('Output'));
+
+            left.append(problems, output);
+
+            const right = document.createElement('div');
+            right.className = 'novaoryn-bottom-control-actions';
+
+            const channel = document.createElement('span');
+            channel.className = 'novaoryn-bottom-output-channel';
+            channel.textContent = 'NovaOryn Build';
+            channel.title = 'Active NovaOryn output channel';
+
+            const clear = document.createElement('button');
+            clear.type = 'button';
+            clear.textContent = 'Clear';
+            clear.title = 'Clear NovaOryn Build output';
+            clear.addEventListener('click', () => {
+                this.outputChannelManager.getChannel('NovaOryn Build').clear();
+            });
+
+            const maximize = document.createElement('button');
+            maximize.type = 'button';
+            maximize.textContent = '↕';
+            maximize.title = 'Maximize / restore bottom panel';
+            maximize.addEventListener('click', () => this.clickBottomPanelNativeControl(['Maximize', 'Restore', 'Toggle Maximize']));
+
+            const close = document.createElement('button');
+            close.type = 'button';
+            close.textContent = '×';
+            close.title = 'Close bottom panel';
+            close.addEventListener('click', () => this.clickBottomPanelNativeControl(['Close Panel', 'Close']));
+
+            right.append(channel, clear, maximize, close);
+            strip.append(left, right);
+
+            const content =
+                bottom.querySelector<HTMLElement>('#theia-bottom-content-panel')
+                ?? bottom.querySelector<HTMLElement>('.theia-bottom-content-panel');
+            if (content) {
+                bottom.insertBefore(strip, content);
+            } else {
+                bottom.prepend(strip);
+            }
+        }
+
+        strip.hidden = false;
+        strip.style.removeProperty('display');
+        strip.style.removeProperty('visibility');
+        strip.style.removeProperty('opacity');
+    }
+
+    protected activateBottomPanelTab(label: string): void {
+        const bottom =
+            document.querySelector<HTMLElement>('#theia-bottom-panel')
+            ?? document.querySelector<HTMLElement>('.theia-bottom-panel');
+        if (!bottom) {
+            return;
+        }
+
+        const candidates = Array.from(bottom.querySelectorAll<HTMLElement>(
+            '[role="tab"], .lm-TabBar-tab, .p-TabBar-tab'
+        ));
+        const match = candidates.find(candidate =>
+            (candidate.textContent ?? '').trim().toLowerCase().includes(label.toLowerCase())
+        );
+        match?.click();
+    }
+
+    protected clickBottomPanelNativeControl(labels: string[]): void {
+        const bottom =
+            document.querySelector<HTMLElement>('#theia-bottom-panel')
+            ?? document.querySelector<HTMLElement>('.theia-bottom-panel');
+        if (!bottom) {
+            return;
+        }
+
+        const controls = Array.from(bottom.querySelectorAll<HTMLElement>('button,[role="button"]'))
+            .filter(node => !node.closest('.novaoryn-bottom-control-strip'));
+        const match = controls.find(node => {
+            const text = `${node.getAttribute('title') ?? ''} ${node.getAttribute('aria-label') ?? ''} ${node.textContent ?? ''}`.toLowerCase();
+            return labels.some(label => text.includes(label.toLowerCase()));
+        });
+        match?.click();
     }
 
     /**

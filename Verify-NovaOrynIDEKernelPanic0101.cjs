@@ -17,4 +17,4 @@ C(csproj.includes('Compile Include="Boot\\KernelPanicTransport.cs"'),"normal gen
 C(vst.includes('TargetFileName="Boot\\KernelPanicTransport.cs"'),"VS template carries panic transport");
 C(svc.includes("path.join('Boot', 'KernelPanicTransport.cs')"),"existing OS refresh copies panic transport");
 C(svc.includes("!projectText.includes('Boot\\\\KernelPanicTransport.cs')"),"existing OS project compile item repaired");
-if(fail)process.exitCode=1; else console.log("[ OK ] NovaOryn 0.10.5 panic repair verified.");
+if(fail)process.exitCode=1; else console.log("[ OK ] NovaOryn 0.10.7 panic repair verified.");

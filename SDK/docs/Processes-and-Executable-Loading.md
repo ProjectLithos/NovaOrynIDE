@@ -8,6 +8,6 @@ Each process receives a private lower-half four-level page-table hierarchy. The 
 
 The public API uses ordinary .NET-style value types and `Boolean`/value returns: `KernelProcesses.Initialize`, `TryCreateFromImage`, `TryGetProcess`, `TryTerminate`, and `TryStart`. `ProcessExecutableMath` provides deterministic, allocation-free ELF64/PE32+ inspection and segment decoding for custom loaders and tests.
 
-`TryStart` switches CR3 to the process root and uses the native x64 `IRETQ` ring-3 transition. Once in user mode, the system-call boundary from 0.10.5 remains mapped through the shared kernel half, allowing a loaded program to execute `SYSCALL` and return with `SYSRET`.
+`TryStart` switches CR3 to the process root and uses the native x64 `IRETQ` ring-3 transition. Once in user mode, the system-call boundary from 0.10.7 remains mapped through the shared kernel half, allowing a loaded program to execute `SYSCALL` and return with `SYSRET`.
 
 Dynamic ELF linking, PE imports, ASLR/relocation processing, named-file loading, multi-process scheduler integration, and driver/file-backed process services are later layers. ELF64 PIE (`ET_DYN`) is rejected rather than being loaded incorrectly without relocation support.
