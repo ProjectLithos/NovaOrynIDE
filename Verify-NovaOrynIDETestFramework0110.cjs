@@ -1,0 +1,17 @@
+const fs=require('fs'); let fail=0;
+const R=p=>fs.readFileSync(p,'utf8'); const C=(v,m)=>{console.log(`${v?'[ OK ]':'[FAIL]'} ${m}`);if(!v)fail++;};
+const contract=JSON.parse(R('SDK/NovaOryn.TestContract.json'));
+C(contract.schemaVersion===2 && contract.contract==='novaoryn-test-v2','test contract upgraded to v2');
+for(const k of ['kernel','unit','integration','boot','driver','stress','fault-injection','hardware-simulation']) C(!!contract.kinds[k],`test kind ${k}`);
+const runtime=R('SDK/src/NovaOryn.Kernel.SubsystemContracts/KernelTestRuntime.cs');
+for(const x of ['class KernelTestRuntime','class KernelFaultInjection','class KernelHardwareSimulation','AssertEqual(','ShouldInject(','TryRaiseInterrupt(']) C(runtime.includes(x),`runtime exposes ${x}`);
+const contracts=R('SDK/src/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs');
+for(const x of ['KernelTestExecution','KernelTestReport','KernelTestStatistics','KernelFaultNativeRule']) C(contracts.includes(x),`contract exposes ${x}`);
+const runner=R('SDK/Run-NovaOrynTests.ps1');
+for(const x of ['ValidateSet("kernel","unit","integration","boot","driver","stress","fault-injection","hardware-simulation")','timeoutSeconds','FailFast','novaoryn-test-report-v1']) C(runner.includes(x),`runner supports ${x}`);
+C(R('SDK/novaoryn.ps1').includes("Run-Script 'Run-NovaOrynTests.ps1'"),'novaoryn test uses real test runner');
+C(fs.existsSync('SDK/NovaOryn.TestManifest.schema.json'),'test manifest schema exists');
+C(fs.existsSync('SDK/templates/NovaOrynKernel/NovaOryn.Tests.json'),'generated OS test manifest exists');
+C(R('SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/KernelTestRuntime.cs')===runtime,'normal template runtime matches SDK');
+C(R('SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/KernelTestRuntime.cs')===runtime,'VS template runtime matches SDK');
+if(fail)process.exitCode=1;else console.log('[ OK ] NovaOryn 0.11.0 proper test framework verified.');

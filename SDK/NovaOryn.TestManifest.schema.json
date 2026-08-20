@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://novaoryn.dev/schemas/test-manifest-v1.json",
+  "title": "NovaOryn Test Manifest",
+  "type": "object",
+  "required": ["schemaVersion", "tests"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "name": { "type": "string" },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "kind", "command"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["kernel", "unit", "integration", "boot", "driver", "stress", "fault-injection", "hardware-simulation"] },
+          "enabled": { "type": "boolean", "default": true },
+          "timeoutSeconds": { "type": "integer", "minimum": 0, "default": 300 },
+          "command": { "type": "string", "minLength": 1 },
+          "arguments": { "type": "array", "items": { "type": "string" } },
+          "workingDirectory": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "expectedExitCode": { "type": "integer", "default": 0 },
+          "environment": { "type": "object", "additionalProperties": { "type": "string" } }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -268,13 +268,21 @@ public interface IKernelPanicBackend
     Boolean TryHaltOrReboot(KernelPanicInfo info);
 }
 
+/// <summary>Stable SDK test categories. Every NovaOryn test is one of these kinds.</summary>
 public enum KernelTestKind : Byte { Kernel=1,Unit=2,Integration=3,Boot=4,Driver=5,Stress=6,FaultInjection=7,HardwareSimulation=8 }
 public enum KernelTestResult : Byte { NotRun=0,Passed=1,Failed=2,Skipped=3,Timeout=4 }
 public readonly struct KernelTestDescriptor { public KernelTestDescriptor(String id,String name,KernelTestKind kind,UInt64 timeoutMilliseconds,String[] tags){Id=id;Name=name;Kind=kind;TimeoutMilliseconds=timeoutMilliseconds;Tags=tags;} public String Id{get;} public String Name{get;} public KernelTestKind Kind{get;} public UInt64 TimeoutMilliseconds{get;} public String[] Tags{get;} }
 public interface IKernelTestCase { KernelTestDescriptor Descriptor{get;} KernelTestResult Run(); }
 
+/// <summary>Value-only execution record passed into the freestanding test runtime.</summary>
+public readonly struct KernelTestExecution { public KernelTestExecution(UInt64 testId,KernelTestKind kind,UInt64 timeoutMilliseconds,UInt64 startedMilliseconds){TestId=testId;Kind=kind;TimeoutMilliseconds=timeoutMilliseconds;StartedMilliseconds=startedMilliseconds;} public UInt64 TestId{get;} public KernelTestKind Kind{get;} public UInt64 TimeoutMilliseconds{get;} public UInt64 StartedMilliseconds{get;} }
+public readonly struct KernelTestReport { public KernelTestReport(UInt64 testId,KernelTestKind kind,KernelTestResult result,UInt64 durationMilliseconds,UInt64 assertions,UInt64 assertionFailures,UInt64 faultsInjected){TestId=testId;Kind=kind;Result=result;DurationMilliseconds=durationMilliseconds;Assertions=assertions;AssertionFailures=assertionFailures;FaultsInjected=faultsInjected;} public UInt64 TestId{get;} public KernelTestKind Kind{get;} public KernelTestResult Result{get;} public UInt64 DurationMilliseconds{get;} public UInt64 Assertions{get;} public UInt64 AssertionFailures{get;} public UInt64 FaultsInjected{get;} }
+public readonly struct KernelTestStatistics { public KernelTestStatistics(UInt64 run,UInt64 passed,UInt64 failed,UInt64 skipped,UInt64 timedOut,UInt64 assertions,UInt64 assertionFailures,UInt64 faultsInjected){Run=run;Passed=passed;Failed=failed;Skipped=skipped;TimedOut=timedOut;Assertions=assertions;AssertionFailures=assertionFailures;FaultsInjected=faultsInjected;} public UInt64 Run{get;} public UInt64 Passed{get;} public UInt64 Failed{get;} public UInt64 Skipped{get;} public UInt64 TimedOut{get;} public UInt64 Assertions{get;} public UInt64 AssertionFailures{get;} public UInt64 FaultsInjected{get;} }
+
 public enum KernelFaultKind : Byte { AllocationFailure=1,IoTimeout=2,DroppedInterrupt=3,DeviceReset=4,BadDma=5,CorruptPacket=6,PageFault=7,CpuOffline=8,FilesystemError=9 }
 public readonly struct KernelFaultRule { public KernelFaultRule(KernelFaultKind kind,String subsystem,UInt64 triggerAfter,UInt32 repeatCount,UInt64 parameter){Kind=kind;Subsystem=subsystem;TriggerAfter=triggerAfter;RepeatCount=repeatCount;Parameter=parameter;} public KernelFaultKind Kind{get;} public String Subsystem{get;} public UInt64 TriggerAfter{get;} public UInt32 RepeatCount{get;} public UInt64 Parameter{get;} }
+/// <summary>Value-only form used by the freestanding fault injector; SubsystemHash is FNV-1a over the subsystem name.</summary>
+public readonly struct KernelFaultNativeRule { public KernelFaultNativeRule(KernelFaultKind kind,UInt64 subsystemHash,UInt64 triggerAfter,UInt32 repeatCount,UInt64 parameter){Kind=kind;SubsystemHash=subsystemHash;TriggerAfter=triggerAfter;RepeatCount=repeatCount;Parameter=parameter;} public KernelFaultKind Kind{get;} public UInt64 SubsystemHash{get;} public UInt64 TriggerAfter{get;} public UInt32 RepeatCount{get;} public UInt64 Parameter{get;} }
 public interface IKernelFaultInjector { Boolean TryArm(KernelFaultRule rule,out UInt64 ruleId); Boolean TryDisarm(UInt64 ruleId); Boolean ShouldInject(KernelFaultKind kind,String subsystem,out UInt64 parameter); }
 
 public enum KernelArchitecture : Byte { X64=1,Arm64=2 }

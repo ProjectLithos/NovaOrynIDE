@@ -1,0 +1,1901 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@theia/ai-core": {
+      "name": "@theia/ai-core",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/filesystem",
+        "@theia/monaco",
+        "@theia/monaco-editor-core",
+        "@theia/output",
+        "@theia/variable-resolver",
+        "@theia/workspace"
+      ],
+      "effects": [
+        "@theia/ai-mcp",
+        "@theia/plugin-ext"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/ai-core"
+      ],
+      "fixAvailable": {
+        "name": "@theia/plugin-ext-vscode",
+        "version": "1.44.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/ai-mcp": {
+      "name": "@theia/ai-mcp",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/ai-core",
+        "@theia/core",
+        "@theia/workspace"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/ai-mcp"
+      ],
+      "fixAvailable": true
+    },
+    "@theia/application-manager": {
+      "name": "@theia/application-manager",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "compression-webpack-plugin",
+        "copy-webpack-plugin",
+        "esbuild",
+        "less"
+      ],
+      "effects": [
+        "@theia/cli"
+      ],
+      "range": "<=1.75.0-next.14",
+      "nodes": [
+        "node_modules/@theia/application-manager"
+      ],
+      "fixAvailable": {
+        "name": "@theia/cli",
+        "version": "1.4.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/bulk-edit": {
+      "name": "@theia/bulk-edit",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/filesystem",
+        "@theia/monaco",
+        "@theia/monaco-editor-core",
+        "@theia/workspace"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/bulk-edit"
+      ],
+      "fixAvailable": true
+    },
+    "@theia/callhierarchy": {
+      "name": "@theia/callhierarchy",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/editor"
+      ],
+      "effects": [],
+      "range": ">=1.19.0",
+      "nodes": [
+        "node_modules/@theia/callhierarchy"
+      ],
+      "fixAvailable": true
+    },
+    "@theia/cli": {
+      "name": "@theia/cli",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/application-manager",
+        "decompress",
+        "mocha"
+      ],
+      "effects": [],
+      "range": ">=1.5.0-next.70927254",
+      "nodes": [
+        "node_modules/@theia/cli"
+      ],
+      "fixAvailable": {
+        "name": "@theia/cli",
+        "version": "1.4.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/console": {
+      "name": "@theia/console",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/monaco",
+        "@theia/monaco-editor-core"
+      ],
+      "effects": [],
+      "range": ">=1.19.0",
+      "nodes": [
+        "node_modules/@theia/console"
+      ],
+      "fixAvailable": true
+    },
+    "@theia/core": {
+      "name": "@theia/core",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "react-tooltip"
+      ],
+      "effects": [
+        "@theia/ai-core",
+        "@theia/ai-mcp",
+        "@theia/bulk-edit",
+        "@theia/callhierarchy",
+        "@theia/console",
+        "@theia/debug",
+        "@theia/editor",
+        "@theia/editor-preview",
+        "@theia/file-search",
+        "@theia/filesystem",
+        "@theia/markers",
+        "@theia/messages",
+        "@theia/monaco",
+        "@theia/navigator",
+        "@theia/notebook",
+        "@theia/outline-view",
+        "@theia/output",
+        "@theia/plugin-ext",
+        "@theia/plugin-ext-vscode",
+        "@theia/preferences",
+        "@theia/process",
+        "@theia/scm",
+        "@theia/search-in-workspace",
+        "@theia/task",
+        "@theia/terminal",
+        "@theia/test",
+        "@theia/timeline",
+        "@theia/typehierarchy",
+        "@theia/userstorage",
+        "@theia/variable-resolver",
+        "@theia/vsx-registry",
+        "@theia/workspace"
+      ],
+      "range": ">=1.19.0",
+      "nodes": [
+        "node_modules/@theia/core"
+      ],
+      "fixAvailable": {
+        "name": "@theia/monaco",
+        "version": "1.69.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/debug": {
+      "name": "@theia/debug",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/console",
+        "@theia/core",
+        "@theia/editor",
+        "@theia/filesystem",
+        "@theia/markers",
+        "@theia/monaco",
+        "@theia/monaco-editor-core",
+        "@theia/output",
+        "@theia/process",
+        "@theia/task",
+        "@theia/terminal",
+        "@theia/test",
+        "@theia/variable-resolver",
+        "@theia/workspace"
+      ],
+      "effects": [],
+      "range": ">=0.3.15",
+      "nodes": [
+        "node_modules/@theia/debug"
+      ],
+      "fixAvailable": true
+    },
+    "@theia/editor": {
+      "name": "@theia/editor",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core",
+        "@theia/variable-resolver"
+      ],
+      "effects": [
+        "@theia/console"
+      ],
+      "range": ">=1.19.0",
+      "nodes": [
+        "node_modules/@theia/editor"
+      ],
+      "fixAvailable": {
+        "name": "@theia/editor",
+        "version": "1.18.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/editor-preview": {
+      "name": "@theia/editor-preview",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/navigator"
+      ],
+      "effects": [
+        "@theia/plugin-ext"
+      ],
+      "range": ">=1.19.0",
+      "nodes": [
+        "node_modules/@theia/editor-preview"
+      ],
+      "fixAvailable": {
+        "name": "@theia/plugin-ext-vscode",
+        "version": "1.44.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/electron": {
+      "name": "@theia/electron",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "electron"
+      ],
+      "effects": [],
+      "range": "<=1.74.0-next.70",
+      "nodes": [
+        "node_modules/@theia/electron"
+      ],
+      "fixAvailable": {
+        "name": "@theia/electron",
+        "version": "1.74.1",
+        "isSemVerMajor": false
+      }
+    },
+    "@theia/file-search": {
+      "name": "@theia/file-search",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/filesystem",
+        "@theia/process",
+        "@theia/workspace"
+      ],
+      "effects": [
+        "@theia/terminal"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/file-search"
+      ],
+      "fixAvailable": {
+        "name": "@theia/terminal",
+        "version": "1.18.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/filesystem": {
+      "name": "@theia/filesystem",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core",
+        "trash"
+      ],
+      "effects": [
+        "@theia/bulk-edit",
+        "@theia/debug",
+        "@theia/file-search",
+        "@theia/markers",
+        "@theia/monaco",
+        "@theia/navigator",
+        "@theia/plugin-ext-vscode",
+        "@theia/preferences",
+        "@theia/scm",
+        "@theia/search-in-workspace",
+        "@theia/task",
+        "@theia/terminal",
+        "@theia/userstorage",
+        "@theia/workspace"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/filesystem"
+      ],
+      "fixAvailable": {
+        "name": "@theia/monaco",
+        "version": "1.69.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/markers": {
+      "name": "@theia/markers",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/filesystem",
+        "@theia/workspace"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/markers"
+      ],
+      "fixAvailable": true
+    },
+    "@theia/messages": {
+      "name": "@theia/messages",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core"
+      ],
+      "effects": [],
+      "range": ">=1.19.0",
+      "nodes": [
+        "node_modules/@theia/messages"
+      ],
+      "fixAvailable": true
+    },
+    "@theia/monaco": {
+      "name": "@theia/monaco",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/filesystem",
+        "@theia/markers",
+        "@theia/monaco-editor-core",
+        "@theia/outline-view",
+        "@theia/workspace"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/monaco"
+      ],
+      "fixAvailable": {
+        "name": "@theia/monaco",
+        "version": "1.69.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/monaco-editor-core": {
+      "name": "@theia/monaco-editor-core",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "dompurify"
+      ],
+      "effects": [
+        "@theia/ai-core",
+        "@theia/bulk-edit",
+        "@theia/console",
+        "@theia/debug",
+        "@theia/monaco",
+        "@theia/notebook",
+        "@theia/output",
+        "@theia/plugin-ext",
+        "@theia/plugin-ext-vscode",
+        "@theia/preferences",
+        "@theia/scm",
+        "@theia/task"
+      ],
+      "range": ">=1.108.2",
+      "nodes": [
+        "node_modules/@theia/monaco-editor-core"
+      ],
+      "fixAvailable": {
+        "name": "@theia/plugin-ext-vscode",
+        "version": "1.44.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/navigator": {
+      "name": "@theia/navigator",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core",
+        "@theia/filesystem",
+        "@theia/workspace"
+      ],
+      "effects": [
+        "@theia/vsx-registry"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/navigator"
+      ],
+      "fixAvailable": {
+        "name": "@theia/navigator",
+        "version": "1.18.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/notebook": {
+      "name": "@theia/notebook",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/filesystem",
+        "@theia/monaco",
+        "@theia/monaco-editor-core",
+        "@theia/outline-view"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/notebook"
+      ],
+      "fixAvailable": true
+    },
+    "@theia/outline-view": {
+      "name": "@theia/outline-view",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core"
+      ],
+      "effects": [
+        "@theia/notebook",
+        "@theia/plugin-ext-vscode"
+      ],
+      "range": ">=1.19.0",
+      "nodes": [
+        "node_modules/@theia/outline-view"
+      ],
+      "fixAvailable": {
+        "name": "@theia/plugin-ext-vscode",
+        "version": "1.44.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/output": {
+      "name": "@theia/output",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/monaco",
+        "@theia/monaco-editor-core"
+      ],
+      "effects": [],
+      "range": ">=1.19.0",
+      "nodes": [
+        "node_modules/@theia/output"
+      ],
+      "fixAvailable": {
+        "name": "@theia/output",
+        "version": "1.69.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/plugin-ext": {
+      "name": "@theia/plugin-ext",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/ai-core",
+        "@theia/ai-mcp",
+        "@theia/bulk-edit",
+        "@theia/callhierarchy",
+        "@theia/console",
+        "@theia/core",
+        "@theia/debug",
+        "@theia/editor",
+        "@theia/editor-preview",
+        "@theia/file-search",
+        "@theia/filesystem",
+        "@theia/markers",
+        "@theia/messages",
+        "@theia/monaco",
+        "@theia/monaco-editor-core",
+        "@theia/navigator",
+        "@theia/notebook",
+        "@theia/output",
+        "@theia/preferences",
+        "@theia/scm",
+        "@theia/search-in-workspace",
+        "@theia/task",
+        "@theia/terminal",
+        "@theia/test",
+        "@theia/timeline",
+        "@theia/typehierarchy",
+        "@theia/variable-resolver",
+        "@theia/workspace",
+        "@vscode/proxy-agent",
+        "decompress"
+      ],
+      "effects": [
+        "@theia/plugin-ext-vscode",
+        "@theia/vsx-registry"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/plugin-ext"
+      ],
+      "fixAvailable": {
+        "name": "@theia/plugin-ext-vscode",
+        "version": "1.44.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/plugin-ext-vscode": {
+      "name": "@theia/plugin-ext-vscode",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/callhierarchy",
+        "@theia/core",
+        "@theia/editor",
+        "@theia/filesystem",
+        "@theia/monaco",
+        "@theia/monaco-editor-core",
+        "@theia/navigator",
+        "@theia/outline-view",
+        "@theia/plugin-ext",
+        "@theia/scm",
+        "@theia/terminal",
+        "@theia/typehierarchy",
+        "@theia/userstorage",
+        "@theia/workspace",
+        "decompress"
+      ],
+      "effects": [
+        "@theia/vsx-registry"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/plugin-ext-vscode"
+      ],
+      "fixAvailable": {
+        "name": "@theia/plugin-ext-vscode",
+        "version": "1.44.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/preferences": {
+      "name": "@theia/preferences",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/filesystem",
+        "@theia/monaco",
+        "@theia/monaco-editor-core",
+        "@theia/userstorage",
+        "@theia/workspace"
+      ],
+      "effects": [
+        "@theia/vsx-registry"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/preferences"
+      ],
+      "fixAvailable": {
+        "name": "@theia/preferences",
+        "version": "1.69.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/process": {
+      "name": "@theia/process",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core"
+      ],
+      "effects": [],
+      "range": ">=1.19.0",
+      "nodes": [
+        "node_modules/@theia/process"
+      ],
+      "fixAvailable": {
+        "name": "@theia/process",
+        "version": "1.18.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/scm": {
+      "name": "@theia/scm",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/filesystem",
+        "@theia/monaco",
+        "@theia/monaco-editor-core"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/scm"
+      ],
+      "fixAvailable": true
+    },
+    "@theia/search-in-workspace": {
+      "name": "@theia/search-in-workspace",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/filesystem",
+        "@theia/navigator",
+        "@theia/process",
+        "@theia/workspace"
+      ],
+      "effects": [],
+      "range": ">=0.3.15",
+      "nodes": [
+        "node_modules/@theia/search-in-workspace"
+      ],
+      "fixAvailable": {
+        "name": "@theia/search-in-workspace",
+        "version": "1.18.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/task": {
+      "name": "@theia/task",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/filesystem",
+        "@theia/markers",
+        "@theia/monaco",
+        "@theia/monaco-editor-core",
+        "@theia/process",
+        "@theia/terminal",
+        "@theia/userstorage",
+        "@theia/variable-resolver",
+        "@theia/workspace"
+      ],
+      "effects": [],
+      "range": ">=0.3.18",
+      "nodes": [
+        "node_modules/@theia/task"
+      ],
+      "fixAvailable": {
+        "name": "@theia/task",
+        "version": "1.69.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/terminal": {
+      "name": "@theia/terminal",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/file-search",
+        "@theia/filesystem",
+        "@theia/process",
+        "@theia/variable-resolver",
+        "@theia/workspace"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/terminal"
+      ],
+      "fixAvailable": {
+        "name": "@theia/terminal",
+        "version": "1.18.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/test": {
+      "name": "@theia/test",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/editor",
+        "@theia/filesystem",
+        "@theia/navigator",
+        "@theia/terminal"
+      ],
+      "effects": [
+        "@theia/debug",
+        "@theia/plugin-ext"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/test"
+      ],
+      "fixAvailable": {
+        "name": "@theia/plugin-ext-vscode",
+        "version": "1.44.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/timeline": {
+      "name": "@theia/timeline",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/navigator"
+      ],
+      "effects": [],
+      "range": ">=1.19.0",
+      "nodes": [
+        "node_modules/@theia/timeline"
+      ],
+      "fixAvailable": true
+    },
+    "@theia/typehierarchy": {
+      "name": "@theia/typehierarchy",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/editor"
+      ],
+      "effects": [
+        "@theia/plugin-ext",
+        "@theia/plugin-ext-vscode"
+      ],
+      "range": ">=1.19.0",
+      "nodes": [
+        "node_modules/@theia/typehierarchy"
+      ],
+      "fixAvailable": {
+        "name": "@theia/plugin-ext-vscode",
+        "version": "1.44.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/userstorage": {
+      "name": "@theia/userstorage",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "@theia/core",
+        "@theia/filesystem"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/userstorage"
+      ],
+      "fixAvailable": true
+    },
+    "@theia/variable-resolver": {
+      "name": "@theia/variable-resolver",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core"
+      ],
+      "effects": [
+        "@theia/plugin-ext",
+        "@theia/terminal"
+      ],
+      "range": ">=1.19.0",
+      "nodes": [
+        "node_modules/@theia/variable-resolver"
+      ],
+      "fixAvailable": {
+        "name": "@theia/variable-resolver",
+        "version": "1.18.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/vsx-registry": {
+      "name": "@theia/vsx-registry",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core",
+        "@theia/filesystem",
+        "@theia/navigator",
+        "@theia/plugin-ext",
+        "@theia/plugin-ext-vscode",
+        "@theia/preferences",
+        "@theia/workspace"
+      ],
+      "effects": [],
+      "range": ">=1.13.0-next.33818725",
+      "nodes": [
+        "node_modules/@theia/vsx-registry"
+      ],
+      "fixAvailable": {
+        "name": "@theia/vsx-registry",
+        "version": "1.44.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@theia/workspace": {
+      "name": "@theia/workspace",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "@theia/core",
+        "@theia/filesystem",
+        "@theia/variable-resolver"
+      ],
+      "effects": [
+        "@theia/ai-mcp",
+        "@theia/monaco"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/@theia/workspace"
+      ],
+      "fixAvailable": {
+        "name": "@theia/workspace",
+        "version": "1.18.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@tootallnate/once": {
+      "name": "@tootallnate/once",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1119438,
+          "name": "@tootallnate/once",
+          "dependency": "@tootallnate/once",
+          "title": "@tootallnate/once vulnerable to Incorrect Control Flow Scoping",
+          "url": "https://github.com/advisories/GHSA-vpq2-c234-7xj6",
+          "severity": "low",
+          "cwe": [
+            "CWE-705"
+          ],
+          "cvss": {
+            "score": 3.3,
+            "vectorString": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": "<2.0.1"
+        }
+      ],
+      "effects": [
+        "@vscode/proxy-agent",
+        "http-proxy-agent"
+      ],
+      "range": "<2.0.1",
+      "nodes": [
+        "node_modules/@tootallnate/once"
+      ],
+      "fixAvailable": {
+        "name": "@theia/plugin-ext-vscode",
+        "version": "1.44.0",
+        "isSemVerMajor": true
+      }
+    },
+    "@vscode/proxy-agent": {
+      "name": "@vscode/proxy-agent",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@tootallnate/once",
+        "http-proxy-agent"
+      ],
+      "effects": [
+        "@theia/plugin-ext"
+      ],
+      "range": "<=0.15.0",
+      "nodes": [
+        "node_modules/@vscode/proxy-agent"
+      ],
+      "fixAvailable": {
+        "name": "@theia/plugin-ext-vscode",
+        "version": "1.44.0",
+        "isSemVerMajor": true
+      }
+    },
+    "compression-webpack-plugin": {
+      "name": "compression-webpack-plugin",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "serialize-javascript"
+      ],
+      "effects": [
+        "@theia/application-manager"
+      ],
+      "range": "6.0.0 - 11.1.0",
+      "nodes": [
+        "node_modules/compression-webpack-plugin"
+      ],
+      "fixAvailable": {
+        "name": "@theia/cli",
+        "version": "1.4.0",
+        "isSemVerMajor": true
+      }
+    },
+    "copy-webpack-plugin": {
+      "name": "copy-webpack-plugin",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "serialize-javascript"
+      ],
+      "effects": [
+        "@theia/application-manager"
+      ],
+      "range": "6.1.1 - 13.0.1",
+      "nodes": [
+        "node_modules/copy-webpack-plugin"
+      ],
+      "fixAvailable": {
+        "name": "@theia/cli",
+        "version": "1.4.0",
+        "isSemVerMajor": true
+      }
+    },
+    "decompress": {
+      "name": "decompress",
+      "severity": "critical",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1122670,
+          "name": "decompress",
+          "dependency": "decompress",
+          "title": "Decompress: Archive extraction can create files and links outside of the target directory",
+          "url": "https://github.com/advisories/GHSA-mp2f-45pm-3cg9",
+          "severity": "critical",
+          "cwe": [
+            "CWE-22",
+            "CWE-59",
+            "CWE-732"
+          ],
+          "cvss": {
+            "score": 9.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"
+          },
+          "range": "<=4.2.1"
+        },
+        {
+          "source": 1130126,
+          "name": "decompress",
+          "dependency": "decompress",
+          "title": "decompress: Arbitrary File Write via Archive Extraction (Zip Slip)",
+          "url": "https://github.com/advisories/GHSA-h39j-r5qq-r9mm",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-22",
+            "CWE-29"
+          ],
+          "cvss": {
+            "score": 6.4,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:H/A:L"
+          },
+          "range": "<=4.2.1"
+        },
+        {
+          "source": 1139405,
+          "name": "decompress",
+          "dependency": "decompress",
+          "title": "decompress allows arbitrary hardlink creation during archive extraction",
+          "url": "https://github.com/advisories/GHSA-jwp9-9v96-94mx",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-59"
+          ],
+          "cvss": {
+            "score": 5.5,
+            "vectorString": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N"
+          },
+          "range": "<=4.2.1"
+        }
+      ],
+      "effects": [
+        "@theia/cli",
+        "@theia/plugin-ext",
+        "@theia/plugin-ext-vscode"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/decompress"
+      ],
+      "fixAvailable": {
+        "name": "@theia/cli",
+        "version": "1.4.0",
+        "isSemVerMajor": true
+      }
+    },
+    "dompurify": {
+      "name": "dompurify",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1115668,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify contains a Cross-site Scripting vulnerability",
+          "url": "https://github.com/advisories/GHSA-v2wj-7wpq-c8vv",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79"
+          ],
+          "cvss": {
+            "score": 6.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+          },
+          "range": ">=3.1.3 <=3.3.1"
+        },
+        {
+          "source": 1117138,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify: FORBID_TAGS bypassed by function-based ADD_TAGS predicate (asymmetry with FORBID_ATTR fix)",
+          "url": "https://github.com/advisories/GHSA-h7mw-gpvr-xq4m",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79",
+            "CWE-183"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<3.4.0"
+        },
+        {
+          "source": 1117139,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify has a SAFE_FOR_TEMPLATES bypass in RETURN_DOM mode",
+          "url": "https://github.com/advisories/GHSA-crv5-9vww-q3g8",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79",
+            "CWE-1289"
+          ],
+          "cvss": {
+            "score": 6.8,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:N"
+          },
+          "range": ">=1.0.10 <3.4.0"
+        },
+        {
+          "source": 1117140,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify: Prototype Pollution to XSS Bypass via CUSTOM_ELEMENT_HANDLING Fallback",
+          "url": "https://github.com/advisories/GHSA-v9jr-rg53-9pgp",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79",
+            "CWE-1321"
+          ],
+          "cvss": {
+            "score": 6.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:H/I:L/A:N"
+          },
+          "range": ">=3.0.1 <3.4.0"
+        },
+        {
+          "source": 1120802,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify: Cross-realm IN_PLACE sanitization leaves executable markup intact via realm-bound `instanceof` checks",
+          "url": "https://github.com/advisories/GHSA-hpcv-96wg-7vj8",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79",
+            "CWE-501",
+            "CWE-693"
+          ],
+          "cvss": {
+            "score": 6.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+          },
+          "range": "<=3.4.5"
+        },
+        {
+          "source": 1120803,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify: IN_PLACE mode preserves attributes of a clobbered root element, allowing XSS via attacker-controlled root DOM",
+          "url": "https://github.com/advisories/GHSA-r47g-fvhr-h676",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79",
+            "CWE-693",
+            "CWE-1321"
+          ],
+          "cvss": {
+            "score": 6.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+          },
+          "range": "<=3.4.5"
+        },
+        {
+          "source": 1120813,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify IN_PLACE Sanitization Bypass via Attached Shadow Root Inside <template>.content",
+          "url": "https://github.com/advisories/GHSA-rp9w-3fw7-7cwq",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<=3.4.6"
+        },
+        {
+          "source": 1124022,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify: `CUSTOM_ELEMENT_HANDLING` bypasses `afterSanitizeElements` for allowed custom elements.",
+          "url": "https://github.com/advisories/GHSA-c2j3-45gr-mqc4",
+          "severity": "low",
+          "cwe": [
+            "CWE-79",
+            "CWE-184",
+            "CWE-693"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<=3.4.11"
+        },
+        {
+          "source": 1124233,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify: Permanent `ALLOWED_ATTR` pollution via `setConfig()` bypassing the hook clone-guard (incomplete fix of the 3.4.7 hook-pollution patch)",
+          "url": "https://github.com/advisories/GHSA-cmwh-pvxp-8882",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79",
+            "CWE-471",
+            "CWE-665"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<=3.4.10"
+        },
+        {
+          "source": 1124234,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify: Trusted Types policy survives `clearConfig()` and can poison later `RETURN_TRUSTED_TYPE` output",
+          "url": "https://github.com/advisories/GHSA-vxr8-fq34-vvx9",
+          "severity": "low",
+          "cwe": [
+            "CWE-693"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<3.4.9"
+        },
+        {
+          "source": 1124235,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify: SAFE_FOR_TEMPLATES bypass - template expressions survive sanitization inside <template> content when using DOM output modes",
+          "url": "https://github.com/advisories/GHSA-gvmj-g25r-r7wr",
+          "severity": "low",
+          "cwe": [
+            "CWE-79"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=3.0.0 <=3.4.7"
+        },
+        {
+          "source": 1124236,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify: `IN_PLACE` mode trusts attacker-controlled `nodeName` on live non-form nodes, allowing script retention and XSS via attacker-supplied DOM objects",
+          "url": "https://github.com/advisories/GHSA-x4vx-rjvf-j5p4",
+          "severity": "low",
+          "cwe": [
+            "CWE-79"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<=3.4.6"
+        },
+        {
+          "source": 1124237,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify: Hook mutation of `data.allowedTags` / `data.allowedAttributes` permanently pollutes `DEFAULT_ALLOWED_TAGS` / `DEFAULT_ALLOWED_ATTR`",
+          "url": "https://github.com/advisories/GHSA-76mc-f452-cxcm",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-501",
+            "CWE-693"
+          ],
+          "cvss": {
+            "score": 6.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+          },
+          "range": "<3.4.7"
+        },
+        {
+          "source": 1124238,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify's ADD_TAGS function form bypasses FORBID_TAGS due to short-circuit evaluation",
+          "url": "https://github.com/advisories/GHSA-39q2-94rc-95cp",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-783"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<=3.3.3"
+        },
+        {
+          "source": 1124239,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify ADD_ATTR predicate skips URI validation",
+          "url": "https://github.com/advisories/GHSA-cjmm-f4jc-qw8r",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-183"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<=3.3.1"
+        },
+        {
+          "source": 1124240,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify USE_PROFILES prototype pollution allows event handlers",
+          "url": "https://github.com/advisories/GHSA-cj63-jhhr-wcxv",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-1321"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<=3.3.1"
+        },
+        {
+          "source": 1124241,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify is vulnerable to mutation-XSS via Re-Contextualization ",
+          "url": "https://github.com/advisories/GHSA-h8r8-wccr-v5f2",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<3.3.2"
+        },
+        {
+          "source": 1138538,
+          "name": "dompurify",
+          "dependency": "dompurify",
+          "title": "DOMPurify: IN_PLACE hook removal leaves a detached subtree executable, causing XSS",
+          "url": "https://github.com/advisories/GHSA-55q2-fjhq-7xh7",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<=3.4.12"
+        }
+      ],
+      "effects": [
+        "@theia/monaco-editor-core"
+      ],
+      "range": "<=3.4.12",
+      "nodes": [
+        "node_modules/@theia/monaco-editor-core/node_modules/dompurify"
+      ],
+      "fixAvailable": {
+        "name": "@theia/plugin-ext-vscode",
+        "version": "1.44.0",
+        "isSemVerMajor": true
+      }
+    },
+    "electron": {
+      "name": "electron",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1136551,
+          "name": "electron",
+          "dependency": "electron",
+          "title": "Electron: Parent process code-sign check is spoofable",
+          "url": "https://github.com/advisories/GHSA-jm7p-cc5g-qwxx",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-367"
+          ],
+          "cvss": {
+            "score": 6.3,
+            "vectorString": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:N"
+          },
+          "range": "<39.8.8"
+        },
+        {
+          "source": 1136552,
+          "name": "electron",
+          "dependency": "electron",
+          "title": "Electron: Custom protocol with supportFetchAPI but not corsEnabled allows cross-origin reads",
+          "url": "https://github.com/advisories/GHSA-v3j7-r9gq-3gjw",
+          "severity": "high",
+          "cwe": [
+            "CWE-942"
+          ],
+          "cvss": {
+            "score": 7.4,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:N/A:N"
+          },
+          "range": "<39.8.10"
+        },
+        {
+          "source": 1136559,
+          "name": "electron",
+          "dependency": "electron",
+          "title": "Electron: Extension tab APIs operate across session boundaries",
+          "url": "https://github.com/advisories/GHSA-m55f-7gqj-fr98",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-284"
+          ],
+          "cvss": {
+            "score": 6.6,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:H/UI:N/S:C/C:H/I:L/A:N"
+          },
+          "range": "<39.8.8"
+        },
+        {
+          "source": 1136567,
+          "name": "electron",
+          "dependency": "electron",
+          "title": "Electron: Context isolation bypass via Function.prototype.bind hijack",
+          "url": "https://github.com/advisories/GHSA-h7rp-cf8h-j98x",
+          "severity": "high",
+          "cwe": [
+            "CWE-693"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:L/A:N"
+          },
+          "range": "<39.8.9"
+        },
+        {
+          "source": 1136571,
+          "name": "electron",
+          "dependency": "electron",
+          "title": "Electron: Cross-origin iframe can position native autofill popup",
+          "url": "https://github.com/advisories/GHSA-x8rc-wpg4-grpf",
+          "severity": "low",
+          "cwe": [
+            "CWE-1021"
+          ],
+          "cvss": {
+            "score": 3.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:L/A:N"
+          },
+          "range": "<39.8.8"
+        },
+        {
+          "source": 1136579,
+          "name": "electron",
+          "dependency": "electron",
+          "title": "Electron: Off-screen rendering trusts GPU-supplied geometry over shared-memory size",
+          "url": "https://github.com/advisories/GHSA-pfmc-3mgc-p6fp",
+          "severity": "low",
+          "cwe": [
+            "CWE-125"
+          ],
+          "cvss": {
+            "score": 3.9,
+            "vectorString": "CVSS:3.1/AV:L/AC:H/PR:H/UI:N/S:C/C:L/I:N/A:L"
+          },
+          "range": "<39.8.10"
+        },
+        {
+          "source": 1136590,
+          "name": "electron",
+          "dependency": "electron",
+          "title": "Electron: HTTP redirect followed into local file loader",
+          "url": "https://github.com/advisories/GHSA-v64r-4m7r-3mvq",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-918"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N"
+          },
+          "range": "<39.8.8"
+        },
+        {
+          "source": 1136597,
+          "name": "electron",
+          "dependency": "electron",
+          "title": "Electron: window.open features string controls some window options considered privileged",
+          "url": "https://github.com/advisories/GHSA-v93f-fgjr-hjrj",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-20"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+          },
+          "range": "<39.8.8"
+        },
+        {
+          "source": 1136607,
+          "name": "electron",
+          "dependency": "electron",
+          "title": "Electron: Sandboxed iframe can bypass the allow-popups restriction via the OpenURL navigation path",
+          "url": "https://github.com/advisories/GHSA-9f4c-93c8-jc8g",
+          "severity": "high",
+          "cwe": [
+            "CWE-693",
+            "CWE-1021"
+          ],
+          "cvss": {
+            "score": 7.2,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:L/I:L/A:N"
+          },
+          "range": "<39.8.10"
+        },
+        {
+          "source": 1136634,
+          "name": "electron",
+          "dependency": "electron",
+          "title": "Electron: Sandboxed iframes can launch external protocol handlers",
+          "url": "https://github.com/advisories/GHSA-p2rr-rvmm-c5fp",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-284"
+          ],
+          "cvss": {
+            "score": 5.4,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:L/I:L/A:N"
+          },
+          "range": "<39.8.8"
+        },
+        {
+          "source": 1136647,
+          "name": "electron",
+          "dependency": "electron",
+          "title": "Electron: DevTools embedder handler executes arbitrary files via shell open",
+          "url": "https://github.com/advisories/GHSA-f2r8-jv7c-xqmp",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-78"
+          ],
+          "cvss": {
+            "score": 6.9,
+            "vectorString": "CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:C/C:H/I:H/A:N"
+          },
+          "range": "<39.8.9"
+        },
+        {
+          "source": 1136651,
+          "name": "electron",
+          "dependency": "electron",
+          "title": "Electron: contextBridge object copy honors prototype setters",
+          "url": "https://github.com/advisories/GHSA-ff2p-hmqr-hxm4",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-1321"
+          ],
+          "cvss": {
+            "score": 5.4,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:L/I:L/A:N"
+          },
+          "range": "<39.8.9"
+        },
+        "extract-zip"
+      ],
+      "effects": [
+        "@theia/electron"
+      ],
+      "range": "<=40.10.2 || 41.0.0-alpha.1 - 41.7.1 || 42.0.0-alpha.1 - 42.3.3 || 43.0.0-alpha.1 - 43.0.0-beta.8",
+      "nodes": [
+        "node_modules/electron"
+      ],
+      "fixAvailable": {
+        "name": "@theia/electron",
+        "version": "1.74.1",
+        "isSemVerMajor": false
+      }
+    },
+    "esbuild": {
+      "name": "esbuild",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1102341,
+          "name": "esbuild",
+          "dependency": "esbuild",
+          "title": "esbuild enables any website to send any requests to the development server and read the response",
+          "url": "https://github.com/advisories/GHSA-67mh-4wv8-2f99",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-346"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
+          },
+          "range": "<=0.24.2"
+        }
+      ],
+      "effects": [
+        "@theia/application-manager"
+      ],
+      "range": "<=0.24.2",
+      "nodes": [
+        "node_modules/esbuild"
+      ],
+      "fixAvailable": {
+        "name": "@theia/cli",
+        "version": "1.4.0",
+        "isSemVerMajor": true
+      }
+    },
+    "extract-zip": {
+      "name": "extract-zip",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1139346,
+          "name": "extract-zip",
+          "dependency": "extract-zip",
+          "title": "extract-zip unvalidated symlink path traversal",
+          "url": "https://github.com/advisories/GHSA-jmr9-qjv8-65gv",
+          "severity": "high",
+          "cwe": [
+            "CWE-22"
+          ],
+          "cvss": {
+            "score": 8.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N"
+          },
+          "range": "<=2.0.1"
+        }
+      ],
+      "effects": [
+        "electron"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/extract-zip"
+      ],
+      "fixAvailable": {
+        "name": "@theia/electron",
+        "version": "1.74.1",
+        "isSemVerMajor": false
+      }
+    },
+    "http-proxy-agent": {
+      "name": "http-proxy-agent",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@tootallnate/once"
+      ],
+      "effects": [],
+      "range": "4.0.1",
+      "nodes": [
+        "node_modules/@vscode/proxy-agent/node_modules/http-proxy-agent"
+      ],
+      "fixAvailable": true
+    },
+    "image-size": {
+      "name": "image-size",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1138808,
+          "name": "image-size",
+          "dependency": "image-size",
+          "title": "image-size: ICNS parser allows denial of service through an infinite loop",
+          "url": "https://github.com/advisories/GHSA-w3rx-r6r6-pgpr",
+          "severity": "high",
+          "cwe": [
+            "CWE-835"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<=2.0.2"
+        },
+        {
+          "source": 1138809,
+          "name": "image-size",
+          "dependency": "image-size",
+          "title": "image-size: JXL and HEIF parsers allow denial of service through infinite loops",
+          "url": "https://github.com/advisories/GHSA-5p2g-fcmc-qvqq",
+          "severity": "high",
+          "cwe": [
+            "CWE-835"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<=2.0.2"
+        }
+      ],
+      "effects": [
+        "less"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/image-size"
+      ],
+      "fixAvailable": {
+        "name": "@theia/cli",
+        "version": "1.4.0",
+        "isSemVerMajor": true
+      }
+    },
+    "less": {
+      "name": "less",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "image-size"
+      ],
+      "effects": [
+        "@theia/application-manager"
+      ],
+      "range": "2.2.0 - 4.6.7",
+      "nodes": [
+        "node_modules/less"
+      ],
+      "fixAvailable": {
+        "name": "@theia/cli",
+        "version": "1.4.0",
+        "isSemVerMajor": true
+      }
+    },
+    "mocha": {
+      "name": "mocha",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "serialize-javascript"
+      ],
+      "effects": [
+        "@theia/cli"
+      ],
+      "range": "8.2.0 - 12.0.0-beta-2",
+      "nodes": [
+        "node_modules/mocha"
+      ],
+      "fixAvailable": {
+        "name": "@theia/cli",
+        "version": "1.4.0",
+        "isSemVerMajor": true
+      }
+    },
+    "react-tooltip": {
+      "name": "react-tooltip",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "uuid"
+      ],
+      "effects": [
+        "@theia/core"
+      ],
+      "range": "4.1.5 - 4.5.1",
+      "nodes": [
+        "node_modules/react-tooltip"
+      ],
+      "fixAvailable": {
+        "name": "@theia/monaco",
+        "version": "1.69.0",
+        "isSemVerMajor": true
+      }
+    },
+    "serialize-javascript": {
+      "name": "serialize-javascript",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1113686,
+          "name": "serialize-javascript",
+          "dependency": "serialize-javascript",
+          "title": "Serialize JavaScript is Vulnerable to RCE via RegExp.flags and Date.prototype.toISOString()",
+          "url": "https://github.com/advisories/GHSA-5c6j-r48x-rmvq",
+          "severity": "high",
+          "cwe": [
+            "CWE-96"
+          ],
+          "cvss": {
+            "score": 8.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H"
+          },
+          "range": "<=7.0.2"
+        },
+        {
+          "source": 1119440,
+          "name": "serialize-javascript",
+          "dependency": "serialize-javascript",
+          "title": "Serialize JavaScript has CPU Exhaustion Denial of Service via crafted array-like objects",
+          "url": "https://github.com/advisories/GHSA-qj8w-gfj5-8c6v",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-400",
+            "CWE-834"
+          ],
+          "cvss": {
+            "score": 5.9,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=5.0.0 <7.0.5"
+        }
+      ],
+      "effects": [
+        "compression-webpack-plugin",
+        "copy-webpack-plugin",
+        "mocha"
+      ],
+      "range": "<=7.0.4",
+      "nodes": [
+        "node_modules/copy-webpack-plugin/node_modules/serialize-javascript",
+        "node_modules/serialize-javascript"
+      ],
+      "fixAvailable": {
+        "name": "@theia/cli",
+        "version": "1.4.0",
+        "isSemVerMajor": true
+      }
+    },
+    "trash": {
+      "name": "trash",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        "uuid"
+      ],
+      "effects": [
+        "@theia/filesystem"
+      ],
+      "range": "3.1.0 - 8.1.1",
+      "nodes": [
+        "node_modules/trash"
+      ],
+      "fixAvailable": {
+        "name": "@theia/monaco",
+        "version": "1.69.0",
+        "isSemVerMajor": true
+      }
+    },
+    "uuid": {
+      "name": "uuid",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1119441,
+          "name": "uuid",
+          "dependency": "uuid",
+          "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+          "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-787",
+            "CWE-1285"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+          },
+          "range": "<11.1.1"
+        }
+      ],
+      "effects": [
+        "react-tooltip",
+        "trash"
+      ],
+      "range": "<11.1.1",
+      "nodes": [
+        "node_modules/react-tooltip/node_modules/uuid",
+        "node_modules/trash/node_modules/uuid"
+      ],
+      "fixAvailable": {
+        "name": "@theia/monaco",
+        "version": "1.69.0",
+        "isSemVerMajor": true
+      }
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 3,
+      "moderate": 43,
+      "high": 7,
+      "critical": 1,
+      "total": 54
+    },
+    "dependencies": {
+      "prod": 660,
+      "dev": 525,
+      "optional": 30,
+      "peer": 17,
+      "peerOptional": 0,
+      "total": 1208
+    }
+  }
+}

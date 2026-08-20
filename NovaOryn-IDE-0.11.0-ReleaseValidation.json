@@ -1,0 +1,21 @@
+{
+  "novaOrynIdeVersion": "0.11.0",
+  "release": "Proper SDK test framework",
+  "panicFrameworkVerified": true,
+  "implementedItem": 11,
+  "testKinds": [
+    "kernel",
+    "unit",
+    "integration",
+    "boot",
+    "driver",
+    "stress",
+    "fault-injection",
+    "hardware-simulation"
+  ],
+  "verifiers": [
+    "Verify-NovaOrynIDETestFramework0110.cjs",
+    "Verify-NovaOrynIDEProfessionalSdk.cjs",
+    "Verify-NovaOrynIDEKernelPanic0103.cjs"
+  ]
+}

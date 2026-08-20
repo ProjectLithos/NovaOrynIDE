@@ -1,24 +1,50 @@
 {
-  "schemaVersion": 1,
-  "kinds": [
-    "kernel",
-    "unit",
-    "integration",
-    "boot",
-    "driver",
-    "stress",
-    "fault-injection",
-    "hardware-simulation"
-  ],
-  "faults": [
-    "allocation-failure",
-    "io-timeout",
-    "dropped-interrupt",
-    "device-reset",
-    "bad-dma",
-    "corrupt-packet",
-    "page-fault",
-    "cpu-offline",
-    "filesystem-error"
-  ]
+  "schemaVersion": 2,
+  "contract": "novaoryn-test-v2",
+  "runner": "Run-NovaOrynTests.ps1",
+  "manifestSchema": "NovaOryn.TestManifest.schema.json",
+  "kinds": {
+    "kernel": "Tests executing inside the freestanding NovaOryn kernel through KernelTestRuntime.",
+    "unit": "Isolated hosted or freestanding component tests.",
+    "integration": "Tests spanning two or more SDK/kernel subsystems.",
+    "boot": "Firmware-to-kernel startup and boot-contract tests, normally under QEMU.",
+    "driver": "Driver lifecycle, capability, interrupt, DMA and I/O contract tests.",
+    "stress": "Long-running repetition, concurrency, pressure and soak tests.",
+    "fault-injection": "Deterministic failure-path tests using KernelFaultInjection.",
+    "hardware-simulation": "Tests using deterministic MMIO/PIO/IRQ/time device models through KernelHardwareSimulation."
+  },
+  "results": ["not-run", "passed", "failed", "skipped", "timeout"],
+  "requirements": {
+    "uniqueTestId": true,
+    "declaredKind": true,
+    "deterministicExitResult": true,
+    "timeoutSupported": true,
+    "machineReadableReport": true,
+    "failFastSupported": true,
+    "kindFilteringSupported": true,
+    "tagFilteringSupported": true
+  },
+  "freestandingRuntime": {
+    "runner": "NovaOryn.Kernel.Contracts.KernelTestRuntime",
+    "assertions": ["Assert", "AssertEqual", "AssertNotEqual", "AssertZero", "AssertNonZero"],
+    "noGcRequired": true,
+    "noReflectionRequired": true,
+    "functionPointerAbi": true
+  },
+  "faultInjection": {
+    "runtime": "NovaOryn.Kernel.Contracts.KernelFaultInjection",
+    "maxRules": 8,
+    "faults": [
+      "allocation-failure", "io-timeout", "dropped-interrupt", "device-reset", "bad-dma",
+      "corrupt-packet", "page-fault", "cpu-offline", "filesystem-error"
+    ]
+  },
+  "hardwareSimulation": {
+    "runtime": "NovaOryn.Kernel.Contracts.KernelHardwareSimulation",
+    "operations": ["read", "write", "raise-interrupt", "advance-time"]
+  },
+  "report": {
+    "format": "novaoryn-test-report-v1",
+    "fields": ["id", "name", "kind", "result", "durationMilliseconds", "exitCode", "stdout", "stderr"]
+  }
 }

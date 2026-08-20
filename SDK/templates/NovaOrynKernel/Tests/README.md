@@ -1,5 +1,7 @@
-# NovaOryn Tests
+# NovaOryn SDK Tests
 
-Put independently executable NovaOryn test projects below this directory.
+NovaOryn 0.11.0 uses one SDK test contract for kernel, unit, integration, boot, driver, stress, fault-injection, and hardware-simulation tests.
 
-Use **Add > New Project** and choose **NovaOryn Test Project**. Tests are ordinary programs and are built by `Build-WorkspaceProjects.ps1`; NovaOryn does not force a particular unit-test framework.
+Project tests are declared in `NovaOryn.Tests.json` and executed with `SDK\Run-NovaOrynTests.bat` or `SDK\novaoryn.cmd test`. The runner supports kind/tag filtering, per-test timeouts, fail-fast execution, expected exit codes, environment variables, and a machine-readable JSON report.
+
+Freestanding kernel tests use `KernelTestRuntime`; deterministic failure paths use `KernelFaultInjection`; simulated MMIO/PIO/interrupt/time devices use `KernelHardwareSimulation`. These runtime paths do not require GC, reflection, or exception handling.

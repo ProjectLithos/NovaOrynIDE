@@ -16,7 +16,7 @@ switch($Command.ToLowerInvariant()){
  'build' { exit (Run-Script 'Build-NovaOryn.ps1' $Arguments) }
  'run' { exit (Run-Script 'Build-NovaOryn.ps1' @('-Run')+$Arguments) }
  'debug' { exit (Run-Script 'Build-NovaOryn.ps1' @('-Debug')+$Arguments) }
- 'test' { exit (Run-Script 'Validate-NovaOryn.ps1' $Arguments) }
+ 'test' { exit (Run-Script 'Run-NovaOrynTests.ps1' $Arguments) }
  'pack' { Write-Host '[INFO] Package contract: novaoryn-package-v1'; exit 0 }
  'doctor' { exit (Doctor) }
  default { Write-Host 'NovaOryn CLI: new | build | run | debug | test | pack | doctor'; exit 0 }
