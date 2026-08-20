@@ -115,6 +115,8 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
 
     protected toolbarInstalled = false;
     protected titleLogoInstalled = false;
+    protected bottomPanelControlsInstalled = false;
+    protected bottomPanelObserver: MutationObserver | undefined;
 
     constructor() {
         super({
@@ -163,7 +165,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         });
         commands.registerCommand(NovaOrynCommands.DASHBOARD, { execute: () => this.showEngineeringWidget(this.dashboardWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.CONSOLE, { execute: () => this.showEngineeringWidget(this.consoleWidget, 'bottom') });
-        commands.registerCommand(NovaOrynCommands.HARDWARE, { execute: () => this.showEngineeringWidget(this.hardwareWidget, 'left'), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.HARDWARE, { execute: () => this.showEngineeringWidget(this.hardwareWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.TESTS, { execute: () => this.showEngineeringWidget(this.testExplorerWidget, 'left'), isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.TRACE, { execute: () => this.showEngineeringWidget(this.traceWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.PROFILER, { execute: () => this.showEngineeringWidget(this.profilerWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
@@ -276,6 +278,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
     async onStart(): Promise<void> {
         this.installTitleLogo();
         this.installToolbarBelowMenu();
+        this.installBottomPanelControls();
         await this.workspaceService.ready;
         this.toolbarWidget.refresh();
         this.staticAnalyzerWidget.setProjectPath(this.currentOperatingSystemPath());
@@ -461,6 +464,83 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         }
         if (typeof widget.refresh === 'function') await widget.refresh();
         this.shell.activateWidget(widget.id);
+    }
+
+    /**
+     * Reinstates Theia/Lumino's normal bottom-panel tab/control strip at the shell
+     * level. The previous CSS-only fix could not restore a TabBar after Lumino had
+     * hidden or collapsed it.
+     */
+    protected installBottomPanelControls(): void {
+        if (this.bottomPanelControlsInstalled) {
+            this.repairBottomPanelControls();
+            return;
+        }
+
+        const repair = (): void => {
+            window.requestAnimationFrame(() => this.repairBottomPanelControls());
+        };
+
+        this.bottomPanelObserver = new MutationObserver(repair);
+        this.bottomPanelObserver.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        this.repairBottomPanelControls();
+        window.requestAnimationFrame(() => this.repairBottomPanelControls());
+        this.bottomPanelControlsInstalled = true;
+    }
+
+    protected repairBottomPanelControls(): void {
+        const shell = this.shell as unknown as {
+            bottomPanel?: {
+                tabBars?: () => Iterable<{
+                    show?: () => void;
+                    update?: () => void;
+                    fit?: () => void;
+                    node?: HTMLElement;
+                }>;
+                update?: () => void;
+                fit?: () => void;
+            };
+            update?: () => void;
+            fit?: () => void;
+        };
+
+        const bottomPanel = shell.bottomPanel;
+        if (bottomPanel && typeof bottomPanel.tabBars === 'function') {
+            for (const tabBar of Array.from(bottomPanel.tabBars())) {
+                tabBar.show?.();
+                if (tabBar.node) {
+                    tabBar.node.hidden = false;
+                    tabBar.node.style.removeProperty('display');
+                    tabBar.node.style.removeProperty('visibility');
+                    tabBar.node.style.removeProperty('opacity');
+                    tabBar.node.setAttribute('data-novaoryn-bottom-controls', 'restored');
+                }
+                tabBar.update?.();
+                tabBar.fit?.();
+            }
+            bottomPanel.update?.();
+            bottomPanel.fit?.();
+        }
+
+        // Also repair the DOM representation for both current and legacy Lumino
+        // class names. This does not fabricate a toolbar; it exposes the real one.
+        document.querySelectorAll<HTMLElement>(
+            '#theia-bottom-panel .lm-TabBar, #theia-bottom-panel .p-TabBar, '
+            + '.theia-bottom-panel .lm-TabBar, .theia-bottom-panel .p-TabBar'
+        ).forEach(node => {
+            node.hidden = false;
+            node.style.removeProperty('display');
+            node.style.removeProperty('visibility');
+            node.style.removeProperty('opacity');
+            node.setAttribute('data-novaoryn-bottom-controls', 'restored');
+        });
+
+        shell.update?.();
+        shell.fit?.();
     }
 
     /**

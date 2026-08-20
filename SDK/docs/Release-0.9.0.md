@@ -1,3 +1,3 @@
-# NovaOryn 0.10.4
+# NovaOryn 0.10.5
 
-NovaOryn 0.10.4 implements roadmap item 16, user/kernel separation. It establishes the x64 ring-0/ring-3 address and selector policy, enables supervisor write protection and SMEP when supported, reports SMAP capability for the upcoming guarded-copy layer, enforces user page-table mappings, and validates future user-mode transition contexts. System-call entry and executable/process loading remain roadmap items 17 and 18.
+NovaOryn 0.10.5 implements roadmap item 16, user/kernel separation. It establishes the x64 ring-0/ring-3 address and selector policy, enables supervisor write protection and SMEP when supported, reports SMAP capability for the upcoming guarded-copy layer, enforces user page-table mappings, and validates future user-mode transition contexts. System-call entry and executable/process loading remain roadmap items 17 and 18.

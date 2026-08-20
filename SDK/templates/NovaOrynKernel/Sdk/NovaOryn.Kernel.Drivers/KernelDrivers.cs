@@ -88,11 +88,45 @@ public static unsafe class KernelDrivers
         return false;
     }
 
+    /// <summary>
+    /// Reconciles the authoritative device tree with all currently registered
+    /// drivers. Matching devices are bound and started; unsupported devices stay
+    /// discovered rather than being treated as failures.
+    /// </summary>
+    public static Boolean BindAndStartMatchingDevices()
+    {
+        if(!_initialized)return false;
+        Boolean ok=true;
+        for(UInt32 i=0;i<_deviceCapacity;i++)
+        {
+            DeviceRecord* d=Device((Int32)i);
+            if(d->Used==0)continue;
+            KernelDeviceHandle device=new(i+1U);
+
+            if(d->BoundDriver!=0U)
+            {
+                if(d->State==(Byte)KernelDeviceState.Bound||d->State==(Byte)KernelDeviceState.Stopped)
+                    ok=StartDevice(device)&ok;
+                continue;
+            }
+
+            if(d->State==(Byte)KernelDeviceState.Failed)
+            {
+                d->State=(Byte)KernelDeviceState.Discovered;
+                d->FailureCode=0U;
+            }
+
+            if(TryBindDevice(device,out _))
+                ok=StartDevice(device)&ok;
+        }
+        return ok;
+    }
+
     public static Boolean StartDevice(KernelDeviceHandle device)
     {
         if(!TryBound(device,out DeviceRecord* d,out DriverRecord* r,out KernelDriverDeviceContext context))return false;if(d->State==(Byte)KernelDeviceState.Started)return true;if(d->State==(Byte)KernelDeviceState.Suspended)return ResumeDevice(device);
         KernelDeviceState previous=(KernelDeviceState)d->State;d->State=(Byte)KernelDeviceState.Starting;if(r->DeclaredCapabilities!=0UL&&!AllDeclaredCapabilitiesGranted(d,r->DeclaredCapabilities)&&!GrantDeclaredCapabilities(&context,d,r)){MarkFailed(d,device,context.Driver,KernelDriverFailureCode.CapabilityFailure,KernelDriverLifecycleStage.Start);return false;}
-        delegate*<KernelDriverDeviceContext*,Boolean> start=(delegate*<KernelDriverDeviceContext*,Boolean>)(void*)r->Start;if(!start(&context)){RevokeAllCapabilities(d);MarkFailed(d,device,context.Driver,KernelDriverFailureCode.StartFailed,KernelDriverLifecycleStage.Start);return false;}d->State=(Byte)KernelDeviceState.Started;d->FailureCode=0U;_startedCount++;EmitLifecycle(device,context.Driver,KernelDriverLifecycleStage.Start,previous,KernelDeviceState.Started,KernelDriverFailureCode.None);return true;
+        delegate*<KernelDriverDeviceContext*,Boolean> start=(delegate*<KernelDriverDeviceContext*,Boolean>)(void*)r->Start;if(!start(&context)){RevokeAllCapabilities(d);d->State=(Byte)KernelDeviceState.Bound;d->FailureCode=(UInt32)KernelDriverFailureCode.StartFailed;EmitLifecycle(device,context.Driver,KernelDriverLifecycleStage.Start,KernelDeviceState.Starting,KernelDeviceState.Bound,KernelDriverFailureCode.StartFailed);return false;}d->State=(Byte)KernelDeviceState.Started;d->FailureCode=0U;_startedCount++;EmitLifecycle(device,context.Driver,KernelDriverLifecycleStage.Start,previous,KernelDeviceState.Started,KernelDriverFailureCode.None);return true;
     }
     public static Boolean StopDevice(KernelDeviceHandle device)
     {

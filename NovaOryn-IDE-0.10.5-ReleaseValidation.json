@@ -1,0 +1,23 @@
+{
+  "release": "NovaOryn IDE 0.10.5",
+  "bottomPanel": {
+    "programmaticLuminoRepair": true,
+    "paintContainmentPreserved": true
+  },
+  "drivers": {
+    "virtioGpuPciEnable": true,
+    "genericVirtioPciEnable": true,
+    "matchingReconciliation": true,
+    "retryableStartFailure": true
+  },
+  "validation": {
+    "staticVerifier": "PASS",
+    "typescriptTranspile": "PASS",
+    "versionConsistency": {
+      "package.json": "0.10.5",
+      "applications/electron/package.json": "0.10.5",
+      "packages/novaoryn-ide/package.json": "0.10.5"
+    },
+    "qemuRuntime": "Final proof is the user's Windows/QEMU run; expected 1AF4:1050 to bind/start, while unsupported chipset devices remain discovered."
+  }
+}

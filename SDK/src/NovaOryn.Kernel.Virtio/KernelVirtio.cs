@@ -90,7 +90,7 @@ public static unsafe class KernelVirtio
 
     private static Boolean Start(KernelDriverDeviceContext* context)
     {
-        if(context==null||!KernelPci.TryGetDevice(context->Device,out PciDeviceInfo pci))return false;VirtioDeviceType type=VirtioMath.IdentifyDeviceType(pci.DeviceId,pci.SubsystemId);if(type==VirtioDeviceType.Unknown)return false;
+        if(context==null||!KernelPci.TryGetDevice(context->Device,out PciDeviceInfo pci)||!EnablePci(pci.Location))return false;VirtioDeviceType type=VirtioMath.IdentifyDeviceType(pci.DeviceId,pci.SubsystemId);if(type==VirtioDeviceType.Unknown)return false;
         Int32 slot=FreeRecord();if(slot<0){if(!GrowRecords())return false;slot=FreeRecord();if(slot<0)return false;}DeviceRecord* r=_devices+slot;Clear((Byte*)r,(UInt64)sizeof(DeviceRecord));r->Used=1;r->Type=(Byte)type;r->DeviceHandle=context->Device.Value;r->Segment=pci.Location.Segment;r->Bus=pci.Location.Bus;r->PciDevice=pci.Location.Device;r->Function=pci.Location.Function;
         if(!InitializeTransport(r,pci.Location,type)){Clear((Byte*)r,(UInt64)sizeof(DeviceRecord));return false;}
         Boolean started=type==VirtioDeviceType.Block?InitializeBlock(r):type==VirtioDeviceType.Network?InitializeNetwork(r):type==VirtioDeviceType.Console?InitializeConsole(r):InitializeEntropy(r);
@@ -174,6 +174,12 @@ public static unsafe class KernelVirtio
     {id=0;length=0;if(q->Ready==0)return false;Byte* used=(Byte*)(nuint)(q->VirtualBase+q->UsedOffset);UInt16 current=Read16((UInt64)(nuint)(used+2));if(q->LastUsed==current)return false;UInt64 element=4UL+(UInt64)(q->LastUsed%q->Size)*8UL;id=Read32((UInt64)(nuint)(used+element));length=Read32((UInt64)(nuint)(used+element+4));q->LastUsed++;return true;}
     private static Boolean SetDescriptor(QueueRecord* q,UInt16 index,UInt64 address,UInt32 length,UInt16 flags,UInt16 next)
     {if(q->Ready==0||index>=q->Size)return false;UInt64 descriptor=q->VirtualBase+(UInt64)index*16UL;Write64(descriptor,address);Write32(descriptor+8,length);Write16(descriptor+12,flags);Write16(descriptor+14,next);return true;}
+
+    private static Boolean EnablePci(PciLocation location)
+    {
+        if(!KernelPci.TryRead16(location,0x04,out UInt16 command))return false;
+        return KernelPci.TryWrite16(location,0x04,(UInt16)(command|0x0006U));
+    }
 
     private static Boolean MapTransportCapability(PciLocation location,Byte configurationType,out UInt64 virtualAddress,out UInt16 capabilityOffset)
     {virtualAddress=0;capabilityOffset=0;if(!TryFindTransportCapability(location,configurationType,out PciCapabilityInfo capability))return false;if(!KernelPci.TryRead8(location,(UInt16)(capability.Offset+2),out Byte capabilityLength)||capabilityLength<(configurationType==NotifyConfigurationType?20U:16U))return false;if(!KernelPci.TryRead8(location,(UInt16)(capability.Offset+4),out Byte barIndex)||!KernelPci.TryRead32(location,(UInt16)(capability.Offset+8),out UInt32 offset)||!KernelPci.TryRead32(location,(UInt16)(capability.Offset+12),out UInt32 length)||length==0)return false;if(!KernelPci.TryGetBar(location,barIndex,out PciBarInfo bar)||bar.Type==PciBarType.Io||offset>bar.Length||length>bar.Length-offset)return false;if(!KernelPci.TryMapMmio(bar.Address+offset,length,out virtualAddress))return false;capabilityOffset=capability.Offset;return true;}

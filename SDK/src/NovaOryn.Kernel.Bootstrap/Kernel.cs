@@ -420,6 +420,7 @@ public static unsafe class Kernel
         if (!KernelNetworking.Initialize()) return false;
         if (!KernelVirtio.Initialize()) return false;
         if (!KernelVirtioGpu.Initialize()) return false;
+        if (!KernelDrivers.BindAndStartMatchingDevices()) return false;
         if (!KernelE1000.Initialize()) return false;
         if (!KernelRtl8168.Initialize()) return false;
         VirtioCapabilities virtio = KernelVirtio.GetCapabilities();

@@ -1,6 +1,6 @@
-# NovaOryn 0.10.4
+# NovaOryn 0.10.5
 
-NovaOryn 0.10.4 is a corrective release for roadmap item 15.
+NovaOryn 0.10.5 is a corrective release for roadmap item 15.
 
 ## Fix
 

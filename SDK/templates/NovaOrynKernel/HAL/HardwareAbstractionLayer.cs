@@ -137,6 +137,10 @@ public static unsafe class HardwareAbstractionLayer
         if (!KernelStructuredLogging.InfoLine("usb","HardwareAbstractionLayer.Initialize","Kernel-domain USB services online.")) return false;
 #endif
 
+#if NOVAORYN_KERNELAREA_DRIVERS
+        // All selected driver families have now had a chance to register.
+        if (!KernelDrivers.BindAndStartMatchingDevices()) return false;
+#endif
         return true;
     }
 #if NOVAORYN_KERNELAREA_INPUT
