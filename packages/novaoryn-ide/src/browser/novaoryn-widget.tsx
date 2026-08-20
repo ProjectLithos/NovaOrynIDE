@@ -30,6 +30,7 @@ export const NOVAORYN_WIDGET_ID = 'novaoryn.project.configurator';
 export const NOVAORYN_EXPLICIT_WORKSPACE_OPEN = 'novaoryn.explicitWorkspaceOpen';
 
 type Page = 'startup' | 'configuration';
+type KernelPreset = 'full' | 'microkernel' | 'monolithic';
 type Option = readonly [value: string, label: string];
 
 @injectable()
@@ -137,7 +138,7 @@ export class NovaOrynWidget extends BaseWidget {
         art.setAttribute('aria-label', 'NovaOryn IDE logo');
         card.appendChild(art);
 
-        card.appendChild(this.element('h1', undefined, 'NovaOryn IDE 0.11.11'));
+        card.appendChild(this.element('h1', undefined, 'NovaOryn IDE 0.11.12'));
         const intro = this.element('p');
         intro.append('All NovaOryn operating systems are stored beneath ');
         const root = this.element('strong', undefined, NOVAORYN_OS_ROOT);
@@ -146,9 +147,11 @@ export class NovaOrynWidget extends BaseWidget {
         card.appendChild(intro);
 
         const actions = this.element('div', 'novaoryn-start-actions');
-        const create = this.button('Create New OS', 'theia-button main', () => this.beginNewOperatingSystem());
-        actions.appendChild(create);
+        actions.appendChild(this.presetButton('Full Kernel', 'Hybrid layout with every mutually compatible NovaOryn subsystem enabled.', 'full'));
+        actions.appendChild(this.presetButton('Microkernel', 'Full-featured microkernel layout with services and drivers split out of the core kernel.', 'microkernel'));
+        actions.appendChild(this.presetButton('Monolithic Kernel', 'Full-featured monolithic layout with supported kernel facilities built into the kernel side.', 'monolithic'));
         card.appendChild(actions);
+        card.appendChild(this.element('p', 'novaoryn-start-preset-help', 'Each preset enables the complete compatible SDK surface, generates working Boot/HAL integration, and includes a Public SDK Usage guide showing where and how the public APIs are used.'));
 
         const existing = this.element('section', 'novaoryn-existing');
         existing.appendChild(this.element('h2', undefined, 'Open Existing OS'));
@@ -189,7 +192,7 @@ export class NovaOrynWidget extends BaseWidget {
         const page = this.element('div', 'novaoryn-page');
         const card = this.element('div', 'novaoryn-card novaoryn-card-wide');
         card.appendChild(this.element('div', 'novaoryn-brand', 'NOVAORYN'));
-        card.appendChild(this.element('h1', undefined, this.reconfiguringProjectPath ? `Reconfigure ${c.name}` : 'NovaOryn OS 0.11.11'));
+        card.appendChild(this.element('h1', undefined, this.reconfiguringProjectPath ? `Reconfigure ${c.name}` : 'NovaOryn OS 0.11.12'));
         card.appendChild(this.element('p', 'novaoryn-version', 'Authoritative operating-system configuration'));
         card.appendChild(this.element('p', undefined, this.reconfiguringProjectPath
             ? 'Change the generated kernel/OS structure below. User-owned source files, including Kernel\\Kernel.cs, are preserved.'
@@ -417,9 +420,48 @@ export class NovaOrynWidget extends BaseWidget {
         }
     }
 
-    protected beginNewOperatingSystem(): void {
+    protected presetButton(label: string, description: string, preset: KernelPreset): HTMLButtonElement {
+        const button = this.button(label, 'theia-button novaoryn-kernel-preset', () => this.beginNewOperatingSystem(preset));
+        button.title = description;
+        button.setAttribute('aria-label', `${label}: ${description}`);
+        return button;
+    }
+
+    protected createComprehensiveConfiguration(preset: KernelPreset): NovaOrynProjectConfiguration {
+        const configuration = this.createDefaultConfiguration();
+        configuration.name = preset === 'full' ? 'NovaOrynFullOS' : preset === 'microkernel' ? 'NovaOrynMicrokernelOS' : 'NovaOrynMonolithicOS';
+        configuration.kernelArchitecture = preset === 'full' ? 'hybrid' : preset;
+        configuration.targetArchitecture = 'x86_64';
+        configuration.bootArchitecture = 'uefi';
+        configuration.memorySystem = 'paged';
+        configuration.scheduler = 'realtime';
+        configuration.processSupport = 'processes';
+        configuration.syscallModel = 'multi';
+        configuration.smp = true;
+        configuration.interruptModel = 'x2apic';
+        configuration.timers = ['tsc', 'hpet', 'local-apic', 'rtc'];
+        configuration.drivers = ['pci', 'acpi', 'serial-16550', 'virtio-console', 'virtio-rng', 'usb-xhci', 'usb-ehci'];
+        configuration.storageControllers = ['virtio-block', 'nvme', 'ahci'];
+        configuration.filesystem = 'fatfs';
+        configuration.networkStack = 'dual-stack';
+        configuration.networkDrivers = ['virtio-net', 'e1000', 'rtl8168'];
+        configuration.input = ['ps2-keyboard', 'ps2-mouse', 'usb-hid-keyboard', 'usb-hid-mouse'];
+        configuration.graphics = ['uefi-gop', 'generic-framebuffer', 'virtio-gpu'];
+        configuration.audio = 'hda';
+        configuration.userland = true;
+        configuration.shell = 'novaoryn-shell';
+        configuration.gui = 'desktop';
+        configuration.debugging = ['serial-log', 'kernel-diagnostics', 'symbols', 'panic-dump'];
+        configuration.testing = ['boot-smoke', 'memory', 'interrupts', 'scheduler', 'drivers', 'network'];
+        configuration.virtualisation = 'hypervisor';
+        configuration.safetyProfile = 'safety-critical';
+        configuration.safetyOptions = ['deterministic-scheduling', 'watchdog', 'memory-protection', 'redundant-checks', 'fail-stop'];
+        return configuration;
+    }
+
+    protected beginNewOperatingSystem(preset: KernelPreset = 'full'): void {
         this.reconfiguringProjectPath = undefined;
-        this.configuration = this.createDefaultConfiguration();
+        this.configuration = this.createComprehensiveConfiguration(preset);
         this.page = 'configuration';
         this.renderContent();
     }

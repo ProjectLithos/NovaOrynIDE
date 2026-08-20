@@ -1,0 +1,13 @@
+const fs=require('fs');
+let fail=0; const C=(v,m)=>{console.log(`${v?'[ OK ]':'[FAIL]'} ${m}`); if(!v)fail++;};
+const widget=fs.readFileSync('packages/novaoryn-ide/src/browser/novaoryn-widget.tsx','utf8');
+const service=fs.readFileSync('packages/novaoryn-ide/src/node/novaoryn-project-service.ts','utf8');
+const readme=fs.readFileSync('README.md','utf8');
+C(readme.includes('![NovaOryn logo](packages/novaoryn-ide/src/browser/style/novaoryn-logo.png)'), 'README embeds repository NovaOryn logo');
+C(widget.includes("'Full Kernel'") && widget.includes("'Microkernel'") && widget.includes("'Monolithic Kernel'"), 'start page exposes Full, Microkernel and Monolithic buttons');
+C(widget.includes("createComprehensiveConfiguration(preset: KernelPreset)"), 'comprehensive preset generator exists');
+for(const token of ["'pci'","'acpi'","'usb-xhci'","'virtio-block'","'nvme'","'ahci'","'virtio-net'","'e1000'","'rtl8168'","'virtio-gpu'","'symbols'","'panic-dump'","'hypervisor'"]) C(widget.includes(token), `comprehensive preset includes ${token}`);
+C(service.includes("PUBLIC-SDK-USAGE.md"), 'generated OS includes public SDK usage guide');
+C(service.includes('This is live integration, not sample-only code'), 'usage guide explains live integration');
+C(service.includes('Boot\\\\BootStartup.cs') && service.includes('HAL\\\\HardwareAbstractionLayer.cs'), 'usage guide points to executable Boot/HAL examples');
+if(fail) process.exitCode=1; else console.log('[ OK ] NovaOryn IDE 0.11.12 comprehensive kernel preset contract verified.');

@@ -26,7 +26,7 @@ if exist "%~dp0*.json" (
   echo [ OK ] Legacy root-level .json files removed.
 )
 
-rem Remove legacy root-level text and script files after the 0.11.11 source reorganisation.
+rem Remove legacy root-level text and script files after the 0.11.12 source reorganisation.
 rem Build-NovaOrynIDE.bat and Run-NovaOrynIDE.bat are the only supported root scripts.
 if exist "%~dp0*.txt" (
   echo [INFO] Removing legacy root-level .txt files...
@@ -54,7 +54,7 @@ for %%F in ("%~dp0*.bat") do (
   )
 )
 
-echo [INFO] NovaOryn IDE Build 0.11.11
+echo [INFO] NovaOryn IDE Build 0.11.12
 
 set "NOVAORYN_IDE_ROOT=%~dp0"
 set "NOVAORYN_SDK_ROOT=%~dp0SDK"
@@ -84,7 +84,7 @@ if not exist "%BOOTSTRAP%" (
   exit /b 1
 )
 
-echo [INFO] Verifying NovaOryn IDE 0.11.11 build toolchain...
+echo [INFO] Verifying NovaOryn IDE 0.11.12 build toolchain...
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%BOOTSTRAP%"
 set "RESULT=%errorlevel%"
 if not "%RESULT%"=="0" (
@@ -138,7 +138,7 @@ if not "%RESULT%"=="0" (
 )
 
 if exist "%~dp0JSON\package-lock.json" (
-  powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$p='%~dp0JSON\package-lock.json'; try { $j=Get-Content -LiteralPath $p -Raw ^| ConvertFrom-Json; $v=[string]$j.version; if ($v -and $v -ne '0.11.11') { Write-Host '[INFO] Removing stale package-lock.json from NovaOryn IDE' $v; Remove-Item -LiteralPath $p -Force } } catch { Write-Host '[INFO] Removing unreadable package-lock.json so npm can regenerate it.'; Remove-Item -LiteralPath $p -Force }"
+  powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$p='%~dp0JSON\package-lock.json'; try { $j=Get-Content -LiteralPath $p -Raw ^| ConvertFrom-Json; $v=[string]$j.version; if ($v -and $v -ne '0.11.12') { Write-Host '[INFO] Removing stale package-lock.json from NovaOryn IDE' $v; Remove-Item -LiteralPath $p -Force } } catch { Write-Host '[INFO] Removing unreadable package-lock.json so npm can regenerate it.'; Remove-Item -LiteralPath $p -Force }"
   if errorlevel 1 (
     echo [FAIL] Could not validate the existing package-lock.json.
     exit /b 1
@@ -212,7 +212,7 @@ echo [ OK ] Eclipse Theia CLI package is installed.
 echo [INFO] Verifying installed Theia/Electron runtime versions from the Electron workspace...
 "%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEInstalledDependencies.cjs"
 if errorlevel 1 (
-  echo [WARN] Installed dependency tree does not match the NovaOryn 0.11.11 pins.
+  echo [WARN] Installed dependency tree does not match the NovaOryn 0.11.12 pins.
   echo [INFO] Performing one clean dependency reinstall from the checked package manifests...
   rmdir /s /q "%~dp0node_modules" >nul 2>&1
   if exist "%NOVAORYN_NPM_PREFIX%\node_modules" rmdir /s /q "%NOVAORYN_NPM_PREFIX%\node_modules"
@@ -235,7 +235,7 @@ popd
   )
   "%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDEInstalledDependencies.cjs"
   if errorlevel 1 (
-    echo [FAIL] Clean reinstall still does not match the NovaOryn 0.11.11 dependency pins.
+    echo [FAIL] Clean reinstall still does not match the NovaOryn 0.11.12 dependency pins.
     exit /b 2
   )
 )
@@ -502,10 +502,17 @@ echo [INFO] Verifying full generated-kernel bootstrap and legacy minimal-kernel 
 if errorlevel 1 ( echo [FAIL] Full generated-kernel bootstrap verification failed. & exit /b 1 )
 
 echo [INFO] Verifying proper NovaOryn SDK test framework...
+echo [INFO] Verifying comprehensive start-page kernel presets and README logo...
+"%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDE0112.cjs"
+if errorlevel 1 (
+  echo [FAIL] NovaOryn IDE 0.11.12 comprehensive kernel preset verification failed.
+  exit /b 1
+)
+
 "%NOVAORYN_NODE%" "%~dp0CJS\Verify-NovaOrynIDETestFramework0110.cjs"
 if errorlevel 1 ( echo [FAIL] Proper SDK test framework verification failed. & exit /b 1 )
 
-echo [INFO] Building NovaOryn IDE 0.11.11...
+echo [INFO] Building NovaOryn IDE 0.11.12...
 pushd "%NOVAORYN_NPM_PREFIX%"
 call "%NOVAORYN_NPM%" run build
 set "RESULT=!errorlevel!"
@@ -532,12 +539,12 @@ if not exist "%~dp0applications\electron\lib\backend\electron-main.js" (
   exit /b 1
 )
 
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$o=[ordered]@{ novaOrynIdeVersion='0.11.11'; theiaVersion='1.74.0'; electronVersion='42.3.0'; generatedUtc=(Get-Date).ToUniversalTime().ToString('o') }; $o | ConvertTo-Json | Set-Content -LiteralPath '%NOVAORYN_BUILDSTATE%' -Encoding UTF8"
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$o=[ordered]@{ novaOrynIdeVersion='0.11.12'; theiaVersion='1.74.0'; electronVersion='42.3.0'; generatedUtc=(Get-Date).ToUniversalTime().ToString('o') }; $o | ConvertTo-Json | Set-Content -LiteralPath '%NOVAORYN_BUILDSTATE%' -Encoding UTF8"
 if errorlevel 1 (
   echo [WARN] Build succeeded but NovaOryn could not record the dependency build-state marker.
 )
 
-echo [ OK ] NovaOryn IDE 0.11.11 build completed.
+echo [ OK ] NovaOryn IDE 0.11.12 build completed.
 
 echo [INFO] Publishing NovaOryn IDE source to GitHub...
 set "NOVAORYN_GIT_REMOTE=https://github.com/ProjectLithos/NovaOrynIDE.git"
@@ -614,8 +621,8 @@ if errorlevel 1 goto :git_fail
 
 git diff --cached --quiet
 if errorlevel 1 (
-  echo [INFO] Committing NovaOryn IDE 0.11.11 source changes.
-  git commit -m "NovaOryn IDE 0.11.11"
+  echo [INFO] Committing NovaOryn IDE 0.11.12 source changes.
+  git commit -m "NovaOryn IDE 0.11.12"
   if errorlevel 1 goto :git_fail
 ) else (
   echo [INFO] No source changes require a new commit.

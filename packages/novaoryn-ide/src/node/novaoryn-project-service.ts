@@ -83,7 +83,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.11.11';
+const NOVAORYN_IDE_VERSION = '0.11.12';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -1542,7 +1542,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.11.11 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.11.12 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -4098,6 +4098,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await fs.writeFile(path.join(projectRoot, 'Build.bat'), this.buildBatch(), 'utf8');
             await fs.writeFile(path.join(projectRoot, 'Run.bat'), this.runBatch(authoritativeConfiguration), 'utf8');
             await fs.writeFile(path.join(projectRoot, 'README.md'), this.projectReadme(authoritativeConfiguration, generatedProjects), 'utf8');
+            await fs.writeFile(path.join(projectRoot, 'PUBLIC-SDK-USAGE.md'), this.publicSdkUsageGuide(authoritativeConfiguration), 'utf8');
 
             return {
                 success: true,
@@ -4164,6 +4165,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await fs.writeFile(path.join(projectRoot, 'Build.bat'), this.buildBatch(), 'utf8');
             await fs.writeFile(path.join(projectRoot, 'Run.bat'), this.runBatch(authoritativeConfiguration), 'utf8');
             await fs.writeFile(path.join(projectRoot, 'README.md'), this.projectReadme(authoritativeConfiguration, generatedProjects), 'utf8');
+            await fs.writeFile(path.join(projectRoot, 'PUBLIC-SDK-USAGE.md'), this.publicSdkUsageGuide(authoritativeConfiguration), 'utf8');
 
             return {
                 success: true,
@@ -5065,6 +5067,10 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             'exit /b %ERRORLEVEL%',
             ''
         ].join('\r\n');
+    }
+
+    protected publicSdkUsageGuide(configuration: NovaOrynProjectConfiguration): string {
+        return `# Public NovaOryn SDK usage\n\nThis operating system was generated from the **${configuration.kernelArchitecture}** comprehensive preset. The preset deliberately enables every mutually compatible subsystem that NovaOryn IDE ${NOVAORYN_IDE_VERSION} can configure for x86-64.\n\n## This is live integration, not sample-only code\n\nThe generated kernel does not merely list SDK APIs. Its normal boot path actively calls them:\n\n- **Kernel\\Kernel.cs** calls \`BootStartup.Initialize(boot)\`, \`HardwareAbstractionLayer.Initialize()\`, \`KernelCommandLine.Initialize()\`, \`KernelInterruptDispatch.Enable()\`, and \`KernelConsole.RunInteractive()\`.\n- **Boot\\BootStartup.cs** demonstrates the public platform, ACPI, timer, physical-memory, virtual-memory, address-space, heap, graphics, SMP, scheduler, protection, syscall, logging, telemetry and panic APIs.\n- **HAL\\HardwareAbstractionLayer.cs** demonstrates public PCI/device discovery, driver, storage, filesystem, networking, USB, input, graphics and other hardware-facing APIs selected by the authoritative configuration.\n- **Configuration\\GeneratedConfiguration.cs** shows how code can query the exact features selected for this OS.\n\n## Public API patterns\n\nUse these generated source files as executable examples. Typical public calls already present in the boot path include:\n\n\`\`\`csharp\nKernelConsole.Initialize(boot);\nKernelPlatform.InitializeDescriptors();\nKernelAcpi.Initialize(boot);\nKernelTime.Initialize();\nKernelPhysicalMemory.Initialize(boot);\nKernelVirtualMemory.Initialize();\nKernelAddressSpace.Initialize();\nKernelHeap.Initialize();\nKernelGraphics.Initialize();\nKernelSmp.Initialize(boot);\nKernelScheduler.Initialize();\nKernelProtection.Initialize();\nKernelSystemCalls.Initialize();\n\`\`\`\n\nThe capability-based driver framework should be used through its public grant/broker contracts rather than programming privileged resources directly. The generated HAL and driver registration code show the intended pattern for MMIO, ports, interrupts/MSI/MSI-X, DMA, PCI configuration, physical memory, timers, networking and filesystem authority.\n\n## Why mutually compatible?\n\nSome configuration choices are alternatives rather than additive features (for example FATFS versus native FAT32, HDA versus AC97, and guest versus hypervisor mode). The comprehensive preset selects the broadest production-oriented choice while enabling every additive option. Change those alternatives in the authoritative configuration page if you want to exercise a different implementation.\n\n## Where to browse every public contract\n\nInside NovaOryn IDE open **Help -> SDK API**. The bundled documentation is the authoritative API reference; this generated guide points you to real code paths that consume those public contracts.\n`;
     }
 
     protected projectReadme(configuration: NovaOrynProjectConfiguration, projects: GeneratedProject[]): string {

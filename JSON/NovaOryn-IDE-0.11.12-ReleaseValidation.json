@@ -1,0 +1,16 @@
+{
+  "version": "0.11.12",
+  "baseVersion": "0.11.11",
+  "change": "Final start-page comprehensive kernel presets and README logo integration.",
+  "readme": {
+    "repositoryLogo": "packages/novaoryn-ide/src/browser/style/novaoryn-logo.png",
+    "embeddedAtTop": true
+  },
+  "kernelPresets": {
+    "full": "Hybrid comprehensive preset",
+    "microkernel": "Microkernel comprehensive preset",
+    "monolithic": "Monolithic comprehensive preset",
+    "allCompatibleSubsystems": true,
+    "publicSdkUsageGuide": "PUBLIC-SDK-USAGE.md"
+  }
+}

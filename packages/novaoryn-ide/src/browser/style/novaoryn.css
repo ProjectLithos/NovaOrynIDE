@@ -65,6 +65,11 @@
 
 .novaoryn-start-page { display:block; padding:22px 28px 32px; }
 .novaoryn-start-card { width:min(920px, 100%); margin:0 auto; padding:18px 24px 28px; text-align:center; }
+
+.novaoryn-start-actions { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:22px auto 10px; max-width:760px; }
+.novaoryn-kernel-preset { min-height:52px; font-weight:700; white-space:normal; }
+.novaoryn-start-preset-help { max-width:760px; margin:0 auto 20px !important; opacity:.78; line-height:1.45; }
+@media (max-width: 720px) { .novaoryn-start-actions { grid-template-columns:1fr; } }
 .novaoryn-start-art { width:220px; height:220px; max-width:42vw; max-height:42vw; margin:0 auto 10px; background:url('./novaoryn-logo.png') center/contain no-repeat; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; }
 .novaoryn-start-card h1 { margin:10px 0 4px; font-size:32px; }
 .novaoryn-start-card > p { margin:8px 0; }

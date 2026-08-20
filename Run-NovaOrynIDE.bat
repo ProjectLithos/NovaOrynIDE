@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
-echo [INFO] NovaOryn IDE Run 0.11.11
+echo [INFO] NovaOryn IDE Run 0.11.12
 
 set "NOVAORYN_IDE_ROOT=%~dp0"
 set "NOVAORYN_SDK_ROOT=%~dp0SDK"
@@ -23,7 +23,7 @@ if not exist "%NOVAORYN_NPM_PREFIX%\node_modules" goto NOT_BUILT
 if not exist "%NOVAORYN_BUILDSTATE%" goto NOT_BUILT
 if not exist "%ELECTRON_MAIN%" goto NOT_BUILT
 
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$p='%NOVAORYN_BUILDSTATE%'; try { $j=Get-Content -LiteralPath $p -Raw | ConvertFrom-Json; if ([string]$j.novaOrynIdeVersion -ne '0.11.11') { exit 2 }; exit 0 } catch { exit 3 }"
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$p='%NOVAORYN_BUILDSTATE%'; try { $j=Get-Content -LiteralPath $p -Raw | ConvertFrom-Json; if ([string]$j.novaOrynIdeVersion -ne '0.11.12') { exit 2 }; exit 0 } catch { exit 3 }"
 if errorlevel 1 goto STALE_BUILD
 
 set "PATH=%~dp0.toolchain\Node;%~dp0.toolchain\Python;%PATH%"
@@ -43,8 +43,8 @@ if not exist "%ELECTRON_PACKAGE%" goto INCOMPLETE_RUNTIME
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$items=@(@('%THEIA_CLI_PACKAGE%','1.74.0'),@('%THEIA_ELECTRON_PACKAGE%','1.74.0'),@('%ELECTRON_PACKAGE%','42.3.0')); foreach($i in $items){ try { $j=Get-Content -LiteralPath $i[0] -Raw | ConvertFrom-Json; if([string]$j.version -ne [string]$i[1]){ exit 2 } } catch { exit 3 } }; exit 0"
 if errorlevel 1 goto INCOMPLETE_RUNTIME
 
-echo [ OK ] Existing NovaOryn IDE 0.11.11 build is ready.
-echo [INFO] Starting NovaOryn IDE 0.11.11...
+echo [ OK ] Existing NovaOryn IDE 0.11.12 build is ready.
+echo [INFO] Starting NovaOryn IDE 0.11.12...
 pushd "%NOVAORYN_NPM_PREFIX%" >nul
 call "%NOVAORYN_NPM%" run start --workspace @novaoryn/ide-electron
 set "RESULT=!errorlevel!"
@@ -57,11 +57,11 @@ echo [INFO] Run Build-NovaOrynIDE.bat, then run this launcher again.
 exit /b 1
 
 :STALE_BUILD
-echo [FAIL] The existing NovaOryn IDE build is not version 0.11.11 or its build-state marker is invalid.
+echo [FAIL] The existing NovaOryn IDE build is not version 0.11.12 or its build-state marker is invalid.
 echo [INFO] Run Build-NovaOrynIDE.bat once, then use Run-NovaOrynIDE.bat to launch it.
 exit /b 1
 
 :NOT_BUILT
-echo [FAIL] NovaOryn IDE 0.11.11 has not been built completely yet.
+echo [FAIL] NovaOryn IDE 0.11.12 has not been built completely yet.
 echo [INFO] Run Build-NovaOrynIDE.bat once. This Run script will not build the IDE automatically.
 exit /b 1
