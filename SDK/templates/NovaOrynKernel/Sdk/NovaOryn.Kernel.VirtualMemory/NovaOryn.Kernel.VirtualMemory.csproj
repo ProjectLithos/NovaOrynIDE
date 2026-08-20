@@ -18,5 +18,6 @@
     <ProjectReference Include="..\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Memory\NovaOryn.Kernel.Memory.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.X64.LowLevel\NovaOryn.Kernel.X64.LowLevel.csproj" />
-  </ItemGroup>
+  
+    <ProjectReference Include="..\NovaOryn.Kernel.SubsystemContracts\NovaOryn.Kernel.SubsystemContracts.csproj" /></ItemGroup>
 </Project>

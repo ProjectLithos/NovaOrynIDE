@@ -88,7 +88,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.12.0';
+const NOVAORYN_IDE_VERSION = '0.13.0';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -1561,7 +1561,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             if (!plan.success) return { success: false, error: plan.error ?? 'Could not prepare the QEMU hardware test matrix.' };
             const runId = `matrix-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
             const run = {
-                output: `[INFO] NovaOryn QEMU Hardware Test Matrix 0.12.0\r\n[INFO] Preset: ${preset === 'full' ? 'Full Cartesian' : 'Balanced'}\r\n[INFO] Project: ${projectRoot}\r\n[INFO] Planned cases: ${plan.cases.length}\r\n${plan.message ? `[INFO] ${plan.message}\r\n` : ''}\r\n`,
+                output: `[INFO] NovaOryn QEMU Hardware Test Matrix 0.13.0\r\n[INFO] Preset: ${preset === 'full' ? 'Full Cartesian' : 'Balanced'}\r\n[INFO] Project: ${projectRoot}\r\n[INFO] Planned cases: ${plan.cases.length}\r\n${plan.message ? `[INFO] ${plan.message}\r\n` : ''}\r\n`,
                 complete: false,
                 cases: plan.cases.map(item => ({ ...item }))
             } as { output: string; complete: boolean; exitCode?: number; error?: string; cases: NovaOrynHardwareMatrixCase[] };
@@ -1767,7 +1767,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.12.0 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.13.0 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 

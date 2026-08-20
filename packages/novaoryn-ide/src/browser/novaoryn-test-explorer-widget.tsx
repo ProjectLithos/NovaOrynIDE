@@ -32,7 +32,7 @@ export class NovaOrynTestExplorerWidget extends ReactWidget {
     protected init(): void {
         this.id = NovaOrynTestExplorerWidget.ID;
         this.title.label = NovaOrynTestExplorerWidget.LABEL;
-        this.title.caption = 'Run NovaOryn test programs and QEMU hardware compatibility matrices';
+        this.title.caption = 'Run NovaOryn tests, deterministic fault-injection scenarios and QEMU hardware compatibility matrices';
         this.title.closable = true;
         this.addClass('novaoryn-test-widget');
         this.update();
@@ -148,7 +148,7 @@ export class NovaOrynTestExplorerWidget extends ReactWidget {
         const skipped = this.matrixCases.filter(item => item.status === 'skipped').length;
         return <div className='novaoryn-tool-page'>
             <div className='novaoryn-tool-header'>
-                <div><h2>Test Explorer</h2><p>Independent program tests plus automated QEMU hardware compatibility coverage.</p></div>
+                <div><h2>Test Explorer</h2><p>Independent program tests, SDK fault-injection validation, plus automated QEMU hardware compatibility coverage.</p></div>
                 <button className='theia-button' disabled={this.matrixRunning} onClick={() => void this.refresh()}>Discover Tests</button>
             </div>
 

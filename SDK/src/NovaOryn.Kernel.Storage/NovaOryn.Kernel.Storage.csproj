@@ -4,7 +4,8 @@
     <ProjectReference Include="..\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Drivers\NovaOryn.Kernel.Drivers.csproj" />
-  </ItemGroup>
+  
+    <ProjectReference Include="..\NovaOryn.Kernel.SubsystemContracts\NovaOryn.Kernel.SubsystemContracts.csproj" /></ItemGroup>
   <ItemGroup>
     <!-- Migration guard: FAT filesystems are optional projects from 0.35.21 onward. -->
     <Compile Remove="KernelFat32.cs" />

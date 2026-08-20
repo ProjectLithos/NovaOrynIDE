@@ -1,4 +1,5 @@
 using System;
+using NovaOryn.Kernel.Contracts;
 using NovaOryn.Kernel.Heap;
 
 namespace NovaOryn.Kernel.Drivers;
@@ -243,7 +244,7 @@ public static unsafe class KernelDrivers
     /// <summary>Explicitly grants one declared capability to a bound driver/device pair after kernel policy validation.</summary>
     public static Boolean TryGrantCapability(KernelDriverDeviceContext context,KernelDriverCapabilityRequest request,out KernelDriverCapabilityGrant grant)
     {
-        grant=default;if(!KernelDriverMath.IsValidCapabilityRequest(request)||!TryBound(context.Device,out DeviceRecord* d,out DriverRecord* r,out KernelDriverDeviceContext actual)||actual.Driver.Value!=context.Driver.Value)return false;
+        grant=default;if(request.Capability==KernelDriverCapability.Dma&&KernelFaultInjection.ShouldInject(KernelFaultKind.BadDma,"dma",out _))return false;if(!KernelDriverMath.IsValidCapabilityRequest(request)||!TryBound(context.Device,out DeviceRecord* d,out DriverRecord* r,out KernelDriverDeviceContext actual)||actual.Driver.Value!=context.Driver.Value)return false;
         UInt64 bit=(UInt64)request.Capability;if((r->DeclaredCapabilities&bit)!=bit||d->GrantCount>=GrantsPerDevice)return false;
         if(!CapabilityAllowedByDevice(d,request))return false;
         UInt64 token=_nextCapabilityGrantToken++;if(token==0UL)token=_nextCapabilityGrantToken++;Int32 i=d->GrantCount++;d->GrantToken[i]=token;d->GrantCapability[i]=bit;d->GrantStart[i]=request.Start;d->GrantLength[i]=request.Length;d->GrantAccess[i]=(Byte)request.Access;grant=new KernelDriverCapabilityGrant(token,context.Device,context.Driver,request.Capability,request.Start,request.Length,request.Access);return true;
@@ -298,7 +299,11 @@ public static unsafe class KernelDrivers
     public static Boolean ReleaseInterrupt(KernelDriverInterruptHandle handle)
     { if(_interruptReleaseBroker==0UL||handle.Value==0UL)return false;delegate*<KernelDriverInterruptHandle,Boolean> broker=(delegate*<KernelDriverInterruptHandle,Boolean>)(void*)_interruptReleaseBroker;return broker(handle); }
     public static Boolean DispatchInterrupt(KernelDeviceHandle device,UInt64 driverCookie)
-    { if(!TryBound(device,out _,out DriverRecord* r,out KernelDriverDeviceContext context)||r->Interrupt==0UL)return false;delegate*<KernelDriverDeviceContext*,UInt64,Boolean> handler=(delegate*<KernelDriverDeviceContext*,UInt64,Boolean>)(void*)r->Interrupt;return handler(&context,driverCookie); }
+    {
+        if(KernelFaultInjection.ShouldInject(KernelFaultKind.DroppedInterrupt,"interrupt",out _))return true;
+        if(KernelFaultInjection.ShouldInject(KernelFaultKind.DeviceReset,"device",out _)){ResetDevice(device);return true;}
+        if(!TryBound(device,out _,out DriverRecord* r,out KernelDriverDeviceContext context)||r->Interrupt==0UL)return false;delegate*<KernelDriverDeviceContext*,UInt64,Boolean> handler=(delegate*<KernelDriverDeviceContext*,UInt64,Boolean>)(void*)r->Interrupt;return handler(&context,driverCookie);
+    }
 
     private static Boolean HasAnyInterruptGrant(DeviceRecord* d){UInt64 mask=(UInt64)(KernelDriverCapability.Interrupt|KernelDriverCapability.Msi|KernelDriverCapability.MsiX);for(Int32 i=0;i<d->GrantCount;i++)if((d->GrantCapability[i]&mask)!=0UL)return true;return false;}
 

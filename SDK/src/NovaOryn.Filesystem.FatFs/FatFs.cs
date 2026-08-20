@@ -1,4 +1,5 @@
 using System;
+using NovaOryn.Kernel.Contracts;
 using NovaOryn.Kernel.Heap;
 using NovaOryn.Kernel.Storage;
 
@@ -74,6 +75,7 @@ public static unsafe class FatFs
     }
     private static Boolean Open(UInt64 mountCookie,String path,UInt32 pathOffset,KernelFileAccess access,UInt64* cookie,KernelFileType* type,UInt64* length)
     {
+        if(KernelFaultInjection.ShouldInject(KernelFaultKind.FilesystemError,"fatfs",out _))return false;
         if(mountCookie==0||path==null||cookie==null||type==null||length==null)return false;
         MountContext* mount=(MountContext*)(nuint)mountCookie;if(mount->Info.ReadOnly&&access!=KernelFileAccess.Read)return false;
         UInt32 cluster=mount->Info.Format==(Byte)FatFsFormat.Fat32?mount->Info.RootCluster:0U;
@@ -91,6 +93,7 @@ public static unsafe class FatFs
     }
     private static Boolean Read(UInt64 fileCookie,UInt64 position,Byte* buffer,UInt32 bytesToRead,UInt32* bytesRead)
     {
+        if(KernelFaultInjection.ShouldInject(KernelFaultKind.FilesystemError,"fatfs",out _))return false;
         if(fileCookie==0||buffer==null||bytesRead==null)return false;*bytesRead=0;
         FileContext* file=(FileContext*)(nuint)fileCookie;if(file->Type!=(Byte)KernelFileType.File||position>=file->Length||bytesToRead==0)return true;
         MountContext* mount=(MountContext*)(nuint)file->Mount;UInt64 remaining=file->Length-position;if(remaining>bytesToRead)remaining=bytesToRead;
@@ -109,6 +112,7 @@ public static unsafe class FatFs
     }
     private static Boolean Write(UInt64 fileCookie,UInt64 position,Byte* buffer,UInt32 bytesToWrite,UInt32* bytesWritten)
     {
+        if(KernelFaultInjection.ShouldInject(KernelFaultKind.FilesystemError,"fatfs",out _))return false;
         if(fileCookie==0||buffer==null||bytesWritten==null)return false;*bytesWritten=0;
         FileContext* file=(FileContext*)(nuint)fileCookie;if(file->Type!=(Byte)KernelFileType.File||bytesToWrite==0)return true;
         MountContext* mount=(MountContext*)(nuint)file->Mount;if(mount->Info.ReadOnly||position>=file->Length)return false;
@@ -129,6 +133,7 @@ public static unsafe class FatFs
     }
     private static Boolean Flush(UInt64 fileCookie)
     {
+        if(KernelFaultInjection.ShouldInject(KernelFaultKind.FilesystemError,"fatfs",out _))return false;
         if(fileCookie==0)return false;FileContext* file=(FileContext*)(nuint)fileCookie;MountContext* mount=(MountContext*)(nuint)file->Mount;
         if(!KernelStorage.TryGetVolume(new KernelStorageVolumeHandle(mount->Volume),out KernelStorageDeviceHandle device,out _))return false;return KernelStorage.Flush(device);
     }

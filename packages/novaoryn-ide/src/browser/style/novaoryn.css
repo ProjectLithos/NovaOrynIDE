@@ -799,7 +799,7 @@ body.novaoryn-has-title-logo .lm-MenuBar {
     color: var(--theia-list-activeSelectionForeground);
 }
 
-/* 0.12.0 QEMU hardware test matrix */
+/* 0.13.0 QEMU hardware test matrix */
 .novaoryn-matrix-section { border:1px solid var(--theia-widget-border); padding:12px; margin-bottom:16px; }
 .novaoryn-matrix-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
 .novaoryn-matrix-heading h3 { margin-top:0; }

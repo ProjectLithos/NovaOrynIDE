@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
-echo [INFO] NovaOryn IDE Run 0.12.0
+echo [INFO] NovaOryn IDE Run 0.13.0
 
 set "NOVAORYN_IDE_ROOT=%~dp0"
 set "NOVAORYN_SDK_ROOT=%~dp0SDK"
@@ -24,7 +24,7 @@ if not exist "%NOVAORYN_GENERATED_BUILD_VERSION%" goto NOT_BUILT
 if not exist "%ELECTRON_MAIN%" goto NOT_BUILT
 
 set /p NOVAORYN_BUILT_VERSION=<"%NOVAORYN_GENERATED_BUILD_VERSION%"
-if not "%NOVAORYN_BUILT_VERSION%"=="0.12.0" goto STALE_BUILD
+if not "%NOVAORYN_BUILT_VERSION%"=="0.13.0" goto STALE_BUILD
 
 set "PATH=%~dp0.toolchain\Node;%~dp0.toolchain\Python;%PATH%"
 set "npm_config_python=%NOVAORYN_PYTHON%"
@@ -43,8 +43,8 @@ if not exist "%ELECTRON_PACKAGE%" goto INCOMPLETE_RUNTIME
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "$items=@(@('%THEIA_CLI_PACKAGE%','1.74.0'),@('%THEIA_ELECTRON_PACKAGE%','1.74.0'),@('%ELECTRON_PACKAGE%','42.3.0')); foreach($i in $items){ try { $j=Get-Content -LiteralPath $i[0] -Raw | ConvertFrom-Json; if([string]$j.version -ne [string]$i[1]){ exit 2 } } catch { exit 3 } }; exit 0"
 if errorlevel 1 goto INCOMPLETE_RUNTIME
 
-echo [ OK ] Existing NovaOryn IDE 0.12.0 build is ready.
-echo [INFO] Starting NovaOryn IDE 0.12.0...
+echo [ OK ] Existing NovaOryn IDE 0.13.0 build is ready.
+echo [INFO] Starting NovaOryn IDE 0.13.0...
 pushd "%NOVAORYN_NPM_PREFIX%" >nul
 call "%NOVAORYN_NPM%" run start --workspace @novaoryn/ide-electron
 set "RESULT=!errorlevel!"
@@ -57,11 +57,11 @@ echo [INFO] Run Build-NovaOrynIDE.bat, then run this launcher again.
 exit /b 1
 
 :STALE_BUILD
-echo [FAIL] The existing NovaOryn IDE build is not version 0.12.0 or its generated-build marker is stale.
+echo [FAIL] The existing NovaOryn IDE build is not version 0.13.0 or its generated-build marker is stale.
 echo [INFO] Run Build-NovaOrynIDE.bat once, then use Run-NovaOrynIDE.bat to launch it.
 exit /b 1
 
 :NOT_BUILT
-echo [FAIL] NovaOryn IDE 0.12.0 has not been built completely yet.
+echo [FAIL] NovaOryn IDE 0.13.0 has not been built completely yet.
 echo [INFO] Run Build-NovaOrynIDE.bat once. This Run script will not build the IDE automatically.
 exit /b 1

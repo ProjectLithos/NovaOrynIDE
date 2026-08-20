@@ -112,6 +112,28 @@ public static unsafe class KernelFaultInjection
         return false;
     }
 
+    /// <summary>Arms a deterministic fault using a subsystem name without requiring a hosted injector object.</summary>
+    public static Boolean TryArm(KernelFaultKind kind,String subsystem,UInt64 triggerAfter,UInt32 repeatCount,UInt64 parameter,out UInt64 ruleId)
+        =>TryArm(new KernelFaultNativeRule(kind,HashSubsystem(subsystem),triggerAfter,repeatCount,parameter),out ruleId);
+
+    /// <summary>Checks one named subsystem fault point.</summary>
+    public static Boolean ShouldInject(KernelFaultKind kind,String subsystem,out UInt64 parameter)
+        =>ShouldInject(kind,HashSubsystem(subsystem),out parameter);
+
+    /// <summary>Applies deterministic corruption to a DMA address when a BadDma rule fires.</summary>
+    public static Boolean TryCorruptDmaAddress(String subsystem,UInt64 address,out UInt64 injectedAddress)
+    {
+        injectedAddress=address;if(!ShouldInject(KernelFaultKind.BadDma,subsystem,out UInt64 parameter))return false;
+        UInt64 mask=parameter==0UL?1UL:parameter;injectedAddress=address^mask;return true;
+    }
+
+    /// <summary>Applies deterministic byte corruption to a packet buffer when a CorruptPacket rule fires.</summary>
+    public static Boolean TryCorruptPacket(String subsystem,Byte* packet,UInt32 length,out UInt32 changedOffset,out Byte original)
+    {
+        changedOffset=0;original=0;if(packet==null||length==0||!ShouldInject(KernelFaultKind.CorruptPacket,subsystem,out UInt64 parameter))return false;
+        changedOffset=(UInt32)(parameter%(UInt64)length);original=packet[changedOffset];packet[changedOffset]=(Byte)(original^0xFF);return true;
+    }
+
     public static Boolean Reset(){_rule0=_rule1=_rule2=_rule3=_rule4=_rule5=_rule6=_rule7=default;_nextId=1;return true;}
 }
 

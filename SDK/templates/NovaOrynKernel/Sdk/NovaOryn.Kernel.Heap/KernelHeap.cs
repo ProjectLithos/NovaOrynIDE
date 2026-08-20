@@ -1,4 +1,5 @@
 using System;
+using NovaOryn.Kernel.Contracts;
 using NovaOryn.Kernel.AddressSpace;
 using NovaOryn.Kernel.Memory;
 using NovaOryn.Kernel.VirtualMemory;
@@ -144,6 +145,11 @@ public static unsafe class KernelHeap
     public static Boolean TryAllocate(UInt64 byteCount, UInt64 alignment, Boolean zeroFill, out KernelHeapAllocation allocation)
     {
         allocation = default;
+        if (KernelFaultInjection.ShouldInject(KernelFaultKind.AllocationFailure,"heap",out _))
+        {
+            _status = KernelHeapStatus.OutOfMemory;
+            return false;
+        }
         if (!_initialized)
         {
             _status = KernelHeapStatus.DependencyNotInitialized;

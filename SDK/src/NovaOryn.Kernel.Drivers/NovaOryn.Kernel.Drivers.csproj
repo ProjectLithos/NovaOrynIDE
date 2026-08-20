@@ -3,5 +3,6 @@
   <ItemGroup>
     <ProjectReference Include="..\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj" />
-  </ItemGroup>
+  
+    <ProjectReference Include="..\NovaOryn.Kernel.SubsystemContracts\NovaOryn.Kernel.SubsystemContracts.csproj" /></ItemGroup>
 </Project>

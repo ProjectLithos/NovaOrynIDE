@@ -1,4 +1,5 @@
 using System;
+using NovaOryn.Kernel.Contracts;
 using NovaOryn.Kernel.Acpi;
 using NovaOryn.Kernel.Console;
 using NovaOryn.Kernel.Heap;
@@ -165,6 +166,7 @@ public static unsafe class KernelSmp
         {
             if (index == _bootstrapIndex) continue;
             PerCpuRecord* record = _records + index;
+            if (KernelFaultInjection.ShouldInject(KernelFaultKind.CpuOffline,"smp",out _)) { record->StartupState = (UInt32)KernelProcessorStartupState.Offline; continue; }
             if (!KernelSmpMath.IsXApicDestination(record->ApicId)) { record->StartupState = (UInt32)KernelProcessorStartupState.Unsupported; continue; }
             if (!KernelHeap.TryAllocate(ApplicationProcessorStackBytes, 16UL, true, out KernelHeapAllocation stackAllocation)) { record->StartupState = (UInt32)KernelProcessorStartupState.Failed; continue; }
             record->KernelStackBase = stackAllocation.Address; record->KernelStackTop = stackAllocation.Address + ApplicationProcessorStackBytes; record->StartupState = (UInt32)KernelProcessorStartupState.Starting;

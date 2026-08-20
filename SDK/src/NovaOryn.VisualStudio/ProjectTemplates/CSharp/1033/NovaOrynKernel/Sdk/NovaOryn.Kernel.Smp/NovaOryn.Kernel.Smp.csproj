@@ -21,5 +21,6 @@
     <ProjectReference Include="..\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Time\NovaOryn.Kernel.Time.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.X64.LowLevel\NovaOryn.Kernel.X64.LowLevel.csproj" />
-  </ItemGroup>
+  
+    <ProjectReference Include="..\NovaOryn.Kernel.SubsystemContracts\NovaOryn.Kernel.SubsystemContracts.csproj" /></ItemGroup>
 </Project>

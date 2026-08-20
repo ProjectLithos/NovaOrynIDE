@@ -1,4 +1,4 @@
-# NovaOryn SDK fault-injection integration (IDE 0.13.0)
+# NovaOryn IDE 0.13.0
 
 NovaOryn IDE 0.13.0 makes the SDK's existing deterministic fault-injection engine effective in real kernel subsystem paths.
 

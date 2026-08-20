@@ -1,4 +1,5 @@
 using System;
+using NovaOryn.Kernel.Contracts;
 using NovaOryn.Kernel.Internal.X64;
 using NovaOryn.Kernel.Memory;
 
@@ -269,6 +270,7 @@ public static unsafe partial class KernelVirtualMemory
     public static Boolean TryTranslate(UInt64 virtualAddress, out KernelVirtualTranslation translation)
     {
         translation = default;
+        if (KernelFaultInjection.ShouldInject(KernelFaultKind.PageFault,"virtual-memory",out _)) return SetFailure(KernelVirtualMemoryStatus.NotMapped);
         if (!_initialized) return SetFailure(KernelVirtualMemoryStatus.NotInitialized);
         if (!TryFindLeaf(virtualAddress, out UInt64* table, out Int32 index, out KernelVirtualPageSize pageSize)) return false;
         UInt64 entry = table[index];
