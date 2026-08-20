@@ -1,0 +1,19 @@
+{
+  "release": "NovaOryn IDE 0.10.2",
+  "rootCause": "Generated kernels disable transitive project references. KernelPanicTransport uses NovaOryn.Kernel.Internal.X64.Native, but NovaOrynKernel.csproj did not directly reference NovaOryn.Kernel.X64.LowLevel.",
+  "fixes": [
+    "Direct x64-low-level ProjectReference in normal kernel template.",
+    "Direct x64-low-level ProjectReference in Visual Studio kernel template.",
+    "Existing OS NovaOrynKernel.csproj repaired automatically during SDK refresh.",
+    "Panic transport remains in the correct NovaOryn.Kernel.Internal.X64 namespace."
+  ],
+  "validation": {
+    "panicLowLevelReferenceContract": "PASS",
+    "projectServiceTypeScriptTranspile": "PASS",
+    "versionConsistency": {
+      "package.json": "0.10.2",
+      "applications/electron/package.json": "0.10.2",
+      "packages/novaoryn-ide/package.json": "0.10.2"
+    }
+  }
+}

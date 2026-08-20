@@ -1,4 +1,4 @@
-# NovaOryn 0.10.1
+# NovaOryn 0.10.2
 
 Roadmap item 17: System calls.
 

@@ -1,6 +1,6 @@
 # NovaOryn system calls
 
-NovaOryn 0.10.1 introduced one x64 SYSCALL/SYSRET privilege transition and three dispatch methodologies; the same protected boundary remains active in 0.11.0 processes.
+NovaOryn 0.10.2 introduced one x64 SYSCALL/SYSRET privilege transition and three dispatch methodologies; the same protected boundary remains active in 0.11.0 processes.
 
 ## NovaOryn Get / Set / Event
 
