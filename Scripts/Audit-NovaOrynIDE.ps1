@@ -6,7 +6,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Root = Split-Path -Parent $ScriptRoot
 $Npm = Join-Path $Root '.toolchain\Node\npm.cmd'
 $Artifacts = Join-Path $Root 'Artifacts\Security'
 $JsonRoot = Join-Path $Root 'JSON'

@@ -49,7 +49,7 @@ Conditional/hit-count breakpoints and persistent Watch expressions from 0.1.41 r
 
 Run:
 
-    Audit-NovaOrynIDE.bat
+    Scripts\Audit-NovaOrynIDE.bat
 
 Reports are written to:
 

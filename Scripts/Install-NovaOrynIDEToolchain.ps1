@@ -5,7 +5,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
-$Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Root = Split-Path -Parent $ScriptRoot
 $ToolchainRoot = Join-Path $Root '.toolchain'
 $Downloads = Join-Path $ToolchainRoot 'Downloads'
 $ManifestPath = Join-Path $Root 'JSON\Toolchain-Versions.json'

@@ -1,0 +1,7 @@
+Audit-NovaOrynIDE.bat
+Audit-NovaOrynIDE.ps1
+ChangedFiles.txt
+DeletedFiles.txt
+Install-NovaOrynIDEToolchain.ps1
+JSON/NovaOryn-IDE-0.11.9-ReleaseValidation.json
+Validate-NovaOrynIDEDependencies.ps1
