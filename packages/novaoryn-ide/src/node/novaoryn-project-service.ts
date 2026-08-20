@@ -1561,7 +1561,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             if (!plan.success) return { success: false, error: plan.error ?? 'Could not prepare the QEMU hardware test matrix.' };
             const runId = `matrix-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
             const run = {
-                output: `[INFO] NovaOryn QEMU Hardware Test Matrix 0.13.0\r\n[INFO] Preset: ${preset === 'full' ? 'Full Cartesian' : 'Balanced'}\r\n[INFO] Project: ${projectRoot}\r\n[INFO] Planned cases: ${plan.cases.length}\r\n${plan.message ? `[INFO] ${plan.message}\r\n` : ''}\r\n`,
+                output: `[INFO] NovaOryn QEMU Hardware Test Matrix ${NOVAORYN_IDE_VERSION}\r\n[INFO] Preset: ${preset === 'full' ? 'Full Cartesian' : 'Balanced'}\r\n[INFO] Project: ${projectRoot}\r\n[INFO] Planned cases: ${plan.cases.length}\r\n${plan.message ? `[INFO] ${plan.message}\r\n` : ''}\r\n`,
                 complete: false,
                 cases: plan.cases.map(item => ({ ...item }))
             } as { output: string; complete: boolean; exitCode?: number; error?: string; cases: NovaOrynHardwareMatrixCase[] };
@@ -1635,7 +1635,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         run.output += '[INFO] Building the selected OS once before matrix execution.\r\n';
         const buildScript = path.join(projectRoot, 'Build.bat');
         if (!await this.exists(buildScript)) throw new Error(`Generated OS build script was not found: ${buildScript}`);
-        const build = await this.captureProcess('cmd.exe', ['/d', '/s', '/c', `"${buildScript}"`], projectRoot);
+        const build = await this.captureProcess(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', 'call Build.bat'], projectRoot);
         run.output += build.output;
         if (build.exitCode !== 0) throw new Error(`OS build failed with exit code ${build.exitCode}. No QEMU matrix cases were run.`);
 

@@ -66,3 +66,10 @@ CJS/Verify-NovaOrynIDEAuthoritativeConfiguration.cjs
 CJS/Verify-NovaOrynIDEGitPublish.cjs
 CJS/Verify-NovaOrynIDETargetManager.cjs
 CJS/Verify-NovaOrynIDEFullKernelBootstrap.cjs
+
+0.13.0 corrective update after hardware-matrix execution test:
+- VERSION — expanded into the authoritative release-version update manifest.
+- CJS/Verify-NovaOrynIDE0130.cjs — verifies VERSION line 1 and required version-manifest entries.
+- packages/novaoryn-ide/src/node/novaoryn-project-service.ts — fixes Windows Build.bat invocation for QEMU matrix and derives matrix banner from NOVAORYN_IDE_VERSION.
+- packages/novaoryn-ide/lib/node/novaoryn-project-service.js — synchronized generated backend output.
+- packages/novaoryn-ide/lib/browser/novaoryn-widget.js — synchronized generated UI version output.
