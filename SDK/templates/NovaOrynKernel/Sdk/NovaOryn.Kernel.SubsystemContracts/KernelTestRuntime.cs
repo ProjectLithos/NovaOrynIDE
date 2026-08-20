@@ -37,17 +37,19 @@ public static unsafe class KernelTestRuntime
         if(_running||test==null||testId==0)return false;
         _running=true;
         UInt64 start=_clockMilliseconds!=null?_clockMilliseconds():0;
-        _current=new KernelTestExecution(testId,kind,timeoutMilliseconds,start);
-        if(_begin!=null)_begin(&_current);
+        KernelTestExecution current=new KernelTestExecution(testId,kind,timeoutMilliseconds,start);
+        _current=current;
+        if(_begin!=null)_begin(&current);
         UInt64 assertionsBefore=_assertions,failuresBefore=_assertionFailures,faultsBefore=_faultsInjected;
         KernelTestResult result=test();
         UInt64 end=_clockMilliseconds!=null?_clockMilliseconds():start;
         UInt64 duration=end>=start?end-start:0;
         if(timeoutMilliseconds!=0&&duration>timeoutMilliseconds)result=KernelTestResult.Timeout;
-        _last=new KernelTestReport(testId,kind,result,duration,_assertions-assertionsBefore,_assertionFailures-failuresBefore,_faultsInjected-faultsBefore);
+        KernelTestReport last=new KernelTestReport(testId,kind,result,duration,_assertions-assertionsBefore,_assertionFailures-failuresBefore,_faultsInjected-faultsBefore);
+        _last=last;
         _runCount++;
         switch(result){case KernelTestResult.Passed:_passed++;break;case KernelTestResult.Failed:_failed++;break;case KernelTestResult.Skipped:_skipped++;break;case KernelTestResult.Timeout:_timedOut++;break;default:_failed++;break;}
-        if(_complete!=null)_complete(&_last);
+        if(_complete!=null)_complete(&last);
         _running=false;
         return result==KernelTestResult.Passed||result==KernelTestResult.Skipped;
     }
