@@ -1,6 +1,6 @@
 # User/kernel separation
 
-NovaOryn 0.10.3 establishes the x64 protection boundary required before system calls and processes. Ring 0 remains the kernel privilege level and ring 3 is reserved for user execution.
+NovaOryn 0.10.4 establishes the x64 protection boundary required before system calls and processes. Ring 0 remains the kernel privilege level and ring 3 is reserved for user execution.
 
 The installed GDT ABI uses selector `0x23` for ring-3 64-bit code and `0x1B` for ring-3 data/stack. User virtual addresses are restricted to `0x0000000000010000` through `0x00007FFFFFFFFFFF`; the first 64 KiB remains a null/low-address guard.
 

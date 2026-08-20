@@ -6,7 +6,7 @@
 **SDK ABI:** `CrashDumpAbiVersion = "1.0"`  
 **IDE file extension:** `.nodump.json`
 
-NovaOryn 0.10.3 makes crash dumps a public SDK format. The format is designed so newer IDE versions can continue opening older dumps and so non-IDE tools can consume the same crash information.
+NovaOryn 0.10.4 makes crash dumps a public SDK format. The format is designed so newer IDE versions can continue opening older dumps and so non-IDE tools can consume the same crash information.
 
 ## Compatibility contract
 
@@ -17,7 +17,7 @@ NovaOryn 0.10.3 makes crash dumps a public SDK format. The format is designed so
 - Readers must ignore **unknown section kinds** and **unknown fields**.
 - If a known section has a newer section version, a reader may use the fields it understands and must not reject the entire dump solely because optional fields were added.
 - Required top-level fields are `magic`, `format`, `formatVersion`, `architecture`, `createdUtc`, `producer`, and `sections`.
-- Pre-0.10.3 IDE `schemaVersion: 1` JSON dumps are a legacy input format. NovaOryn IDE 0.10.3 retains an adapter for them; new producers must write the formal `NOCD` format.
+- Pre-0.10.4 IDE `schemaVersion: 1` JSON dumps are a legacy input format. NovaOryn IDE 0.10.4 retains an adapter for them; new producers must write the formal `NOCD` format.
 
 ## Section directory
 
@@ -56,7 +56,7 @@ An unavailable section remains present with `available: false`; this distinguish
   "formatVersion": { "major": 1, "minor": 0 },
   "architecture": "x86_64",
   "createdUtc": "2026-08-19T00:00:00.000Z",
-  "producer": { "product": "NovaOryn IDE", "version": "0.10.3" },
+  "producer": { "product": "NovaOryn IDE", "version": "0.10.4" },
   "project": { "name": "ExampleOS", "root": "C:\\NovaOrynOSes\\ExampleOS" },
   "sections": {
     "cpuState": { "version": 1, "available": true, "data": {} },

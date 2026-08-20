@@ -19,4 +19,4 @@ C(vsTransport.includes("KernelAcpiPower.Reboot()"),"Visual Studio template uses 
 C(!transport.includes("KernelAcpiPlatform.Reboot()"),"obsolete reboot symbol removed");
 C(service.includes("path.join('Boot', 'KernelPanicTransport.cs')"),"existing OS refresh receives corrected transport");
 
-if(fail)process.exitCode=1;else console.log("[ OK ] NovaOryn 0.10.3 panic ACPI reboot contract verified.");
+if(fail)process.exitCode=1;else console.log("[ OK ] NovaOryn 0.10.4 panic ACPI reboot contract verified.");

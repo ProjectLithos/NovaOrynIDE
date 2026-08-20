@@ -1,0 +1,12 @@
+{
+  "release": "NovaOryn IDE 0.10.4",
+  "feature": "Restore standard bottom-panel top control bar while retaining compositor isolation",
+  "validation": {
+    "bottomPanelControlBarContract": "PASS",
+    "versionConsistency": {
+      "package.json": "0.10.4",
+      "applications/electron/package.json": "0.10.4",
+      "packages/novaoryn-ide/package.json": "0.10.4"
+    }
+  }
+}

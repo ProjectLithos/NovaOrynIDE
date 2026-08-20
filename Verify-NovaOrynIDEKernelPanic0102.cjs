@@ -19,4 +19,4 @@ C(native.includes("PanicDebuggerBreak"),"low-level project exports panic debugge
 C(service.includes("Sdk\\\\NovaOryn.Kernel.X64.LowLevel\\\\NovaOryn.Kernel.X64.LowLevel.csproj"),"existing OS project reference is automatically repaired");
 C(service.includes("projectChanged = true"),"project repair persists all required edits together");
 
-if(fail)process.exitCode=1; else console.log("[ OK ] NovaOryn 0.10.3 panic low-level reference contract verified.");
+if(fail)process.exitCode=1; else console.log("[ OK ] NovaOryn 0.10.4 panic low-level reference contract verified.");

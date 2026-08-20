@@ -1,5 +1,5 @@
 {
-  "release": "NovaOryn IDE 0.10.3",
+  "release": "NovaOryn IDE 0.10.4",
   "feature": "Versioned NovaOryn Crash Dump SDK format",
   "format": {
     "magic": "NOCD",
@@ -28,9 +28,9 @@
     "formatContractVerifier": "PASS",
     "modifiedTypeScriptSyntax": "PASS",
     "versionConsistency": {
-      "package.json": "0.10.3",
-      "applications/electron/package.json": "0.10.3",
-      "packages/novaoryn-ide/package.json": "0.10.3"
+      "package.json": "0.10.4",
+      "applications/electron/package.json": "0.10.4",
+      "packages/novaoryn-ide/package.json": "0.10.4"
     },
     "fullWorkspaceBuildOnThisRunner": "Unavailable because this extracted Linux environment lacks the Node ambient/type setup used by Build-NovaOrynIDE.bat; failures were pre-existing Node type resolution errors."
   }
