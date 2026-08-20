@@ -1,0 +1,20 @@
+{
+  "version": "0.11.8",
+  "baseVersion": "0.11.6",
+  "rootCause": "Run-NovaOrynIDE.bat still executed npm workspace commands with C:\\NovaOrynIDE as the current working directory after the root package.json was moved into JSON and the executable npm workspace was staged under .toolchain/NpmWorkspace. npm therefore attempted to open C:\\NovaOrynIDE\\package.json and failed with ENOENT.",
+  "fixes": [
+    "Define .toolchain/NpmWorkspace as the launcher npm workspace.",
+    "Run the @theia/cli dependency probe from the staged npm workspace.",
+    "Run npm start for @novaoryn/ide-electron from the staged npm workspace.",
+    "Require the staged workspace package.json before attempting launch and rebuild if it is absent.",
+    "Keep the IDE root free of JSON manifests and bump active release metadata to 0.11.8."
+  ],
+  "validation": {
+    "rootJsonFiles": 0,
+    "launcherRootNpmWorkspaceCalls": 0,
+    "launcherStagedWorkspacePushd": 2,
+    "authoritativeConfigurationVerifier": "passed",
+    "targetManagerVerifier": "passed",
+    "windowsLaunch": "Run-NovaOrynIDE.bat executes npm from .toolchain/NpmWorkspace"
+  }
+}
