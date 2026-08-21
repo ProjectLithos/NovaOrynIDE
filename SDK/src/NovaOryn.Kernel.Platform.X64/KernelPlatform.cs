@@ -1,20 +1,13 @@
 using System;
-using NovaOryn.Kernel.Internal.X64;
+using NovaOryn.Arch.X64;
 
 namespace NovaOryn.Kernel.Platform.X64;
 
-/// <summary>Provides high-level x64 processor initialization without exposing native I/O.</summary>
+/// <summary>Provides high-level x64 processor initialization behind the canonical architecture boundary.</summary>
 public static class KernelPlatform
 {
-    /// <summary>Installs the bootstrap processor GDT and TSS.</summary>
-    public static Boolean InitializeDescriptors() => Native.InitializeBootstrapDescriptors();
-
-    /// <summary>Installs the bootstrap processor IDT.</summary>
-    public static Boolean InitializeInterrupts() => Native.InitializeBootstrapInterrupts();
-
-    /// <summary>Disables legacy PIC delivery before APIC routing is configured.</summary>
-    public static Boolean DisableLegacyPic() => Native.DisableLegacyPic();
-
-    /// <summary>Stops the current processor permanently.</summary>
-    public static Boolean Halt() => Native.Halt();
+    public static Boolean InitializeDescriptors() => X64ArchitectureBoundary.InitializeDescriptors();
+    public static Boolean InitializeInterrupts() => X64ArchitectureBoundary.InitializeInterrupts();
+    public static Boolean DisableLegacyPic() => X64ArchitectureBoundary.DisableLegacyPic();
+    public static Boolean Halt() => X64ArchitectureBoundary.Halt();
 }

@@ -1,0 +1,22 @@
+{
+  "version": "0.14.14",
+  "roadmapItem": 14,
+  "feature": "Hardware abstraction boundaries + Engineering document-area verifier correction",
+  "status": "implemented-and-corrected",
+  "release": "Engineering default-area verifier alignment",
+  "contracts": [
+    "NovaOryn.Kernel.Architecture",
+    "NovaOryn.Arch.X64",
+    "Engineering tools default to the main document area only when first attached",
+    "user-redocked Engineering tools are not forcibly moved",
+    "run/debug Kernel Console uses the same first-open main-area behaviour",
+    "release verifier accepts awaited shell.addWidget calls used by the implementation"
+  ],
+  "checks": [
+    "VERSION line 1 is authoritative at 0.14.14.",
+    "Engineering commands use the shared showEngineeringWidget helper.",
+    "The helper attaches unattached Engineering widgets to area main.",
+    "The verifier permits the implementation's awaited shell.addWidget call.",
+    "Run/debug does not redock an already-attached Kernel Console."
+  ]
+}

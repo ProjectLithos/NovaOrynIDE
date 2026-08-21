@@ -171,52 +171,52 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
             isEnabled: () => true,
             isVisible: () => true
         });
-        commands.registerCommand(NovaOrynCommands.DASHBOARD, { execute: () => this.showEngineeringWidget(this.dashboardWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
-        commands.registerCommand(NovaOrynCommands.CONSOLE, { execute: () => this.showEngineeringWidget(this.consoleWidget, 'bottom') });
-        commands.registerCommand(NovaOrynCommands.HARDWARE, { execute: () => this.showEngineeringWidget(this.hardwareWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
-        commands.registerCommand(NovaOrynCommands.TESTS, { execute: () => this.showEngineeringWidget(this.testExplorerWidget, 'left'), isEnabled: () => !!this.currentOperatingSystemPath() });
-        commands.registerCommand(NovaOrynCommands.TRACE, { execute: () => this.showEngineeringWidget(this.traceWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
-        commands.registerCommand(NovaOrynCommands.PROFILER, { execute: () => this.showEngineeringWidget(this.profilerWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
-        commands.registerCommand(NovaOrynCommands.DRIVERS, { execute: () => this.showEngineeringWidget(this.driverCentreWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
-        commands.registerCommand(NovaOrynCommands.TARGETS, { execute: () => this.showEngineeringWidget(this.targetManagerWidget, 'main'), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.DASHBOARD, { execute: () => this.showEngineeringWidget(this.dashboardWidget), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.CONSOLE, { execute: () => this.showEngineeringWidget(this.consoleWidget) });
+        commands.registerCommand(NovaOrynCommands.HARDWARE, { execute: () => this.showEngineeringWidget(this.hardwareWidget), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.TESTS, { execute: () => this.showEngineeringWidget(this.testExplorerWidget), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.TRACE, { execute: () => this.showEngineeringWidget(this.traceWidget), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.PROFILER, { execute: () => this.showEngineeringWidget(this.profilerWidget), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.DRIVERS, { execute: () => this.showEngineeringWidget(this.driverCentreWidget), isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.TARGETS, { execute: () => this.showEngineeringWidget(this.targetManagerWidget), isEnabled: () => !!this.currentOperatingSystemPath() });
         commands.registerCommand(NovaOrynCommands.ANALYZERS, {
             execute: () => {
                 this.staticAnalyzerWidget.setProjectPath(this.currentOperatingSystemPath());
-                return this.showEngineeringWidget(this.staticAnalyzerWidget, 'main');
+                return this.showEngineeringWidget(this.staticAnalyzerWidget);
             },
             isEnabled: () => !!this.currentOperatingSystemPath()
         });
         commands.registerCommand(NovaOrynCommands.BINARIES, {
             execute: () => {
                 this.binarySymbolExplorerWidget.setProjectPath(this.currentOperatingSystemPath());
-                return this.showEngineeringWidget(this.binarySymbolExplorerWidget, 'main');
+                return this.showEngineeringWidget(this.binarySymbolExplorerWidget);
             },
             isEnabled: () => !!this.currentOperatingSystemPath()
         });
         commands.registerCommand(NovaOrynCommands.MEMORY_MAP, {
             execute: () => {
                 this.memoryMapVisualizerWidget.setProjectPath(this.currentOperatingSystemPath());
-                return this.showEngineeringWidget(this.memoryMapVisualizerWidget, 'main');
+                return this.showEngineeringWidget(this.memoryMapVisualizerWidget);
             },
             isEnabled: () => !!this.currentOperatingSystemPath()
         });
         commands.registerCommand(NovaOrynCommands.INTERRUPTS, {
             execute: () => {
                 this.interruptApicVisualizerWidget.setProjectPath(this.currentOperatingSystemPath());
-                return this.showEngineeringWidget(this.interruptApicVisualizerWidget, 'main');
+                return this.showEngineeringWidget(this.interruptApicVisualizerWidget);
             },
             isEnabled: () => !!this.currentOperatingSystemPath()
         });
         commands.registerCommand(NovaOrynCommands.SYSCALLS, {
             execute: () => {
                 this.syscallExplorerWidget.setProjectPath(this.currentOperatingSystemPath());
-                return this.showEngineeringWidget(this.syscallExplorerWidget, 'main');
+                return this.showEngineeringWidget(this.syscallExplorerWidget);
             },
             isEnabled: () => !!this.currentOperatingSystemPath()
         });
-        commands.registerCommand(NovaOrynCommands.IMAGES, { execute: async () => { await this.showEngineeringWidget(this.imageDiskExplorerWidget, 'main'); await this.imageDiskExplorerWidget.refresh(); }, isEnabled: () => !!this.currentOperatingSystemPath() });
-        commands.registerCommand(NovaOrynCommands.PHYSICAL_DEBUGGER, { execute: async () => { await this.showEngineeringWidget(this.physicalDebuggerWidget, 'main'); await this.physicalDebuggerWidget.refresh(); }, isEnabled: () => !!this.currentOperatingSystemPath() });
-        commands.registerCommand(NovaOrynCommands.SDK_API, { execute: () => this.showEngineeringWidget(this.sdkApiWidget, 'main') });
+        commands.registerCommand(NovaOrynCommands.IMAGES, { execute: async () => { await this.showEngineeringWidget(this.imageDiskExplorerWidget); await this.imageDiskExplorerWidget.refresh(); }, isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.PHYSICAL_DEBUGGER, { execute: async () => { await this.showEngineeringWidget(this.physicalDebuggerWidget); await this.physicalDebuggerWidget.refresh(); }, isEnabled: () => !!this.currentOperatingSystemPath() });
+        commands.registerCommand(NovaOrynCommands.SDK_API, { execute: () => this.showEngineeringWidget(this.sdkApiWidget) });
     }
 
 
@@ -298,7 +298,7 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         if (explicitOpen) {
             window.sessionStorage.removeItem(NOVAORYN_EXPLICIT_WORKSPACE_OPEN);
             if (this.workspaceService.opened) {
-                await this.showEngineeringWidget(this.dashboardWidget, 'main');
+                await this.showEngineeringWidget(this.dashboardWidget);
                 return;
             }
         } else if (this.workspaceService.opened) {
@@ -466,9 +466,9 @@ export class NovaOrynContribution extends AbstractViewContribution<NovaOrynWidge
         }
     }
 
-    protected async showEngineeringWidget(widget: any, area: 'main' | 'bottom' | 'left'): Promise<void> {
+    protected async showEngineeringWidget(widget: any): Promise<void> {
         if (!widget.isAttached) {
-            await this.shell.addWidget(widget, { area });
+            await this.shell.addWidget(widget, { area: 'main' });
         }
         if (typeof widget.refresh === 'function') await widget.refresh();
         this.shell.activateWidget(widget.id);

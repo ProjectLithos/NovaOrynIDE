@@ -271,7 +271,7 @@ export class NovaOrynToolbarWidget extends ReactWidget {
         channel.clear();
         channel.show({ preserveFocus: false });
         this.kernelConsole.clear();
-        if (!this.kernelConsole.isAttached) { await this.shell.addWidget(this.kernelConsole, { area: 'bottom' }); }
+        if (!this.kernelConsole.isAttached) { await this.shell.addWidget(this.kernelConsole, { area: 'main' }); }
         this.shell.activateWidget(this.kernelConsole.id);
         const consoleHeader = `[INFO] NovaOryn ${this.runMode === 'debug' ? 'Debug' : 'No Debug'}: ${projectPath}\n[INFO] Build and launch output follows.\n\n`;
         channel.append(consoleHeader);

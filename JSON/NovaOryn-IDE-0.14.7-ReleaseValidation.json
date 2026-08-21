@@ -1,0 +1,24 @@
+{
+  "version": "0.14.7",
+  "roadmapItem": 14,
+  "feature": "Hardware abstraction boundaries + deterministic dependency-build pipeline",
+  "status": "implemented-and-corrected",
+  "contracts": [
+    "NovaOryn.Kernel.Architecture",
+    "NovaOryn.Arch.X64",
+    "single npm dependency installation per build",
+    "explicit installed-dependency verifier exit-code capture",
+    "successful dependency verification continues into compilation and build-state stamping",
+    "Run remains launch-only and requires a completed stamped build"
+  ],
+  "release": "Premature build termination and redundant dependency reinstall correction",
+  "checks": [
+    "VERSION line 1 is authoritative at 0.14.7.",
+    "Build performs one npm install from the staged workspace.",
+    "Installed dependency verification captures errorlevel explicitly.",
+    "Build never enters a second clean reinstall loop.",
+    "A bad freshly installed dependency tree fails immediately with diagnostics.",
+    "A valid dependency tree proceeds to CA/security/TypeScript/Theia/release verification.",
+    "Successful build stamps generated build-state markers consumed by Run."
+  ]
+}

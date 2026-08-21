@@ -29,7 +29,8 @@
     <Compile Include="Boot\KernelPanicTransport.cs" />
     <Compile Include="HAL\HardwareAbstractionLayer.cs" />
     <ProjectReference Include="Sdk\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj" />
-    <ProjectReference Include="Sdk\NovaOryn.Kernel.X64.LowLevel\NovaOryn.Kernel.X64.LowLevel.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Architecture\NovaOryn.Kernel.Architecture.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Arch.X64\NovaOryn.Arch.X64.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.String\NovaOryn.String.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Console\NovaOryn.Kernel.Console.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.SubsystemContracts\NovaOryn.Kernel.SubsystemContracts.csproj" />

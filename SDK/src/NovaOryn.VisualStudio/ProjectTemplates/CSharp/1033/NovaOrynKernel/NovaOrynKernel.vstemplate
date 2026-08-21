@@ -98,6 +98,10 @@
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Pci\PciMath.cs">Sdk\NovaOryn.Kernel.Pci\PciMath.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Platform.X64\KernelPlatform.cs">Sdk\NovaOryn.Kernel.Platform.X64\KernelPlatform.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Platform.X64\NovaOryn.Kernel.Platform.X64.csproj">Sdk\NovaOryn.Kernel.Platform.X64\NovaOryn.Kernel.Platform.X64.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Architecture\KernelArchitecture.cs">Sdk\NovaOryn.Kernel.Architecture\KernelArchitecture.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Architecture\NovaOryn.Kernel.Architecture.csproj">Sdk\NovaOryn.Kernel.Architecture\NovaOryn.Kernel.Architecture.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Arch.X64\X64ArchitectureBoundary.cs">Sdk\NovaOryn.Arch.X64\X64ArchitectureBoundary.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Arch.X64\NovaOryn.Arch.X64.csproj">Sdk\NovaOryn.Arch.X64\NovaOryn.Arch.X64.csproj</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Polling\KernelPolling.cs">Sdk\NovaOryn.Kernel.Polling\KernelPolling.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Polling\NovaOryn.Kernel.Polling.csproj">Sdk\NovaOryn.Kernel.Polling\NovaOryn.Kernel.Polling.csproj</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Processes\KernelProcesses.cs">Sdk\NovaOryn.Kernel.Processes\KernelProcesses.cs</ProjectItem>

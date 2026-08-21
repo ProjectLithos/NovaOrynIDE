@@ -1,0 +1,22 @@
+{
+  "version": "0.14.9",
+  "roadmapItem": 14,
+  "feature": "Hardware abstraction boundaries + Windows PowerShell compatible dependency fingerprint",
+  "status": "implemented-and-corrected",
+  "contracts": [
+    "NovaOryn.Kernel.Architecture",
+    "NovaOryn.Arch.X64",
+    "dependency validity is independent of NovaOryn IDE release version",
+    "dependency fingerprint is derived from dependency declarations",
+    "dependency fingerprint works on Windows PowerShell 5.1/.NET Framework",
+    "completed-build validity remains release-version specific"
+  ],
+  "release": "Windows PowerShell dependency-fingerprint compatibility correction",
+  "checks": [
+    "VERSION line 1 is authoritative at 0.14.9.",
+    "Dependency fingerprint does not use System.Convert.ToHexString.",
+    "Dependency fingerprint uses BitConverter.ToString and lowercase normalization compatible with Windows PowerShell 5.1.",
+    "Dependency state remains based on dependency declarations rather than application release version.",
+    "Completed build-state validation still requires the current NovaOryn IDE version."
+  ]
+}

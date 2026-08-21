@@ -1,0 +1,22 @@
+{
+  "version": "0.14.17",
+  "roadmapItem": 14,
+  "feature": "Hardware abstraction boundaries plus build/run/publish reliability",
+  "status": "implemented-and-corrected",
+  "release": "Safe VERSION resolution, isolated Git publishing, robust npm audit capture",
+  "contracts": [
+    "VERSION line 1 remains authoritative while CMD never consumes the multi-line manifest directly",
+    "Build and Run resolve the version through a one-line scratch value",
+    "Git publishing is delegated to a dedicated PowerShell publisher",
+    "automated Git commits disable developer-local hooks to prevent recursive builds",
+    "npm audit stderr notices do not fail the production security gate when valid JSON is produced"
+  ],
+  "checks": [
+    "Build-NovaOrynIDE.bat contains no direct VERSION input redirection for NOVAORYN_IDE_VERSION.",
+    "Run-NovaOrynIDE.bat contains no direct VERSION input redirection for NOVAORYN_IDE_VERSION.",
+    "Resolve-NovaOrynIDEVersion.ps1 reads only VERSION line 1.",
+    "Publish-NovaOrynIDESource.ps1 owns commit/push and uses core.hooksPath=NUL for the automated commit.",
+    "Audit-NovaOrynIDE.ps1 captures npm audit stdout/stderr using Start-Process.",
+    "The final 0.14.17 release verifier and final verification orchestrator pass."
+  ]
+}

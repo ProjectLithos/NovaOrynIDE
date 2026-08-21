@@ -3,7 +3,7 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 const requireText = (text, needle, label) => { if (!text.includes(needle)) throw new Error(`${label}: missing ${needle}`); };
-requireText(read('VERSION'), '0.13.0', 'VERSION');
+requireText(read('VERSION'), '0.14.17', 'VERSION');
 const protocol = read('packages/novaoryn-ide/src/common/novaoryn-protocol.ts');
 for (const item of ['NovaOrynTargetProfile','listTargets(projectPath','saveTarget(projectPath','setActiveTarget(projectPath','getActiveTarget(projectPath']) requireText(protocol, item, 'protocol');
 const frontend = read('packages/novaoryn-ide/src/browser/novaoryn-frontend-module.ts');

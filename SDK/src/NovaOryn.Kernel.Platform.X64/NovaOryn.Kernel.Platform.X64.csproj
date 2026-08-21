@@ -16,6 +16,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj" />
-    <ProjectReference Include="..\NovaOryn.Kernel.X64.LowLevel\NovaOryn.Kernel.X64.LowLevel.csproj" />
+    <ProjectReference Include="..\NovaOryn.Arch.X64\NovaOryn.Arch.X64.csproj" />
   </ItemGroup>
 </Project>

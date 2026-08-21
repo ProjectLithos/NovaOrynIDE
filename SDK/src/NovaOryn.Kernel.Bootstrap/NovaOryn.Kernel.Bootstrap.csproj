@@ -46,6 +46,8 @@
     <ProjectReference Include="..\NovaOryn.Kernel.E1000\NovaOryn.Kernel.E1000.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Rtl8168\NovaOryn.Kernel.Rtl8168.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Platform.X64\NovaOryn.Kernel.Platform.X64.csproj" />
+    <ProjectReference Include="..\NovaOryn.Arch.X64\NovaOryn.Arch.X64.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Architecture\NovaOryn.Kernel.Architecture.csproj" />
       <ProjectReference Include="..\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj" />
     <ProjectReference Include="..\NovaOryn.Bus.Usb\NovaOryn.Bus.Usb.csproj" />
     <ProjectReference Include="..\NovaOryn.Usb.Xhci\NovaOryn.Usb.Xhci.csproj" />

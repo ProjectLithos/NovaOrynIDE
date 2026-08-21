@@ -1,0 +1,28 @@
+{
+  "version": "0.14.5",
+  "roadmapItem": 14,
+  "feature": "Hardware abstraction boundaries + Windows launcher argument hardening",
+  "status": "implemented-and-corrected",
+  "contracts": [
+    "NovaOryn.Kernel.Architecture",
+    "NovaOryn.Arch.X64",
+    "generic generated-kernel top-level project has no direct NovaOryn.Kernel.X64.LowLevel reference",
+    "x64 platform and panic transport use canonical boundary",
+    "ARM64 implementation name reserved",
+    "Engineering tools open in main document area by default only",
+    "PowerShell helper scripts derive repository root and VERSION internally",
+    "top-level Build/Run do not pass a quoted %~dp0 trailing-backslash root to powershell.exe",
+    "Run targets .toolchain\\NpmWorkspace explicitly when starting npm"
+  ],
+  "release": "PowerShell argv and npm workspace launch correction",
+  "checks": [
+    "VERSION line 1 remains authoritative for Build and Run.",
+    "Build-state manager accepts only Action from the batch launcher and derives root/version/runtime pins itself.",
+    "Package-lock manager receives no path/version arguments from CMD.",
+    "Runtime package validator receives no package paths from CMD.",
+    "Run uses npm --prefix against .toolchain\\NpmWorkspace, so a root package.json is not required.",
+    "No top-level batch file passes %~dp0 as a quoted trailing-backslash PowerShell argument.",
+    "Build invokes the current 0.14.5 release verifier and not the 0.14.4 verifier.",
+    "Hardware abstraction, Engineering layout, QEMU matrix, fault-injection and build-state regressions remain verified."
+  ]
+}

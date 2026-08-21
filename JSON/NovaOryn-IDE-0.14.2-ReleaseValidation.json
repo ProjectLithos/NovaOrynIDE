@@ -1,0 +1,24 @@
+{
+  "version": "0.14.2",
+  "roadmapItem": 14,
+  "feature": "Hardware abstraction boundaries + Engineering default-layout verifier correction",
+  "status": "implemented-and-corrected",
+  "contracts": [
+    "NovaOryn.Kernel.Architecture",
+    "NovaOryn.Arch.X64",
+    "generic generated-kernel top-level project has no direct NovaOryn.Kernel.X64.LowLevel reference",
+    "x64 platform and panic transport use canonical boundary",
+    "ARM64 implementation name reserved",
+    "Engineering tools open in main document area by default only",
+    "user-docked Engineering layout is not forced or reset by the release contract"
+  ],
+  "release": "Generated build-state synchronization and VERSION authority",
+  "checks": [
+    "VERSION line 1 is authoritative for Build and Run.",
+    "Build stamps plain-text and structured generated-build markers for 0.14.2.",
+    "Run validates both markers against VERSION, Theia 1.74.0 and Electron 42.3.0.",
+    "Build invalidates prior generated state when the IDE version changes.",
+    "Hardware abstraction boundaries from 0.14.0 remain verified.",
+    "Engineering tools default to the main document area without forced redocking."
+  ]
+}

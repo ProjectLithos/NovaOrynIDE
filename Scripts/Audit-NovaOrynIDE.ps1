@@ -22,11 +22,13 @@ function Ok([string]$Message) { Write-Host "[ OK ] $Message" }
 
 function Invoke-Audit([string[]]$ExtraArgs, [string]$OutputPath) {
     $arguments = @('audit','--json') + $ExtraArgs
+    $tempOut = [System.IO.Path]::GetTempFileName()
     $tempErr = [System.IO.Path]::GetTempFileName()
-    Push-Location -LiteralPath $NpmWorkspace
     try {
-        $stdoutLines = & $Npm @arguments 2> $tempErr
-        $stdout = ($stdoutLines -join [Environment]::NewLine)
+        # Use Start-Process so npm informational notices written to stderr do not become
+        # PowerShell NativeCommandError records under ErrorActionPreference=Stop.
+        $process = Start-Process -FilePath $Npm -ArgumentList $arguments -WorkingDirectory $NpmWorkspace -NoNewWindow -Wait -PassThru -RedirectStandardOutput $tempOut -RedirectStandardError $tempErr
+        $stdout = Get-Content -LiteralPath $tempOut -Raw
         $stderr = Get-Content -LiteralPath $tempErr -Raw
         if ([string]::IsNullOrWhiteSpace($stdout)) {
             Fail "npm audit produced no JSON output. $stderr"
@@ -35,7 +37,7 @@ function Invoke-Audit([string[]]$ExtraArgs, [string]$OutputPath) {
         try { return ($stdout | ConvertFrom-Json) }
         catch { Fail "npm audit returned invalid JSON for $OutputPath. $stderr" }
     } finally {
-        Pop-Location
+        Remove-Item -LiteralPath $tempOut -Force -ErrorAction SilentlyContinue
         Remove-Item -LiteralPath $tempErr -Force -ErrorAction SilentlyContinue
     }
 }

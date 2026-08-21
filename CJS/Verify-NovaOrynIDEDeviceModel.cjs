@@ -29,9 +29,10 @@ requireText('packages/novaoryn-ide/src/browser/novaoryn-hardware-widget.tsx', [
   'this.projectService.inspectDeviceTree', 'snapshot.counts.pci', 'snapshot.counts.logical'
 ]);
 requireText('packages/novaoryn-ide/src/browser/novaoryn-contribution.ts', [
-  "NovaOrynCommands.HARDWARE", "this.showEngineeringWidget(this.hardwareWidget, 'main')"
+  "NovaOrynCommands.HARDWARE", "this.showEngineeringWidget(this.hardwareWidget)"
 ]);
 const contribution = read('packages/novaoryn-ide/src/browser/novaoryn-contribution.ts');
+if (!contribution.includes("protected async showEngineeringWidget(widget: any): Promise<void>") || !contribution.includes("if (!widget.isAttached)") || !contribution.includes("this.shell.addWidget(widget, { area: 'main' })")) throw new Error('Engineering widget shared opener does not default first attachment to the main document area.');
 if (contribution.includes("this.showEngineeringWidget(this.hardwareWidget, 'left')")) throw new Error('IDE Hardware Tree is still configured as a left-sidebar view.');
 const widget = read('packages/novaoryn-ide/src/browser/novaoryn-hardware-widget.tsx');
 if (widget.includes('buildDeviceTree(')) throw new Error('IDE Hardware Tree still owns a parallel buildDeviceTree implementation.');

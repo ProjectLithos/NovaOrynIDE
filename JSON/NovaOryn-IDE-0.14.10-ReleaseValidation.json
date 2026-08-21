@@ -1,0 +1,22 @@
+{
+  "version": "0.14.10",
+  "roadmapItem": 14,
+  "feature": "Hardware abstraction boundaries + deterministic npm dependency completeness validation",
+  "status": "implemented-and-corrected",
+  "contracts": [
+    "NovaOryn.Kernel.Architecture",
+    "NovaOryn.Arch.X64",
+    "dependency validity is independent of NovaOryn IDE release version",
+    "an installed npm tree is reusable only after required package manifests are verified",
+    "partial npm trees trigger exactly one clean dependency installation",
+    "dependency-state markers cannot be written for a tree missing @theia/cli or other required pinned runtime packages"
+  ],
+  "release": "Partial npm dependency-tree reuse correction",
+  "checks": [
+    "VERSION line 1 is authoritative at 0.14.10.",
+    "Build does not infer dependency completeness from Electron and @theia/electron alone.",
+    "Required external packages from the root, Electron and extension manifests are verified before reuse.",
+    "A partial installed tree is removed and installed once before build continuation.",
+    "VerifyDependencies requires @theia/cli and @vscode/windows-ca-certs before writing the dependency marker."
+  ]
+}

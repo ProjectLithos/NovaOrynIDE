@@ -1,7 +1,7 @@
 using System;
 using NovaOryn.Kernel.Contracts;
 using NovaOryn.Kernel.Console;
-using NovaOryn.Kernel.Internal.X64;
+using NovaOryn.Arch.X64;
 using NovaOryn.Kernel.Smp;
 using NovaOryn.Kernel.Scheduler;
 using NovaOryn.Kernel.Processes;
@@ -22,7 +22,7 @@ public static unsafe class KernelPanicTransport
         if(KernelSmp.TryGetCurrentProcessor(out KernelProcessorState processor))c=processor.Index;
         KernelScheduler.TryGetCurrentThreadId(out t);
         KernelProcesses.TryGetCurrentProcessId(out p);
-        Native.CapturePanicContext(out rip,out rsp,out rbp,out flags,out cr3);
+        X64ArchitectureBoundary.CapturePanicContext(out rip,out rsp,out rbp,out flags,out cr3);
         if(cpu!=null)*cpu=c;if(threadId!=null)*threadId=t;if(processId!=null)*processId=p;
         if(instructionPointer!=null)*instructionPointer=rip;if(stackPointer!=null)*stackPointer=rsp;
         if(timestampNanoseconds!=null)*timestampNanoseconds=KernelTime.IsInitialized?KernelTime.GetMonotonicNanoseconds():0UL;
@@ -33,7 +33,7 @@ public static unsafe class KernelPanicTransport
     {
         if(snapshot==null)return false;
         UInt64 rip=0,rsp=0,rbp=0,flags=0,cr3=0;
-        if(!Native.CapturePanicContext(out rip,out rsp,out rbp,out flags,out cr3))return false;
+        if(!X64ArchitectureBoundary.CapturePanicContext(out rip,out rsp,out rbp,out flags,out cr3))return false;
         // Volatile GPRs have already been used by the managed call boundary; leave them zero
         // rather than publishing misleading values. RIP/RSP/RBP/RFLAGS/CR3 are authoritative.
         *snapshot=new KernelPanicRegisters(0,0,0,0,0,0,rbp,rsp,0,0,0,0,0,0,0,0,rip,flags,cr3);
@@ -44,7 +44,7 @@ public static unsafe class KernelPanicTransport
     {
         if(stack==null)return false;
         UInt64 rip=0,rsp=0,rbp=0,flags=0,cr3=0;
-        if(!Native.CapturePanicContext(out rip,out rsp,out rbp,out flags,out cr3))return false;
+        if(!X64ArchitectureBoundary.CapturePanicContext(out rip,out rsp,out rbp,out flags,out cr3))return false;
         UInt64 f0=rip,f1=0,f2=0,f3=0,f4=0,f5=0,f6=0,f7=0;UInt32 count=rip!=0?1U:0U;
         // Conservative frame-pointer walk. Stop immediately on non-monotonic or implausibly distant frames.
         UInt64 current=rbp;
@@ -74,7 +74,7 @@ public static unsafe class KernelPanicTransport
         return true;
     }
 
-    public static Boolean BreakDebugger(KernelPanicNativeInfo* info)=>Native.PanicDebuggerBreak();
+    public static Boolean BreakDebugger(KernelPanicNativeInfo* info)=>X64ArchitectureBoundary.PanicDebuggerBreak();
     public static Boolean Reboot()=>KernelAcpiPower.Reboot();
-    public static Boolean Halt()=>Native.Halt();
+    public static Boolean Halt()=>X64ArchitectureBoundary.Halt();
 }

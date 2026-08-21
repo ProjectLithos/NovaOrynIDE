@@ -1,0 +1,26 @@
+{
+  "version": "0.14.8",
+  "roadmapItem": 14,
+  "feature": "Hardware abstraction boundaries + dependency/build-state separation",
+  "status": "implemented-and-corrected",
+  "contracts": [
+    "NovaOryn.Kernel.Architecture",
+    "NovaOryn.Arch.X64",
+    "dependency validity is independent of NovaOryn IDE release version",
+    "dependency fingerprint is derived from dependency declarations",
+    "installed Theia/Electron verification and dependency-state stamping are one operation",
+    "successful dependency verification continues into the remaining build pipeline",
+    "completed-build validity remains release-version specific"
+  ],
+  "release": "Dependency verifier control-flow and stale-state correction",
+  "checks": [
+    "VERSION line 1 is authoritative at 0.14.8.",
+    "StampDependencies is a declared valid build-state action.",
+    "VerifyDependencies validates installed Electron and @theia/electron directly from the staged npm workspace.",
+    "Dependency-state matching excludes the application release version and uses a dependency fingerprint instead.",
+    "A release-only version bump does not force npm dependency reinstallation.",
+    "Build reuses an existing verified npm dependency tree when dependency declarations are unchanged.",
+    "Build captures the VerifyDependencies PowerShell exit code immediately and continues to CA/security/TypeScript/Theia verification on success.",
+    "Completed build-state validation still requires the current NovaOryn IDE version."
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "version": "0.14.13",
+  "roadmapItem": 14,
+  "feature": "Hardware abstraction boundaries + deterministic final build verification",
+  "status": "implemented-and-corrected",
+  "release": "Final verifier orchestration and build continuation repair",
+  "contracts": [
+    "NovaOryn.Kernel.Architecture",
+    "NovaOryn.Arch.X64",
+    "final verifier chain is executed by one Node.js orchestrator",
+    "verifier child output is inherited and each child exit status is checked explicitly",
+    "successful final verification transitions directly into the Theia production build",
+    "completed-build state is stamped only after the Theia build succeeds"
+  ],
+  "checks": [
+    "VERSION line 1 is authoritative at 0.14.13.",
+    "Build invokes CJS/Run-NovaOrynIDEFinalVerification.cjs rather than chaining the final verifiers directly in CMD.",
+    "The orchestrator runs the kernel preset, SDK test-framework and 0.14.13 release verifiers.",
+    "The orchestrator prints the exact verifier filename and exit code on failure.",
+    "A successful orchestrator return is followed by the Theia production build and final build-state stamp."
+  ]
+}
