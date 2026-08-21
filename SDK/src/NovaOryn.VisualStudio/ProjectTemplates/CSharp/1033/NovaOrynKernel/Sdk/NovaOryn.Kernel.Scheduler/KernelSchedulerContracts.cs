@@ -73,3 +73,10 @@ public readonly struct KernelSchedulerCapabilities
     /// <summary>Gets whether the Local APIC timer can provide preemption ticks.</summary>
     public Boolean HasTimerPreemption { get; }
 }
+
+/// <summary>Snapshot of one CPU-local scheduler instance.</summary>
+public readonly struct KernelCpuLocalSchedulerInfo
+{
+ public KernelCpuLocalSchedulerInfo(UInt32 processorIndex,UInt64 schedulerId,UInt64 currentThreadId,UInt64 switchCount,UInt64 preemptionCount,UInt64 lastDispatchNanoseconds){ProcessorIndex=processorIndex;SchedulerId=schedulerId;CurrentThreadId=currentThreadId;SwitchCount=switchCount;PreemptionCount=preemptionCount;LastDispatchNanoseconds=lastDispatchNanoseconds;}
+ public UInt32 ProcessorIndex{get;} public UInt64 SchedulerId{get;} public UInt64 CurrentThreadId{get;} public UInt64 SwitchCount{get;} public UInt64 PreemptionCount{get;} public UInt64 LastDispatchNanoseconds{get;}
+}

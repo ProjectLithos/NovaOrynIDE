@@ -1,0 +1,14 @@
+{
+  "release": "0.15.0",
+  "feature": "Formal SMP/per-CPU API",
+  "requirements": [
+    "CPU enumeration",
+    "current CPU",
+    "per-CPU storage",
+    "IPIs",
+    "CPU affinity",
+    "startup/shutdown",
+    "CPU-local schedulers"
+  ],
+  "status": "verified-by-source-contract"
+}

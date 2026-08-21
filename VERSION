@@ -1,4 +1,4 @@
-0.14.17
+0.15.0
 
 NovaOryn IDE release-version update manifest
 ============================================
@@ -52,9 +52,9 @@ CJS/Run-NovaOrynIDEFinalVerification.cjs
 
 Release-specific files for THIS release
 ---------------------------------------
-CJS/Verify-NovaOrynIDE01417.cjs
-JSON/NovaOryn-IDE-0.14.17-ReleaseValidation.json
-docs/Release-0.14.17.md
+CJS/Verify-NovaOrynIDE0150.cjs
+JSON/NovaOryn-IDE-0.15.0-ReleaseValidation.json
+docs/Release-0.15.0.md
 Ancillary/ChangedFiles.txt
 
 Hardware-abstraction boundary sources introduced/changed in 0.14.0

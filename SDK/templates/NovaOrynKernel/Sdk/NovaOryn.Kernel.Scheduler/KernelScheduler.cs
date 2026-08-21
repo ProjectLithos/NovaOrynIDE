@@ -117,6 +117,17 @@ public static unsafe class KernelScheduler
     public static Boolean Terminate(UInt64 threadId)
     { if (!FindThread(threadId,out UInt32 slot)) return false; ThreadRecord* r=_threads+slot; r->State=(UInt32)KernelThreadState.Terminated; r->ProcessorIndex=NoProcessor; return true; }
 
+    /// <summary>Sets thread affinity using the formal CPU-affinity value object.</summary>
+    public static Boolean SetAffinity(UInt64 threadId, KernelCpuAffinity affinity) => !affinity.IsEmpty() && SetAffinity(threadId, affinity.Mask);
+
+    /// <summary>Gets one CPU-local scheduler snapshot and stable scheduler identifier.</summary>
+    public static Boolean TryGetLocalScheduler(UInt32 processorIndex,out KernelCpuLocalSchedulerInfo info)
+    { info=default; if(!_initialized||_cpus==null||processorIndex>=_processorCount)return false; CpuScheduleState* state=_cpus+processorIndex; UInt64 current=0UL; if(state->CurrentSlot!=0xFFFFFFFFU&&state->CurrentSlot<MaximumThreads)current=(_threads+state->CurrentSlot)->Id; info=new KernelCpuLocalSchedulerInfo(processorIndex,(UInt64)state,current,state->SwitchCount,state->PreemptionCount,state->LastDispatchNanoseconds); return true; }
+
+    /// <summary>Gets the CPU-local scheduler for the calling processor.</summary>
+    public static Boolean TryGetCurrentLocalScheduler(out KernelCpuLocalSchedulerInfo info)
+    { info=default; return KernelSmp.TryGetCurrentProcessorIndex(out UInt32 cpu)&&TryGetLocalScheduler(cpu,out info); }
+
     /// <summary>Selects the highest-priority runnable thread allowed on a processor.</summary>
     public static Boolean TrySelectNext(UInt32 processorIndex, out UInt64 threadId)
     {
