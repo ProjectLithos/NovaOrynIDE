@@ -2,7 +2,7 @@
 
 ![NovaOryn logo](packages/novaoryn-ide/src/browser/style/novaoryn-logo.png)
 
-**Current release: 0.15.0**
+**Current release: 0.16.1**
 
 NovaOryn IDE is the desktop development environment for building, running, inspecting, testing, and debugging operating systems created with the **NovaOryn OS SDK**.
 

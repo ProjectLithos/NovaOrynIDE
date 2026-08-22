@@ -133,6 +133,17 @@
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Smp\KernelSmpContracts.cs">Sdk\NovaOryn.Kernel.Smp\KernelSmpContracts.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Smp\KernelSmpMath.cs">Sdk\NovaOryn.Kernel.Smp\KernelSmpMath.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Smp\NovaOryn.Kernel.Smp.csproj">Sdk\NovaOryn.Kernel.Smp\NovaOryn.Kernel.Smp.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Synchronization\KernelSynchronizationContracts.cs">Sdk\NovaOryn.Kernel.Synchronization\KernelSynchronizationContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Synchronization\KernelAtomic.cs">Sdk\NovaOryn.Kernel.Synchronization\KernelAtomic.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Synchronization\KernelSynchronizationWait.cs">Sdk\NovaOryn.Kernel.Synchronization\KernelSynchronizationWait.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Synchronization\KernelSpinLock.cs">Sdk\NovaOryn.Kernel.Synchronization\KernelSpinLock.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Synchronization\KernelMutex.cs">Sdk\NovaOryn.Kernel.Synchronization\KernelMutex.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Synchronization\KernelSemaphore.cs">Sdk\NovaOryn.Kernel.Synchronization\KernelSemaphore.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Synchronization\KernelEvent.cs">Sdk\NovaOryn.Kernel.Synchronization\KernelEvent.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Synchronization\KernelReaderWriterLock.cs">Sdk\NovaOryn.Kernel.Synchronization\KernelReaderWriterLock.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Synchronization\KernelBarrier.cs">Sdk\NovaOryn.Kernel.Synchronization\KernelBarrier.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Synchronization\KernelLockFree.cs">Sdk\NovaOryn.Kernel.Synchronization\KernelLockFree.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Synchronization\NovaOryn.Kernel.Synchronization.csproj">Sdk\NovaOryn.Kernel.Synchronization\NovaOryn.Kernel.Synchronization.csproj</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Storage\KernelStorage.cs">Sdk\NovaOryn.Kernel.Storage\KernelStorage.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Storage\KernelStorageContracts.cs">Sdk\NovaOryn.Kernel.Storage\KernelStorageContracts.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Storage\KernelStorageMath.cs">Sdk\NovaOryn.Kernel.Storage\KernelStorageMath.cs</ProjectItem>

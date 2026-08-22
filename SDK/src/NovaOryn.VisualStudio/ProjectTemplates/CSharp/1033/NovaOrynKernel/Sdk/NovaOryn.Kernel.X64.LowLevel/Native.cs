@@ -186,6 +186,19 @@ public static class Native
     [DllImport("*", EntryPoint = "NovaOrynX64Pause", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern Boolean Pause();
 
+    [DllImport("*", EntryPoint = "NovaOrynX64AtomicCompareExchange64", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern unsafe Boolean AtomicCompareExchange64(UInt64* location, UInt64 expected, UInt64 replacement, UInt64* previous);
+    [DllImport("*", EntryPoint = "NovaOrynX64AtomicExchange64", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern unsafe Boolean AtomicExchange64(UInt64* location, UInt64 value, UInt64* previous);
+    [DllImport("*", EntryPoint = "NovaOrynX64AtomicFetchAdd64", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern unsafe Boolean AtomicFetchAdd64(UInt64* location, UInt64 delta, UInt64* previous);
+    [DllImport("*", EntryPoint = "NovaOrynX64AtomicLoad64", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern unsafe Boolean AtomicLoad64(UInt64* location, UInt64* value);
+    [DllImport("*", EntryPoint = "NovaOrynX64AtomicStore64", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern unsafe Boolean AtomicStore64(UInt64* location, UInt64 value);
+    [DllImport("*", EntryPoint = "NovaOrynX64MemoryBarrier", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+    public static extern Boolean MemoryBarrier();
+
     /// <summary>Stops the current processor permanently.</summary>
     [DllImport("*", EntryPoint = "NovaOrynX64Halt", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
     public static extern Boolean Halt();

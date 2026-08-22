@@ -47,6 +47,63 @@ NovaOrynX64Pause:
     ret
 .size NovaOrynX64Pause, .-NovaOrynX64Pause
 
+.global NovaOrynX64AtomicCompareExchange64
+.type NovaOrynX64AtomicCompareExchange64,@function
+NovaOrynX64AtomicCompareExchange64:
+    movq %rsi, %rax
+    lock cmpxchgq %rdx, (%rdi)
+    sete %r8b
+    movq %rax, (%rcx)
+    movb %r8b, %al
+    ret
+.size NovaOrynX64AtomicCompareExchange64, .-NovaOrynX64AtomicCompareExchange64
+
+.global NovaOrynX64AtomicExchange64
+.type NovaOrynX64AtomicExchange64,@function
+NovaOrynX64AtomicExchange64:
+    movq %rsi, %rax
+    xchgq %rax, (%rdi)
+    movq %rax, (%rdx)
+    movb $1, %al
+    ret
+.size NovaOrynX64AtomicExchange64, .-NovaOrynX64AtomicExchange64
+
+.global NovaOrynX64AtomicFetchAdd64
+.type NovaOrynX64AtomicFetchAdd64,@function
+NovaOrynX64AtomicFetchAdd64:
+    movq %rsi, %rax
+    lock xaddq %rax, (%rdi)
+    movq %rax, (%rdx)
+    movb $1, %al
+    ret
+.size NovaOrynX64AtomicFetchAdd64, .-NovaOrynX64AtomicFetchAdd64
+
+.global NovaOrynX64AtomicLoad64
+.type NovaOrynX64AtomicLoad64,@function
+NovaOrynX64AtomicLoad64:
+    movq (%rdi), %rax
+    lfence
+    movq %rax, (%rsi)
+    movb $1, %al
+    ret
+.size NovaOrynX64AtomicLoad64, .-NovaOrynX64AtomicLoad64
+
+.global NovaOrynX64AtomicStore64
+.type NovaOrynX64AtomicStore64,@function
+NovaOrynX64AtomicStore64:
+    xchgq %rsi, (%rdi)
+    movb $1, %al
+    ret
+.size NovaOrynX64AtomicStore64, .-NovaOrynX64AtomicStore64
+
+.global NovaOrynX64MemoryBarrier
+.type NovaOrynX64MemoryBarrier,@function
+NovaOrynX64MemoryBarrier:
+    mfence
+    movb $1, %al
+    ret
+.size NovaOrynX64MemoryBarrier, .-NovaOrynX64MemoryBarrier
+
 
 .global NovaOrynX64ReadTimestampCounter
 .type NovaOrynX64ReadTimestampCounter,@function

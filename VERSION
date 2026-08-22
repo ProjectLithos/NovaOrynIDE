@@ -1,4 +1,4 @@
-0.15.0
+0.16.1
 
 NovaOryn IDE release-version update manifest
 ============================================
@@ -52,9 +52,9 @@ CJS/Run-NovaOrynIDEFinalVerification.cjs
 
 Release-specific files for THIS release
 ---------------------------------------
-CJS/Verify-NovaOrynIDE0150.cjs
-JSON/NovaOryn-IDE-0.15.0-ReleaseValidation.json
-docs/Release-0.15.0.md
+CJS/Verify-NovaOrynIDE0161.cjs
+JSON/NovaOryn-IDE-0.16.1-ReleaseValidation.json
+docs/Release-0.16.1.md
 Ancillary/ChangedFiles.txt
 
 Hardware-abstraction boundary sources introduced/changed in 0.14.0
@@ -93,3 +93,27 @@ Release completion rule
 -----------------------
 A version bump is incomplete until every active version-bearing file above agrees with line 1,
 the release-specific verifier for this version passes, and the normal NovaOryn IDE build verifiers pass.
+
+Synchronization primitives introduced in 0.16.0
+-----------------------------------------------
+SDK/native/x64/Cpu.asm
+SDK/native/x64/Cpu.S
+SDK/src/NovaOryn.Kernel.X64.LowLevel/Native.cs
+SDK/src/NovaOryn.Arch.X64/X64ArchitectureBoundary.cs
+SDK/src/NovaOryn.Kernel.Synchronization/*
+SDK/src/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs
+SDK/templates/NovaOrynKernel/NovaOrynKernel.csproj
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.X64.LowLevel/Native.cs
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Arch.X64/X64ArchitectureBoundary.cs
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Synchronization/*
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/NovaOrynKernel.csproj
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/NovaOrynKernel.vstemplate
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.X64.LowLevel/Native.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Arch.X64/X64ArchitectureBoundary.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Synchronization/*
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs
+SDK/NovaOryn.sln
+SDK/NovaOryn-SourceManifest.json
+SDK/docs/Synchronization-Primitives.md
+SDK/docs/site-content/Synchronization-Primitives.md

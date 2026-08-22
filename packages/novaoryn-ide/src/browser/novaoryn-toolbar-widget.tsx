@@ -270,9 +270,10 @@ export class NovaOrynToolbarWidget extends ReactWidget {
         const channel = this.outputChannelManager.getChannel(OUTPUT_CHANNEL_NAME);
         channel.clear();
         channel.show({ preserveFocus: false });
+        // Run/Debug output belongs to Theia's bottom Output panel.
+        // Keep the dedicated Kernel Console as an explicit Engineering tool only;
+        // do not attach or activate it automatically, which would duplicate output.
         this.kernelConsole.clear();
-        if (!this.kernelConsole.isAttached) { await this.shell.addWidget(this.kernelConsole, { area: 'main' }); }
-        this.shell.activateWidget(this.kernelConsole.id);
         const consoleHeader = `[INFO] NovaOryn ${this.runMode === 'debug' ? 'Debug' : 'No Debug'}: ${projectPath}\n[INFO] Build and launch output follows.\n\n`;
         channel.append(consoleHeader);
         this.kernelConsole.append(consoleHeader);

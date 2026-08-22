@@ -1,0 +1,21 @@
+{
+  "version": "0.16.1",
+  "feature": "Formal synchronization primitives",
+  "requirements": [
+    "spinlock",
+    "mutex with ownership checking",
+    "bounded counting semaphore",
+    "manual and auto reset event",
+    "writer-preferring reader/writer lock",
+    "64-bit atomic operations and memory ordering",
+    "reusable generation-counted barrier",
+    "tagged lock-free stack"
+  ],
+  "architectureBackend": "x64 locked instructions plus hardware fences through NovaOryn.Arch.X64",
+  "templates": [
+    "generated NovaOryn kernel",
+    "Visual Studio NovaOryn kernel"
+  ],
+  "verifier": "CJS/Verify-NovaOrynIDE0161.cjs",
+  "summary": "Preserves the 0.16.0 synchronization primitives and hardens the Kernel Console regression/ChangedFiles repair path."
+}

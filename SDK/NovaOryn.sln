@@ -100,6 +100,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Heap.Tests", "test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Smp", "src\NovaOryn.Kernel.Smp\NovaOryn.Kernel.Smp.csproj", "{4C9E211C-38FB-585F-BE31-B5D4940A6134}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Synchronization", "src\NovaOryn.Kernel.Synchronization\NovaOryn.Kernel.Synchronization.csproj", "{A16C0E00-1600-4B21-9A16-000000000160}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Smp.Tests", "tests\NovaOryn.Smp.Tests\NovaOryn.Smp.Tests.csproj", "{5AFB797B-A45C-5D1E-BE70-B0E3B8124036}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Scheduler", "src\NovaOryn.Kernel.Scheduler\NovaOryn.Kernel.Scheduler.csproj", "{D7E44F65-BC11-4F37-8A29-02C1BC9F7A15}"
@@ -668,6 +670,10 @@ Global
 		{14000000-0000-4000-8000-000000000002}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{14000000-0000-4000-8000-000000000002}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{14000000-0000-4000-8000-000000000002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A16C0E00-1600-4B21-9A16-000000000160}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A16C0E00-1600-4B21-9A16-000000000160}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A16C0E00-1600-4B21-9A16-000000000160}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A16C0E00-1600-4B21-9A16-000000000160}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
 

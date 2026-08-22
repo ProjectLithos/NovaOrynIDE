@@ -42,6 +42,7 @@
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Acpi\NovaOryn.Kernel.Acpi.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Time\NovaOryn.Kernel.Time.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Smp\NovaOryn.Kernel.Smp.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Synchronization\NovaOryn.Kernel.Synchronization.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Scheduler\NovaOryn.Kernel.Scheduler.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Protection\NovaOryn.Kernel.Protection.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.SystemCalls\NovaOryn.Kernel.SystemCalls.csproj" />

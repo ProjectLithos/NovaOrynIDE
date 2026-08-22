@@ -29,6 +29,12 @@ global NovaOrynX64IsKernelWriteProtectEnabled
 global NovaOrynX64SupportsSmep
 global NovaOrynX64EnableSmep
 global NovaOrynX64SupportsSmap
+global NovaOrynX64AtomicCompareExchange64
+global NovaOrynX64AtomicExchange64
+global NovaOrynX64AtomicFetchAdd64
+global NovaOrynX64AtomicLoad64
+global NovaOrynX64AtomicStore64
+global NovaOrynX64MemoryBarrier
 
 NovaOrynX64DisableInterrupts:
     cli
@@ -55,6 +61,51 @@ NovaOrynX64WaitForInterrupt:
     ret
 NovaOrynX64Pause:
     pause
+    mov al, 1
+    ret
+
+; Professional synchronization atomics (Microsoft x64 ABI).
+; CompareExchange: RCX=location, RDX=expected, R8=replacement, R9=previous*.
+NovaOrynX64AtomicCompareExchange64:
+    mov rax, rdx
+    lock cmpxchg [rcx], r8
+    sete r10b
+    mov [r9], rax
+    mov al, r10b
+    ret
+
+; Exchange: RCX=location, RDX=value, R8=previous*. XCHG with memory is atomic.
+NovaOrynX64AtomicExchange64:
+    mov rax, rdx
+    xchg [rcx], rax
+    mov [r8], rax
+    mov al, 1
+    ret
+
+; FetchAdd: RCX=location, RDX=delta, R8=previous*.
+NovaOrynX64AtomicFetchAdd64:
+    mov rax, rdx
+    lock xadd [rcx], rax
+    mov [r8], rax
+    mov al, 1
+    ret
+
+; Acquire-style aligned 64-bit load. RCX=location, RDX=value*.
+NovaOrynX64AtomicLoad64:
+    mov rax, [rcx]
+    lfence
+    mov [rdx], rax
+    mov al, 1
+    ret
+
+; Sequentially-consistent 64-bit store. RCX=location, RDX=value.
+NovaOrynX64AtomicStore64:
+    xchg [rcx], rdx
+    mov al, 1
+    ret
+
+NovaOrynX64MemoryBarrier:
+    mfence
     mov al, 1
     ret
 
