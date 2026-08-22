@@ -1,4 +1,4 @@
-// NovaOryn IDE release contract: 0.19.1
+// NovaOryn IDE release contract: 0.20.0
 const fs = require('fs');
 const path = require('path');
 

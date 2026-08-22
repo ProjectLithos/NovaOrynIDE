@@ -226,6 +226,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.ApplicationPacker"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Security", "src\NovaOryn.Kernel.Security\NovaOryn.Kernel.Security.csproj", "{A18D0000-1800-4B21-9A18-000000000180}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.PackageFormat", "src\NovaOryn.PackageFormat\NovaOryn.PackageFormat.csproj", "{A20D0000-2000-4B21-9A20-000000000200}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.PackagePacker", "src\NovaOryn.PackagePacker\NovaOryn.PackagePacker.csproj", "{A20D0001-2000-4B21-9A20-000000000201}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.PackageManager", "src\NovaOryn.PackageManager\NovaOryn.PackageManager.csproj", "{A20D0002-2000-4B21-9A20-000000000202}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -694,6 +700,18 @@ Global
 		{A18D0000-1800-4B21-9A18-000000000180}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A18D0000-1800-4B21-9A18-000000000180}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A18D0000-1800-4B21-9A18-000000000180}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A20D0000-2000-4B21-9A20-000000000200}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A20D0000-2000-4B21-9A20-000000000200}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A20D0000-2000-4B21-9A20-000000000200}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A20D0000-2000-4B21-9A20-000000000200}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A20D0001-2000-4B21-9A20-000000000201}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A20D0001-2000-4B21-9A20-000000000201}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A20D0001-2000-4B21-9A20-000000000201}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A20D0001-2000-4B21-9A20-000000000201}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A20D0002-2000-4B21-9A20-000000000202}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A20D0002-2000-4B21-9A20-000000000202}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A20D0002-2000-4B21-9A20-000000000202}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A20D0002-2000-4B21-9A20-000000000202}.Release|Any CPU.Build.0 = Release|Any CPU
 EndGlobalSection
 EndGlobal
 
