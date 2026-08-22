@@ -110,6 +110,10 @@
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Processes\KernelProcesses.cs">Sdk\NovaOryn.Kernel.Processes\KernelProcesses.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Processes\NovaOryn.Kernel.Processes.csproj">Sdk\NovaOryn.Kernel.Processes\NovaOryn.Kernel.Processes.csproj</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Processes\ProcessAddressSpace.cs">Sdk\NovaOryn.Kernel.Processes\ProcessAddressSpace.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.ApplicationFormat\NovaOryn.ApplicationFormat.csproj">Sdk\NovaOryn.ApplicationFormat\NovaOryn.ApplicationFormat.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.ApplicationFormat\NovaOrynApplicationContracts.cs">Sdk\NovaOryn.ApplicationFormat\NovaOrynApplicationContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.ApplicationFormat\NovaOrynApplicationPackage.cs">Sdk\NovaOryn.ApplicationFormat\NovaOrynApplicationPackage.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Processes\NovaOrynApplicationLoader.cs">Sdk\NovaOryn.Kernel.Processes\NovaOrynApplicationLoader.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Processes\ProcessContracts.cs">Sdk\NovaOryn.Kernel.Processes\ProcessContracts.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Processes\ProcessExecutableMath.cs">Sdk\NovaOryn.Kernel.Processes\ProcessExecutableMath.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Protection\KernelProtection.cs">Sdk\NovaOryn.Kernel.Protection\KernelProtection.cs</ProjectItem>

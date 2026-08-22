@@ -49,6 +49,7 @@
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Security\NovaOryn.Kernel.Security.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.SystemCalls\NovaOryn.Kernel.SystemCalls.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Ps2\NovaOryn.Kernel.Ps2.csproj" Condition="'$(NovaOrynKernelAreaInput)' == 'true'" />
+    <ProjectReference Include="Sdk\NovaOryn.ApplicationFormat\NovaOryn.ApplicationFormat.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Processes\NovaOryn.Kernel.Processes.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Drivers\NovaOryn.Kernel.Drivers.csproj" Condition="'$(NovaOrynKernelAreaDrivers)' == 'true'" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.InterruptDispatch\NovaOryn.Kernel.InterruptDispatch.csproj" />

@@ -8,6 +8,7 @@ using NovaOryn.Kernel.Protection;
 using NovaOryn.Kernel.SystemCalls;
 using NovaOryn.Kernel.Security;
 using NovaOryn.Kernel.VirtualMemory;
+using NovaOryn.ApplicationFormat;
 
 namespace NovaOryn.Kernel.Processes;
 
@@ -40,11 +41,15 @@ public static unsafe class KernelProcesses
     /// <summary>Validates an x64 ELF64 or PE32+ image, builds a private lower-half address space and creates its initial user stack.</summary>
     public static Boolean TryCreateFromImage(UInt64 imageAddress, UInt64 imageLength, out KernelProcessInfo process)
     {
-        process=default; if(!_initialized||imageAddress==0UL||imageLength==0UL)return false; Byte* image=(Byte*)(nuint)imageAddress;
-        if(!ProcessExecutableMath.TryInspect(image,imageLength,out ProcessExecutableInfo executable))return false; Int32 slot=FindFreeSlot(); if(slot<0)return false; ProcessRecord* r=Record(slot); Clear(r);
+        process=default; if(!_initialized||imageAddress==0UL||imageLength==0UL)return false; Byte* packageOrImage=(Byte*)(nuint)imageAddress;
+        if(!NovaOrynApplicationLoader.TryResolveNativeImage(packageOrImage,imageLength,out Byte* image,out UInt64 nativeLength,out NovaOrynApplicationInfo application,out Boolean packaged))return false;
+        if(!ProcessExecutableMath.TryInspect(image,nativeLength,out ProcessExecutableInfo executable))return false;
+        if(packaged && application.EntryPointRva!=0UL && executable.EntryPoint<executable.ImageBase)return false;
+        if(packaged && application.EntryPointRva!=0UL && executable.EntryPoint-executable.ImageBase!=application.EntryPointRva)return false;
+        Int32 slot=FindFreeSlot(); if(slot<0)return false; ProcessRecord* r=Record(slot); Clear(r);
         KernelPhysicalAllocation* tables=stackalloc KernelPhysicalAllocation[(Int32)MaximumTablesPerProcess]; UInt32 tableCount;
         if(!ProcessAddressSpace.TryCreate(tables,MaximumTablesPerProcess,out tableCount,out UInt64 root))return false;
-        if(!LoadSegments(image,imageLength,executable,root,r,tables,ref tableCount) || !CreateStack(root,r,tables,ref tableCount)) { ReleaseTemporary(r,tables,tableCount); return false; }
+        if(!LoadSegments(image,nativeLength,executable,root,r,tables,ref tableCount) || !CreateStack(root,r,tables,ref tableCount)) { ReleaseTemporary(r,tables,tableCount); return false; }
         r->TableCount=tableCount; for(UInt32 i=0;i<tableCount;i++){r->TableTokens[(Int32)i]=tables[i].Token;r->TableStarts[(Int32)i]=tables[i].StartAddress;r->TablePages[(Int32)i]=tables[i].PageCount;}
         r->Id=_nextId++; r->Root=root; r->Entry=executable.EntryPoint; if(!KernelSecurity.RegisterProcessAddressSpace(r->Id,root,r->StackGuardBase,4096UL)){ReleaseTemporary(r,tables,tableCount);return false;} if(!KernelSecurity.TryValidateExecutableRange(r->Id,r->Entry,1UL)){KernelSecurity.UnregisterProcess(r->Id);ReleaseTemporary(r,tables,tableCount);return false;} r->State=(UInt32)KernelProcessState.Ready; r->Format=(UInt32)executable.Format; _active++;
         process=Snapshot(r); return true;

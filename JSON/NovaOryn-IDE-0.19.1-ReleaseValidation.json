@@ -1,0 +1,12 @@
+{
+  "product": "NovaOryn IDE",
+  "version": "0.19.1",
+  "focus": "Authoritative configuration version consistency and ChangedFiles repair",
+  "checks": [
+    "Authoritative configuration verifier expects generator version 0.19.1",
+    "Authoritative configuration verifier expects configurator version 0.19.1",
+    "ChangedFiles includes generator/configurator TypeScript sources",
+    "ChangedFiles includes generated JavaScript runtime counterparts",
+    "0.19.0 executable/application format remains intact"
+  ]
+}

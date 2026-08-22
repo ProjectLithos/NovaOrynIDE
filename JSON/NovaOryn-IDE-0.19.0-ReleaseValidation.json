@@ -1,0 +1,26 @@
+{
+  "version": "0.19.0",
+  "feature": "Formal executable/application format",
+  "applicationExtension": ".exe",
+  "nativeExecutableExtension": ".nexe",
+  "dynamicLibraryExtension": ".dll",
+  "staticLibraryExtension": ".lib",
+  "packageMagic": "NOAP",
+  "packageFormat": "1.0",
+  "metadata": [
+    "identity",
+    "version",
+    "publisher",
+    "architecture",
+    "ABI",
+    "syscall ABI",
+    "entry point RVA"
+  ],
+  "tables": [
+    "dependencies",
+    "required capabilities",
+    "resources"
+  ],
+  "loader": "package validation -> native image validation -> isolated process creation",
+  "associationPolicy": "visible extensions may be overridden without changing package ABI"
+}

@@ -2,7 +2,7 @@
 
 ![NovaOryn logo](packages/novaoryn-ide/src/browser/style/novaoryn-logo.png)
 
-**Current release: 0.18.0**
+**Current release: 0.19.1**
 
 NovaOryn IDE is the desktop development environment for building, running, inspecting, testing, and debugging operating systems created with the **NovaOryn OS SDK**.
 
@@ -529,3 +529,7 @@ The source build can publish the validated source tree to the configured NovaOry
 NovaOryn IDE is being built around a simple principle: an OS SDK should expose its architecture, contracts, hardware, memory, interrupts, system calls, drivers, tests, diagnostics, and generated structure directly to the developer.
 
 The IDE therefore treats NovaOryn operating systems as first-class systems projects. The goal is not merely to edit C# files—it is to make the operating system itself understandable, configurable, buildable, testable, and debuggable from one environment.
+
+
+## 0.19.1 executable/application format
+NovaOryn applications use a formal `.exe` package with `NOAP` magic, an internal `.nexe` native image, explicit dependencies/capabilities/resources and architecture/ABI metadata. Default shared/static library associations are `.dll`/`.lib`.
