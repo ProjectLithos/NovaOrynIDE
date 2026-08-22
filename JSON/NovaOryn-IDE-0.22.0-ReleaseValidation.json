@@ -1,0 +1,8 @@
+{
+  "release": "0.22.0",
+  "feature": "Network stack API",
+  "contracts": ["NIC","Ethernet","ARP","NDP","IPv4","IPv6","ICMP","UDP","TCP","sockets","DNS"],
+  "dns": ["A","AAAA"],
+  "driverBoundary": "NIC drivers provide Ethernet frame transport below the protocol stack",
+  "templatesSynchronized": true
+}

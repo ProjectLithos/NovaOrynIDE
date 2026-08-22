@@ -2,7 +2,7 @@
 
 ![NovaOryn logo](packages/novaoryn-ide/src/browser/style/novaoryn-logo.png)
 
-**Current release: 0.21.0**
+**Current release: 0.22.0**
 
 NovaOryn IDE is the desktop development environment for building, running, inspecting, testing, and debugging operating systems created with the **NovaOryn OS SDK**.
 
@@ -531,11 +531,16 @@ NovaOryn IDE is being built around a simple principle: an OS SDK should expose i
 The IDE therefore treats NovaOryn operating systems as first-class systems projects. The goal is not merely to edit C# files—it is to make the operating system itself understandable, configurable, buildable, testable, and debuggable from one environment.
 
 
-## 0.21.0 executable/application format
+## 0.19.0 executable/application format
 NovaOryn applications use a formal `.exe` package with `NOAP` magic, an internal `.nexe` native image, explicit dependencies/capabilities/resources and architecture/ABI metadata. Default shared/static library associations are `.dll`/`.lib`.
 
-## 0.21.0 ZIP package-manager format
+## 0.20.0 ZIP package-manager format
 
-NovaOryn 0.21.0 defines one installable software package format for applications, drivers, libraries, services and kernel extensions. Packages deliberately keep the ordinary `.zip` extension and are identified by the required root `NovaOryn.Package.json` manifest (`novaoryn-package-v1`), not by a proprietary filename extension.
+NovaOryn 0.20.0 defines one installable software package format for applications, drivers, libraries, services and kernel extensions. Packages deliberately keep the ordinary `.zip` extension and are identified by the required root `NovaOryn.Package.json` manifest (`novaoryn-package-v1`), not by a proprietary filename extension.
 
 The SDK now includes a schema, ZIP verifier, package packer and transactional package-manager CLI. Payload files are length/SHA-256 checked, ZIP path traversal and undeclared payloads are rejected, dependencies are checked before commit, reverse dependencies protect uninstall, package state is recorded in an authoritative database, and kernel-extension packages require signed/trusted policy. Applications continue to use `.exe` packages containing `.nexe`; drivers continue to use the existing `.nodrv` artifact and can be distributed inside the common ZIP package.
+
+
+## 0.22.0 network stack API
+
+NovaOryn 0.22.0 standardises NIC, Ethernet, ARP/NDP, IPv4/IPv6, ICMP, UDP, TCP, sockets and DNS behind the kernel networking contract. IPv6 neighbor discovery and DNS AAAA records are part of the public stack surface, while hardware-specific NIC drivers remain below the Ethernet frame boundary.

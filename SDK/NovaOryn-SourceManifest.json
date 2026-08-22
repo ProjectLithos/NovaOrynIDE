@@ -207,6 +207,11 @@
       "sha256": "a0b2622642d1c0ef8287dcebf290555b2bbcfbb7494ded2ad128e21efa2be3df"
     },
     {
+      "path": "docs/Network-Stack-API.md",
+      "length": 3146,
+      "sha256": "5720619d6cfa8bfa13edbb51c4295ca37568b5d92270d8542122a23627df53fb"
+    },
+    {
       "path": "docs/Networking.md",
       "length": 2046,
       "sha256": "fc7b93a9617faee74484f72f42891d515b811e95564c4f9c744a16d314a1413b"
@@ -1527,6 +1532,11 @@
       "sha256": "233b595d4a53b2301dda19757536058f8aedd882c32d38a75904d290ddd34881"
     },
     {
+      "path": "docs/site-content/Network-Stack-API.md",
+      "length": 3146,
+      "sha256": "5720619d6cfa8bfa13edbb51c4295ca37568b5d92270d8542122a23627df53fb"
+    },
+    {
       "path": "docs/site-content/Next-Steps.md",
       "length": 880,
       "sha256": "a3b042dcd409de3ff9c19c1bf540629003d252cd19220f22344df096f54d2948"
@@ -2533,8 +2543,13 @@
     },
     {
       "path": "src/NovaOryn.Kernel.Networking/KernelDhcpDns.cs",
-      "length": 3897,
-      "sha256": "f563f29f7dc5569c9e8ef4906ecdd491bcb9eb129c71e351b7ea05b6168dd6e2"
+      "length": 5168,
+      "sha256": "03db4783880d54b8a6896043889cdee66b9781e959e21b3f6e5a8eba4a8a743c"
+    },
+    {
+      "path": "src/NovaOryn.Kernel.Networking/KernelNetworkApi.cs",
+      "length": 6456,
+      "sha256": "e293e1e60289373bb6edd3425f07fa68bbbcee46defb9605a1ce0d07d94098b7"
     },
     {
       "path": "src/NovaOryn.Kernel.Networking/KernelNetworkContracts.cs",
@@ -2543,8 +2558,8 @@
     },
     {
       "path": "src/NovaOryn.Kernel.Networking/KernelNetworking.cs",
-      "length": 11700,
-      "sha256": "570ce1325c4cd2729c6c211119c4110193e52e1c14b42a8735bdb659a7f81500"
+      "length": 13775,
+      "sha256": "aa4b7d649a65ebf9f98519309417ac257a5094879102705e7e9d6d489a037cf3"
     },
     {
       "path": "src/NovaOryn.Kernel.Networking/KernelNetworkMath.cs",
@@ -2558,8 +2573,8 @@
     },
     {
       "path": "src/NovaOryn.Kernel.Networking/KernelNetworkStack.cs",
-      "length": 7343,
-      "sha256": "036d33c1532cd05deadf1d895c905d2b88ddfcddad4ff2b2b2a6424154ed4fb5"
+      "length": 9951,
+      "sha256": "8645d4a5918437ae43c4d0418fbd9a1852aaad62ef321bb1a0cf065beaed4bf9"
     },
     {
       "path": "src/NovaOryn.Kernel.Networking/KernelSockets.cs",
@@ -2878,8 +2893,8 @@
     },
     {
       "path": "src/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs",
-      "length": 33977,
-      "sha256": "77c26321a77a3ac577fe84f4e7de98603a7d7ccc8e98b3c26b7227b542a0a8f7"
+      "length": 35045,
+      "sha256": "c1f835beeb13688face00b9d378acdd64918cc41722f134eb9b117bb9b8c6aa7"
     },
     {
       "path": "src/NovaOryn.Kernel.SubsystemContracts/SubsystemContracts.cs",
@@ -3568,8 +3583,8 @@
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/NovaOrynKernel.vstemplate",
-      "length": 40938,
-      "sha256": "4cc4b6705e25beaba9be9010738f9c0bb3244c4df9b78961dbe6631155d9732b"
+      "length": 41137,
+      "sha256": "4c2bd4b2b89921604b74e4ef4fa9537845e03aef540c7890dc2a3798a5a2952f"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/NovaOrynProject.json",
@@ -3893,8 +3908,13 @@
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelDhcpDns.cs",
-      "length": 3897,
-      "sha256": "f563f29f7dc5569c9e8ef4906ecdd491bcb9eb129c71e351b7ea05b6168dd6e2"
+      "length": 5168,
+      "sha256": "03db4783880d54b8a6896043889cdee66b9781e959e21b3f6e5a8eba4a8a743c"
+    },
+    {
+      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkApi.cs",
+      "length": 6456,
+      "sha256": "e293e1e60289373bb6edd3425f07fa68bbbcee46defb9605a1ce0d07d94098b7"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkContracts.cs",
@@ -3903,8 +3923,8 @@
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworking.cs",
-      "length": 11700,
-      "sha256": "570ce1325c4cd2729c6c211119c4110193e52e1c14b42a8735bdb659a7f81500"
+      "length": 13775,
+      "sha256": "aa4b7d649a65ebf9f98519309417ac257a5094879102705e7e9d6d489a037cf3"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkMath.cs",
@@ -3918,8 +3938,8 @@
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkStack.cs",
-      "length": 7343,
-      "sha256": "036d33c1532cd05deadf1d895c905d2b88ddfcddad4ff2b2b2a6424154ed4fb5"
+      "length": 9951,
+      "sha256": "8645d4a5918437ae43c4d0418fbd9a1852aaad62ef321bb1a0cf065beaed4bf9"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelSockets.cs",
@@ -4203,8 +4223,8 @@
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs",
-      "length": 33977,
-      "sha256": "77c26321a77a3ac577fe84f4e7de98603a7d7ccc8e98b3c26b7227b542a0a8f7"
+      "length": 35045,
+      "sha256": "c1f835beeb13688face00b9d378acdd64918cc41722f134eb9b117bb9b8c6aa7"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/SubsystemContracts.cs",
@@ -5258,8 +5278,13 @@
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelDhcpDns.cs",
-      "length": 3897,
-      "sha256": "f563f29f7dc5569c9e8ef4906ecdd491bcb9eb129c71e351b7ea05b6168dd6e2"
+      "length": 5168,
+      "sha256": "03db4783880d54b8a6896043889cdee66b9781e959e21b3f6e5a8eba4a8a743c"
+    },
+    {
+      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkApi.cs",
+      "length": 6456,
+      "sha256": "e293e1e60289373bb6edd3425f07fa68bbbcee46defb9605a1ce0d07d94098b7"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkContracts.cs",
@@ -5268,8 +5293,8 @@
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworking.cs",
-      "length": 11700,
-      "sha256": "570ce1325c4cd2729c6c211119c4110193e52e1c14b42a8735bdb659a7f81500"
+      "length": 13775,
+      "sha256": "aa4b7d649a65ebf9f98519309417ac257a5094879102705e7e9d6d489a037cf3"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkMath.cs",
@@ -5283,8 +5308,8 @@
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkStack.cs",
-      "length": 7343,
-      "sha256": "036d33c1532cd05deadf1d895c905d2b88ddfcddad4ff2b2b2a6424154ed4fb5"
+      "length": 9951,
+      "sha256": "8645d4a5918437ae43c4d0418fbd9a1852aaad62ef321bb1a0cf065beaed4bf9"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelSockets.cs",
@@ -5568,8 +5593,8 @@
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs",
-      "length": 33977,
-      "sha256": "77c26321a77a3ac577fe84f4e7de98603a7d7ccc8e98b3c26b7227b542a0a8f7"
+      "length": 35045,
+      "sha256": "c1f835beeb13688face00b9d378acdd64918cc41722f134eb9b117bb9b8c6aa7"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/SubsystemContracts.cs",

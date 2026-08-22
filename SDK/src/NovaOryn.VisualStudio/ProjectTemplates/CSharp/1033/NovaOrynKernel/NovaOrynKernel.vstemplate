@@ -85,6 +85,7 @@
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Memory\NovaOryn.Kernel.Memory.csproj">Sdk\NovaOryn.Kernel.Memory\NovaOryn.Kernel.Memory.csproj</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelDhcpDns.cs">Sdk\NovaOryn.Kernel.Networking\KernelDhcpDns.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelNetworkContracts.cs">Sdk\NovaOryn.Kernel.Networking\KernelNetworkContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelNetworkApi.cs">Sdk\NovaOryn.Kernel.Networking\KernelNetworkApi.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelNetworking.cs">Sdk\NovaOryn.Kernel.Networking\KernelNetworking.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelNetworkMath.cs">Sdk\NovaOryn.Kernel.Networking\KernelNetworkMath.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Networking\KernelNetworkQueue.cs">Sdk\NovaOryn.Kernel.Networking\KernelNetworkQueue.cs</ProjectItem>
