@@ -10,7 +10,7 @@ $RootPackagePath = Join-Path $Root 'JSON\package.json'
 $ElectronPackagePath = Join-Path $Root 'applications\electron\package.json'
 $ExtensionPackagePath = Join-Path $Root 'packages\novaoryn-ide\package.json'
 
-$ExpectedIdeVersion = '0.22.0'
+$ExpectedIdeVersion = '0.22.1'
 $ExpectedTheiaVersion = '1.74.0'
 $ExpectedElectronVersion = '42.3.0'
 $ExpectedWindowsCaCertsVersion = '0.3.4'
@@ -78,7 +78,7 @@ try {
 
     foreach ($packageName in $ForbiddenRuntimePackages) {
         if ($electronPackage.dependencies.PSObject.Properties.Name -contains $packageName) {
-            Fail "$packageName must not be a production dependency in 0.22.0. VS Code/Open VSX plugin loading is temporarily disabled to keep the vulnerable decompress chain out of the shipped runtime."
+            Fail "$packageName must not be a production dependency in 0.22.1. VS Code/Open VSX plugin loading is temporarily disabled to keep the vulnerable decompress chain out of the shipped runtime."
         }
     }
 

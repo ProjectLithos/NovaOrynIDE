@@ -88,7 +88,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.22.0';
+const NOVAORYN_IDE_VERSION = '0.22.1';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -1781,7 +1781,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.22.0 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.22.1 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -2945,10 +2945,8 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             session.exitCode = 1;
         });
         session.qemu.on('close', code => {
-            session.gdb?.close();
-            session.debug = { ...(session.debug ?? { sourceSymbols: false }), active: false, paused: false, sourceSymbols: session.debug?.sourceSymbols ?? false, message: 'QEMU debug session ended.' };
-            session.complete = true;
-            session.exitCode = code === 0 || code === null ? 0 : code;
+            if (session.complete) { return; }
+            void this.finalizeDebugQemuExit(session, code);
         });
 
         const gdb = new GdbRspClient(packet => { void this.handleGdbStop(session, packet); });
@@ -3003,6 +3001,43 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
         gdb.run('c');
         session.output += `[ OK ] ${session.breakpointResults.filter(item => item.verified).length}/${session.breakpointResults.length} requested source breakpoint(s) armed before KMain.\r\n`;
         session.output += '[INFO] Kernel released. It will stop only at a verified breakpoint, Pause, exception or panic.\r\n';
+    }
+
+    protected async finalizeDebugQemuExit(session: RunSession, code: number | null): Promise<void> {
+        session.gdb?.close();
+        const unsignedCode = code === null ? 0 : (code >>> 0);
+        const hexCode = `0x${unsignedCode.toString(16).toUpperCase().padStart(8, '0')}`;
+        let serialTail = '';
+        if (session.serialLogPath) {
+            try {
+                const serial = await fs.readFile(session.serialLogPath, 'utf8');
+                serialTail = serial.slice(Math.max(0, serial.length - 4096)).replace(/\r/g, '');
+            } catch { }
+        }
+        if (serialTail.trim().length > 0) {
+            session.output += `\r\n[INFO] Final QEMU serial tail (${session.serialLogPath}):\r\n${serialTail.replace(/\n/g, '\r\n')}\r\n`;
+        } else if (session.serialLogPath) {
+            session.output += `\r\n[INFO] QEMU serial log contained no additional kernel output: ${session.serialLogPath}\r\n`;
+        }
+        if (code === 0 || code === null) {
+            session.output += '[ OK ] QEMU debug session closed normally.\r\n';
+            session.debug = { ...(session.debug ?? { sourceSymbols: false }), active: false, paused: false, sourceSymbols: session.debug?.sourceSymbols ?? false, message: 'QEMU debug session ended normally.' };
+            session.exitCode = 0;
+        } else if (unsignedCode >= 0x80000000) {
+            const explanation = unsignedCode === 0xCFFFFFFF
+                ? 'Windows terminated QEMU after its window became unresponsive or was force-closed.'
+                : 'QEMU terminated with a Windows abnormal-process status.';
+            session.error = `QEMU terminated abnormally with Windows status ${hexCode}. ${explanation}`;
+            session.output += `\r\n[FAIL] ${session.error}\r\n`;
+            session.debug = { ...(session.debug ?? { sourceSymbols: false }), active: false, paused: false, sourceSymbols: session.debug?.sourceSymbols ?? false, message: session.error };
+            session.exitCode = 1;
+        } else {
+            session.error = `QEMU debug session exited with code ${code}.`;
+            session.output += `\r\n[FAIL] ${session.error}\r\n`;
+            session.debug = { ...(session.debug ?? { sourceSymbols: false }), active: false, paused: false, sourceSymbols: session.debug?.sourceSymbols ?? false, message: session.error };
+            session.exitCode = code;
+        }
+        session.complete = true;
     }
 
     protected async armSourceBreakpoint(session: RunSession, request: NovaOrynBreakpointRequest): Promise<NovaOrynBreakpointResult> {

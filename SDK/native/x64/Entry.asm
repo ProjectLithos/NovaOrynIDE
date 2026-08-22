@@ -93,6 +93,11 @@ section .text
 NovaOrynUefiEntry:
 %ifdef NOVAORYN_DEBUG
 NovaOrynDebugImageAnchor:
+    ; Preserve the firmware interrupt state while the IDE owns this private debug rendezvous.
+    ; A halted wait keeps QEMU/SDL responsive instead of burning a host core in a tight PAUSE loop.
+    pushfq
+    pop r11
+    cli
     ; Publish the actual runtime-relocated anchor address through QEMU isa-debugcon
     ; (I/O port 0xE9), then wait in a private rendezvous loop while the IDE arms
     ; source breakpoints. A literal INT3 is not used because system emulation can
@@ -126,9 +131,11 @@ NovaOrynDebugImageAnchor:
     jnz .debug_address_loop
     mov rdx, r10
 .debug_rendezvous:
-    pause
+    hlt
     jmp .debug_rendezvous
 NovaOrynDebugResume:
+    push r11
+    popfq
 %endif
     ; UEFI x64 enters with ImageHandle in RCX and EFI_SYSTEM_TABLE* in RDX.
     ; Preserve both values and maintain Windows x64 shadow space/alignment.

@@ -1733,8 +1733,8 @@
     },
     {
       "path": "native/x64/Entry.asm",
-      "length": 16697,
-      "sha256": "6046ab69aeeb94a1dd3f348d029e7ea7e1fb2ecd6e7fb18a72ad77846e3c58da"
+      "length": 16943,
+      "sha256": "a236d50481abebc3a7b72a74970864698171de772d30e8f7fc2d1798eb64e838"
     },
     {
       "path": "native/x64/Entry.S",

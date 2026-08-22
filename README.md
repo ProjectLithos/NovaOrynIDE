@@ -2,7 +2,7 @@
 
 ![NovaOryn logo](packages/novaoryn-ide/src/browser/style/novaoryn-logo.png)
 
-**Current release: 0.22.0**
+**Current release: 0.22.1**
 
 NovaOryn IDE is the desktop development environment for building, running, inspecting, testing, and debugging operating systems created with the **NovaOryn OS SDK**.
 
@@ -541,6 +541,6 @@ NovaOryn 0.20.0 defines one installable software package format for applications
 The SDK now includes a schema, ZIP verifier, package packer and transactional package-manager CLI. Payload files are length/SHA-256 checked, ZIP path traversal and undeclared payloads are rejected, dependencies are checked before commit, reverse dependencies protect uninstall, package state is recorded in an authoritative database, and kernel-extension packages require signed/trusted policy. Applications continue to use `.exe` packages containing `.nexe`; drivers continue to use the existing `.nodrv` artifact and can be distributed inside the common ZIP package.
 
 
-## 0.22.0 network stack API
+## 0.22.1 network stack API
 
-NovaOryn 0.22.0 standardises NIC, Ethernet, ARP/NDP, IPv4/IPv6, ICMP, UDP, TCP, sockets and DNS behind the kernel networking contract. IPv6 neighbor discovery and DNS AAAA records are part of the public stack surface, while hardware-specific NIC drivers remain below the Ethernet frame boundary.
+NovaOryn 0.22.1 standardises NIC, Ethernet, ARP/NDP, IPv4/IPv6, ICMP, UDP, TCP, sockets and DNS behind the kernel networking contract. IPv6 neighbor discovery and DNS AAAA records are part of the public stack surface, while hardware-specific NIC drivers remain below the Ethernet frame boundary.

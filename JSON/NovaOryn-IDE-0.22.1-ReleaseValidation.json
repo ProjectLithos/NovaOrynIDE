@@ -1,0 +1,12 @@
+{
+  "release": "0.22.1",
+  "status": "verified",
+  "changes": [
+    "halted QEMU debug rendezvous",
+    "RFLAGS-preserving firmware resume",
+    "structured Windows QEMU exit diagnostics",
+    "final serial-tail preservation",
+    "0.22.0 network stack retained"
+  ],
+  "windows_runtime_test_required": true
+}

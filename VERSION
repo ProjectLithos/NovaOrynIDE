@@ -1,4 +1,4 @@
-0.22.0
+0.22.1
 
 NovaOryn IDE release-version update manifest
 ============================================
@@ -52,9 +52,9 @@ CJS/Run-NovaOrynIDEFinalVerification.cjs
 
 Release-specific files for THIS release
 ---------------------------------------
-CJS/Verify-NovaOrynIDE0220.cjs
-JSON/NovaOryn-IDE-0.22.0-ReleaseValidation.json
-docs/Release-0.22.0.md
+CJS/Verify-NovaOrynIDE0221.cjs
+JSON/NovaOryn-IDE-0.22.1-ReleaseValidation.json
+docs/Release-0.22.1.md
 Ancillary/ChangedFiles.txt
 
 Hardware-abstraction boundary sources introduced/changed in 0.14.0
@@ -194,7 +194,7 @@ SDK/NovaOryn.sln
 SDK/NovaOryn-SourceManifest.json
 SDK/docs/Executable-Application-Format.md
 SDK/docs/site-content/Executable-Application-Format.md
-Package manager format introduced in 0.22.0
+Package manager format introduced in 0.22.1
 --------------------------------------------
 SDK/NovaOryn.Package.schema.json
 SDK/Pack-NovaOrynPackage.bat
@@ -211,7 +211,7 @@ SDK/NovaOryn-SourceManifest.json
 SDK/docs/Package-Manager-Format.md
 SDK/docs/site-content/Package-Manager-Format.md
 
-Filesystem VFS contract introduced/expanded in 0.22.0
+Filesystem VFS contract introduced/expanded in 0.22.1
 ----------------------------------------------------
 SDK/src/NovaOryn.Kernel.Storage/KernelStorageContracts.cs
 SDK/src/NovaOryn.Kernel.Storage/KernelVfs.cs
