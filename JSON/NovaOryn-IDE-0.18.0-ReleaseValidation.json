@@ -1,0 +1,16 @@
+{
+  "version": "0.18.0",
+  "feature": "Process isolation/security",
+  "requirements": [
+    "kernel/user address spaces",
+    "user pointer validation",
+    "executable permissions",
+    "W^X",
+    "NX",
+    "guard pages",
+    "privilege rings",
+    "syscall validation",
+    "capability/handle model"
+  ],
+  "verifier": "CJS/Verify-NovaOrynIDE0180.cjs"
+}

@@ -44,8 +44,8 @@ if (!service.includes("path.join(projectRoot, 'NovaOrynProject.json')")) missing
 if (!service.includes('NOVAORYN_MANIFEST=') || !service.includes('NovaOrynProject.json')) missing.push('SDK manifest launcher path');
 if (!service.includes('public static Boolean KMain(BootContext boot)')) missing.push('SDK-compatible KMain signature');
 if (!service.includes('if not exist "%NOVAORYN_PROJECT%\\\\NovaOryn.json" (')) missing.push('separator-safe NovaOryn.json launcher check');
-if (!service.includes("const NOVAORYN_IDE_VERSION = '0.17.0'")) missing.push('0.17.0 generator version');
-if (!widget.includes('NovaOryn OS 0.17.0')) missing.push('0.17.0 configurator version');
+if (!service.includes("const NOVAORYN_IDE_VERSION = '0.18.0'")) missing.push('0.18.0 generator version');
+if (!widget.includes('NovaOryn OS 0.18.0')) missing.push('0.18.0 configurator version');
 if (!protocol.includes("export type NovaOrynRunMode = 'run' | 'debug'")) missing.push('Run/Debug mode protocol');
 if (!service.includes('NovaOryn IDE will attach the debugger transport for the active target') || !service.includes("'-Run -Configuration Release'")) missing.push('SDK Run/Debug configuration handoff');
 if (!service.includes('DebuggingEnabled() => DebugBuild && DebuggingConfigured')) missing.push('generated effective debugging gate');

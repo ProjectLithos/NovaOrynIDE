@@ -215,6 +215,9 @@
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\README.md">Userland\README.md</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Settings\NovaOryn.Userland.Settings.csproj">Userland\Settings\NovaOryn.Userland.Settings.csproj</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Userland\Settings\UserlandSettings.cs">Userland\Settings\UserlandSettings.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Security\KernelSecurityContracts.cs">Sdk\NovaOryn.Kernel.Security\KernelSecurityContracts.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Security\KernelSecurity.cs">Sdk\NovaOryn.Kernel.Security\KernelSecurity.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Security\NovaOryn.Kernel.Security.csproj">Sdk\NovaOryn.Kernel.Security\NovaOryn.Kernel.Security.csproj</ProjectItem>
     </Project>
   </TemplateContent>
 </VSTemplate>

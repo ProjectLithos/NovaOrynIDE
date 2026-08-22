@@ -15,6 +15,7 @@ using NovaOryn.Kernel.Time;
 using NovaOryn.Kernel.Smp;
 using NovaOryn.Kernel.Scheduler;
 using NovaOryn.Kernel.Protection;
+using NovaOryn.Kernel.Security;
 using NovaOryn.Kernel.SystemCalls;
 using NovaOryn.Kernel.Ps2;
 using NovaOryn.Kernel.Processes;
@@ -291,6 +292,8 @@ public static unsafe class Kernel
         if (!KernelConsole.WriteLine(protection.SmapSupported ? "available for syscall copy guards" : "unsupported")) return false;
         if (!KernelStructuredLogging.InfoLine("kernel","Kernel.KMain","User/kernel separation online.")) return false;
         KernelTelemetry.KernelBootEvent("Protection", 11UL, KernelBootPhase.End);
+        if (!KernelSecurity.Initialize()) return false;
+        if (!KernelStructuredLogging.InfoLine("kernel","Kernel.KMain","Process isolation/security policy online.")) return false;
         if (!KernelSystemCalls.Initialize()) return false;
         if (!KernelSystemCalls.RegisterGet(33U, &GetFontPresetSyscall)) return false;
         if (!KernelSystemCalls.RegisterSet(33U, &SetFontPresetSyscall)) return false;

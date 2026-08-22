@@ -88,7 +88,7 @@ const NOVAORYN_IDE_ROOT = process.env.NOVAORYN_IDE_ROOT
     ? path.resolve(process.env.NOVAORYN_IDE_ROOT)
     : path.resolve(__dirname, '..', '..', '..', '..');
 const NOVAORYN_SDK_ROOT = path.join(NOVAORYN_IDE_ROOT, 'SDK');
-const NOVAORYN_IDE_VERSION = '0.17.0';
+const NOVAORYN_IDE_VERSION = '0.18.0';
 
 class GdbRspClient {
     protected socket: net.Socket | undefined;
@@ -1781,7 +1781,7 @@ export class NovaOrynProjectServiceImpl implements NovaOrynProjectService {
             await this.refreshSdkBridge(projectRoot);
             const activeTarget = await this.getActiveTarget(projectRoot);
             if (!activeTarget) return { success: false, error: 'NovaOryn Target Manager has no active target.' };
-            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.17.0 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
+            if (activeTarget.kind === 'remote') return { success: false, error: `${activeTarget.name} is a remote target. NovaOryn IDE 0.18.0 implements direct physical-machine GDB transport; generic remote-agent execution remains reserved for a later transport.` };
             if (activeTarget.kind === 'physical' && mode !== 'debug') return { success: false, error: `${activeTarget.name} is a physical target. Use Debug to build the kernel and attach to the configured hardware GDB endpoint; Release Run cannot automatically boot a physical machine.` };
             if (activeTarget.architecture !== 'x86_64') return { success: false, error: `${activeTarget.name} targets ${activeTarget.architecture}. The current bundled NovaOryn build/debug transport is x86_64; the target remains stored until that architecture backend is installed.` };
 
@@ -4734,6 +4734,7 @@ using NovaOryn.Kernel.Graphics;
 using NovaOryn.Kernel.Smp;
 using NovaOryn.Kernel.Scheduler;
 using NovaOryn.Kernel.Protection;
+using NovaOryn.Kernel.Security;
 using NovaOryn.Kernel.SystemCalls;
 using NovaOryn.Kernel.Processes;
 using NovaOryn.Kernel.InterruptDispatch;
@@ -4781,6 +4782,7 @@ public static class Kernel
         if (!KernelSmp.Initialize(boot)) return false;
         if (!KernelScheduler.Initialize()) return false;
         if (!KernelProtection.Initialize()) return false;
+        if (!KernelSecurity.Initialize()) return false;
         if (!KernelSystemCalls.Initialize()) return false;
         if (!KernelProcesses.Initialize()) return false;
         if (!KernelInterruptDispatch.Initialize()) return false;
@@ -4806,6 +4808,7 @@ using NovaOryn.Kernel.Graphics;
 using NovaOryn.Kernel.Smp;
 using NovaOryn.Kernel.Scheduler;
 using NovaOryn.Kernel.Protection;
+using NovaOryn.Kernel.Security;
 using NovaOryn.Kernel.SystemCalls;
 using NovaOryn.Kernel.Processes;
 using NovaOryn.Kernel.InterruptDispatch;
@@ -4855,6 +4858,7 @@ public static class Kernel
         if (!KernelSmp.Initialize(boot)) return false;
         if (!KernelScheduler.Initialize()) return false;
         if (!KernelProtection.Initialize()) return false;
+        if (!KernelSecurity.Initialize()) return false;
         if (!KernelSystemCalls.Initialize()) return false;
         if (!KernelProcesses.Initialize()) return false;
         return true;
@@ -4903,6 +4907,7 @@ using NovaOryn.Kernel.Graphics;
 using NovaOryn.Kernel.Smp;
 using NovaOryn.Kernel.Scheduler;
 using NovaOryn.Kernel.Protection;
+using NovaOryn.Kernel.Security;
 using NovaOryn.Kernel.SystemCalls;
 using NovaOryn.Kernel.Processes;
 using NovaOryn.Kernel.InterruptDispatch;
@@ -4970,6 +4975,7 @@ public static class Kernel
         if (!KernelSmp.Initialize(boot)) return false;
         if (!KernelScheduler.Initialize()) return false;
         if (!KernelProtection.Initialize()) return false;
+        if (!KernelSecurity.Initialize()) return false;
         if (!KernelSystemCalls.Initialize()) return false;
         if (!KernelProcesses.Initialize()) return false;
         if (!KernelInterruptDispatch.Initialize()) return false;

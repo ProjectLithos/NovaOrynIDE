@@ -69,8 +69,8 @@ public readonly struct ProcessExecutableInfo
 public readonly struct KernelProcessInfo
 {
     /// <summary>Creates a process-information snapshot.</summary>
-    public KernelProcessInfo(UInt64 id, KernelProcessState state, ProcessExecutableFormat format, UInt64 pageTableRoot, UInt64 entryPoint, UInt64 stackBase, UInt64 stackTop, Int64 exitCode)
-    { Id=id; State=state; ExecutableFormat=format; PageTableRoot=pageTableRoot; EntryPoint=entryPoint; StackBase=stackBase; StackTop=stackTop; ExitCode=exitCode; }
+    public KernelProcessInfo(UInt64 id, KernelProcessState state, ProcessExecutableFormat format, UInt64 pageTableRoot, UInt64 entryPoint, UInt64 stackBase, UInt64 stackTop, UInt64 stackGuardBase, Int64 exitCode)
+    { Id=id; State=state; ExecutableFormat=format; PageTableRoot=pageTableRoot; EntryPoint=entryPoint; StackBase=stackBase; StackTop=stackTop; StackGuardBase=stackGuardBase; ExitCode=exitCode; }
     public UInt64 Id { get; }
     public KernelProcessState State { get; }
     public ProcessExecutableFormat ExecutableFormat { get; }
@@ -78,6 +78,8 @@ public readonly struct KernelProcessInfo
     public UInt64 EntryPoint { get; }
     public UInt64 StackBase { get; }
     public UInt64 StackTop { get; }
+    public UInt64 StackGuardBase { get; }
+    public UInt64 StackGuardBytes => 4096UL;
     public Int64 ExitCode { get; }
 }
 

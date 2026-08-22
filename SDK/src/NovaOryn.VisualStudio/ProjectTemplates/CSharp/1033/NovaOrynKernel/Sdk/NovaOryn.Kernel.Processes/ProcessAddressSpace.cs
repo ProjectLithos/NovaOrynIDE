@@ -19,7 +19,7 @@ internal static unsafe class ProcessAddressSpace
 
     internal static Boolean TryMap(UInt64 root, UInt64 virtualAddress, UInt64 physicalAddress, KernelVirtualMemoryProtection protection, KernelPhysicalAllocation* tables, UInt32 capacity, ref UInt32 tableCount)
     {
-        if((virtualAddress&4095UL)!=0UL || (physicalAddress&4095UL)!=0UL || virtualAddress>=KernelAddressSpace.UserEndExclusive) return false;
+        if((virtualAddress&4095UL)!=0UL || (physicalAddress&4095UL)!=0UL || virtualAddress>=KernelAddressSpace.UserEndExclusive || ((protection&KernelVirtualMemoryProtection.Write)!=0 && (protection&KernelVirtualMemoryProtection.Execute)!=0)) return false;
         UInt64* pml4=Pointer(root); Int32 a=(Int32)((virtualAddress>>39)&511UL), b=(Int32)((virtualAddress>>30)&511UL), c=(Int32)((virtualAddress>>21)&511UL), d=(Int32)((virtualAddress>>12)&511UL);
         if(a>=256)return false; if(!Child(pml4,a,tables,capacity,ref tableCount,out UInt64* pdpt))return false; if(!Child(pdpt,b,tables,capacity,ref tableCount,out UInt64* pd))return false; if(!Child(pd,c,tables,capacity,ref tableCount,out UInt64* pt))return false;
         if((pt[d]&Present)!=0UL)return false; UInt64 flags=Present|User; if((protection&KernelVirtualMemoryProtection.Write)!=0)flags|=Writable; if((protection&KernelVirtualMemoryProtection.Execute)==0)flags|=NoExecute; pt[d]=(physicalAddress&AddressMask)|flags; return true;

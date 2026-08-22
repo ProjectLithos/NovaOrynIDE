@@ -1,4 +1,4 @@
-0.17.0
+0.18.0
 
 NovaOryn IDE release-version update manifest
 ============================================
@@ -53,8 +53,8 @@ CJS/Run-NovaOrynIDEFinalVerification.cjs
 Release-specific files for THIS release
 ---------------------------------------
 CJS/Verify-NovaOrynIDE0170.cjs
-JSON/NovaOryn-IDE-0.17.0-ReleaseValidation.json
-docs/Release-0.17.0.md
+JSON/NovaOryn-IDE-0.18.0-ReleaseValidation.json
+docs/Release-0.18.0.md
 Ancillary/ChangedFiles.txt
 
 Hardware-abstraction boundary sources introduced/changed in 0.14.0
@@ -118,7 +118,7 @@ SDK/NovaOryn-SourceManifest.json
 SDK/docs/Synchronization-Primitives.md
 SDK/docs/site-content/Synchronization-Primitives.md
 
-Memory diagnostics introduced in 0.17.0
+Memory diagnostics introduced in 0.18.0
 -------------------------------------
 SDK/src/NovaOryn.Kernel.Memory/KernelPhysicalMemory.cs
 SDK/src/NovaOryn.Kernel.Heap/KernelHeap.cs
@@ -142,3 +142,36 @@ SDK/NovaOryn.sln
 SDK/NovaOryn-SourceManifest.json
 SDK/docs/Memory-Diagnostics.md
 SDK/docs/site-content/Memory-Diagnostics.md
+
+
+Process isolation/security introduced in 0.18.0
+------------------------------------------------
+SDK/src/NovaOryn.Kernel.Security/*
+SDK/src/NovaOryn.Kernel.Protection/KernelProtection.cs
+SDK/src/NovaOryn.Kernel.Protection/KernelProtectionContracts.cs
+SDK/src/NovaOryn.Kernel.Processes/KernelProcesses.cs
+SDK/src/NovaOryn.Kernel.Processes/ProcessAddressSpace.cs
+SDK/src/NovaOryn.Kernel.Processes/ProcessContracts.cs
+SDK/src/NovaOryn.Kernel.SystemCalls/KernelSystemCalls.cs
+SDK/src/NovaOryn.Kernel.Bootstrap/Kernel.cs
+SDK/src/NovaOryn.Kernel.Bootstrap/NovaOryn.Kernel.Bootstrap.csproj
+SDK/src/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs
+SDK/templates/NovaOrynKernel/NovaOrynKernel.csproj
+SDK/templates/NovaOrynKernel/Boot/BootStartup.cs
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Security/*
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Protection/*
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Processes/*
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.SystemCalls/*
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/NovaOrynKernel.csproj
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/NovaOrynKernel.vstemplate
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Boot/BootStartup.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Security/*
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Protection/*
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Processes/*
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.SystemCalls/*
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs
+SDK/NovaOryn.sln
+SDK/NovaOryn-SourceManifest.json
+SDK/docs/Process-Isolation-Security.md
+SDK/docs/site-content/Process-Isolation-Security.md

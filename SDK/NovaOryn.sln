@@ -220,6 +220,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Arch.X64", "src\No
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Memory.Diagnostics", "src\NovaOryn.Kernel.Memory.Diagnostics\NovaOryn.Kernel.Memory.Diagnostics.csproj", "{A17D0000-1700-4B21-9A17-000000000170}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Security", "src\NovaOryn.Kernel.Security\NovaOryn.Kernel.Security.csproj", "{A18D0000-1800-4B21-9A18-000000000180}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -676,6 +678,10 @@ Global
 		{A16C0E00-1600-4B21-9A16-000000000160}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A16C0E00-1600-4B21-9A16-000000000160}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A16C0E00-1600-4B21-9A16-000000000160}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
+			{A18D0000-1800-4B21-9A18-000000000180}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A18D0000-1800-4B21-9A18-000000000180}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A18D0000-1800-4B21-9A18-000000000180}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A18D0000-1800-4B21-9A18-000000000180}.Release|Any CPU.Build.0 = Release|Any CPU
+EndGlobalSection
 EndGlobal
 

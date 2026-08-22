@@ -11,6 +11,7 @@ using NovaOryn.Kernel.Time;
 using NovaOryn.Kernel.Smp;
 using NovaOryn.Kernel.Scheduler;
 using NovaOryn.Kernel.Protection;
+using NovaOryn.Kernel.Security;
 using NovaOryn.Kernel.SystemCalls;
 using NovaOryn.Kernel.Graphics;
 using NovaOryn.Kernel.Bootstrap;
@@ -294,6 +295,8 @@ public static unsafe class BootStartup
         if (!KernelConsole.Write(" / ")) return false;
         if (!KernelConsole.WriteLine(protection.SmapSupported ? "available for syscall copy guards" : "unsupported")) return false;
         if (!KernelStructuredLogging.InfoLine("protection","BootStartup.Initialize","User/kernel separation online.")) return false;
+        if (!KernelSecurity.Initialize()) return false;
+        if (!KernelStructuredLogging.InfoLine("security","BootStartup.Initialize","Process isolation/security policy online.")) return false;
         if (!KernelSystemCalls.Initialize()) return false;
         if (!KernelSystemCalls.RegisterGet(33U, &GetFontPresetSyscall)) return false;
         if (!KernelSystemCalls.RegisterSet(33U, &SetFontPresetSyscall)) return false;

@@ -3,6 +3,8 @@ using System;
 namespace NovaOryn.Kernel.Protection;
 
 /// <summary>Reports the active x64 user/kernel protection boundary.</summary>
+public enum KernelProtectionRing : Byte { Kernel = 0, User = 3 }
+
 public readonly struct KernelProtectionCapabilities
 {
     internal KernelProtectionCapabilities(Boolean writeProtect, Boolean nx, Boolean smepSupported, Boolean smepEnabled, Boolean smapSupported)
@@ -12,6 +14,8 @@ public readonly struct KernelProtectionCapabilities
     public Boolean SmepSupported { get; }
     public Boolean SmepEnabled { get; }
     public Boolean SmapSupported { get; }
+    public KernelProtectionRing KernelRing => KernelProtectionRing.Kernel;
+    public KernelProtectionRing UserRing => KernelProtectionRing.User;
     public UInt16 UserDataSelector => KernelProtectionMath.UserDataSelector;
     public UInt16 UserCodeSelector => KernelProtectionMath.UserCodeSelector;
     public UInt64 MinimumUserAddress => KernelProtectionMath.MinimumUserAddress;

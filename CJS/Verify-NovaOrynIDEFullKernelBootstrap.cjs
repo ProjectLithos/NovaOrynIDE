@@ -20,7 +20,7 @@ const checks=[
  ['template kernel enters full boot',kernel.includes('BootStartup.Initialize(boot)')&&kernel.includes('HardwareAbstractionLayer.Initialize()')],
  ['memory runtime starts',boot.includes('KernelPhysicalMemory.Initialize(boot)')&&boot.includes('KernelVirtualMemory.Initialize()')&&boot.includes('KernelHeap.Initialize()')],
  ['SMP and scheduler start',boot.includes('KernelSmp.Initialize(boot)')&&boot.includes('KernelScheduler.Initialize()')],
- ['protection and syscalls start',boot.includes('KernelProtection.Initialize()')&&boot.includes('KernelSystemCalls.Initialize()')&&boot.includes('System calls online.')],
+ ['protection, security and syscalls start',boot.includes('KernelProtection.Initialize()')&&boot.includes('KernelSecurity.Initialize()')&&boot.includes('KernelSystemCalls.Initialize()')&&boot.includes('System calls online.')],
  ['process runtime starts',hal.includes('KernelProcesses.Initialize()')],
  ['driver runtime starts when configured',hal.includes('KernelDrivers.Initialize()')&&hal.includes('KernelPci.Initialize()')&&hal.includes('KernelInterruptBroker.Initialize()')],
  ['storage runtime starts when configured',hal.includes('KernelStorage.Initialize()')&&hal.includes('KernelNvme.Initialize()')&&hal.includes('KernelAhci.Initialize()')],
@@ -29,4 +29,5 @@ const checks=[
 ];
 let bad=0;for(const [name,ok] of checks){console.log(`${ok?'[ OK ]':'[FAIL]'} ${name}`);if(!ok)bad++;}
 if(bad)process.exit(1);
-console.log(`[ OK ] NovaOryn IDE 0.17.0 architecture-specific generated-kernel bootstrap contract verified (${checks.length} checks).`);
+console.log(`[ OK ] NovaOryn IDE 0.18.0 architecture-specific generated-kernel bootstrap contract verified (${checks.length} checks).`);
+

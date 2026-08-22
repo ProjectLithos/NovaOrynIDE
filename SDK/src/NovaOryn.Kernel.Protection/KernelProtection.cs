@@ -35,7 +35,7 @@ public static class KernelProtection
     /// <summary>Validates and maps one user-accessible page while refusing kernel-half addresses.</summary>
     public static Boolean TryMapUserPage(UInt64 virtualAddress, UInt64 physicalAddress, KernelVirtualMemoryProtection protection)
     {
-        if (!_initialized || !KernelProtectionMath.IsUserRange(virtualAddress, 4096UL)) return false;
+        if (!_initialized || !KernelProtectionMath.IsUserRange(virtualAddress, 4096UL) || !IsUserProtectionAllowed(protection)) return false;
         KernelVirtualMemoryProtection userProtection = protection | KernelVirtualMemoryProtection.User | KernelVirtualMemoryProtection.Read;
         return KernelVirtualMemory.TryMap(virtualAddress, physicalAddress, KernelVirtualPageSize.Page4KiB, userProtection);
     }
@@ -43,10 +43,15 @@ public static class KernelProtection
     /// <summary>Changes one existing user mapping without allowing supervisor-only protection.</summary>
     public static Boolean TryProtectUserPage(UInt64 virtualAddress, KernelVirtualMemoryProtection protection)
     {
-        if (!_initialized || !KernelProtectionMath.IsUserRange(virtualAddress, 4096UL)) return false;
+        if (!_initialized || !KernelProtectionMath.IsUserRange(virtualAddress, 4096UL) || !IsUserProtectionAllowed(protection)) return false;
         KernelVirtualMemoryProtection userProtection = protection | KernelVirtualMemoryProtection.User | KernelVirtualMemoryProtection.Read;
         return KernelVirtualMemory.TryProtect(virtualAddress, userProtection);
     }
+
+
+    /// <summary>Enforces W^X for user mappings. NX is applied by the paging layer whenever Execute is absent.</summary>
+    public static Boolean IsUserProtectionAllowed(KernelVirtualMemoryProtection protection)
+        => !((protection & KernelVirtualMemoryProtection.Write) != 0 && (protection & KernelVirtualMemoryProtection.Execute) != 0);
 
     /// <summary>Creates a validated future ring-3 transition context for the process/syscall stages.</summary>
     public static Boolean TryCreateUserModeContext(UInt64 entryPoint, UInt64 stackTop, UInt64 argument, out UserModeContext context)

@@ -6,6 +6,7 @@
     <ProjectReference Include="..\NovaOryn.Freestanding.CoreLib\NovaOryn.Freestanding.CoreLib.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Protection\NovaOryn.Kernel.Protection.csproj" />
+    <ProjectReference Include="..\NovaOryn.Kernel.Security\NovaOryn.Kernel.Security.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Scheduler\NovaOryn.Kernel.Scheduler.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Smp\NovaOryn.Kernel.Smp.csproj" />
     <ProjectReference Include="..\NovaOryn.Kernel.Time\NovaOryn.Kernel.Time.csproj" />

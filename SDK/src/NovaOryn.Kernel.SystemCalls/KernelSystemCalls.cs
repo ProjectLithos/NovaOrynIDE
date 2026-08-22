@@ -5,6 +5,7 @@ using NovaOryn.Kernel.Internal.X64;
 using NovaOryn.Kernel.Protection;
 using NovaOryn.Kernel.Scheduler;
 using NovaOryn.Kernel.Smp;
+using NovaOryn.Kernel.Security;
 using NovaOryn.Kernel.Time;
 using NovaOryn.Kernel.VirtualMemory;
 
@@ -36,7 +37,7 @@ public static unsafe class KernelSystemCalls
     public static Boolean Initialize()
     {
         if (_initialized) return true;
-        if (!KernelProtection.IsInitialized() || !KernelHeap.IsInitialized() || !KernelSmp.IsInitialized()) return false;
+        if (!KernelProtection.IsInitialized() || !KernelSecurity.IsInitialized() || !KernelHeap.IsInitialized() || !KernelSmp.IsInitialized()) return false;
         if (!KernelHeap.TryAllocate(SyscallStackBytes, 16UL, true, out KernelHeapAllocation stack)) return false;
         if (!KernelHeap.TryAllocate(128UL, 16UL, true, out KernelHeapAllocation state)) return false;
         _stackBase = stack.Address;
@@ -96,6 +97,7 @@ public static unsafe class KernelSystemCalls
     {
         if (!_initialized || !KernelSystemCallMath.TryDecodeAbi(encoded, out KernelSystemCallAbi abi)) return (Int64)KernelSystemCallError.NotImplemented;
         UInt32 service=KernelSystemCallMath.GetServiceNumber(encoded);
+        if (!KernelSecurity.TryValidateCurrentSyscall((UInt32)abi,service)) return (Int64)KernelSystemCallError.NotPermitted;
         KernelSystemCallOperation operation=abi==KernelSystemCallAbi.GetSetEvent ? KernelSystemCallMath.GetOperation(encoded) : KernelSystemCallOperation.Get;
         KernelSystemCallFrame frame=new(abi,operation,service,a0,a1,a2,a3,a4,a5);
         if (abi==KernelSystemCallAbi.GetSetEvent) return DispatchNative(&frame);
@@ -200,19 +202,8 @@ public static unsafe class KernelSystemCalls
 
     private static Boolean ValidateUserRange(UInt64 address, UInt64 byteCount, Boolean write)
     {
-        if (!KernelProtectionMath.IsUserRange(address,byteCount)) return false;
-        UInt64 current=address, remaining=byteCount;
-        while (remaining!=0UL)
-        {
-            if (!KernelVirtualMemory.TryTranslate(current,out KernelVirtualTranslation translation)) return false;
-            KernelVirtualMemoryProtection p=translation.Protection;
-            if ((p & KernelVirtualMemoryProtection.User)==0 || (p & KernelVirtualMemoryProtection.Read)==0) return false;
-            if (write && (p & KernelVirtualMemoryProtection.Write)==0) return false;
-            UInt64 pageSize=(UInt64)translation.PageSize;
-            UInt64 pageRemaining=pageSize-(current & (pageSize-1UL));
-            UInt64 step=remaining<pageRemaining ? remaining : pageRemaining;
-            current+=step; remaining-=step;
-        }
-        return true;
+        if (!KernelSecurity.TryGetCurrentProcess(out UInt64 processId)) return false;
+        KernelUserMemoryAccess access=KernelUserMemoryAccess.Read; if(write)access|=KernelUserMemoryAccess.Write;
+        return KernelSecurity.TryValidateUserPointer(processId,address,byteCount,access);
     }
 }

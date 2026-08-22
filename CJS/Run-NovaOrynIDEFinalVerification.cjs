@@ -6,7 +6,7 @@ const node = process.execPath;
 const verifiers = [
   'CJS/Verify-NovaOrynIDE0113.cjs',
   'CJS/Verify-NovaOrynIDETestFramework0110.cjs',
-  'CJS/Verify-NovaOrynIDE0170.cjs'
+  'CJS/Verify-NovaOrynIDE0180.cjs'
 ];
 
 for (const verifier of verifiers) {
