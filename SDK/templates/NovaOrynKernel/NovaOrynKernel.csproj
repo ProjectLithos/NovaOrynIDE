@@ -39,6 +39,7 @@
     <ProjectReference Include="Sdk\NovaOryn.Kernel.VirtualMemory\NovaOryn.Kernel.VirtualMemory.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.AddressSpace\NovaOryn.Kernel.AddressSpace.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj" />
+    <ProjectReference Include="Sdk\NovaOryn.Kernel.Memory.Diagnostics\NovaOryn.Kernel.Memory.Diagnostics.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Acpi\NovaOryn.Kernel.Acpi.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Time\NovaOryn.Kernel.Time.csproj" />
     <ProjectReference Include="Sdk\NovaOryn.Kernel.Smp\NovaOryn.Kernel.Smp.csproj" />

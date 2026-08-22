@@ -70,7 +70,10 @@
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Graphics\SimpleFramebuffer.cs">Sdk\NovaOryn.Kernel.Graphics\SimpleFramebuffer.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Heap\KernelEarlyAllocator.cs">Sdk\NovaOryn.Kernel.Heap\KernelEarlyAllocator.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Heap\KernelHeap.cs">Sdk\NovaOryn.Kernel.Heap\KernelHeap.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Heap\KernelHeap.Diagnostics.cs">Sdk\NovaOryn.Kernel.Heap\KernelHeap.Diagnostics.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj">Sdk\NovaOryn.Kernel.Heap\NovaOryn.Kernel.Heap.csproj</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Memory.Diagnostics\KernelMemoryDiagnostics.cs">Sdk\NovaOryn.Kernel.Memory.Diagnostics\KernelMemoryDiagnostics.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Memory.Diagnostics\NovaOryn.Kernel.Memory.Diagnostics.csproj">Sdk\NovaOryn.Kernel.Memory.Diagnostics\NovaOryn.Kernel.Memory.Diagnostics.csproj</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.InterruptBroker\KernelInterruptBroker.cs">Sdk\NovaOryn.Kernel.InterruptBroker\KernelInterruptBroker.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.InterruptBroker\KernelInterruptBrokerContracts.cs">Sdk\NovaOryn.Kernel.InterruptBroker\KernelInterruptBrokerContracts.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.InterruptBroker\KernelInterruptBrokerMath.cs">Sdk\NovaOryn.Kernel.InterruptBroker\KernelInterruptBrokerMath.cs</ProjectItem>
@@ -171,6 +174,7 @@
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Virtio\VirtioContracts.cs">Sdk\NovaOryn.Kernel.Virtio\VirtioContracts.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.Virtio\VirtioMath.cs">Sdk\NovaOryn.Kernel.Virtio\VirtioMath.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.VirtualMemory\KernelVirtualMemory.cs">Sdk\NovaOryn.Kernel.VirtualMemory\KernelVirtualMemory.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.VirtualMemory\KernelVirtualMemory.Diagnostics.cs">Sdk\NovaOryn.Kernel.VirtualMemory\KernelVirtualMemory.Diagnostics.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.VirtualMemory\KernelVirtualMemory.DirectMap.cs">Sdk\NovaOryn.Kernel.VirtualMemory\KernelVirtualMemory.DirectMap.cs</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.VirtualMemory\NovaOryn.Kernel.VirtualMemory.csproj">Sdk\NovaOryn.Kernel.VirtualMemory\NovaOryn.Kernel.VirtualMemory.csproj</ProjectItem>
       <ProjectItem ReplaceParameters="false" OpenInEditor="false" TargetFileName="Sdk\NovaOryn.Kernel.X64.LowLevel\Native.cs">Sdk\NovaOryn.Kernel.X64.LowLevel\Native.cs</ProjectItem>

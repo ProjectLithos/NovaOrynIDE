@@ -218,6 +218,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Architectur
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Arch.X64", "src\NovaOryn.Arch.X64\NovaOryn.Arch.X64.csproj", "{14000000-0000-4000-8000-000000000002}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaOryn.Kernel.Memory.Diagnostics", "src\NovaOryn.Kernel.Memory.Diagnostics\NovaOryn.Kernel.Memory.Diagnostics.csproj", "{A17D0000-1700-4B21-9A17-000000000170}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

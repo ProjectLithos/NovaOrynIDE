@@ -1,0 +1,15 @@
+{
+  "version": "0.17.0",
+  "feature": "Memory diagnostics",
+  "requirements": [
+    "physical allocator statistics",
+    "heap diagnostics",
+    "page-table inspection",
+    "leak detection",
+    "guards/canaries",
+    "double-free detection",
+    "allocation tags"
+  ],
+  "implementation": "extends canonical KernelPhysicalMemory, KernelHeap and KernelVirtualMemory with NovaOryn.Kernel.Memory.Diagnostics facade",
+  "verifier": "CJS/Verify-NovaOrynIDE0170.cjs"
+}

@@ -52,7 +52,8 @@
     "timekeeping": "1.0",
     "buildProvenance": "1.0",
     "sdkDoctor": "1.0",
-    "commandLineSdk": "1.0"
+    "commandLineSdk": "1.0",
+    "memoryDiagnostics": "1.0"
   },
   "rules": {
     "majorApiChange": "Breaking public API changes require a new API major version.",

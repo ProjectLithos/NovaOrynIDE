@@ -1,4 +1,4 @@
-0.16.1
+0.17.0
 
 NovaOryn IDE release-version update manifest
 ============================================
@@ -52,9 +52,9 @@ CJS/Run-NovaOrynIDEFinalVerification.cjs
 
 Release-specific files for THIS release
 ---------------------------------------
-CJS/Verify-NovaOrynIDE0161.cjs
-JSON/NovaOryn-IDE-0.16.1-ReleaseValidation.json
-docs/Release-0.16.1.md
+CJS/Verify-NovaOrynIDE0170.cjs
+JSON/NovaOryn-IDE-0.17.0-ReleaseValidation.json
+docs/Release-0.17.0.md
 Ancillary/ChangedFiles.txt
 
 Hardware-abstraction boundary sources introduced/changed in 0.14.0
@@ -117,3 +117,28 @@ SDK/NovaOryn.sln
 SDK/NovaOryn-SourceManifest.json
 SDK/docs/Synchronization-Primitives.md
 SDK/docs/site-content/Synchronization-Primitives.md
+
+Memory diagnostics introduced in 0.17.0
+-------------------------------------
+SDK/src/NovaOryn.Kernel.Memory/KernelPhysicalMemory.cs
+SDK/src/NovaOryn.Kernel.Heap/KernelHeap.cs
+SDK/src/NovaOryn.Kernel.Heap/KernelHeap.Diagnostics.cs
+SDK/src/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.cs
+SDK/src/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.Diagnostics.cs
+SDK/src/NovaOryn.Kernel.Memory.Diagnostics/*
+SDK/src/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs
+SDK/templates/NovaOrynKernel/NovaOrynKernel.csproj
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Heap/*
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.VirtualMemory/*
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Memory.Diagnostics/*
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/NovaOrynKernel.csproj
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/NovaOrynKernel.vstemplate
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Heap/*
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.VirtualMemory/*
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Memory.Diagnostics/*
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs
+SDK/NovaOryn.sln
+SDK/NovaOryn-SourceManifest.json
+SDK/docs/Memory-Diagnostics.md
+SDK/docs/site-content/Memory-Diagnostics.md

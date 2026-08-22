@@ -54,7 +54,7 @@ for %%F in ("%~dp0*.bat") do (
   )
 )
 
-rem NovaOryn IDE release contract: 0.16.1. VERSION line 1 is authoritative.
+rem NovaOryn IDE release contract: 0.17.0. VERSION line 1 is authoritative.
 rem Resolve the multi-line VERSION manifest through PowerShell into a one-line scratch file.
 rem CMD never reads VERSION directly, preventing the manifest body from becoming batch input.
 set "NOVAORYN_VERSION_SCRATCH=%~dp0.toolchain\novaoryn-ide-version.txt"

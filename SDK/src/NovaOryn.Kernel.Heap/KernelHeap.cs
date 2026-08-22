@@ -24,7 +24,11 @@ public enum KernelHeapStatus
     /// <summary>Backing pages could not be mapped into the kernel heap reservation.</summary>
     MappingFailed = 6,
     /// <summary>The supplied allocation token/range is unknown or was already released.</summary>
-    AllocationNotFound = 7
+    AllocationNotFound = 7,
+    /// <summary>The supplied token was already released.</summary>
+    DoubleFreeDetected = 8,
+    /// <summary>A guarded allocation canary was modified.</summary>
+    GuardCorruptionDetected = 9
 }
 
 /// <summary>Identifies one live first-fit kernel-heap allocation.</summary>
@@ -73,7 +77,7 @@ public readonly struct KernelHeapStatistics
 }
 
 /// <summary>Provides the default first-fit, page-backed, non-executable kernel heap inside the standard heap reservation.</summary>
-public static unsafe class KernelHeap
+public static unsafe partial class KernelHeap
 {
     private const UInt64 PageSize = 4096UL;
     private const UInt64 GrowthPages = 16UL;
@@ -124,6 +128,8 @@ public static unsafe class KernelHeap
         if (_status == KernelHeapStatus.MetadataCapacityExhausted) return "MetadataCapacityExhausted";
         if (_status == KernelHeapStatus.MappingFailed) return "MappingFailed";
         if (_status == KernelHeapStatus.AllocationNotFound) return "AllocationNotFound";
+        if (_status == KernelHeapStatus.DoubleFreeDetected) return "DoubleFreeDetected";
+        if (_status == KernelHeapStatus.GuardCorruptionDetected) return "GuardCorruptionDetected";
         return "Unknown";
     }
 
@@ -211,15 +217,23 @@ public static unsafe class KernelHeap
             for (Int32 i = 0; i < MaximumBlocks; i++)
             {
                 if (states[i] != 2 || tokens[i] != allocation.Token || starts[i] != allocation.Address || lengths[i] != allocation.ByteCount) continue;
+                UInt64 releasedToken = tokens[i];
                 states[i] = 1;
                 tokens[i] = 0UL;
                 _allocated -= lengths[i];
                 _live--;
+                OnAllocationReleased(releasedToken);
                 Coalesce();
                 _status = KernelHeapStatus.Success;
                 SynchronizeDiagnosticHeader();
                 return true;
             }
+        }
+        if (WasReleasedToken(allocation.Token))
+        {
+            _doubleFreeFailures++;
+            _status = KernelHeapStatus.DoubleFreeDetected;
+            return false;
         }
         _status = KernelHeapStatus.AllocationNotFound;
         return false;
@@ -300,6 +314,7 @@ public static unsafe class KernelHeap
                     for (UInt64 n = 0UL; n < bytes; n++) pointer[n] = 0;
                 }
                 allocation = new KernelHeapAllocation(token, aligned, bytes);
+                OnAllocationCreated(token, aligned, bytes);
                 _status = KernelHeapStatus.Success;
                 SynchronizeDiagnosticHeader();
                 return true;
@@ -421,6 +436,7 @@ public static unsafe class KernelHeap
         _peak = 0UL;
         _live = 0;
         _nextToken = 1UL;
+        ResetExtendedDiagnostics();
         State* state = GetState();
         UInt64* starts = state->Starts;
         UInt64* lengths = state->Lengths;
