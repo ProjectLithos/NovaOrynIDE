@@ -315,7 +315,18 @@ public readonly struct NovaOrynPackageManifest { public NovaOrynPackageManifest(
 public interface INovaOrynPackageManagerContract { Boolean TryInspect(String zipPath,out NovaOrynPackageManifest manifest); Boolean TryVerify(String zipPath); Boolean TryInstall(String zipPath,String systemRoot); Boolean TryUninstall(String packageId,String systemRoot); Boolean TryEnumerateInstalled(UInt32 index,out String packageId,out String version,out NovaOrynPackageKind kind); }
 public interface IKernelApplicationFormatContract : IKernelSubsystemContract { Boolean TryInspect(UInt64 packageAddress,UInt64 packageBytes,out NovaOrynExecutableMetadata metadata); Boolean TryValidateArchitecture(NovaOrynApplicationArchitecture architecture); Boolean TryValidateAbi(UInt16 major,UInt16 minor,NovaOrynApplicationAbi syscallAbi); Boolean TryEnumerateDependency(UInt64 packageAddress,UInt64 packageBytes,UInt32 index,out String id,out String versionConstraint); Boolean TryEnumerateRequiredCapability(UInt64 packageAddress,UInt64 packageBytes,UInt32 index,out String capability); Boolean TryEnumerateResource(UInt64 packageAddress,UInt64 packageBytes,UInt32 index,out String resourceName,out UInt64 offset,out UInt64 length); Boolean TryResolveNativeImage(UInt64 packageAddress,UInt64 packageBytes,out UInt64 nativeImageAddress,out UInt64 nativeImageBytes); }
 
-public interface IKernelVfsContract : IKernelFilesystemContract { Boolean TryUnmount(UInt64 mountId); Boolean TryWrite(UInt64 fileHandle,UInt64 offset,UInt64 bufferAddress,UInt32 bufferBytes,out UInt32 bytesWritten); Boolean TryOpenDirectory(String path,out UInt64 directoryHandle); Boolean TryReadDirectory(UInt64 directoryHandle,out String name,out UInt32 type); Boolean TryGetPermissions(String path,out UInt32 permissions); Boolean TrySetPermissions(String path,UInt32 permissions); }
+public interface IKernelVfsContract : IKernelFilesystemContract
+{
+    Boolean TryUnmount(UInt64 mountId);
+    Boolean TryWrite(UInt64 fileHandle,UInt64 offset,UInt64 bufferAddress,UInt32 bufferBytes,out UInt32 bytesWritten);
+    Boolean TryOpenDirectory(String path,out UInt64 directoryHandle);
+    Boolean TryReadDirectory(UInt64 directoryHandle,UInt64 entryIndex,UInt64 nameBuffer,UInt32 nameCapacityChars,out UInt32 nameLength,out UInt32 type,out UInt64 length,out UInt32 permissions);
+    Boolean TryCloseDirectory(UInt64 directoryHandle);
+    Boolean TryGetPermissions(String path,out UInt32 permissions);
+    Boolean TrySetPermissions(String path,UInt32 permissions);
+    Boolean TryRegisterFileSystemDriver(UInt32 fileSystemType,UInt64 callbackTable,UInt32 features);
+    Boolean SupportsAsyncIo();
+}
 public enum KernelNetworkLayer : Byte { Nic=1,Ethernet=2,Arp=3,Ndp=4,Ipv4=5,Ipv6=6,Icmp=7,Udp=8,Tcp=9,Sockets=10,Dns=11 }
 public interface IKernelNetworkStackContract : IKernelNetworkingContract { Boolean TryGetLayerState(KernelNetworkLayer layer,out KernelSubsystemState state); Boolean TryResolveName(String host,out UInt64 address); Boolean TryBind(UInt64 socketHandle,UInt64 address,UInt16 port); Boolean TryConnect(UInt64 socketHandle,UInt64 address,UInt16 port); Boolean TryListen(UInt64 socketHandle,UInt32 backlog); Boolean TryAccept(UInt64 socketHandle,out UInt64 clientSocket); }
 public enum KernelPowerState : Byte { Working=0,Sleep1=1,Sleep2=2,Sleep3=3,Hibernate=4,Off=5 }

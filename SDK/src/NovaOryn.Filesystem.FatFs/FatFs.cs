@@ -32,7 +32,7 @@ public static unsafe class FatFs
     private struct FileContext
     {
         internal KernelHeapAllocation Allocation; internal UInt64 Mount; internal UInt32 FirstCluster;
-        internal UInt64 Length,DirectorySector; internal UInt32 DirectoryOffset; internal Byte Type;
+        internal UInt64 Length,DirectorySector; internal UInt32 DirectoryOffset; internal Byte Type,Attributes;
     }
     private static Boolean _installed;
 
@@ -40,9 +40,10 @@ public static unsafe class FatFs
     {
         if(_installed)return true;
         if(!KernelVfs.IsInitialized())return false;
-        KernelFileSystemCallbacks f12=new(&Probe12,&Mount12,&Unmount,&Open,&Read,&Write,&Flush,&Close);
-        KernelFileSystemCallbacks f16=new(&Probe16,&Mount16,&Unmount,&Open,&Read,&Write,&Flush,&Close);
-        KernelFileSystemCallbacks f32=new(&Probe32,&Mount32,&Unmount,&Open,&Read,&Write,&Flush,&Close);
+        KernelFileSystemFeatures features=KernelFileSystemFeatures.Read|KernelFileSystemFeatures.Write|KernelFileSystemFeatures.Directories|KernelFileSystemFeatures.Permissions;
+        KernelFileSystemCallbacks f12=new(&Probe12,&Mount12,&Unmount,&Open,&Read,&Write,&Flush,&Close,&ReadDirectory,&GetPermissions,&SetPermissions,features);
+        KernelFileSystemCallbacks f16=new(&Probe16,&Mount16,&Unmount,&Open,&Read,&Write,&Flush,&Close,&ReadDirectory,&GetPermissions,&SetPermissions,features);
+        KernelFileSystemCallbacks f32=new(&Probe32,&Mount32,&Unmount,&Open,&Read,&Write,&Flush,&Close,&ReadDirectory,&GetPermissions,&SetPermissions,features);
         if(!KernelVfs.RegisterFileSystem(KernelFileSystemType.Fat12,f12))return false;
         if(!KernelVfs.RegisterFileSystem(KernelFileSystemType.Fat16,f16))return false;
         if(!KernelVfs.RegisterFileSystem(KernelFileSystemType.Fat32,f32))return false;
@@ -79,16 +80,16 @@ public static unsafe class FatFs
         if(mountCookie==0||path==null||cookie==null||type==null||length==null)return false;
         MountContext* mount=(MountContext*)(nuint)mountCookie;if(mount->Info.ReadOnly&&access!=KernelFileAccess.Read)return false;
         UInt32 cluster=mount->Info.Format==(Byte)FatFsFormat.Fat32?mount->Info.RootCluster:0U;
-        UInt64 fileLength=0,entrySector=0;UInt32 entryOffset=0;KernelFileType fileType=KernelFileType.Directory;
+        UInt64 fileLength=0,entrySector=0;UInt32 entryOffset=0;Byte attributes=0;KernelFileType fileType=KernelFileType.Directory;
         Int32 cursor=(Int32)pathOffset;while(cursor<path.Length&&path[cursor]=='/')cursor++;
         while(cursor<path.Length)
         {
             Int32 start=cursor;while(cursor<path.Length&&path[cursor]!='/')cursor++;Int32 count=cursor-start;
-            if(count<=0||!FindEntry(mount,cluster,path,start,count,out UInt32 next,out fileType,out fileLength,out entrySector,out entryOffset))return false;
+            if(count<=0||!FindEntry(mount,cluster,path,start,count,out UInt32 next,out fileType,out fileLength,out entrySector,out entryOffset,out attributes))return false;
             cluster=next;while(cursor<path.Length&&path[cursor]=='/')cursor++;if(cursor<path.Length&&fileType!=KernelFileType.Directory)return false;
         }
         if(!KernelHeap.TryAllocate((UInt64)sizeof(FileContext),16,true,out KernelHeapAllocation allocation))return false;
-        FileContext* file=(FileContext*)(nuint)allocation.Address;file->Allocation=allocation;file->Mount=mountCookie;file->FirstCluster=cluster;file->Length=fileLength;file->DirectorySector=entrySector;file->DirectoryOffset=entryOffset;file->Type=(Byte)fileType;
+        FileContext* file=(FileContext*)(nuint)allocation.Address;file->Allocation=allocation;file->Mount=mountCookie;file->FirstCluster=cluster;file->Length=fileLength;file->DirectorySector=entrySector;file->DirectoryOffset=entryOffset;file->Type=(Byte)fileType;file->Attributes=attributes;
         *cookie=allocation.Address;*type=fileType;*length=fileLength;return true;
     }
     private static Boolean Read(UInt64 fileCookie,UInt64 position,Byte* buffer,UInt32 bytesToRead,UInt32* bytesRead)
@@ -141,9 +142,84 @@ public static unsafe class FatFs
     {
         if(fileCookie==0)return false;FileContext* file=(FileContext*)(nuint)fileCookie;KernelHeapAllocation allocation=file->Allocation;return KernelHeap.TryRelease(allocation);
     }
-    private static Boolean FindEntry(MountContext* mount,UInt32 directoryCluster,String path,Int32 start,Int32 count,out UInt32 cluster,out KernelFileType type,out UInt64 length,out UInt64 entrySector,out UInt32 entryOffset)
+    private static Boolean ReadDirectory(UInt64 fileCookie,UInt64 entryIndex,Char* nameBuffer,UInt32 nameCapacityChars,UInt32* nameLength,KernelFileType* type,UInt64* length,KernelFilePermissions* permissions)
     {
-        cluster=0;type=KernelFileType.Unknown;length=0;entrySector=0;entryOffset=0;UInt32 bps=mount->Info.BytesPerSector;
+        if(fileCookie==0||nameBuffer==null||nameCapacityChars<2U||nameLength==null||type==null||length==null||permissions==null)return false;
+        FileContext* file=(FileContext*)(nuint)fileCookie;if(file->Type!=(Byte)KernelFileType.Directory)return false;
+        MountContext* mount=(MountContext*)(nuint)file->Mount;UInt32 cluster=file->FirstCluster;
+        return TryReadDirectoryEntry(mount,cluster,entryIndex,nameBuffer,nameCapacityChars,nameLength,type,length,permissions);
+    }
+
+    private static Boolean GetPermissions(UInt64 mountCookie,String path,UInt32 pathOffset,KernelFilePermissions* permissions)
+    {
+        if(mountCookie==0||path==null||permissions==null)return false;UInt64 cookie=0,length=0;KernelFileType type=KernelFileType.Unknown;
+        if(!Open(mountCookie,path,pathOffset,KernelFileAccess.Read,&cookie,&type,&length))return false;
+        MountContext* mount=(MountContext*)(nuint)mountCookie;
+        KernelFilePermissions value=KernelFilePermissions.OwnerRead|KernelFilePermissions.GroupRead|KernelFilePermissions.OtherRead;
+        FileContext* file=(FileContext*)(nuint)cookie;Boolean readOnly=mount->Info.ReadOnly||(file->Attributes&0x01)!=0;
+        if(!readOnly)value|=KernelFilePermissions.OwnerWrite;else value|=KernelFilePermissions.ReadOnly;
+        if((file->Attributes&0x02)!=0)value|=KernelFilePermissions.Hidden;if((file->Attributes&0x04)!=0)value|=KernelFilePermissions.System;
+        if(type==KernelFileType.Directory)value|=KernelFilePermissions.OwnerExecute|KernelFilePermissions.GroupExecute|KernelFilePermissions.OtherExecute;
+        Boolean closed=Close(cookie);if(!closed)return false;*permissions=value;return true;
+    }
+
+    private static Boolean SetPermissions(UInt64 mountCookie,String path,UInt32 pathOffset,KernelFilePermissions permissions)
+    {
+        // FAT12/16/32 metadata mutation is deliberately not exposed yet. The VFS permission
+        // contract is real; this provider reports that chmod-style changes are unsupported.
+        return false;
+    }
+
+    private static Boolean TryReadDirectoryEntry(MountContext* mount,UInt32 directoryCluster,UInt64 wanted,Char* nameBuffer,UInt32 capacity,UInt32* nameLength,KernelFileType* type,UInt64* length,KernelFilePermissions* permissions)
+    {
+        UInt32 bps=mount->Info.BytesPerSector;if(!KernelHeap.TryAllocate(bps,16,false,out KernelHeapAllocation scratch))return false;Byte* data=(Byte*)(nuint)scratch.Address;UInt64 seen=0;
+        if(directoryCluster==0U&&mount->Info.Format!=(Byte)FatFsFormat.Fat32)
+        {
+            for(UInt32 s=0;s<mount->Info.RootDirectorySectors;s++)
+            {
+                if(!KernelStorage.ReadVolumeBlocks(new KernelStorageVolumeHandle(mount->Volume),(UInt64)mount->Info.FirstRootSector+s,1,data,bps)){KernelHeap.TryRelease(scratch);return false;}
+                if(TryDirectoryEntryInSector(data,bps,wanted,&seen,nameBuffer,capacity,nameLength,type,length,permissions,mount->Info.ReadOnly)){KernelHeap.TryRelease(scratch);return true;}
+                if(ContainsDirectoryTerminator(data,bps)){KernelHeap.TryRelease(scratch);return false;}
+            }
+            KernelHeap.TryRelease(scratch);return false;
+        }
+        UInt32 current=directoryCluster;
+        while(current>=2U&&!IsEndOfChain(mount->Info,current))
+        {
+            UInt64 first=ClusterToSector(mount->Info,current);
+            for(UInt32 s=0;s<mount->Info.SectorsPerCluster;s++)
+            {
+                if(!KernelStorage.ReadVolumeBlocks(new KernelStorageVolumeHandle(mount->Volume),first+s,1,data,bps)){KernelHeap.TryRelease(scratch);return false;}
+                if(TryDirectoryEntryInSector(data,bps,wanted,&seen,nameBuffer,capacity,nameLength,type,length,permissions,mount->Info.ReadOnly)){KernelHeap.TryRelease(scratch);return true;}
+                if(ContainsDirectoryTerminator(data,bps)){KernelHeap.TryRelease(scratch);return false;}
+            }
+            if(!NextCluster(mount,current,out current)){KernelHeap.TryRelease(scratch);return false;}
+        }
+        KernelHeap.TryRelease(scratch);return false;
+    }
+
+    private static Boolean TryDirectoryEntryInSector(Byte* data,UInt32 bytes,UInt64 wanted,UInt64* seen,Char* nameBuffer,UInt32 capacity,UInt32* nameLength,KernelFileType* type,UInt64* length,KernelFilePermissions* permissions,Boolean volumeReadOnly)
+    {
+        for(UInt32 offset=0;offset+32U<=bytes;offset+=32U)
+        {
+            Byte first=data[offset];if(first==0)return false;Byte attr=data[offset+11];if(first==0xE5||attr==0x0F||(attr&0x08)!=0)continue;
+            if(*seen!=wanted){(*seen)++;continue;}
+            UInt32 n=0;for(UInt32 i=0;i<8U&&data[offset+i]!=' ';i++){if(n+1U>=capacity)return false;nameBuffer[n++]=(Char)data[offset+i];}
+            Boolean hasExt=false;for(UInt32 i=0;i<3U;i++)if(data[offset+8U+i]!=' '){hasExt=true;break;}
+            if(hasExt){if(n+2U>=capacity)return false;nameBuffer[n++]='.';for(UInt32 i=0;i<3U&&data[offset+8U+i]!=' ';i++){if(n+1U>=capacity)return false;nameBuffer[n++]=(Char)data[offset+8U+i];}}
+            nameBuffer[n]='\0';*nameLength=n;*type=(attr&0x10)!=0?KernelFileType.Directory:KernelFileType.File;*length=Read32(data+offset+28);
+            KernelFilePermissions p=KernelFilePermissions.OwnerRead|KernelFilePermissions.GroupRead|KernelFilePermissions.OtherRead;
+            if(volumeReadOnly||(attr&0x01)!=0)p|=KernelFilePermissions.ReadOnly;else p|=KernelFilePermissions.OwnerWrite;
+            if((attr&0x02)!=0)p|=KernelFilePermissions.Hidden;if((attr&0x04)!=0)p|=KernelFilePermissions.System;
+            if(*type==KernelFileType.Directory)p|=KernelFilePermissions.OwnerExecute|KernelFilePermissions.GroupExecute|KernelFilePermissions.OtherExecute;
+            *permissions=p;return true;
+        }
+        return false;
+    }
+
+    private static Boolean FindEntry(MountContext* mount,UInt32 directoryCluster,String path,Int32 start,Int32 count,out UInt32 cluster,out KernelFileType type,out UInt64 length,out UInt64 entrySector,out UInt32 entryOffset,out Byte attributes)
+    {
+        cluster=0;type=KernelFileType.Unknown;length=0;entrySector=0;entryOffset=0;attributes=0;UInt32 bps=mount->Info.BytesPerSector;
         if(!KernelHeap.TryAllocate(bps,16,false,out KernelHeapAllocation scratch))return false;Byte* data=(Byte*)(nuint)scratch.Address;
         if(directoryCluster==0U&&mount->Info.Format!=(Byte)FatFsFormat.Fat32)
         {
@@ -151,7 +227,7 @@ public static unsafe class FatFs
             {
                 UInt64 sector=(UInt64)mount->Info.FirstRootSector+s;
                 if(!KernelStorage.ReadVolumeBlocks(new KernelStorageVolumeHandle(mount->Volume),sector,1,data,bps)){KernelHeap.TryRelease(scratch);return false;}
-                if(FindEntryInSector(data,bps,path,start,count,out cluster,out type,out length,out UInt32 offset)){entrySector=sector;entryOffset=offset;KernelHeap.TryRelease(scratch);return true;}
+                if(FindEntryInSector(data,bps,path,start,count,out cluster,out type,out length,out UInt32 offset,out attributes)){entrySector=sector;entryOffset=offset;KernelHeap.TryRelease(scratch);return true;}
                 if(ContainsDirectoryTerminator(data,bps)){KernelHeap.TryRelease(scratch);return false;}
             }
             KernelHeap.TryRelease(scratch);return false;
@@ -164,22 +240,22 @@ public static unsafe class FatFs
             {
                 UInt64 sector=first+s;
                 if(!KernelStorage.ReadVolumeBlocks(new KernelStorageVolumeHandle(mount->Volume),sector,1,data,bps)){KernelHeap.TryRelease(scratch);return false;}
-                if(FindEntryInSector(data,bps,path,start,count,out cluster,out type,out length,out UInt32 offset)){entrySector=sector;entryOffset=offset;KernelHeap.TryRelease(scratch);return true;}
+                if(FindEntryInSector(data,bps,path,start,count,out cluster,out type,out length,out UInt32 offset,out attributes)){entrySector=sector;entryOffset=offset;KernelHeap.TryRelease(scratch);return true;}
                 if(ContainsDirectoryTerminator(data,bps)){KernelHeap.TryRelease(scratch);return false;}
             }
             if(!NextCluster(mount,current,out current)){KernelHeap.TryRelease(scratch);return false;}
         }
         KernelHeap.TryRelease(scratch);return false;
     }
-    private static Boolean FindEntryInSector(Byte* data,UInt32 bytes,String path,Int32 start,Int32 count,out UInt32 cluster,out KernelFileType type,out UInt64 length,out UInt32 entryOffset)
+    private static Boolean FindEntryInSector(Byte* data,UInt32 bytes,String path,Int32 start,Int32 count,out UInt32 cluster,out KernelFileType type,out UInt64 length,out UInt32 entryOffset,out Byte attributes)
     {
-        cluster=0;type=KernelFileType.Unknown;length=0;entryOffset=0;
+        cluster=0;type=KernelFileType.Unknown;length=0;entryOffset=0;attributes=0;
         for(UInt32 offset=0;offset+32U<=bytes;offset+=32U)
         {
             Byte first=data[offset];if(first==0)return false;Byte attr=data[offset+11];if(first==0xE5||attr==0x0F||(attr&0x08)!=0)continue;
             if(!NameMatches(data+offset,path,start,count))continue;
             UInt32 high=Read16(data+offset+20),low=Read16(data+offset+26);cluster=(high<<16)|low;length=Read32(data+offset+28);
-            type=(attr&0x10)!=0?KernelFileType.Directory:KernelFileType.File;entryOffset=offset;return true;
+            type=(attr&0x10)!=0?KernelFileType.Directory:KernelFileType.File;entryOffset=offset;attributes=attr;return true;
         }
         return false;
     }

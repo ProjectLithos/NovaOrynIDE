@@ -1,4 +1,4 @@
-NovaOryn IDE 0.20.0 deleted files
+NovaOryn IDE 0.21.0 deleted files
 ================================
 
 None.

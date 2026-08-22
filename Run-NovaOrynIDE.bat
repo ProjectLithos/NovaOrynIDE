@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
-rem NovaOryn IDE release contract: 0.20.0. VERSION line 1 is authoritative.
+rem NovaOryn IDE release contract: 0.21.0. VERSION line 1 is authoritative.
 rem Resolve VERSION through a one-line scratch file so the manifest body can never become CMD input.
 set "NOVAORYN_VERSION_SCRATCH=%~dp0.toolchain\novaoryn-ide-version.txt"
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Resolve-NovaOrynIDEVersion.ps1" -OutputPath "%NOVAORYN_VERSION_SCRATCH%"

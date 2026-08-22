@@ -107,6 +107,47 @@ public readonly unsafe struct KernelContextualBlockDeviceCallbacks
     { ReadBlocks=readBlocks;WriteBlocks=writeBlocks;Flush=flush; }
 }
 
+[Flags]
+public enum KernelFilePermissions : UInt32
+{
+    None=0,OwnerRead=1U<<0,OwnerWrite=1U<<1,OwnerExecute=1U<<2,
+    GroupRead=1U<<3,GroupWrite=1U<<4,GroupExecute=1U<<5,
+    OtherRead=1U<<6,OtherWrite=1U<<7,OtherExecute=1U<<8,
+    ReadOnly=1U<<16,System=1U<<17,Hidden=1U<<18
+}
+
+[Flags]
+public enum KernelFileSystemFeatures : UInt32
+{
+    None=0,Read=1U<<0,Write=1U<<1,Directories=1U<<2,Permissions=1U<<3,
+    CaseSensitive=1U<<4,RemovableMedia=1U<<5,AsyncIoReserved=1U<<31
+}
+
+public enum KernelVfsIoModel : Byte { Synchronous=1,AsynchronousReserved=2 }
+
+public readonly struct KernelDirectoryHandle { public KernelDirectoryHandle(UInt32 value){Value=value;} public UInt32 Value { get; } }
+
+public readonly struct KernelVfsProviderInfo
+{
+    public KernelVfsProviderInfo(KernelFileSystemType type,KernelFileSystemFeatures features,UInt32 providerId)
+    { Type=type;Features=features;ProviderId=providerId; }
+    public KernelFileSystemType Type { get; }
+    public KernelFileSystemFeatures Features { get; }
+    public UInt32 ProviderId { get; }
+}
+
+public readonly struct KernelVfsMountInfo
+{
+    public KernelVfsMountInfo(KernelMountHandle handle,KernelMountNamespaceHandle mountNamespace,KernelStorageVolumeHandle volume,KernelFileSystemType fileSystemType,UInt32 pathLength)
+    { Handle=handle;MountNamespace=mountNamespace;Volume=volume;FileSystemType=fileSystemType;PathLength=pathLength; }
+    public KernelMountHandle Handle { get; }
+    public KernelMountNamespaceHandle MountNamespace { get; }
+    public KernelStorageVolumeHandle Volume { get; }
+    public KernelFileSystemType FileSystemType { get; }
+    public UInt32 PathLength { get; }
+}
+
+/// <summary>Callbacks supplied by a filesystem driver beneath the VFS.</summary>
 public readonly unsafe struct KernelFileSystemCallbacks
 {
     public readonly delegate*<KernelStorageVolumeHandle,Boolean> Probe;
@@ -117,17 +158,50 @@ public readonly unsafe struct KernelFileSystemCallbacks
     public readonly delegate*<UInt64,UInt64,Byte*,UInt32,UInt32*,Boolean> Write;
     public readonly delegate*<UInt64,Boolean> Flush;
     public readonly delegate*<UInt64,Boolean> Close;
-    public KernelFileSystemCallbacks(delegate*<KernelStorageVolumeHandle,Boolean> probe,delegate*<KernelStorageVolumeHandle,UInt64*,Boolean> mount,delegate*<UInt64,Boolean> unmount,delegate*<UInt64,String,UInt32,KernelFileAccess,UInt64*,KernelFileType*,UInt64*,Boolean> open,delegate*<UInt64,UInt64,Byte*,UInt32,UInt32*,Boolean> read,delegate*<UInt64,UInt64,Byte*,UInt32,UInt32*,Boolean> write,delegate*<UInt64,Boolean> flush,delegate*<UInt64,Boolean> close)
-    { Probe=probe;Mount=mount;Unmount=unmount;Open=open;Read=read;Write=write;Flush=flush;Close=close; }
+    public readonly delegate*<UInt64,UInt64,Char*,UInt32,UInt32*,KernelFileType*,UInt64*,KernelFilePermissions*,Boolean> ReadDirectory;
+    public readonly delegate*<UInt64,String,UInt32,KernelFilePermissions*,Boolean> GetPermissions;
+    public readonly delegate*<UInt64,String,UInt32,KernelFilePermissions,Boolean> SetPermissions;
+    public readonly KernelFileSystemFeatures Features;
+
+    public KernelFileSystemCallbacks(
+        delegate*<KernelStorageVolumeHandle,Boolean> probe,
+        delegate*<KernelStorageVolumeHandle,UInt64*,Boolean> mount,
+        delegate*<UInt64,Boolean> unmount,
+        delegate*<UInt64,String,UInt32,KernelFileAccess,UInt64*,KernelFileType*,UInt64*,Boolean> open,
+        delegate*<UInt64,UInt64,Byte*,UInt32,UInt32*,Boolean> read,
+        delegate*<UInt64,UInt64,Byte*,UInt32,UInt32*,Boolean> write,
+        delegate*<UInt64,Boolean> flush,
+        delegate*<UInt64,Boolean> close)
+        : this(probe,mount,unmount,open,read,write,flush,close,null,null,null,
+            KernelFileSystemFeatures.Read|(write==null?KernelFileSystemFeatures.None:KernelFileSystemFeatures.Write)) { }
+
+    public KernelFileSystemCallbacks(
+        delegate*<KernelStorageVolumeHandle,Boolean> probe,
+        delegate*<KernelStorageVolumeHandle,UInt64*,Boolean> mount,
+        delegate*<UInt64,Boolean> unmount,
+        delegate*<UInt64,String,UInt32,KernelFileAccess,UInt64*,KernelFileType*,UInt64*,Boolean> open,
+        delegate*<UInt64,UInt64,Byte*,UInt32,UInt32*,Boolean> read,
+        delegate*<UInt64,UInt64,Byte*,UInt32,UInt32*,Boolean> write,
+        delegate*<UInt64,Boolean> flush,
+        delegate*<UInt64,Boolean> close,
+        delegate*<UInt64,UInt64,Char*,UInt32,UInt32*,KernelFileType*,UInt64*,KernelFilePermissions*,Boolean> readDirectory,
+        delegate*<UInt64,String,UInt32,KernelFilePermissions*,Boolean> getPermissions,
+        delegate*<UInt64,String,UInt32,KernelFilePermissions,Boolean> setPermissions,
+        KernelFileSystemFeatures features)
+    {
+        Probe=probe;Mount=mount;Unmount=unmount;Open=open;Read=read;Write=write;Flush=flush;Close=close;
+        ReadDirectory=readDirectory;GetPermissions=getPermissions;SetPermissions=setPermissions;Features=features;
+    }
 }
 
 public readonly struct KernelVfsFileInfo
 {
-    public KernelVfsFileInfo(KernelFileHandle handle,KernelFileType type,UInt64 length,UInt64 position,KernelFileAccess access)
-    { Handle=handle;Type=type;Length=length;Position=position;Access=access; }
+    public KernelVfsFileInfo(KernelFileHandle handle,KernelFileType type,UInt64 length,UInt64 position,KernelFileAccess access,KernelFilePermissions permissions)
+    { Handle=handle;Type=type;Length=length;Position=position;Access=access;Permissions=permissions; }
     public KernelFileHandle Handle { get; }
     public KernelFileType Type { get; }
     public UInt64 Length { get; }
     public UInt64 Position { get; }
     public KernelFileAccess Access { get; }
+    public KernelFilePermissions Permissions { get; }
 }

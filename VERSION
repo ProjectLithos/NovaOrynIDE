@@ -1,4 +1,4 @@
-0.20.0
+0.21.0
 
 NovaOryn IDE release-version update manifest
 ============================================
@@ -53,8 +53,8 @@ CJS/Run-NovaOrynIDEFinalVerification.cjs
 Release-specific files for THIS release
 ---------------------------------------
 CJS/Verify-NovaOrynIDE0200.cjs
-JSON/NovaOryn-IDE-0.20.0-ReleaseValidation.json
-docs/Release-0.20.0.md
+JSON/NovaOryn-IDE-0.21.0-ReleaseValidation.json
+docs/Release-0.21.0.md
 Ancillary/ChangedFiles.txt
 
 Hardware-abstraction boundary sources introduced/changed in 0.14.0
@@ -194,7 +194,7 @@ SDK/NovaOryn.sln
 SDK/NovaOryn-SourceManifest.json
 SDK/docs/Executable-Application-Format.md
 SDK/docs/site-content/Executable-Application-Format.md
-Package manager format introduced in 0.20.0
+Package manager format introduced in 0.21.0
 --------------------------------------------
 SDK/NovaOryn.Package.schema.json
 SDK/Pack-NovaOrynPackage.bat
@@ -210,3 +210,18 @@ SDK/NovaOryn.sln
 SDK/NovaOryn-SourceManifest.json
 SDK/docs/Package-Manager-Format.md
 SDK/docs/site-content/Package-Manager-Format.md
+
+Filesystem VFS contract introduced/expanded in 0.21.0
+----------------------------------------------------
+SDK/src/NovaOryn.Kernel.Storage/KernelStorageContracts.cs
+SDK/src/NovaOryn.Kernel.Storage/KernelVfs.cs
+SDK/src/NovaOryn.Filesystem.FatFs/FatFs.cs
+SDK/src/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Storage/*
+SDK/templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Storage/*
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs
+SDK/src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynFilesystemFatFs/FatFs.cs
+SDK/docs/Filesystem-VFS-Contract.md
+SDK/docs/site-content/Filesystem-VFS-Contract.md
+SDK/NovaOryn-SourceManifest.json

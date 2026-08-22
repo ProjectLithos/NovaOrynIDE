@@ -62,176 +62,6 @@
       "sha256": "68e3e0d78037dfacea1b424a69a3c6c4bcd4dbd54b06547f2f80da271b6cf688"
     },
     {
-      "path": "Install-NovaOrynFonts.bat",
-      "length": 132,
-      "sha256": "78b0cfb21ddb8626007319007f9b1114abec976e432a17dcdba49eb134fc11dc"
-    },
-    {
-      "path": "Install-NovaOrynFonts.ps1",
-      "length": 7081,
-      "sha256": "b2a0a6216351e252009fb1a6db0448eb68f6fed34d70980a8ec22dc41454868d"
-    },
-    {
-      "path": "Install-NovaOrynToolchain.bat",
-      "length": 226,
-      "sha256": "ff92827fd30ca3d81ff4574da86147f79c09e57c1eeba923dec2fcec82cf5d45"
-    },
-    {
-      "path": "Install-NovaOrynToolchain.ps1",
-      "length": 14819,
-      "sha256": "9a9a93e5a40351cb6b544f8a488592b27c59e33980d31ec72338102c205557bf"
-    },
-    {
-      "path": "Install-NovaOrynVSIX.bat",
-      "length": 131,
-      "sha256": "3489e50241a51d78456009919661c22acaa964d0e0994e98193c224942b42098"
-    },
-    {
-      "path": "Install-NovaOrynVSIX.ps1",
-      "length": 13707,
-      "sha256": "6e74e7ed2644fe1d42ae7599800fbc717d2bfc4fe777922b149a09ba5e44e696"
-    },
-    {
-      "path": "NovaOryn-Changes.json",
-      "length": 1121,
-      "sha256": "3d655ac6b1ef1f53f19ebf5212e07bf42fe03a3e809e3e7f25b49c9286ffc093"
-    },
-    {
-      "path": "NovaOryn-Package.bat",
-      "length": 317,
-      "sha256": "f7a0262f41e0c96c439a9458d3299350e7d0a3bbeccac10f1930c2fb2c14fb18"
-    },
-    {
-      "path": "NovaOryn.ApiBaseline.json",
-      "length": 319,
-      "sha256": "7fda365321cd1de8a64d14c0156fff51a6e3cc968d4af230043c50a9e443cce6"
-    },
-    {
-      "path": "NovaOryn.ApiContract.json",
-      "length": 561,
-      "sha256": "4e6880cf63c5c6ddb94179ed278ede6f6f997faba61b3c016e961402e62a42af"
-    },
-    {
-      "path": "NovaOryn.ArchitectureBoundaries.json",
-      "length": 1110,
-      "sha256": "c362f68cc48d9190267018d4a3dbe35f5a4a2a7d4bcc2c889de00203277615c2"
-    },
-    {
-      "path": "NovaOryn.BuildProvenance.schema.json",
-      "length": 193,
-      "sha256": "bc02028b1d77e6b956a8cb5e9ebbb5c2f670251cbb99a958c5d364dc6917a449"
-    },
-    {
-      "path": "NovaOryn.DriverPackage.schema.json",
-      "length": 2185,
-      "sha256": "707b418dd77e4b0d9f097cda1a1ed11d3b94c76b615880fc6a48c23f46e59044"
-    },
-    {
-      "path": "NovaOryn.Package.schema.json",
-      "length": 3046,
-      "sha256": "7722de60cbb039a72b89abf36c6eb225acbfc4a5769a29be8ef1334fbbad4966"
-    },
-    {
-      "path": "NovaOryn.QemuTestMatrix.json",
-      "length": 437,
-      "sha256": "bfc770c018e3eb0fb76283573706e675b79d44b4b688424ddbade6781f84cc1d"
-    },
-    {
-      "path": "NovaOryn.SdkManifest.json",
-      "length": 2387,
-      "sha256": "d2560408dec01cd8449b9a0d06470fb7065d792f11955b931f0420c6af73b27d"
-    },
-    {
-      "path": "NovaOryn.SubsystemContracts.json",
-      "length": 2181,
-      "sha256": "363130c8ba67ad3951576365311473966e22fc4a73b65f402a8cdaa563ff73f6"
-    },
-    {
-      "path": "NovaOryn.TestContract.json",
-      "length": 2124,
-      "sha256": "9a8f4f977a01c3676b38e49bb6d081c29ae40732d2919ad4d777dc9df9e7a06a"
-    },
-    {
-      "path": "NovaOryn.TestManifest.schema.json",
-      "length": 1399,
-      "sha256": "5530bbd7540231daeac546e2c9cf650629c8e2421c84a2b421046ce8a5599e7c"
-    },
-    {
-      "path": "NovaOryn.sln",
-      "length": 61736,
-      "sha256": "06102cb560b4eef354d2abca0c11d824f8eb70a354e4f7c91b073eee4d2ae1a6"
-    },
-    {
-      "path": "Pack-NovaOrynDriver.bat",
-      "length": 130,
-      "sha256": "f73afd3d3e6f299c1c5f779379968cb9079606eb4e614a54c95cf1170cff4026"
-    },
-    {
-      "path": "Pack-NovaOrynDriver.ps1",
-      "length": 2201,
-      "sha256": "02c753ad90b03f59c14a5f8cac3e5ad9bff051c1c98395b81c8c34db688a919e"
-    },
-    {
-      "path": "Pack-NovaOrynPackage.bat",
-      "length": 315,
-      "sha256": "5e7fc7e75d992f46733f58f8f6f316aa737ee1d049e6db91c74b0686d26ec722"
-    },
-    {
-      "path": "README.md",
-      "length": 485,
-      "sha256": "1540bf7a3fdb772a9bb0a22ed6d014398896ebc3531ab272845ea0ec075e7fc8"
-    },
-    {
-      "path": "Run-NovaOrynTests.bat",
-      "length": 136,
-      "sha256": "3a702fb4883519920944424a20f71a824c98a3f627cec1699c47b1187b4233e3"
-    },
-    {
-      "path": "Run-NovaOrynTests.ps1",
-      "length": 5080,
-      "sha256": "63eb4894a5ca8de556d312a502cd61631368aa6c2f1e936b2c5e69c756d79584"
-    },
-    {
-      "path": "THIRD-PARTY-NOTICES.md",
-      "length": 4195,
-      "sha256": "3ca8d466fd503a1185b2d9724f39e890b63a5e8382613bbac2abab78404c9407"
-    },
-    {
-      "path": "Update-NovaOryn.bat",
-      "length": 347,
-      "sha256": "f50724430c690d45271acd8703ee91949c2edc878bc324072d8c6d9d83271192"
-    },
-    {
-      "path": "Update-NovaOryn.ps1",
-      "length": 20565,
-      "sha256": "2f0ff3f6cfcbdd1f207992ccb7a6d8e7acdead9d05b7e95ccbf3f678c05555f2"
-    },
-    {
-      "path": "Validate-NovaOryn.bat",
-      "length": 146,
-      "sha256": "65ed5d62fe399437a134fc2c1b68c8795383138815ffa2b0cf09a8811b368cd3"
-    },
-    {
-      "path": "Validate-NovaOryn.ps1",
-      "length": 1174,
-      "sha256": "0bb2c4168aaa8b43f6086a810962ecdc1ea93e92b1ea5d21b42959fbf679370d"
-    },
-    {
-      "path": "Validate-NovaOrynDriverPackage.bat",
-      "length": 141,
-      "sha256": "76c932902a4650b5978c0de32da068b36bad9386c86a7d3dc426257a07d09bfc"
-    },
-    {
-      "path": "Validate-NovaOrynDriverPackage.ps1",
-      "length": 5469,
-      "sha256": "41a1ae97d9c99e544cecd6feca099b5314203bba5aa25eda32679436d3c739d3"
-    },
-    {
-      "path": "Verify-NovaOrynSdkContract.ps1",
-      "length": 1499,
-      "sha256": "223094dfbbff4aaa5bb141a1d5714f80a62818e8ea494443c573410b4d33b60c"
-    },
-    {
       "path": "docs/ACPI-Hardware-Discovery.md",
       "length": 4098,
       "sha256": "9a3eb78850610ba62754aaa3bdad4f756bed1d7aeba0b3c21b01fef1ea271cdf"
@@ -250,6 +80,16 @@
       "path": "docs/Architecture.md",
       "length": 1853,
       "sha256": "2297c6d7977b9176c12f84a4c6ae66d69a38c1a6124ecd4e198f219027b012c5"
+    },
+    {
+      "path": "docs/assets/NovaOryn-Mono-32px.png",
+      "length": 2490,
+      "sha256": "737949063fde9da46e9e449bf8993875b3483cef6cddede66cd20bb86552b048"
+    },
+    {
+      "path": "docs/assets/NovaOryn-Mono-8x16.png",
+      "length": 4142,
+      "sha256": "ff3b9a6e37db0da719fda10b306ce416e02a2e4d7079a9add79f194ca9aa36b6"
     },
     {
       "path": "docs/Boot-Memory-Map.md",
@@ -295,6 +135,11 @@
       "path": "docs/Executable-Application-Format.md",
       "length": 3687,
       "sha256": "acf6b458e6b541e054386ffae180cf6e9a6a96f413f9bdafe22a7f6190ddcb90"
+    },
+    {
+      "path": "docs/Filesystem-VFS-Contract.md",
+      "length": 2824,
+      "sha256": "5a84893eb8b1ff29902366d9887907318f99fcc63c6311c1425ab924717c3e22"
     },
     {
       "path": "docs/Formal-SMP-PerCPU-API.md",
@@ -357,11 +202,6 @@
       "sha256": "233b595d4a53b2301dda19757536058f8aedd882c32d38a75904d290ddd34881"
     },
     {
-      "path": "docs/NVMe-and-AHCI.md",
-      "length": 1698,
-      "sha256": "12ffbdbe9384f47696e5e608cb1b1e9b52fef9190463772a6962eaf2aa9ab0af"
-    },
-    {
       "path": "docs/Network-Adapters.md",
       "length": 1934,
       "sha256": "a0b2622642d1c0ef8287dcebf290555b2bbcfbb7494ded2ad128e21efa2be3df"
@@ -377,19 +217,19 @@
       "sha256": "5d2f2c3f22e183f59672c4ae0730862935db14d9e8d0821b2ad2d54c3c4501e1"
     },
     {
-      "path": "docs/PCI-and-VirtIO.md",
-      "length": 3013,
-      "sha256": "ed001f03e6dd85ada72cc07e9f756390ea23164404fd033fedb6f75bbd5ed799"
-    },
-    {
-      "path": "docs/PS2.md",
-      "length": 1108,
-      "sha256": "54f6b27e763b98d11b329ee26f68acd28a3328f3c55fc14f348b422de1e03f85"
+      "path": "docs/NVMe-and-AHCI.md",
+      "length": 1698,
+      "sha256": "12ffbdbe9384f47696e5e608cb1b1e9b52fef9190463772a6962eaf2aa9ab0af"
     },
     {
       "path": "docs/Package-Manager-Format.md",
       "length": 4592,
       "sha256": "3231d001c9ddaaf8bfa1ba3f19f2b167bf8d1a0bc8c3add546f92a446e840118"
+    },
+    {
+      "path": "docs/PCI-and-VirtIO.md",
+      "length": 3013,
+      "sha256": "ed001f03e6dd85ada72cc07e9f756390ea23164404fd033fedb6f75bbd5ed799"
     },
     {
       "path": "docs/Physical-Memory-Management.md",
@@ -415,6 +255,11 @@
       "path": "docs/Project-Configuration.md",
       "length": 1078,
       "sha256": "d5a96278f3b470bf2771e4473659f498b4d5ac0708253ddc566df38f61533fc6"
+    },
+    {
+      "path": "docs/PS2.md",
+      "length": 1108,
+      "sha256": "54f6b27e763b98d11b329ee26f68acd28a3328f3c55fc14f348b422de1e03f85"
     },
     {
       "path": "docs/Public-API-Baseline.md",
@@ -1642,11 +1487,6 @@
       "sha256": "14e5433b218ff63579eaf32ef785fe914555e80d110cf80fb4a7d959367afa86"
     },
     {
-      "path": "docs/SMP-and-Per-CPU-State.md",
-      "length": 4212,
-      "sha256": "9a474facd525c9ccaf0dfe2d2f5f6aff1100d998fc1718d385ef3a06dd516fec"
-    },
-    {
       "path": "docs/Scheduler-and-Threads.md",
       "length": 1321,
       "sha256": "24c8a9958d98648f6e3363b71a69269710c127ca5309efed49a521575afbb3f1"
@@ -1657,116 +1497,6 @@
       "sha256": "3bced2c4a9f81d4eb37ea7c9dec618f9bf0b07f7e34bf8a9c2e74f4ec33ea36c"
     },
     {
-      "path": "docs/Storage-and-Filesystems.md",
-      "length": 1451,
-      "sha256": "923da27016997eb9a2fd781e8ddbf1c17c7929f1c0e52938418531f92dd7c2c1"
-    },
-    {
-      "path": "docs/Structured-Kernel-Telemetry.md",
-      "length": 2458,
-      "sha256": "810b428da2045af1516f03a832b8b9bf619f70af6bd2991de03babbe312e5432"
-    },
-    {
-      "path": "docs/Synchronization-Primitives.md",
-      "length": 3267,
-      "sha256": "fc69a3d226c0b5994eef5f91fb258d6d038a7a298860fe06c925c079a8241709"
-    },
-    {
-      "path": "docs/System-Calls.md",
-      "length": 2005,
-      "sha256": "b2bab17f62dc621109500b3c3b09ea6c71d28714659803f2f5e25cc402776d42"
-    },
-    {
-      "path": "docs/Test-Framework.md",
-      "length": 1884,
-      "sha256": "e1362654cb8e9b7393d75b0381be941474ec4c32ebdcbe1d740dfc07ee3a3845"
-    },
-    {
-      "path": "docs/Timers-and-Clocks.md",
-      "length": 3728,
-      "sha256": "284318f24e67e93517870d8b27624402624e97ae9b08deadc8b525c28fdab342"
-    },
-    {
-      "path": "docs/USB.md",
-      "length": 1934,
-      "sha256": "ed604f2aa55d9caca77923f821131213114793a6b0500c5e206dca28b9049fd0"
-    },
-    {
-      "path": "docs/Unified-Device-Model.md",
-      "length": 1524,
-      "sha256": "a14cf07483f7e990180bded30bd9e4dce62b744688d55beb992c4215d446f7bc"
-    },
-    {
-      "path": "docs/User-Kernel-Separation.md",
-      "length": 1101,
-      "sha256": "5cf261b306f1448fb4189d39ed11bc97458fc71838c4a4c1778552662b92f152"
-    },
-    {
-      "path": "docs/Userland-Structure.md",
-      "length": 699,
-      "sha256": "2e588bab081892d207679a162104cc8cff3537e3100d6e8fadc5d7a0f145ec43"
-    },
-    {
-      "path": "docs/Virtual-Memory-Management.md",
-      "length": 5942,
-      "sha256": "9bc5b14e73a5640cc21e9886f8c88f0656dac7f89ddadadad0682100f683f085"
-    },
-    {
-      "path": "docs/assets/NovaOryn-Mono-32px.png",
-      "length": 2490,
-      "sha256": "737949063fde9da46e9e449bf8993875b3483cef6cddede66cd20bb86552b048"
-    },
-    {
-      "path": "docs/assets/NovaOryn-Mono-8x16.png",
-      "length": 4142,
-      "sha256": "ff3b9a6e37db0da719fda10b306ce416e02a2e4d7079a9add79f194ca9aa36b6"
-    },
-    {
-      "path": "docs/site/assets/site.css",
-      "length": 2120,
-      "sha256": "cc11aebdbdf757f5695251f8981e5760d48d9bf489ae6f8177884fddf06fe59f"
-    },
-    {
-      "path": "docs/site/assets/site.js",
-      "length": 617,
-      "sha256": "f4d920add34a6cb9cbd4dce95304157aa9dad4de266262904f003fd03398cb11"
-    },
-    {
-      "path": "docs/site/crash-dump-format.html",
-      "length": 768,
-      "sha256": "c360f097a3b29ec74d6c6f375fe9da568dd4641b82da8ec5c54a9cd0d75cca5c"
-    },
-    {
-      "path": "docs/site/guides/Documentation-Authoring.html",
-      "length": 1436,
-      "sha256": "79be9db57a262a727fc8c79be1603e5898b46c6ae0d90e4362dafff3a7721e48"
-    },
-    {
-      "path": "docs/site/guides/Getting-Started.html",
-      "length": 1552,
-      "sha256": "14973ed3ab08cbc58741cc80ee597504c4e795ab3c0d5da6b1b9f68a50012494"
-    },
-    {
-      "path": "docs/site/guides/Kernel-Subsystem-Contracts.html",
-      "length": 2881,
-      "sha256": "566ab8d3be755f92bd1042b5fce25633c81214917eb925eecbaa6d96e6b99bf7"
-    },
-    {
-      "path": "docs/site/guides/Next-Steps.html",
-      "length": 1436,
-      "sha256": "9f800008675594e8b6c8ee7260e442127077cea6c51575380968e8d2703f0424"
-    },
-    {
-      "path": "docs/site/index.html",
-      "length": 738,
-      "sha256": "281f61bf1fe79165e398ba883616f7602b590cd1f325b42291ff46920b713e85"
-    },
-    {
-      "path": "docs/site/search-index.json",
-      "length": 3,
-      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
-    },
-    {
       "path": "docs/site-content/Documentation-Authoring.md",
       "length": 945,
       "sha256": "51a74bb4f7c8767136477753c8b33a4e514d403216dd325fdb9c53fc806917b4"
@@ -1775,6 +1505,11 @@
       "path": "docs/site-content/Executable-Application-Format.md",
       "length": 3687,
       "sha256": "acf6b458e6b541e054386ffae180cf6e9a6a96f413f9bdafe22a7f6190ddcb90"
+    },
+    {
+      "path": "docs/site-content/Filesystem-VFS-Contract.md",
+      "length": 2824,
+      "sha256": "5a84893eb8b1ff29902366d9887907318f99fcc63c6311c1425ab924717c3e22"
     },
     {
       "path": "docs/site-content/Framebuffer-Font.md",
@@ -1827,6 +1562,111 @@
       "sha256": "97734febfbc3a8f86f83b7955395195a5239d70a2a663141b012db298203a2f8"
     },
     {
+      "path": "docs/site/assets/site.css",
+      "length": 2120,
+      "sha256": "cc11aebdbdf757f5695251f8981e5760d48d9bf489ae6f8177884fddf06fe59f"
+    },
+    {
+      "path": "docs/site/assets/site.js",
+      "length": 617,
+      "sha256": "f4d920add34a6cb9cbd4dce95304157aa9dad4de266262904f003fd03398cb11"
+    },
+    {
+      "path": "docs/site/crash-dump-format.html",
+      "length": 768,
+      "sha256": "c360f097a3b29ec74d6c6f375fe9da568dd4641b82da8ec5c54a9cd0d75cca5c"
+    },
+    {
+      "path": "docs/site/guides/Documentation-Authoring.html",
+      "length": 1436,
+      "sha256": "79be9db57a262a727fc8c79be1603e5898b46c6ae0d90e4362dafff3a7721e48"
+    },
+    {
+      "path": "docs/site/guides/Getting-Started.html",
+      "length": 1552,
+      "sha256": "14973ed3ab08cbc58741cc80ee597504c4e795ab3c0d5da6b1b9f68a50012494"
+    },
+    {
+      "path": "docs/site/guides/Kernel-Subsystem-Contracts.html",
+      "length": 2881,
+      "sha256": "566ab8d3be755f92bd1042b5fce25633c81214917eb925eecbaa6d96e6b99bf7"
+    },
+    {
+      "path": "docs/site/guides/Next-Steps.html",
+      "length": 1436,
+      "sha256": "9f800008675594e8b6c8ee7260e442127077cea6c51575380968e8d2703f0424"
+    },
+    {
+      "path": "docs/site/index.html",
+      "length": 738,
+      "sha256": "281f61bf1fe79165e398ba883616f7602b590cd1f325b42291ff46920b713e85"
+    },
+    {
+      "path": "docs/site/search-index.json",
+      "length": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "path": "docs/SMP-and-Per-CPU-State.md",
+      "length": 4212,
+      "sha256": "9a474facd525c9ccaf0dfe2d2f5f6aff1100d998fc1718d385ef3a06dd516fec"
+    },
+    {
+      "path": "docs/Storage-and-Filesystems.md",
+      "length": 1451,
+      "sha256": "923da27016997eb9a2fd781e8ddbf1c17c7929f1c0e52938418531f92dd7c2c1"
+    },
+    {
+      "path": "docs/Structured-Kernel-Telemetry.md",
+      "length": 2458,
+      "sha256": "810b428da2045af1516f03a832b8b9bf619f70af6bd2991de03babbe312e5432"
+    },
+    {
+      "path": "docs/Synchronization-Primitives.md",
+      "length": 3267,
+      "sha256": "fc69a3d226c0b5994eef5f91fb258d6d038a7a298860fe06c925c079a8241709"
+    },
+    {
+      "path": "docs/System-Calls.md",
+      "length": 2005,
+      "sha256": "b2bab17f62dc621109500b3c3b09ea6c71d28714659803f2f5e25cc402776d42"
+    },
+    {
+      "path": "docs/Test-Framework.md",
+      "length": 1884,
+      "sha256": "e1362654cb8e9b7393d75b0381be941474ec4c32ebdcbe1d740dfc07ee3a3845"
+    },
+    {
+      "path": "docs/Timers-and-Clocks.md",
+      "length": 3728,
+      "sha256": "284318f24e67e93517870d8b27624402624e97ae9b08deadc8b525c28fdab342"
+    },
+    {
+      "path": "docs/Unified-Device-Model.md",
+      "length": 1524,
+      "sha256": "a14cf07483f7e990180bded30bd9e4dce62b744688d55beb992c4215d446f7bc"
+    },
+    {
+      "path": "docs/USB.md",
+      "length": 1934,
+      "sha256": "ed604f2aa55d9caca77923f821131213114793a6b0500c5e206dca28b9049fd0"
+    },
+    {
+      "path": "docs/User-Kernel-Separation.md",
+      "length": 1101,
+      "sha256": "5cf261b306f1448fb4189d39ed11bc97458fc71838c4a4c1778552662b92f152"
+    },
+    {
+      "path": "docs/Userland-Structure.md",
+      "length": 699,
+      "sha256": "2e588bab081892d207679a162104cc8cff3537e3100d6e8fadc5d7a0f145ec43"
+    },
+    {
+      "path": "docs/Virtual-Memory-Management.md",
+      "length": 5942,
+      "sha256": "9bc5b14e73a5640cc21e9886f8c88f0656dac7f89ddadadad0682100f683f085"
+    },
+    {
       "path": "examples/MinimalKernel/NovaOrynProject.json",
       "length": 311,
       "sha256": "1b820cb01bb4ea2eb93929bc4afbc564c33c4d5258f6f0251224fbc484d05473"
@@ -1837,9 +1677,34 @@
       "sha256": "b132d105648c7dbe49f2c391fe0b9898027e470ddc7cfd4d7239af5df63401fa"
     },
     {
-      "path": "native/x64/Cpu.S",
-      "length": 4592,
-      "sha256": "56e950122c6ed22583b1b6366dbbc668127fdc606253f210706282fb224d0cef"
+      "path": "Install-NovaOrynFonts.bat",
+      "length": 132,
+      "sha256": "78b0cfb21ddb8626007319007f9b1114abec976e432a17dcdba49eb134fc11dc"
+    },
+    {
+      "path": "Install-NovaOrynFonts.ps1",
+      "length": 7081,
+      "sha256": "b2a0a6216351e252009fb1a6db0448eb68f6fed34d70980a8ec22dc41454868d"
+    },
+    {
+      "path": "Install-NovaOrynToolchain.bat",
+      "length": 226,
+      "sha256": "ff92827fd30ca3d81ff4574da86147f79c09e57c1eeba923dec2fcec82cf5d45"
+    },
+    {
+      "path": "Install-NovaOrynToolchain.ps1",
+      "length": 14819,
+      "sha256": "9a9a93e5a40351cb6b544f8a488592b27c59e33980d31ec72338102c205557bf"
+    },
+    {
+      "path": "Install-NovaOrynVSIX.bat",
+      "length": 131,
+      "sha256": "3489e50241a51d78456009919661c22acaa964d0e0994e98193c224942b42098"
+    },
+    {
+      "path": "Install-NovaOrynVSIX.ps1",
+      "length": 13707,
+      "sha256": "6e74e7ed2644fe1d42ae7599800fbc717d2bfc4fe777922b149a09ba5e44e696"
     },
     {
       "path": "native/x64/Cpu.asm",
@@ -1847,19 +1712,24 @@
       "sha256": "e9471f024fbb2af5595eae38cfe577181e3bb7de4ce838df739234218689f363"
     },
     {
+      "path": "native/x64/Cpu.S",
+      "length": 4592,
+      "sha256": "56e950122c6ed22583b1b6366dbbc668127fdc606253f210706282fb224d0cef"
+    },
+    {
       "path": "native/x64/Descriptors.asm",
       "length": 2576,
       "sha256": "65c6a7cd19191f93d9b84156f357e8d9e71d523160672260b85b3aa8816de9ca"
     },
     {
-      "path": "native/x64/Entry.S",
-      "length": 418,
-      "sha256": "15ab36e629d6dc0d2a7a4f39d9b577d01fd9cdda4a37629a35360290341bbe33"
-    },
-    {
       "path": "native/x64/Entry.asm",
       "length": 16697,
       "sha256": "6046ab69aeeb94a1dd3f348d029e7ea7e1fb2ecd6e7fb18a72ad77846e3c58da"
+    },
+    {
+      "path": "native/x64/Entry.S",
+      "length": 418,
+      "sha256": "15ab36e629d6dc0d2a7a4f39d9b577d01fd9cdda4a37629a35360290341bbe33"
     },
     {
       "path": "native/x64/InterruptControllers.asm",
@@ -1870,6 +1740,11 @@
       "path": "native/x64/Interrupts.asm",
       "length": 48185,
       "sha256": "49cee566d19de63cced6f1cbbd890e80cb590f001c6ba6241139c890a97c374e"
+    },
+    {
+      "path": "native/x64/kernel.ld",
+      "length": 491,
+      "sha256": "b38d4578ad6f1e060263d7b598d113582ac3480a1652a74ad2f933470c75f33f"
     },
     {
       "path": "native/x64/Paging.asm",
@@ -1892,9 +1767,34 @@
       "sha256": "ce9035e42fdce8fd3bd2b2a5063961897d53492baeb594ee236778ff8283b981"
     },
     {
-      "path": "native/x64/kernel.ld",
-      "length": 491,
-      "sha256": "b38d4578ad6f1e060263d7b598d113582ac3480a1652a74ad2f933470c75f33f"
+      "path": "NovaOryn-Changes.json",
+      "length": 1121,
+      "sha256": "3d655ac6b1ef1f53f19ebf5212e07bf42fe03a3e809e3e7f25b49c9286ffc093"
+    },
+    {
+      "path": "NovaOryn-Package.bat",
+      "length": 317,
+      "sha256": "f7a0262f41e0c96c439a9458d3299350e7d0a3bbeccac10f1930c2fb2c14fb18"
+    },
+    {
+      "path": "NovaOryn.ApiBaseline.json",
+      "length": 319,
+      "sha256": "7fda365321cd1de8a64d14c0156fff51a6e3cc968d4af230043c50a9e443cce6"
+    },
+    {
+      "path": "NovaOryn.ApiContract.json",
+      "length": 561,
+      "sha256": "4e6880cf63c5c6ddb94179ed278ede6f6f997faba61b3c016e961402e62a42af"
+    },
+    {
+      "path": "NovaOryn.ArchitectureBoundaries.json",
+      "length": 1110,
+      "sha256": "c362f68cc48d9190267018d4a3dbe35f5a4a2a7d4bcc2c889de00203277615c2"
+    },
+    {
+      "path": "NovaOryn.BuildProvenance.schema.json",
+      "length": 193,
+      "sha256": "bc02028b1d77e6b956a8cb5e9ebbb5c2f670251cbb99a958c5d364dc6917a449"
     },
     {
       "path": "novaoryn.cmd",
@@ -1902,9 +1802,79 @@
       "sha256": "7a0ba9b54f98f5ea3e3e3efe2734d83b8dc5c3decda25365ec1f5c7ef50bc7d4"
     },
     {
+      "path": "NovaOryn.DriverPackage.schema.json",
+      "length": 2185,
+      "sha256": "707b418dd77e4b0d9f097cda1a1ed11d3b94c76b615880fc6a48c23f46e59044"
+    },
+    {
+      "path": "NovaOryn.Package.schema.json",
+      "length": 3046,
+      "sha256": "7722de60cbb039a72b89abf36c6eb225acbfc4a5769a29be8ef1334fbbad4966"
+    },
+    {
       "path": "novaoryn.ps1",
       "length": 2213,
       "sha256": "f92daf2bff871175778903383278c0e942ce0acda9d2573f89c155ef1de1d2d0"
+    },
+    {
+      "path": "NovaOryn.QemuTestMatrix.json",
+      "length": 437,
+      "sha256": "bfc770c018e3eb0fb76283573706e675b79d44b4b688424ddbade6781f84cc1d"
+    },
+    {
+      "path": "NovaOryn.SdkManifest.json",
+      "length": 2387,
+      "sha256": "d2560408dec01cd8449b9a0d06470fb7065d792f11955b931f0420c6af73b27d"
+    },
+    {
+      "path": "NovaOryn.sln",
+      "length": 61736,
+      "sha256": "06102cb560b4eef354d2abca0c11d824f8eb70a354e4f7c91b073eee4d2ae1a6"
+    },
+    {
+      "path": "NovaOryn.SubsystemContracts.json",
+      "length": 2181,
+      "sha256": "363130c8ba67ad3951576365311473966e22fc4a73b65f402a8cdaa563ff73f6"
+    },
+    {
+      "path": "NovaOryn.TestContract.json",
+      "length": 2124,
+      "sha256": "9a8f4f977a01c3676b38e49bb6d081c29ae40732d2919ad4d777dc9df9e7a06a"
+    },
+    {
+      "path": "NovaOryn.TestManifest.schema.json",
+      "length": 1399,
+      "sha256": "5530bbd7540231daeac546e2c9cf650629c8e2421c84a2b421046ce8a5599e7c"
+    },
+    {
+      "path": "Pack-NovaOrynDriver.bat",
+      "length": 130,
+      "sha256": "f73afd3d3e6f299c1c5f779379968cb9079606eb4e614a54c95cf1170cff4026"
+    },
+    {
+      "path": "Pack-NovaOrynDriver.ps1",
+      "length": 2201,
+      "sha256": "02c753ad90b03f59c14a5f8cac3e5ad9bff051c1c98395b81c8c34db688a919e"
+    },
+    {
+      "path": "Pack-NovaOrynPackage.bat",
+      "length": 315,
+      "sha256": "5e7fc7e75d992f46733f58f8f6f316aa737ee1d049e6db91c74b0686d26ec722"
+    },
+    {
+      "path": "README.md",
+      "length": 485,
+      "sha256": "1540bf7a3fdb772a9bb0a22ed6d014398896ebc3531ab272845ea0ec075e7fc8"
+    },
+    {
+      "path": "Run-NovaOrynTests.bat",
+      "length": 136,
+      "sha256": "3a702fb4883519920944424a20f71a824c98a3f627cec1699c47b1187b4233e3"
+    },
+    {
+      "path": "Run-NovaOrynTests.ps1",
+      "length": 5080,
+      "sha256": "63eb4894a5ca8de556d312a502cd61631368aa6c2f1e936b2c5e69c756d79584"
     },
     {
       "path": "src/NovaOryn.ApplicationFormat/NovaOryn.ApplicationFormat.csproj",
@@ -1972,26 +1942,6 @@
       "sha256": "023c5fe5f32f31d379bacf65e814457e24a2b4a7c21bed16c94448669aa008d3"
     },
     {
-      "path": "src/NovaOryn.Architecture.X64/CPU.cs",
-      "length": 2895,
-      "sha256": "5cc4c1063c98e64b39e139b43fc4de2dd6fa4b62cf2c4043de8e94b3b723ee71"
-    },
-    {
-      "path": "src/NovaOryn.Architecture.X64/NativeMethods.cs",
-      "length": 1178,
-      "sha256": "902ef73d2121780f8e76e1912b0f52dfc79e36900ef5e148618d1cddfb842b57"
-    },
-    {
-      "path": "src/NovaOryn.Architecture.X64/NovaOryn.Architecture.X64.csproj",
-      "length": 572,
-      "sha256": "22cacd5a78940280f95c23f0f570fd20d0837da0e3f7d9056a2b30bcd7d3037c"
-    },
-    {
-      "path": "src/NovaOryn.Architecture.X64/X64Architecture.cs",
-      "length": 23180,
-      "sha256": "14a7dcda30c33cc6979b83fae140d15cd74faed3822ce537e4b865d5cb46ede1"
-    },
-    {
       "path": "src/NovaOryn.Architecture.X64.Descriptors/NativeMethods.cs",
       "length": 591,
       "sha256": "05910bc28ba2be1ade500ef047f2a2191773947b3fc67987a931610c43d6b167"
@@ -2035,6 +1985,26 @@
       "path": "src/NovaOryn.Architecture.X64.Interrupts/X64InterruptVectorAllocator.cs",
       "length": 934,
       "sha256": "364959e2e5c72764c4b78608360391c270a244c1f7ecd665431af5c346806619"
+    },
+    {
+      "path": "src/NovaOryn.Architecture.X64/CPU.cs",
+      "length": 2895,
+      "sha256": "5cc4c1063c98e64b39e139b43fc4de2dd6fa4b62cf2c4043de8e94b3b723ee71"
+    },
+    {
+      "path": "src/NovaOryn.Architecture.X64/NativeMethods.cs",
+      "length": 1178,
+      "sha256": "902ef73d2121780f8e76e1912b0f52dfc79e36900ef5e148618d1cddfb842b57"
+    },
+    {
+      "path": "src/NovaOryn.Architecture.X64/NovaOryn.Architecture.X64.csproj",
+      "length": 572,
+      "sha256": "22cacd5a78940280f95c23f0f570fd20d0837da0e3f7d9056a2b30bcd7d3037c"
+    },
+    {
+      "path": "src/NovaOryn.Architecture.X64/X64Architecture.cs",
+      "length": 23180,
+      "sha256": "14a7dcda30c33cc6979b83fae140d15cd74faed3822ce537e4b865d5cb46ede1"
     },
     {
       "path": "src/NovaOryn.Boot.Contracts/BootContext.cs",
@@ -2193,8 +2163,8 @@
     },
     {
       "path": "src/NovaOryn.Filesystem.FatFs/FatFs.cs",
-      "length": 19873,
-      "sha256": "736d99394fab94f724f5e8bde650b530e1f18cf1a33bc76d2a3404b2c2f3064c"
+      "length": 26416,
+      "sha256": "9cf68db98073e21f576403669dcacf090f79670e6119cdda9147439fa047c685"
     },
     {
       "path": "src/NovaOryn.Filesystem.FatFs/LICENSE-FatFs.txt",
@@ -2492,14 +2462,14 @@
       "sha256": "d40427e44358a4fa4b34e6deb107c6976be6399f4be6e7aa5a2e1ab53d1e2d7f"
     },
     {
-      "path": "src/NovaOryn.Kernel.Heap/KernelHeap.Diagnostics.cs",
-      "length": 13185,
-      "sha256": "435b3342364a8efdb446f429202bb71c6bb8cd83a58fc7d30fb31495beb14dde"
-    },
-    {
       "path": "src/NovaOryn.Kernel.Heap/KernelHeap.cs",
       "length": 20181,
       "sha256": "aec2e84915dde5d360da996079383e6f9de484098ad4e1aa4e2c4440092cca39"
+    },
+    {
+      "path": "src/NovaOryn.Kernel.Heap/KernelHeap.Diagnostics.cs",
+      "length": 13185,
+      "sha256": "435b3342364a8efdb446f429202bb71c6bb8cd83a58fc7d30fb31495beb14dde"
     },
     {
       "path": "src/NovaOryn.Kernel.Heap/NovaOryn.Kernel.Heap.csproj",
@@ -2537,6 +2507,16 @@
       "sha256": "16cae80a2ba523d65bead82ece29b92ea815e4f37a039d09ff3eb0c7f17cdb73"
     },
     {
+      "path": "src/NovaOryn.Kernel.Memory.Diagnostics/KernelMemoryDiagnostics.cs",
+      "length": 3082,
+      "sha256": "2630975bbebc262e8c00f8ff719e217de73e01bc78b5538814516db7600f0d6a"
+    },
+    {
+      "path": "src/NovaOryn.Kernel.Memory.Diagnostics/NovaOryn.Kernel.Memory.Diagnostics.csproj",
+      "length": 1311,
+      "sha256": "de9810a75a17a071ff30af91644c8b613e65ab04de633b703802041ad4056be1"
+    },
+    {
       "path": "src/NovaOryn.Kernel.Memory/KernelPhysicalMemory.Bootstrap.cs",
       "length": 6101,
       "sha256": "45a24c5e011b06fd1e3908a0bd5a0f710a494a7be3638642d434c74e7100d341"
@@ -2552,16 +2532,6 @@
       "sha256": "be66314d2f64ee07104a08cc2766c2580ecb2d7680f53fff6cd60dd3121272a1"
     },
     {
-      "path": "src/NovaOryn.Kernel.Memory.Diagnostics/KernelMemoryDiagnostics.cs",
-      "length": 3082,
-      "sha256": "2630975bbebc262e8c00f8ff719e217de73e01bc78b5538814516db7600f0d6a"
-    },
-    {
-      "path": "src/NovaOryn.Kernel.Memory.Diagnostics/NovaOryn.Kernel.Memory.Diagnostics.csproj",
-      "length": 1311,
-      "sha256": "de9810a75a17a071ff30af91644c8b613e65ab04de633b703802041ad4056be1"
-    },
-    {
       "path": "src/NovaOryn.Kernel.Networking/KernelDhcpDns.cs",
       "length": 3897,
       "sha256": "f563f29f7dc5569c9e8ef4906ecdd491bcb9eb129c71e351b7ea05b6168dd6e2"
@@ -2570,6 +2540,11 @@
       "path": "src/NovaOryn.Kernel.Networking/KernelNetworkContracts.cs",
       "length": 8419,
       "sha256": "e8390c8a6f6f55bede364cd2b3469b284b0c85f03aa261e41367f52905e6d2d1"
+    },
+    {
+      "path": "src/NovaOryn.Kernel.Networking/KernelNetworking.cs",
+      "length": 11700,
+      "sha256": "570ce1325c4cd2729c6c211119c4110193e52e1c14b42a8735bdb659a7f81500"
     },
     {
       "path": "src/NovaOryn.Kernel.Networking/KernelNetworkMath.cs",
@@ -2585,11 +2560,6 @@
       "path": "src/NovaOryn.Kernel.Networking/KernelNetworkStack.cs",
       "length": 7343,
       "sha256": "036d33c1532cd05deadf1d895c905d2b88ddfcddad4ff2b2b2a6424154ed4fb5"
-    },
-    {
-      "path": "src/NovaOryn.Kernel.Networking/KernelNetworking.cs",
-      "length": 11700,
-      "sha256": "570ce1325c4cd2729c6c211119c4110193e52e1c14b42a8735bdb659a7f81500"
     },
     {
       "path": "src/NovaOryn.Kernel.Networking/KernelSockets.cs",
@@ -2868,8 +2838,8 @@
     },
     {
       "path": "src/NovaOryn.Kernel.Storage/KernelStorageContracts.cs",
-      "length": 10347,
-      "sha256": "94aaa7019c8b0f44ebc1df665ed16862a51d84a804ea152e3f32393e00a14e62"
+      "length": 13860,
+      "sha256": "10ffe3acc2dd6aca410b444ce2b11226e813ef51a672dad4a02559b8fb98e610"
     },
     {
       "path": "src/NovaOryn.Kernel.Storage/KernelStorageMath.cs",
@@ -2883,8 +2853,8 @@
     },
     {
       "path": "src/NovaOryn.Kernel.Storage/KernelVfs.cs",
-      "length": 14334,
-      "sha256": "1ac75ca7308492b9cd94aa4c085b514e5d3f48a475bd7c23e5b0a562329ec235"
+      "length": 23564,
+      "sha256": "103ac057b6dd2cedd8fc058f54465ce296fc8046254fa0905426cd13c7982450"
     },
     {
       "path": "src/NovaOryn.Kernel.Storage/NovaOryn.Kernel.Storage.csproj",
@@ -2908,8 +2878,8 @@
     },
     {
       "path": "src/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs",
-      "length": 33658,
-      "sha256": "4e7449291eba6bfc86bac1e129ea8690877c99b749fb2ddcc45f9cf8c47d7248"
+      "length": 33977,
+      "sha256": "77c26321a77a3ac577fe84f4e7de98603a7d7ccc8e98b3c26b7227b542a0a8f7"
     },
     {
       "path": "src/NovaOryn.Kernel.SubsystemContracts/SubsystemContracts.cs",
@@ -3037,6 +3007,21 @@
       "sha256": "ece8ef9130fb3fab36d777063589038323ced645771bb7f427049d7664da1d6c"
     },
     {
+      "path": "src/NovaOryn.Kernel.Virtio.Gpu/KernelVirtioGpu.cs",
+      "length": 24429,
+      "sha256": "caca79a826b1ae77ebbb35b9a0e13e5ed941ba7b7c7ee1be1c45509c24cfc23a"
+    },
+    {
+      "path": "src/NovaOryn.Kernel.Virtio.Gpu/NovaOryn.Kernel.Virtio.Gpu.csproj",
+      "length": 1481,
+      "sha256": "a5cb396961fdfd196c259617269f22460ab833ca7e2c076ce6c2507c7de3ed18"
+    },
+    {
+      "path": "src/NovaOryn.Kernel.Virtio.Gpu/VirtioGpuContracts.cs",
+      "length": 1295,
+      "sha256": "9739e41cea33c5fa175b8bd3d4a864a5058618251130d5f95e90b139340ff827"
+    },
+    {
       "path": "src/NovaOryn.Kernel.Virtio/KernelVirtio.cs",
       "length": 27669,
       "sha256": "0599d46400f470ba765e02763f2181a24e1b5cdb7dadc18912da38a1097b2370"
@@ -3057,19 +3042,9 @@
       "sha256": "ad936958fdb2386f53a15f0da659d40195d4f0f1b8f5c865c244afd20f8bb3f1"
     },
     {
-      "path": "src/NovaOryn.Kernel.Virtio.Gpu/KernelVirtioGpu.cs",
-      "length": 24429,
-      "sha256": "caca79a826b1ae77ebbb35b9a0e13e5ed941ba7b7c7ee1be1c45509c24cfc23a"
-    },
-    {
-      "path": "src/NovaOryn.Kernel.Virtio.Gpu/NovaOryn.Kernel.Virtio.Gpu.csproj",
-      "length": 1481,
-      "sha256": "a5cb396961fdfd196c259617269f22460ab833ca7e2c076ce6c2507c7de3ed18"
-    },
-    {
-      "path": "src/NovaOryn.Kernel.Virtio.Gpu/VirtioGpuContracts.cs",
-      "length": 1295,
-      "sha256": "9739e41cea33c5fa175b8bd3d4a864a5058618251130d5f95e90b139340ff827"
+      "path": "src/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.cs",
+      "length": 27245,
+      "sha256": "93f01a4c63a1eaaf620a73862005ddce2b8ec040eacb740454d2147ab54b7c11"
     },
     {
       "path": "src/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.Diagnostics.cs",
@@ -3080,11 +3055,6 @@
       "path": "src/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.DirectMap.cs",
       "length": 9913,
       "sha256": "43d382e1eb79792cc59afde6309c3ca8e739c935a55958357bb023b090b4916b"
-    },
-    {
-      "path": "src/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.cs",
-      "length": 27245,
-      "sha256": "93f01a4c63a1eaaf620a73862005ddce2b8ec040eacb740454d2147ab54b7c11"
     },
     {
       "path": "src/NovaOryn.Kernel.VirtualMemory/NovaOryn.Kernel.VirtualMemory.csproj",
@@ -3167,6 +3137,16 @@
       "sha256": "3cede1704301194f590fd7b22f34aed4877c8590f809773eeb717d4c8d651bd2"
     },
     {
+      "path": "src/NovaOryn.Memory.Heap.Contracts/HeapContracts.cs",
+      "length": 12178,
+      "sha256": "d323991f594c278b125aabdb01e29111574299fcab0618c2495592f52622d69c"
+    },
+    {
+      "path": "src/NovaOryn.Memory.Heap.Contracts/NovaOryn.Memory.Heap.Contracts.csproj",
+      "length": 325,
+      "sha256": "aa914801f99035a8bf397ef696c06cc63757c0c2af3cd3cb93a92b04092b79e0"
+    },
+    {
       "path": "src/NovaOryn.Memory.Heap/BumpEarlyAllocator.cs",
       "length": 3238,
       "sha256": "aed440bdaef288dcf923dca1197aafd151dbfc976447bae79bcf97d27caf1eae"
@@ -3182,14 +3162,19 @@
       "sha256": "b66b8545aaafddbde07aab7d560c4581cb3f5dd869c93435378862316524a865"
     },
     {
-      "path": "src/NovaOryn.Memory.Heap.Contracts/HeapContracts.cs",
-      "length": 12178,
-      "sha256": "d323991f594c278b125aabdb01e29111574299fcab0618c2495592f52622d69c"
+      "path": "src/NovaOryn.Memory.Physical.Contracts/AssemblyInfo.cs",
+      "length": 99,
+      "sha256": "16e487064eca6764d6a95acb326fa1b616faab99e199eaa1bae8080521c7c034"
     },
     {
-      "path": "src/NovaOryn.Memory.Heap.Contracts/NovaOryn.Memory.Heap.Contracts.csproj",
-      "length": 325,
-      "sha256": "aa914801f99035a8bf397ef696c06cc63757c0c2af3cd3cb93a92b04092b79e0"
+      "path": "src/NovaOryn.Memory.Physical.Contracts/NovaOryn.Memory.Physical.Contracts.csproj",
+      "length": 626,
+      "sha256": "a28b84c39d7ac74b37d63e6c1c62305dcaae05614be02917434b2c6afcaf08c4"
+    },
+    {
+      "path": "src/NovaOryn.Memory.Physical.Contracts/PhysicalMemoryContracts.cs",
+      "length": 21778,
+      "sha256": "ae2a943cbd4a9b9f06e0386505f27d3eeab59ccdb36c23c86bc624fe89a3014d"
     },
     {
       "path": "src/NovaOryn.Memory.Physical/BitmapPhysicalMemoryManager.cs",
@@ -3215,21 +3200,6 @@
       "path": "src/NovaOryn.Memory.Physical/PhysicalAllocatorInternals.cs",
       "length": 8907,
       "sha256": "23e6a4f0466bfcd146a08addff95a238eb2403ea0fb97f43448a060a09d8472b"
-    },
-    {
-      "path": "src/NovaOryn.Memory.Physical.Contracts/AssemblyInfo.cs",
-      "length": 99,
-      "sha256": "16e487064eca6764d6a95acb326fa1b616faab99e199eaa1bae8080521c7c034"
-    },
-    {
-      "path": "src/NovaOryn.Memory.Physical.Contracts/NovaOryn.Memory.Physical.Contracts.csproj",
-      "length": 626,
-      "sha256": "a28b84c39d7ac74b37d63e6c1c62305dcaae05614be02917434b2c6afcaf08c4"
-    },
-    {
-      "path": "src/NovaOryn.Memory.Physical.Contracts/PhysicalMemoryContracts.cs",
-      "length": 21778,
-      "sha256": "ae2a943cbd4a9b9f06e0386505f27d3eeab59ccdb36c23c86bc624fe89a3014d"
     },
     {
       "path": "src/NovaOryn.Memory.Virtual.Contracts/NovaOryn.Memory.Virtual.Contracts.csproj",
@@ -3493,8 +3463,8 @@
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynFilesystemFatFs/FatFs.cs",
-      "length": 19416,
-      "sha256": "09123630cb96b4e3a8c62c2763ef1935d37fc69d0bc5497a557314041bcf7940"
+      "length": 26416,
+      "sha256": "9cf68db98073e21f576403669dcacf090f79670e6119cdda9147439fa047c685"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynFilesystemFatFs/LICENSE-FatFs.txt",
@@ -3852,14 +3822,14 @@
       "sha256": "d40427e44358a4fa4b34e6deb107c6976be6399f4be6e7aa5a2e1ab53d1e2d7f"
     },
     {
-      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Heap/KernelHeap.Diagnostics.cs",
-      "length": 13185,
-      "sha256": "435b3342364a8efdb446f429202bb71c6bb8cd83a58fc7d30fb31495beb14dde"
-    },
-    {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Heap/KernelHeap.cs",
       "length": 20181,
       "sha256": "aec2e84915dde5d360da996079383e6f9de484098ad4e1aa4e2c4440092cca39"
+    },
+    {
+      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Heap/KernelHeap.Diagnostics.cs",
+      "length": 13185,
+      "sha256": "435b3342364a8efdb446f429202bb71c6bb8cd83a58fc7d30fb31495beb14dde"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Heap/NovaOryn.Kernel.Heap.csproj",
@@ -3897,6 +3867,16 @@
       "sha256": "16cae80a2ba523d65bead82ece29b92ea815e4f37a039d09ff3eb0c7f17cdb73"
     },
     {
+      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Memory.Diagnostics/KernelMemoryDiagnostics.cs",
+      "length": 3082,
+      "sha256": "2630975bbebc262e8c00f8ff719e217de73e01bc78b5538814516db7600f0d6a"
+    },
+    {
+      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Memory.Diagnostics/NovaOryn.Kernel.Memory.Diagnostics.csproj",
+      "length": 1311,
+      "sha256": "de9810a75a17a071ff30af91644c8b613e65ab04de633b703802041ad4056be1"
+    },
+    {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Memory/KernelPhysicalMemory.Bootstrap.cs",
       "length": 6101,
       "sha256": "45a24c5e011b06fd1e3908a0bd5a0f710a494a7be3638642d434c74e7100d341"
@@ -3912,16 +3892,6 @@
       "sha256": "be66314d2f64ee07104a08cc2766c2580ecb2d7680f53fff6cd60dd3121272a1"
     },
     {
-      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Memory.Diagnostics/KernelMemoryDiagnostics.cs",
-      "length": 3082,
-      "sha256": "2630975bbebc262e8c00f8ff719e217de73e01bc78b5538814516db7600f0d6a"
-    },
-    {
-      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Memory.Diagnostics/NovaOryn.Kernel.Memory.Diagnostics.csproj",
-      "length": 1311,
-      "sha256": "de9810a75a17a071ff30af91644c8b613e65ab04de633b703802041ad4056be1"
-    },
-    {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelDhcpDns.cs",
       "length": 3897,
       "sha256": "f563f29f7dc5569c9e8ef4906ecdd491bcb9eb129c71e351b7ea05b6168dd6e2"
@@ -3930,6 +3900,11 @@
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkContracts.cs",
       "length": 8419,
       "sha256": "e8390c8a6f6f55bede364cd2b3469b284b0c85f03aa261e41367f52905e6d2d1"
+    },
+    {
+      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworking.cs",
+      "length": 11700,
+      "sha256": "570ce1325c4cd2729c6c211119c4110193e52e1c14b42a8735bdb659a7f81500"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkMath.cs",
@@ -3945,11 +3920,6 @@
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkStack.cs",
       "length": 7343,
       "sha256": "036d33c1532cd05deadf1d895c905d2b88ddfcddad4ff2b2b2a6424154ed4fb5"
-    },
-    {
-      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworking.cs",
-      "length": 11700,
-      "sha256": "570ce1325c4cd2729c6c211119c4110193e52e1c14b42a8735bdb659a7f81500"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelSockets.cs",
@@ -4193,8 +4163,8 @@
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Storage/KernelStorageContracts.cs",
-      "length": 10347,
-      "sha256": "94aaa7019c8b0f44ebc1df665ed16862a51d84a804ea152e3f32393e00a14e62"
+      "length": 13860,
+      "sha256": "10ffe3acc2dd6aca410b444ce2b11226e813ef51a672dad4a02559b8fb98e610"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Storage/KernelStorageMath.cs",
@@ -4208,8 +4178,8 @@
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Storage/KernelVfs.cs",
-      "length": 14334,
-      "sha256": "1ac75ca7308492b9cd94aa4c085b514e5d3f48a475bd7c23e5b0a562329ec235"
+      "length": 23564,
+      "sha256": "103ac057b6dd2cedd8fc058f54465ce296fc8046254fa0905426cd13c7982450"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Storage/NovaOryn.Kernel.Storage.csproj",
@@ -4233,8 +4203,8 @@
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs",
-      "length": 33658,
-      "sha256": "4e7449291eba6bfc86bac1e129ea8690877c99b749fb2ddcc45f9cf8c47d7248"
+      "length": 33977,
+      "sha256": "77c26321a77a3ac577fe84f4e7de98603a7d7ccc8e98b3c26b7227b542a0a8f7"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/SubsystemContracts.cs",
@@ -4362,6 +4332,21 @@
       "sha256": "ece8ef9130fb3fab36d777063589038323ced645771bb7f427049d7664da1d6c"
     },
     {
+      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/KernelVirtioGpu.cs",
+      "length": 24429,
+      "sha256": "caca79a826b1ae77ebbb35b9a0e13e5ed941ba7b7c7ee1be1c45509c24cfc23a"
+    },
+    {
+      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/NovaOryn.Kernel.Virtio.Gpu.csproj",
+      "length": 1481,
+      "sha256": "a5cb396961fdfd196c259617269f22460ab833ca7e2c076ce6c2507c7de3ed18"
+    },
+    {
+      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/VirtioGpuContracts.cs",
+      "length": 1295,
+      "sha256": "9739e41cea33c5fa175b8bd3d4a864a5058618251130d5f95e90b139340ff827"
+    },
+    {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio/KernelVirtio.cs",
       "length": 27669,
       "sha256": "0599d46400f470ba765e02763f2181a24e1b5cdb7dadc18912da38a1097b2370"
@@ -4382,19 +4367,9 @@
       "sha256": "ad936958fdb2386f53a15f0da659d40195d4f0f1b8f5c865c244afd20f8bb3f1"
     },
     {
-      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/KernelVirtioGpu.cs",
-      "length": 24429,
-      "sha256": "caca79a826b1ae77ebbb35b9a0e13e5ed941ba7b7c7ee1be1c45509c24cfc23a"
-    },
-    {
-      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/NovaOryn.Kernel.Virtio.Gpu.csproj",
-      "length": 1481,
-      "sha256": "a5cb396961fdfd196c259617269f22460ab833ca7e2c076ce6c2507c7de3ed18"
-    },
-    {
-      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/VirtioGpuContracts.cs",
-      "length": 1295,
-      "sha256": "9739e41cea33c5fa175b8bd3d4a864a5058618251130d5f95e90b139340ff827"
+      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.cs",
+      "length": 27245,
+      "sha256": "93f01a4c63a1eaaf620a73862005ddce2b8ec040eacb740454d2147ab54b7c11"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.Diagnostics.cs",
@@ -4405,11 +4380,6 @@
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.DirectMap.cs",
       "length": 9913,
       "sha256": "43d382e1eb79792cc59afde6309c3ca8e739c935a55958357bb023b090b4916b"
-    },
-    {
-      "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.cs",
-      "length": 27245,
-      "sha256": "93f01a4c63a1eaaf620a73862005ddce2b8ec040eacb740454d2147ab54b7c11"
     },
     {
       "path": "src/NovaOryn.VisualStudio/ProjectTemplates/CSharp/1033/NovaOrynKernel/Sdk/NovaOryn.Kernel.VirtualMemory/NovaOryn.Kernel.VirtualMemory.csproj",
@@ -5217,14 +5187,14 @@
       "sha256": "d40427e44358a4fa4b34e6deb107c6976be6399f4be6e7aa5a2e1ab53d1e2d7f"
     },
     {
-      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Heap/KernelHeap.Diagnostics.cs",
-      "length": 13185,
-      "sha256": "435b3342364a8efdb446f429202bb71c6bb8cd83a58fc7d30fb31495beb14dde"
-    },
-    {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Heap/KernelHeap.cs",
       "length": 20181,
       "sha256": "aec2e84915dde5d360da996079383e6f9de484098ad4e1aa4e2c4440092cca39"
+    },
+    {
+      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Heap/KernelHeap.Diagnostics.cs",
+      "length": 13185,
+      "sha256": "435b3342364a8efdb446f429202bb71c6bb8cd83a58fc7d30fb31495beb14dde"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Heap/NovaOryn.Kernel.Heap.csproj",
@@ -5262,6 +5232,16 @@
       "sha256": "16cae80a2ba523d65bead82ece29b92ea815e4f37a039d09ff3eb0c7f17cdb73"
     },
     {
+      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Memory.Diagnostics/KernelMemoryDiagnostics.cs",
+      "length": 3082,
+      "sha256": "2630975bbebc262e8c00f8ff719e217de73e01bc78b5538814516db7600f0d6a"
+    },
+    {
+      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Memory.Diagnostics/NovaOryn.Kernel.Memory.Diagnostics.csproj",
+      "length": 1311,
+      "sha256": "de9810a75a17a071ff30af91644c8b613e65ab04de633b703802041ad4056be1"
+    },
+    {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Memory/KernelPhysicalMemory.Bootstrap.cs",
       "length": 6101,
       "sha256": "45a24c5e011b06fd1e3908a0bd5a0f710a494a7be3638642d434c74e7100d341"
@@ -5277,16 +5257,6 @@
       "sha256": "be66314d2f64ee07104a08cc2766c2580ecb2d7680f53fff6cd60dd3121272a1"
     },
     {
-      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Memory.Diagnostics/KernelMemoryDiagnostics.cs",
-      "length": 3082,
-      "sha256": "2630975bbebc262e8c00f8ff719e217de73e01bc78b5538814516db7600f0d6a"
-    },
-    {
-      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Memory.Diagnostics/NovaOryn.Kernel.Memory.Diagnostics.csproj",
-      "length": 1311,
-      "sha256": "de9810a75a17a071ff30af91644c8b613e65ab04de633b703802041ad4056be1"
-    },
-    {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelDhcpDns.cs",
       "length": 3897,
       "sha256": "f563f29f7dc5569c9e8ef4906ecdd491bcb9eb129c71e351b7ea05b6168dd6e2"
@@ -5295,6 +5265,11 @@
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkContracts.cs",
       "length": 8419,
       "sha256": "e8390c8a6f6f55bede364cd2b3469b284b0c85f03aa261e41367f52905e6d2d1"
+    },
+    {
+      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworking.cs",
+      "length": 11700,
+      "sha256": "570ce1325c4cd2729c6c211119c4110193e52e1c14b42a8735bdb659a7f81500"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkMath.cs",
@@ -5310,11 +5285,6 @@
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworkStack.cs",
       "length": 7343,
       "sha256": "036d33c1532cd05deadf1d895c905d2b88ddfcddad4ff2b2b2a6424154ed4fb5"
-    },
-    {
-      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelNetworking.cs",
-      "length": 11700,
-      "sha256": "570ce1325c4cd2729c6c211119c4110193e52e1c14b42a8735bdb659a7f81500"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Networking/KernelSockets.cs",
@@ -5558,8 +5528,8 @@
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Storage/KernelStorageContracts.cs",
-      "length": 10347,
-      "sha256": "94aaa7019c8b0f44ebc1df665ed16862a51d84a804ea152e3f32393e00a14e62"
+      "length": 13860,
+      "sha256": "10ffe3acc2dd6aca410b444ce2b11226e813ef51a672dad4a02559b8fb98e610"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Storage/KernelStorageMath.cs",
@@ -5573,8 +5543,8 @@
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Storage/KernelVfs.cs",
-      "length": 14334,
-      "sha256": "1ac75ca7308492b9cd94aa4c085b514e5d3f48a475bd7c23e5b0a562329ec235"
+      "length": 23564,
+      "sha256": "103ac057b6dd2cedd8fc058f54465ce296fc8046254fa0905426cd13c7982450"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Storage/NovaOryn.Kernel.Storage.csproj",
@@ -5598,8 +5568,8 @@
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/ProfessionalSdkContracts.cs",
-      "length": 33658,
-      "sha256": "4e7449291eba6bfc86bac1e129ea8690877c99b749fb2ddcc45f9cf8c47d7248"
+      "length": 33977,
+      "sha256": "77c26321a77a3ac577fe84f4e7de98603a7d7ccc8e98b3c26b7227b542a0a8f7"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.SubsystemContracts/SubsystemContracts.cs",
@@ -5727,6 +5697,21 @@
       "sha256": "ece8ef9130fb3fab36d777063589038323ced645771bb7f427049d7664da1d6c"
     },
     {
+      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/KernelVirtioGpu.cs",
+      "length": 24429,
+      "sha256": "caca79a826b1ae77ebbb35b9a0e13e5ed941ba7b7c7ee1be1c45509c24cfc23a"
+    },
+    {
+      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/NovaOryn.Kernel.Virtio.Gpu.csproj",
+      "length": 1481,
+      "sha256": "a5cb396961fdfd196c259617269f22460ab833ca7e2c076ce6c2507c7de3ed18"
+    },
+    {
+      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/VirtioGpuContracts.cs",
+      "length": 1295,
+      "sha256": "9739e41cea33c5fa175b8bd3d4a864a5058618251130d5f95e90b139340ff827"
+    },
+    {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio/KernelVirtio.cs",
       "length": 27669,
       "sha256": "0599d46400f470ba765e02763f2181a24e1b5cdb7dadc18912da38a1097b2370"
@@ -5747,19 +5732,9 @@
       "sha256": "ad936958fdb2386f53a15f0da659d40195d4f0f1b8f5c865c244afd20f8bb3f1"
     },
     {
-      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/KernelVirtioGpu.cs",
-      "length": 24429,
-      "sha256": "caca79a826b1ae77ebbb35b9a0e13e5ed941ba7b7c7ee1be1c45509c24cfc23a"
-    },
-    {
-      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/NovaOryn.Kernel.Virtio.Gpu.csproj",
-      "length": 1481,
-      "sha256": "a5cb396961fdfd196c259617269f22460ab833ca7e2c076ce6c2507c7de3ed18"
-    },
-    {
-      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.Virtio.Gpu/VirtioGpuContracts.cs",
-      "length": 1295,
-      "sha256": "9739e41cea33c5fa175b8bd3d4a864a5058618251130d5f95e90b139340ff827"
+      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.cs",
+      "length": 27245,
+      "sha256": "93f01a4c63a1eaaf620a73862005ddce2b8ec040eacb740454d2147ab54b7c11"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.Diagnostics.cs",
@@ -5770,11 +5745,6 @@
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.DirectMap.cs",
       "length": 9913,
       "sha256": "43d382e1eb79792cc59afde6309c3ca8e739c935a55958357bb023b090b4916b"
-    },
-    {
-      "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.VirtualMemory/KernelVirtualMemory.cs",
-      "length": 27245,
-      "sha256": "93f01a4c63a1eaaf620a73862005ddce2b8ec040eacb740454d2147ab54b7c11"
     },
     {
       "path": "templates/NovaOrynKernel/Sdk/NovaOryn.Kernel.VirtualMemory/NovaOryn.Kernel.VirtualMemory.csproj",
@@ -6327,6 +6297,11 @@
       "sha256": "34343be7b04ad18bc2d1f3bbf538d778a43946265cd1ce9a80499a728baef2e1"
     },
     {
+      "path": "THIRD-PARTY-NOTICES.md",
+      "length": 4195,
+      "sha256": "3ca8d466fd503a1185b2d9724f39e890b63a5e8382613bbac2abab78404c9407"
+    },
+    {
       "path": "toolchain/NovaOryn.NativeAot.Bootstrap.cs",
       "length": 112,
       "sha256": "e6ef6d5516462acc51664997f967e49b3f2f341de05610b39a7622dc2c7be932"
@@ -6340,6 +6315,41 @@
       "path": "toolchain/NovaOryn.Toolchain.json",
       "length": 1261,
       "sha256": "2dc628eaac92af56e857b630d6097b881a563a90871644dafa59da7aa925a856"
+    },
+    {
+      "path": "Update-NovaOryn.bat",
+      "length": 347,
+      "sha256": "f50724430c690d45271acd8703ee91949c2edc878bc324072d8c6d9d83271192"
+    },
+    {
+      "path": "Update-NovaOryn.ps1",
+      "length": 20565,
+      "sha256": "2f0ff3f6cfcbdd1f207992ccb7a6d8e7acdead9d05b7e95ccbf3f678c05555f2"
+    },
+    {
+      "path": "Validate-NovaOryn.bat",
+      "length": 146,
+      "sha256": "65ed5d62fe399437a134fc2c1b68c8795383138815ffa2b0cf09a8811b368cd3"
+    },
+    {
+      "path": "Validate-NovaOryn.ps1",
+      "length": 1174,
+      "sha256": "0bb2c4168aaa8b43f6086a810962ecdc1ea93e92b1ea5d21b42959fbf679370d"
+    },
+    {
+      "path": "Validate-NovaOrynDriverPackage.bat",
+      "length": 141,
+      "sha256": "76c932902a4650b5978c0de32da068b36bad9386c86a7d3dc426257a07d09bfc"
+    },
+    {
+      "path": "Validate-NovaOrynDriverPackage.ps1",
+      "length": 5469,
+      "sha256": "41a1ae97d9c99e544cecd6feca099b5314203bba5aa25eda32679436d3c739d3"
+    },
+    {
+      "path": "Verify-NovaOrynSdkContract.ps1",
+      "length": 1499,
+      "sha256": "223094dfbbff4aaa5bb141a1d5714f80a62818e8ea494443c573410b4d33b60c"
     }
   ]
 }

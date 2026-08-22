@@ -1,0 +1,15 @@
+{
+  "release": "0.21.0",
+  "feature": "Filesystem VFS contract",
+  "checks": [
+    "mount namespaces and longest-prefix mount routing",
+    "file open/read/write/seek/flush/close",
+    "directory open/read/rewind/close",
+    "VFS permissions and provider permission callbacks",
+    "filesystem drivers registered beneath the VFS",
+    "FatFs directory and permission provider integration",
+    "async I/O reserved but not falsely implemented",
+    "generated and Visual Studio templates synchronized",
+    "SDK source manifest refreshed"
+  ]
+}
